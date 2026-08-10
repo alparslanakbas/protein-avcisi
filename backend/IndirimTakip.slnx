@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/IndirimTakip.Api/IndirimTakip.Api.csproj" />
+    <Project Path="src/IndirimTakip.Core/IndirimTakip.Core.csproj" />
+    <Project Path="src/IndirimTakip.Infrastructure/IndirimTakip.Infrastructure.csproj" />
+  </Folder>
+</Solution>
