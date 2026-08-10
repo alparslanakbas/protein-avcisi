@@ -3,6 +3,7 @@ using IndirimTakip.Infrastructure.Deals;
 using IndirimTakip.Infrastructure.Scraping;
 using IndirimTakip.Infrastructure.Scraping.Hardline;
 using IndirimTakip.Infrastructure.Scraping.Hiq;
+using IndirimTakip.Infrastructure.Scraping.ProteinOcean;
 using IndirimTakip.Infrastructure.Scraping.Ssn;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -41,6 +42,12 @@ public static class DependencyInjection
             client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
         });
         services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<HardlineScraper>());
+
+        services.AddHttpClient<ProteinOceanScraper>(client =>
+        {
+            client.BaseAddress = new Uri("https://api.myikas.com/");
+        });
+        services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<ProteinOceanScraper>());
 
         services.AddScoped<ScrapeIngestionService>();
         services.AddScoped<DealsQueryService>();
