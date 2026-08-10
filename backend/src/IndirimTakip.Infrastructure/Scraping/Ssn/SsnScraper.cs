@@ -1,0 +1,78 @@
+using System.Globalization;
+using HtmlAgilityPack;
+using IndirimTakip.Core.Scraping;
+
+namespace IndirimTakip.Infrastructure.Scraping.Ssn;
+
+public class SsnScraper(HttpClient httpClient) : IBrandScraper
+{
+    // Aksesuar/ekipman değil, sadece takviye kategorileri (projenin kapsamı).
+    private static readonly string[] CategorySlugs =
+    [
+        "protein-tozu",
+        "kilo-hacim",
+        "amino-asitler",
+        "kreatin",
+        "l-carnitine-cla",
+        "vitamin",
+        "pre-workout",
+        "saglikli-atistirmaliklar",
+    ];
+
+    public string BrandName => "SSN";
+    public string BaseUrl => "https://www.ssnsports.com.tr";
+
+    public async Task<IReadOnlyList<ScrapedProduct>> ScrapeAsync(CancellationToken cancellationToken = default)
+    {
+        // Bir ürün birden fazla kategoride görünebiliyor (örn. kombinasyon paketleri); Url'e göre dedupe ediyoruz.
+        var products = new Dictionary<string, ScrapedProduct>();
+
+        foreach (var slug in CategorySlugs)
+        {
+            for (var page = 1; ; page++)
+            {
+                var path = page == 1 ? $"/{slug}" : $"/{slug}/page-{page}";
+                var html = await httpClient.GetStringAsync(path, cancellationToken);
+
+                var doc = new HtmlDocument();
+                doc.LoadHtml(html);
+
+                var productNodes = doc.DocumentNode.SelectNodes(
+                    "//div[contains(concat(' ', normalize-space(@class), ' '), ' product-thumb ')]");
+                if (productNodes is null || productNodes.Count == 0)
+                    break;
+
+                foreach (var node in productNodes)
+                {
+                    var linkNode = node.SelectSingleNode(".//div[contains(@class,'name')]/a");
+                    var priceNode = node.SelectSingleNode(".//span[contains(@class,'price-new')]");
+                    if (linkNode is null || priceNode is null)
+                        continue;
+
+                    var url = linkNode.GetAttributeValue("href", "");
+                    if (string.IsNullOrEmpty(url) || products.ContainsKey(url))
+                        continue;
+
+                    var imgNode = node.SelectSingleNode(".//img");
+                    var imageUrl = imgNode?.GetAttributeValue("data-src", null) ?? imgNode?.GetAttributeValue("src", null);
+
+                    products[url] = new ScrapedProduct(
+                        Name: HtmlEntity.DeEntitize(linkNode.InnerText).Trim(),
+                        Url: url,
+                        ImageUrl: imageUrl,
+                        Category: slug,
+                        Price: ParseTurkishPrice(priceNode.InnerText));
+                }
+            }
+        }
+
+        return products.Values.ToList();
+    }
+
+    // OpenCart fiyatları "2.899,00TL" formatında basıyor: "." binlik ayraç, "," ondalık ayraç.
+    private static decimal ParseTurkishPrice(string text)
+    {
+        var cleaned = text.Replace("TL", "").Trim().Replace(".", "").Replace(',', '.');
+        return decimal.Parse(cleaned, CultureInfo.InvariantCulture);
+    }
+}

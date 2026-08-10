@@ -2,6 +2,7 @@ using IndirimTakip.Core.Scraping;
 using IndirimTakip.Infrastructure.Deals;
 using IndirimTakip.Infrastructure.Scraping;
 using IndirimTakip.Infrastructure.Scraping.Hiq;
+using IndirimTakip.Infrastructure.Scraping.Ssn;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,6 +11,10 @@ namespace IndirimTakip.Infrastructure;
 
 public static class DependencyInjection
 {
+    // Bazı siteler (Cloudflare arkasındakiler dahil) User-Agent'sız istekleri engelliyor.
+    private const string BrowserUserAgent =
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36";
+
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddDbContext<AppDbContext>(options =>
@@ -18,11 +23,17 @@ public static class DependencyInjection
         services.AddHttpClient<HiqScraper>(client =>
         {
             client.BaseAddress = new Uri("https://takehiq.com/");
-            // Cloudflare, User-Agent'sız istekleri 403 ile engelliyor; tarayıcı gibi görünmemiz gerekiyor.
-            client.DefaultRequestHeaders.UserAgent.ParseAdd(
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
         });
         services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<HiqScraper>());
+
+        services.AddHttpClient<SsnScraper>(client =>
+        {
+            client.BaseAddress = new Uri("https://www.ssnsports.com.tr/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
+        });
+        services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<SsnScraper>());
+
         services.AddScoped<ScrapeIngestionService>();
         services.AddScoped<DealsQueryService>();
 
