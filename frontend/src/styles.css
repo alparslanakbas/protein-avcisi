@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* Koyu mod: <html> elemanına "dark" class'ı eklenince devreye girer
+   (ThemeService yönetiyor) — sistem tercihini otomatik takip etmez,
+   çünkü "sistem" seçeneğini de biz JS tarafında class ekleyerek uyguluyoruz. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
 
@@ -27,6 +32,6 @@
 }
 
 body {
-  @apply bg-stone-50 text-stone-800 antialiased;
+  @apply bg-stone-50 text-stone-800 antialiased transition-colors duration-200 dark:bg-stone-950 dark:text-stone-200;
   font-family: var(--font-sans);
 }

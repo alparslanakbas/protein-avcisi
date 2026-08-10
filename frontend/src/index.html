@@ -9,6 +9,16 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    // Angular yüklenmeden önce temayı uygula (yanlış temanın kısa süre
+    // "flaşlamasını" önlemek için) — ThemeService aynı mantığı JS tarafında
+    // da uygular, bu sadece ilk boyamayı doğru yapmak için.
+    (function () {
+      var stored = localStorage.getItem('theme-preference');
+      var isDark = stored === 'dark' || (stored !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      document.documentElement.classList.toggle('dark', isDark);
+    })();
+  </script>
 </head>
 <body>
   <app-root></app-root>

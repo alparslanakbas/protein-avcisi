@@ -1,65 +1,153 @@
-<section class="deals-page">
-  <header class="deals-header">
-    <h1>Güncel İndirimler</h1>
-    <p class="subtitle">Spor takviyesi markalarındaki indirimler tek sayfada.</p>
+<div class="min-h-screen bg-stone-50 dark:bg-stone-950">
+  <header class="border-b border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900">
+    <div class="mx-auto flex max-w-6xl items-center gap-3 px-4 py-4 sm:px-6">
+      <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600 text-sm font-extrabold text-white">
+        İT
+      </div>
+      <span class="text-lg font-bold text-stone-900 dark:text-stone-100">
+        İndirim<span class="text-brand-600 dark:text-brand-400">Takip</span>
+      </span>
+
+      <div class="ml-auto flex items-center gap-1 rounded-full border border-stone-200 bg-stone-50 p-1 dark:border-stone-700 dark:bg-stone-800">
+        <button
+          type="button"
+          title="Açık tema"
+          class="flex h-7 w-7 items-center justify-center rounded-full transition-colors"
+          [class]="theme.preference() === 'light'
+            ? 'bg-white text-brand-600 shadow-sm dark:bg-stone-700 dark:text-brand-400'
+            : 'text-stone-400 hover:text-stone-600 dark:hover:text-stone-300'"
+          (click)="setTheme('light')"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
+            <circle cx="12" cy="12" r="4" />
+            <path stroke-linecap="round" d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          title="Koyu tema"
+          class="flex h-7 w-7 items-center justify-center rounded-full transition-colors"
+          [class]="theme.preference() === 'dark'
+            ? 'bg-white text-brand-600 shadow-sm dark:bg-stone-700 dark:text-brand-400'
+            : 'text-stone-400 hover:text-stone-600 dark:hover:text-stone-300'"
+          (click)="setTheme('dark')"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          title="Sistem teması"
+          class="flex h-7 w-7 items-center justify-center rounded-full transition-colors"
+          [class]="theme.preference() === 'system'
+            ? 'bg-white text-brand-600 shadow-sm dark:bg-stone-700 dark:text-brand-400'
+            : 'text-stone-400 hover:text-stone-600 dark:hover:text-stone-300'"
+          (click)="setTheme('system')"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
+            <rect x="3" y="4" width="18" height="12" rx="2" />
+            <path stroke-linecap="round" d="M8 20h8M12 16v4" />
+          </svg>
+        </button>
+      </div>
+    </div>
   </header>
 
-  <div class="ad-banner-slot" aria-hidden="true">Reklam Alanı</div>
+  <main class="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+    <div class="mb-8 text-center">
+      <h1 class="text-3xl font-extrabold tracking-tight text-stone-900 dark:text-stone-100 sm:text-4xl">
+        Güncel İndirimler
+      </h1>
+      <p class="mt-2 text-stone-500 dark:text-stone-400">Spor takviyesi markalarındaki indirimler tek sayfada.</p>
+    </div>
 
-  <div class="view-tabs">
-    <button
-      type="button"
-      class="view-tabs__btn"
-      [class.view-tabs__btn--active]="viewMode() === 'deals'"
-      (click)="setViewMode('deals')"
+    <div
+      class="mx-auto mb-8 flex h-20 max-w-3xl items-center justify-center rounded-xl border border-dashed border-stone-300 bg-stone-100 text-xs font-medium uppercase tracking-wide text-stone-400 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-500"
+      aria-hidden="true"
     >
-      İndirimdekiler
-    </button>
-    <button
-      type="button"
-      class="view-tabs__btn"
-      [class.view-tabs__btn--active]="viewMode() === 'all'"
-      (click)="setViewMode('all')"
-    >
-      Tüm Ürünler
-    </button>
-  </div>
+      Reklam Alanı
+    </div>
 
-  @if (loading()) {
-    <p class="status">Yükleniyor...</p>
-  } @else if (error()) {
-    <p class="status status--error">{{ error() }}</p>
-  } @else if (deals().length === 0) {
-    <p class="status">
-      @if (viewMode() === 'deals') {
-        Şu anda tespit edilmiş bir indirim yok. Fiyat geçmişi biriktikçe
-        buradaki liste otomatik dolacak.
-      } @else {
-        Henüz ürün taranmadı.
-      }
-    </p>
-  } @else {
-    <div class="deals-grid">
-      @for (deal of deals(); track deal.productId) {
-        <a class="deal-card" [href]="deal.productUrl" target="_blank" rel="noopener">
-          @if (deal.imageUrl) {
-            <img class="deal-card__image" [src]="deal.imageUrl" [alt]="deal.productName" loading="lazy" />
-          }
-          @if (deal.discountPercent > 0) {
-            <span class="deal-card__badge">{{ discountBadge(deal) }}</span>
-          }
-          <div class="deal-card__body">
-            <span class="deal-card__brand">{{ deal.brandName }}</span>
-            <h2 class="deal-card__name">{{ deal.productName }}</h2>
-            <div class="deal-card__prices">
-              <span class="deal-card__price deal-card__price--current">{{ deal.currentPrice | number:'1.2-2' }} TL</span>
+    <div class="mb-10 flex justify-center gap-2">
+      <button
+        type="button"
+        class="rounded-full px-5 py-2 text-sm font-semibold transition-colors"
+        [class]="viewMode() === 'deals'
+          ? 'bg-brand-600 text-white shadow-sm shadow-brand-600/30'
+          : 'border border-stone-200 bg-white text-stone-600 hover:border-brand-300 hover:text-brand-700 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300 dark:hover:border-brand-500 dark:hover:text-brand-400'"
+        (click)="setViewMode('deals')"
+      >
+        İndirimdekiler
+      </button>
+      <button
+        type="button"
+        class="rounded-full px-5 py-2 text-sm font-semibold transition-colors"
+        [class]="viewMode() === 'all'
+          ? 'bg-brand-600 text-white shadow-sm shadow-brand-600/30'
+          : 'border border-stone-200 bg-white text-stone-600 hover:border-brand-300 hover:text-brand-700 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300 dark:hover:border-brand-500 dark:hover:text-brand-400'"
+        (click)="setViewMode('all')"
+      >
+        Tüm Ürünler
+      </button>
+    </div>
+
+    @if (loading()) {
+      <div class="py-24 text-center text-stone-400 dark:text-stone-500">Yükleniyor...</div>
+    } @else if (error()) {
+      <div class="mx-auto max-w-md rounded-xl border border-red-200 bg-red-50 px-6 py-8 text-center text-red-600 dark:border-red-900 dark:bg-red-950/40 dark:text-red-400">
+        {{ error() }}
+      </div>
+    } @else if (deals().length === 0) {
+      <div class="mx-auto max-w-md rounded-xl border border-stone-200 bg-white px-6 py-10 text-center text-stone-500 dark:border-stone-800 dark:bg-stone-900 dark:text-stone-400">
+        @if (viewMode() === 'deals') {
+          Şu anda tespit edilmiş bir indirim yok. Fiyat geçmişi biriktikçe buradaki liste otomatik dolacak.
+        } @else {
+          Henüz ürün taranmadı.
+        }
+      </div>
+    } @else {
+      <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+        @for (deal of deals(); track deal.productId) {
+          <a
+            [href]="deal.productUrl"
+            target="_blank"
+            rel="noopener"
+            class="group flex flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white transition-all hover:-translate-y-1 hover:border-brand-200 hover:shadow-lg hover:shadow-stone-200/70 dark:border-stone-800 dark:bg-stone-900 dark:hover:border-brand-700 dark:hover:shadow-black/40"
+          >
+            <div class="relative aspect-square bg-stone-50 p-4 dark:bg-stone-800/60">
+              @if (deal.imageUrl) {
+                <img
+                  [src]="deal.imageUrl"
+                  [alt]="deal.productName"
+                  loading="lazy"
+                  class="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
+                />
+              }
               @if (deal.discountPercent > 0) {
-                <span class="deal-card__price deal-card__price--reference">{{ deal.referencePrice | number:'1.2-2' }} TL</span>
+                <span class="absolute left-2 top-2 rounded-full bg-accent-500 px-2 py-1 text-xs font-bold text-white shadow-sm">
+                  {{ discountBadge(deal) }}
+                </span>
               }
             </div>
-          </div>
-        </a>
-      }
-    </div>
-  }
-</section>
+            <div class="flex flex-1 flex-col gap-1 p-3">
+              <span class="text-[11px] font-semibold uppercase tracking-wide text-brand-600 dark:text-brand-400">{{ deal.brandName }}</span>
+              <h2
+                [title]="deal.productName"
+                class="line-clamp-3 min-h-[3.75rem] text-sm font-semibold leading-tight text-stone-800 dark:text-stone-200"
+              >
+                {{ deal.productName }}
+              </h2>
+              <div class="mt-auto flex items-baseline gap-2 pt-1">
+                <span class="text-base font-extrabold text-stone-900 dark:text-stone-100">{{ deal.currentPrice | number:'1.2-2' }} TL</span>
+                @if (deal.discountPercent > 0) {
+                  <span class="text-xs text-stone-400 line-through dark:text-stone-500">{{ deal.referencePrice | number:'1.2-2' }} TL</span>
+                }
+              </div>
+            </div>
+          </a>
+        }
+      </div>
+    }
+  </main>
+</div>

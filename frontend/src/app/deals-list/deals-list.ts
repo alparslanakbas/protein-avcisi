@@ -3,6 +3,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 
 import { Deal } from '../core/deal.model';
 import { DealsService } from '../core/deals.service';
+import { ThemePreference, ThemeService } from '../core/theme.service';
 
 type ViewMode = 'deals' | 'all';
 
@@ -10,10 +11,10 @@ type ViewMode = 'deals' | 'all';
   selector: 'app-deals-list',
   imports: [DecimalPipe],
   templateUrl: './deals-list.html',
-  styleUrl: './deals-list.scss',
 })
 export class DealsList implements OnInit {
   private readonly dealsService = inject(DealsService);
+  protected readonly theme = inject(ThemeService);
 
   protected readonly deals = signal<Deal[]>([]);
   protected readonly loading = signal(true);
@@ -52,5 +53,9 @@ export class DealsList implements OnInit {
 
   protected discountBadge(deal: Deal): string {
     return `-%${deal.discountPercent}`;
+  }
+
+  protected setTheme(preference: ThemePreference): void {
+    this.theme.setPreference(preference);
   }
 }
