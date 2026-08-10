@@ -21,6 +21,9 @@ public class SsnScraper(HttpClient httpClient) : IBrandScraper
     public string BrandName => "SSN";
     public string BaseUrl => "https://www.ssnsports.com.tr";
 
+    // Kategori/sayfa istekleri arası nezaket beklemesi: siteyi yormamak, IP engellenme riskini azaltmak için.
+    private static readonly TimeSpan DelayBetweenRequests = TimeSpan.FromMilliseconds(500);
+
     public async Task<IReadOnlyList<ScrapedProduct>> ScrapeAsync(CancellationToken cancellationToken = default)
     {
         // Bir ürün birden fazla kategoride görünebiliyor (örn. kombinasyon paketleri); Url'e göre dedupe ediyoruz.
@@ -32,6 +35,7 @@ public class SsnScraper(HttpClient httpClient) : IBrandScraper
             {
                 var path = page == 1 ? $"/{slug}" : $"/{slug}/page-{page}";
                 var html = await httpClient.GetStringAsync(path, cancellationToken);
+                await Task.Delay(DelayBetweenRequests, cancellationToken);
 
                 var doc = new HtmlDocument();
                 doc.LoadHtml(html);

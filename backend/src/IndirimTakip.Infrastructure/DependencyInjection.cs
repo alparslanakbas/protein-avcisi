@@ -51,6 +51,7 @@ public static class DependencyInjection
 
         services.AddScoped<ScrapeIngestionService>();
         services.AddScoped<DealsQueryService>();
+        services.AddHostedService<ScrapingBackgroundService>();
 
         return services;
     }
