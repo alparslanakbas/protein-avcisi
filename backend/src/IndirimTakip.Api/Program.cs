@@ -1,5 +1,6 @@
 using IndirimTakip.Core.Scraping;
 using IndirimTakip.Infrastructure;
+using IndirimTakip.Infrastructure.Deals;
 using IndirimTakip.Infrastructure.Scraping;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -38,6 +39,13 @@ app.MapPost("/api/dev/ingest/{brand}", async (string brand, IEnumerable<IBrandSc
 
     var count = await ingestion.IngestAsync(scraper, ct);
     return Results.Ok(new { brand = scraper.BrandName, scrapedCount = count });
+});
+
+app.MapGet("/api/deals", async (DealsQueryService deals, string? brand, int? days, CancellationToken ct) =>
+{
+    var windowDays = days is null or <= 0 ? 30 : days.Value;
+    var result = await deals.GetDealsAsync(windowDays, brand, ct);
+    return Results.Ok(result);
 });
 
 app.Run();

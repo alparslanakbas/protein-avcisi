@@ -1,4 +1,5 @@
 using IndirimTakip.Core.Scraping;
+using IndirimTakip.Infrastructure.Deals;
 using IndirimTakip.Infrastructure.Scraping;
 using IndirimTakip.Infrastructure.Scraping.Hiq;
 using Microsoft.EntityFrameworkCore;
@@ -23,6 +24,7 @@ public static class DependencyInjection
         });
         services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<HiqScraper>());
         services.AddScoped<ScrapeIngestionService>();
+        services.AddScoped<DealsQueryService>();
 
         return services;
     }

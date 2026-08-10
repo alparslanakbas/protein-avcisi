@@ -1,0 +1,47 @@
+using Microsoft.EntityFrameworkCore;
+
+namespace IndirimTakip.Infrastructure.Deals;
+
+public class DealsQueryService(AppDbContext db)
+{
+    public async Task<IReadOnlyList<DealDto>> GetDealsAsync(
+        int referenceWindowDays = 30,
+        string? brandName = null,
+        CancellationToken cancellationToken = default)
+    {
+        var referenceSince = DateTimeOffset.UtcNow.AddDays(-referenceWindowDays);
+
+        var rows = await (
+            from p in db.Products
+            join b in db.Brands on p.BrandId equals b.Id
+            where b.IsActive && (brandName == null || b.Name == brandName)
+            select new
+            {
+                Product = p,
+                BrandName = b.Name,
+                Latest = p.PriceHistories
+                    .OrderByDescending(ph => ph.ScrapedAt)
+                    .Select(ph => new { ph.Price, ph.ScrapedAt })
+                    .FirstOrDefault(),
+                ReferencePrice = p.PriceHistories
+                    .Where(ph => ph.ScrapedAt >= referenceSince)
+                    .Max(ph => (decimal?)ph.Price),
+            }).ToListAsync(cancellationToken);
+
+        return rows
+            .Where(r => r.Latest is not null && r.ReferencePrice is not null && r.Latest.Price < r.ReferencePrice)
+            .Select(r => new DealDto(
+                r.Product.Id,
+                r.Product.Name,
+                r.Product.Url,
+                r.Product.ImageUrl,
+                r.Product.Category,
+                r.BrandName,
+                r.Latest!.Price,
+                r.ReferencePrice!.Value,
+                Math.Round((r.ReferencePrice.Value - r.Latest.Price) / r.ReferencePrice.Value * 100, 1),
+                r.Latest.ScrapedAt))
+            .OrderByDescending(d => d.DiscountPercent)
+            .ToList();
+    }
+}
