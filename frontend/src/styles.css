@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* Ana marka rengi: canlı ama yumuşak bir yeşil — sağlık/vitalite hissi,
+     gözü yormayan bir doygunlukta (saf/neon yeşil değil). */
+  --color-brand-50: #ecfdf5;
+  --color-brand-100: #d1fae5;
+  --color-brand-200: #a7f3d0;
+  --color-brand-300: #6ee7b7;
+  --color-brand-400: #34d399;
+  --color-brand-500: #10b981;
+  --color-brand-600: #059669;
+  --color-brand-700: #047857;
+  --color-brand-800: #065f46;
+  --color-brand-900: #064e3b;
+
+  /* Vurgu rengi: indirim rozetleri / CTA'lar için sıcak turuncu — dikkat
+     çekiyor ama saf kırmızı kadar "alarm" hissi vermiyor. */
+  --color-accent-50: #fff7ed;
+  --color-accent-100: #ffedd5;
+  --color-accent-400: #fb923c;
+  --color-accent-500: #f97316;
+  --color-accent-600: #ea580c;
+  --color-accent-700: #c2410c;
+}
+
+body {
+  @apply bg-stone-50 text-stone-800 antialiased;
+  font-family: var(--font-sans);
+}
