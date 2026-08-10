@@ -20,6 +20,50 @@
   }
 }
 
+.ad-banner-slot {
+  max-width: 728px;
+  height: 90px;
+  margin: 0 auto 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed #ccc;
+  border-radius: 8px;
+  color: #aaa;
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background: #fafafa;
+}
+
+.view-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 24px;
+
+  &__btn {
+    border: 1px solid #ddd;
+    background: #fff;
+    border-radius: 999px;
+    padding: 8px 18px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    color: #444;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+
+    &:hover {
+      border-color: #999;
+    }
+
+    &--active {
+      background: #1a1a1a;
+      border-color: #1a1a1a;
+      color: #fff;
+    }
+  }
+}
+
 .status {
   text-align: center;
   color: #666;

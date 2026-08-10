@@ -7,6 +7,7 @@ public class DealsQueryService(AppDbContext db)
     public async Task<IReadOnlyList<DealDto>> GetDealsAsync(
         int referenceWindowDays = 30,
         string? brandName = null,
+        bool onlyDiscounted = true,
         CancellationToken cancellationToken = default)
     {
         var referenceSince = DateTimeOffset.UtcNow.AddDays(-referenceWindowDays);
@@ -28,8 +29,12 @@ public class DealsQueryService(AppDbContext db)
                     .Max(ph => (decimal?)ph.Price),
             }).ToListAsync(cancellationToken);
 
-        return rows
-            .Where(r => r.Latest is not null && r.ReferencePrice is not null && r.Latest.Price < r.ReferencePrice)
+        var withPrices = rows.Where(r => r.Latest is not null && r.ReferencePrice is not null);
+
+        if (onlyDiscounted)
+            withPrices = withPrices.Where(r => r.Latest!.Price < r.ReferencePrice);
+
+        return withPrices
             .Select(r => new DealDto(
                 r.Product.Id,
                 r.Product.Name,
@@ -42,6 +47,7 @@ public class DealsQueryService(AppDbContext db)
                 Math.Round((r.ReferencePrice.Value - r.Latest.Price) / r.ReferencePrice.Value * 100, 1),
                 r.Latest.ScrapedAt))
             .OrderByDescending(d => d.DiscountPercent)
+            .ThenBy(d => d.ProductName)
             .ToList();
     }
 }

@@ -54,7 +54,7 @@ public class SsnScraper(HttpClient httpClient) : IBrandScraper
                         continue;
 
                     var imgNode = node.SelectSingleNode(".//img");
-                    var imageUrl = imgNode?.GetAttributeValue("data-src", null) ?? imgNode?.GetAttributeValue("src", null);
+                    var imageUrl = imgNode?.Attributes["data-src"]?.Value ?? imgNode?.Attributes["src"]?.Value;
 
                     products[url] = new ScrapedProduct(
                         Name: HtmlEntity.DeEntitize(linkNode.InnerText).Trim(),

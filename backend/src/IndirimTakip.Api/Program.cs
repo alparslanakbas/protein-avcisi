@@ -44,7 +44,14 @@ app.MapPost("/api/dev/ingest/{brand}", async (string brand, IEnumerable<IBrandSc
 app.MapGet("/api/deals", async (DealsQueryService deals, string? brand, int? days, CancellationToken ct) =>
 {
     var windowDays = days is null or <= 0 ? 30 : days.Value;
-    var result = await deals.GetDealsAsync(windowDays, brand, ct);
+    var result = await deals.GetDealsAsync(windowDays, brand, onlyDiscounted: true, ct);
+    return Results.Ok(result);
+});
+
+app.MapGet("/api/products", async (DealsQueryService deals, string? brand, int? days, CancellationToken ct) =>
+{
+    var windowDays = days is null or <= 0 ? 30 : days.Value;
+    var result = await deals.GetDealsAsync(windowDays, brand, onlyDiscounted: false, ct);
     return Results.Ok(result);
 });
 

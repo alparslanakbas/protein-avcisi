@@ -4,14 +4,39 @@
     <p class="subtitle">Spor takviyesi markalarındaki indirimler tek sayfada.</p>
   </header>
 
+  <div class="ad-banner-slot" aria-hidden="true">Reklam Alanı</div>
+
+  <div class="view-tabs">
+    <button
+      type="button"
+      class="view-tabs__btn"
+      [class.view-tabs__btn--active]="viewMode() === 'deals'"
+      (click)="setViewMode('deals')"
+    >
+      İndirimdekiler
+    </button>
+    <button
+      type="button"
+      class="view-tabs__btn"
+      [class.view-tabs__btn--active]="viewMode() === 'all'"
+      (click)="setViewMode('all')"
+    >
+      Tüm Ürünler
+    </button>
+  </div>
+
   @if (loading()) {
     <p class="status">Yükleniyor...</p>
   } @else if (error()) {
     <p class="status status--error">{{ error() }}</p>
   } @else if (deals().length === 0) {
     <p class="status">
-      Şu anda tespit edilmiş bir indirim yok. Fiyat geçmişi biriktikçe
-      buradaki liste otomatik dolacak.
+      @if (viewMode() === 'deals') {
+        Şu anda tespit edilmiş bir indirim yok. Fiyat geçmişi biriktikçe
+        buradaki liste otomatik dolacak.
+      } @else {
+        Henüz ürün taranmadı.
+      }
     </p>
   } @else {
     <div class="deals-grid">
@@ -20,13 +45,17 @@
           @if (deal.imageUrl) {
             <img class="deal-card__image" [src]="deal.imageUrl" [alt]="deal.productName" loading="lazy" />
           }
-          <span class="deal-card__badge">{{ discountBadge(deal) }}</span>
+          @if (deal.discountPercent > 0) {
+            <span class="deal-card__badge">{{ discountBadge(deal) }}</span>
+          }
           <div class="deal-card__body">
             <span class="deal-card__brand">{{ deal.brandName }}</span>
             <h2 class="deal-card__name">{{ deal.productName }}</h2>
             <div class="deal-card__prices">
               <span class="deal-card__price deal-card__price--current">{{ deal.currentPrice | number:'1.2-2' }} TL</span>
-              <span class="deal-card__price deal-card__price--reference">{{ deal.referencePrice | number:'1.2-2' }} TL</span>
+              @if (deal.discountPercent > 0) {
+                <span class="deal-card__price deal-card__price--reference">{{ deal.referencePrice | number:'1.2-2' }} TL</span>
+              }
             </div>
           </div>
         </a>
