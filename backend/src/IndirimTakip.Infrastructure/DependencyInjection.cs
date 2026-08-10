@@ -1,6 +1,7 @@
 using IndirimTakip.Core.Scraping;
 using IndirimTakip.Infrastructure.Deals;
 using IndirimTakip.Infrastructure.Scraping;
+using IndirimTakip.Infrastructure.Scraping.Hardline;
 using IndirimTakip.Infrastructure.Scraping.Hiq;
 using IndirimTakip.Infrastructure.Scraping.Ssn;
 using Microsoft.EntityFrameworkCore;
@@ -33,6 +34,13 @@ public static class DependencyInjection
             client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
         });
         services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<SsnScraper>());
+
+        services.AddHttpClient<HardlineScraper>(client =>
+        {
+            client.BaseAddress = new Uri("https://www.hardlinenutrition.com/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
+        });
+        services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<HardlineScraper>());
 
         services.AddScoped<ScrapeIngestionService>();
         services.AddScoped<DealsQueryService>();

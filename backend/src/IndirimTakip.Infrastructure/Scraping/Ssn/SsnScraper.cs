@@ -1,4 +1,3 @@
-using System.Globalization;
 using HtmlAgilityPack;
 using IndirimTakip.Core.Scraping;
 
@@ -61,18 +60,11 @@ public class SsnScraper(HttpClient httpClient) : IBrandScraper
                         Url: url,
                         ImageUrl: imageUrl,
                         Category: slug,
-                        Price: ParseTurkishPrice(priceNode.InnerText));
+                        Price: TurkishPriceParser.Parse(priceNode.InnerText));
                 }
             }
         }
 
         return products.Values.ToList();
-    }
-
-    // OpenCart fiyatları "2.899,00TL" formatında basıyor: "." binlik ayraç, "," ondalık ayraç.
-    private static decimal ParseTurkishPrice(string text)
-    {
-        var cleaned = text.Replace("TL", "").Trim().Replace(".", "").Replace(',', '.');
-        return decimal.Parse(cleaned, CultureInfo.InvariantCulture);
     }
 }
