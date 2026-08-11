@@ -11,7 +11,7 @@ import { ProductModal } from '../product-modal/product-modal';
 
 type ViewMode = 'deals' | 'all' | 'store';
 
-const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.platform);
+const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
 const PAGE_SIZE = 24;
 const SEARCH_DEBOUNCE_MS = 350;
 
