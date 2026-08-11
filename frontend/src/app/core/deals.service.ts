@@ -32,6 +32,10 @@ export class DealsService {
     return this.http.get<PagedResult<Deal>>(`${API_BASE_URL}/api/store-deals`, { params: this.buildParams(query) });
   }
 
+  getProductById(id: number): Observable<Deal> {
+    return this.http.get<Deal>(`${API_BASE_URL}/api/products/${id}`);
+  }
+
   getFilterOptions(): Observable<FilterOptions> {
     return this.http.get<FilterOptions>(`${API_BASE_URL}/api/filters`);
   }

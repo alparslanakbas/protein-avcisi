@@ -107,6 +107,46 @@ public class DealsQueryService(AppDbContext db)
         return new PagedResult<DealDto>(items, totalCount, page, pageSize);
     }
 
+    // Ürün detay sayfası (/urun/:id) için tekil ürün sorgusu — hem paylaşılan
+    // bir linkle direkt gelen ziyaretçide hem SSR'da (liste henüz yüklenmemiş
+    // olabilir) ürünü listeden bağımsız çekebilmek için gerekli.
+    public async Task<DealDto?> GetProductByIdAsync(
+        int productId, int referenceWindowDays = 30, CancellationToken cancellationToken = default)
+    {
+        var referenceSince = DateTimeOffset.UtcNow.AddDays(-referenceWindowDays);
+
+        var row = await (
+            from p in db.Products
+            join b in db.Brands on p.BrandId equals b.Id
+            where b.IsActive && p.Id == productId
+            select new
+            {
+                Product = p,
+                BrandName = b.Name,
+                Latest = p.PriceHistories
+                    .OrderByDescending(ph => ph.ScrapedAt)
+                    .Select(ph => new { ph.Price, ph.ScrapedAt, ph.StoreOldPrice })
+                    .FirstOrDefault(),
+                ReferencePrice = p.PriceHistories
+                    .Where(ph => ph.ScrapedAt >= referenceSince)
+                    .Max(ph => (decimal?)ph.Price),
+            }).FirstOrDefaultAsync(cancellationToken);
+
+        if (row?.Latest is null || row.ReferencePrice is null)
+            return null;
+
+        return new DealDto(
+            row.Product.Id, row.Product.Name, row.Product.Url, row.Product.ImageUrl,
+            row.Product.Category, row.Product.Size, row.Product.Flavor, row.Product.ServingSizeGrams,
+            row.BrandName, row.Latest.Price, row.ReferencePrice.Value,
+            Math.Round((row.ReferencePrice.Value - row.Latest.Price) / row.ReferencePrice.Value * 100, 1),
+            row.Latest.StoreOldPrice,
+            row.Latest.StoreOldPrice is decimal storeOld && storeOld > 0
+                ? Math.Round((storeOld - row.Latest.Price) / storeOld * 100, 1)
+                : null,
+            row.Latest.ScrapedAt);
+    }
+
     public async Task<FilterOptionsDto> GetFilterOptionsAsync(CancellationToken cancellationToken = default)
     {
         var brands = await db.Brands

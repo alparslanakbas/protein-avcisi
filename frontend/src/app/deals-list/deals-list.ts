@@ -1,6 +1,8 @@
 import { DecimalPipe } from '@angular/common';
-import { Component, HostListener, OnInit, inject, signal, viewChild } from '@angular/core';
+import { Component, DestroyRef, HostListener, OnInit, inject, signal, viewChild } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 
 import { Coupon } from '../core/coupon.model';
 import { CouponsService } from '../core/coupons.service';
@@ -23,6 +25,9 @@ const SEARCH_DEBOUNCE_MS = 350;
 export class DealsList implements OnInit {
   private readonly dealsService = inject(DealsService);
   private readonly couponsService = inject(CouponsService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
   protected readonly theme = inject(ThemeService);
   private readonly searchInput = viewChild<{ nativeElement: HTMLInputElement }>('searchInput');
   private searchDebounceHandle: ReturnType<typeof setTimeout> | null = null;
@@ -59,6 +64,29 @@ export class DealsList implements OnInit {
     });
     this.couponsService.getCoupons().subscribe((coupons) => this.coupons.set(coupons));
     this.load();
+
+    // Ürün modalı artık URL'e bağlı (/urun/:id) — bileşen '' ve 'urun/:id'
+    // arasında yeniden kurulmadan yaşadığı için (bkz. DealsRouteReuseStrategy)
+    // parametre değişikliklerine burada tek seferlik abone oluyoruz.
+    this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      const idParam = params.get('id');
+      if (!idParam) {
+        this.selectedDeal.set(null);
+        return;
+      }
+
+      const id = Number(idParam);
+      const alreadyLoaded = this.deals().find((d) => d.productId === id);
+      if (alreadyLoaded) {
+        this.selectedDeal.set(alreadyLoaded);
+        return;
+      }
+
+      this.dealsService.getProductById(id).subscribe({
+        next: (deal) => this.selectedDeal.set(deal),
+        error: () => this.router.navigate(['/']),
+      });
+    });
   }
 
   protected setViewMode(mode: ViewMode): void {
@@ -186,11 +214,11 @@ export class DealsList implements OnInit {
   }
 
   protected openDeal(deal: Deal): void {
-    this.selectedDeal.set(deal);
+    this.router.navigate(['/urun', deal.productId]);
   }
 
   protected closeDeal(): void {
-    this.selectedDeal.set(null);
+    this.router.navigate(['/']);
   }
 
   // Gerçek besin değeri verisi olan ürünlerde (şimdilik sadece HIQ) servis

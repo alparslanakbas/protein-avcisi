@@ -85,6 +85,12 @@ app.MapGet("/api/filters", async (DealsQueryService deals, CancellationToken ct)
     return Results.Ok(result);
 });
 
+app.MapGet("/api/products/{id:int}", async (int id, DealsQueryService deals, CancellationToken ct) =>
+{
+    var result = await deals.GetProductByIdAsync(id, cancellationToken: ct);
+    return result is null ? Results.NotFound() : Results.Ok(result);
+});
+
 app.MapGet("/api/coupons", async (CouponService coupons, CancellationToken ct) =>
 {
     var result = await coupons.GetActiveCouponsAsync(ct);

@@ -1,9 +1,10 @@
 import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { RouteReuseStrategy, provideRouter } from '@angular/router';
 import { provideHttpClient, withFetch } from '@angular/common/http';
+import { provideClientHydration } from '@angular/platform-browser';
 
 import { routes } from './app.routes';
-import { provideClientHydration } from '@angular/platform-browser';
+import { DealsRouteReuseStrategy } from './core/deals-route-reuse.strategy';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -11,5 +12,6 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideHttpClient(withFetch()),
     provideClientHydration(),
+    { provide: RouteReuseStrategy, useClass: DealsRouteReuseStrategy },
   ],
 };
