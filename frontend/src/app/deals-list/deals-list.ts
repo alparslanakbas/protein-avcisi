@@ -1,4 +1,4 @@
-import { DecimalPipe } from '@angular/common';
+import { DOCUMENT, DecimalPipe } from '@angular/common';
 import { Component, DestroyRef, HostListener, OnInit, effect, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
@@ -35,9 +35,11 @@ export class DealsList implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly titleService = inject(Title);
   private readonly metaService = inject(Meta);
+  private readonly document = inject(DOCUMENT);
   protected readonly theme = inject(ThemeService);
   private readonly searchInput = viewChild<{ nativeElement: HTMLInputElement }>('searchInput');
   private searchDebounceHandle: ReturnType<typeof setTimeout> | null = null;
+  private structuredDataEl: HTMLScriptElement | null = null;
 
   protected readonly shortcutLabel = isMac ? '⌘K' : 'Ctrl+K';
 
@@ -78,6 +80,8 @@ export class DealsList implements OnInit {
         this.metaService.updateTag({ property: 'og:description', content: DEFAULT_DESCRIPTION });
         this.metaService.updateTag({ property: 'og:type', content: 'website' });
         this.metaService.removeTag('property="og:image"');
+        this.structuredDataEl?.remove();
+        this.structuredDataEl = null;
         return;
       }
 
@@ -98,6 +102,33 @@ export class DealsList implements OnInit {
       } else {
         this.metaService.removeTag('property="og:image"');
       }
+
+      // schema.org Product/Offer — Google'ın arama sonucunda fiyat gösterme
+      // ihtimali için. "availability" bilinçli olarak yok: 4 markanın
+      // hepsinde güvenilir stok bilgisi çekmiyoruz (SSN/Hardline stok
+      // durumunu hiç kontrol etmiyor), olmayan veriyi "InStock" diye
+      // iddia etmektense alanı hiç eklememeyi tercih ettik.
+      const jsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'Product',
+        name: deal.productName,
+        sku: String(deal.productId),
+        ...(deal.imageUrl ? { image: deal.imageUrl } : {}),
+        brand: { '@type': 'Brand', name: deal.brandName },
+        offers: {
+          '@type': 'Offer',
+          url: `${this.document.location.origin}/urun/${deal.productId}`,
+          priceCurrency: 'TRY',
+          price: deal.currentPrice.toFixed(2),
+        },
+      };
+
+      if (!this.structuredDataEl) {
+        this.structuredDataEl = this.document.createElement('script');
+        this.structuredDataEl.type = 'application/ld+json';
+        this.document.head.appendChild(this.structuredDataEl);
+      }
+      this.structuredDataEl.textContent = JSON.stringify(jsonLd);
     });
   }
 
