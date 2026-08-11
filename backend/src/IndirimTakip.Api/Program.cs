@@ -91,6 +91,14 @@ app.MapGet("/api/products/{id:int}", async (int id, DealsQueryService deals, Can
     return result is null ? Results.NotFound() : Results.Ok(result);
 });
 
+// sitemap.xml üretimi için — asıl XML frontend'in SSR sunucusunda kuruluyor
+// (kendi domain'ini biliyor), burası sadece ham veriyi veriyor.
+app.MapGet("/api/products/sitemap", async (DealsQueryService deals, CancellationToken ct) =>
+{
+    var result = await deals.GetSitemapEntriesAsync(ct);
+    return Results.Ok(result);
+});
+
 app.MapGet("/api/coupons", async (CouponService coupons, CancellationToken ct) =>
 {
     var result = await coupons.GetActiveCouponsAsync(ct);

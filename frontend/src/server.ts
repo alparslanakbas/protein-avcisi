@@ -7,22 +7,56 @@ import {
 import express from 'express';
 import { join } from 'node:path';
 
+import { API_BASE_URL } from './app/core/api.config';
+
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
 const app = express();
 const angularApp = new AngularNodeAppEngine();
 
-/**
- * Example Express Rest API endpoints can be defined here.
- * Uncomment and define endpoints as necessary.
- *
- * Example:
- * ```ts
- * app.get('/api/{*splat}', (req, res) => {
- *   // Handle API request
- * });
- * ```
- */
+interface SitemapEntry {
+  id: number;
+  lastScrapedAt: string;
+}
+
+// sitemap.xml ürün sayısına göre büyüyor, statik dosya olamaz — ham veriyi
+// backend'den (/api/products/sitemap) çekip burada XML'e çeviriyoruz. Bu
+// sunucu zaten kendi public origin'ini (req üzerinden) bildiği için domain'i
+// ayrıca config'lemeye gerek yok.
+app.get('/sitemap.xml', async (req, res) => {
+  const origin = `${req.protocol}://${req.get('host')}`;
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/products/sitemap`);
+    const products = (await response.json()) as SitemapEntry[];
+
+    const productUrls = products
+      .map(
+        (p) =>
+          `<url><loc>${origin}/urun/${p.id}</loc><lastmod>${new Date(p.lastScrapedAt).toISOString()}</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>`,
+      )
+      .join('');
+
+    const xml =
+      `<?xml version="1.0" encoding="UTF-8"?>` +
+      `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">` +
+      `<url><loc>${origin}/</loc><changefreq>hourly</changefreq><priority>1.0</priority></url>` +
+      productUrls +
+      `</urlset>`;
+
+    res.set('Content-Type', 'application/xml');
+    res.send(xml);
+  } catch (error) {
+    console.error('sitemap.xml üretilemedi:', error);
+    res.status(502).send('Sitemap şu anda üretilemiyor.');
+  }
+});
+
+app.get('/robots.txt', (req, res) => {
+  const origin = `${req.protocol}://${req.get('host')}`;
+  res.set('Content-Type', 'text/plain');
+  res.send(`User-agent: *\nAllow: /\n\nSitemap: ${origin}/sitemap.xml\n`);
+});
 
 /**
  * Serve static files from /browser
