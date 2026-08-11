@@ -7,14 +7,15 @@ import { PriceHistoryService } from '../core/price-history.service';
 interface TimeRangeOption {
   label: string;
   days: number;
+  periodName: string;
 }
 
 const TIME_RANGES: TimeRangeOption[] = [
-  { label: '7G', days: 7 },
-  { label: '15G', days: 15 },
-  { label: '1A', days: 30 },
-  { label: '6A', days: 180 },
-  { label: '1Y', days: 365 },
+  { label: '7G', days: 7, periodName: 'son 7 günün' },
+  { label: '15G', days: 15, periodName: 'son 15 günün' },
+  { label: '1A', days: 30, periodName: 'son 1 ayın' },
+  { label: '6A', days: 180, periodName: 'son 6 ayın' },
+  { label: '1Y', days: 365, periodName: 'son 1 yılın' },
 ];
 
 const CHART_WIDTH = 600;
@@ -51,7 +52,7 @@ export class ProductModal {
     if (max <= 0 || current >= max) return null;
     const diff = max - current;
     const percent = Math.round((diff / max) * 100);
-    return { diff, percent };
+    return { diff, percent, periodName: this.selectedRange().periodName };
   });
 
   constructor() {

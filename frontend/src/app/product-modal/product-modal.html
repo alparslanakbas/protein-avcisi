@@ -83,7 +83,7 @@
 
         @if (savingsText(); as savings) {
           <p class="mt-3 rounded-lg bg-accent-50 px-3 py-2 text-center text-xs font-medium text-accent-700 dark:bg-accent-950/30 dark:text-accent-400">
-            Şu anki fiyat, seçili dönemin en yüksek fiyatına göre {{ savings.diff | number:'1.2-2' }} TL (%{{ savings.percent }}) daha ucuz.
+            Şu anki fiyat {{ savings.periodName }} en yüksek fiyatına göre {{ savings.diff | number:'1.2-2' }} TL (%{{ savings.percent }}) daha ucuz.
           </p>
         }
       }
