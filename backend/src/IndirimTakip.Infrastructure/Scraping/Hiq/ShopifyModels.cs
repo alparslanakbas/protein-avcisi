@@ -19,6 +19,9 @@ internal sealed class ShopifyProduct
     [JsonPropertyName("product_type")]
     public string? ProductType { get; set; }
 
+    [JsonPropertyName("body_html")]
+    public string? BodyHtml { get; set; }
+
     [JsonPropertyName("images")]
     public List<ShopifyImage> Images { get; set; } = [];
 

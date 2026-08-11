@@ -6,6 +6,7 @@ export interface Deal {
   category: string | null;
   size: string | null;
   flavor: string | null;
+  servingSizeGrams: number | null;
   brandName: string;
   currentPrice: number;
   referencePrice: number;

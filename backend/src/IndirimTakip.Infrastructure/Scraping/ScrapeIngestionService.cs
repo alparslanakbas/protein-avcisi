@@ -41,6 +41,7 @@ public class ScrapeIngestionService(AppDbContext db)
                     Category = category,
                     Size = size,
                     Flavor = flavor,
+                    ServingSizeGrams = scraped.ServingSizeGrams,
                 };
                 db.Products.Add(product);
             }
@@ -51,6 +52,7 @@ public class ScrapeIngestionService(AppDbContext db)
                 product.Category = category;
                 product.Size = size;
                 product.Flavor = flavor;
+                product.ServingSizeGrams = scraped.ServingSizeGrams;
             }
 
             product.PriceHistories.Add(new PriceHistory

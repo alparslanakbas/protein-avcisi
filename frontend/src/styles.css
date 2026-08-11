@@ -20,6 +20,7 @@
   --color-brand-700: #047857;
   --color-brand-800: #065f46;
   --color-brand-900: #064e3b;
+  --color-brand-950: #022c22;
 
   /* Vurgu rengi: indirim rozetleri / CTA'lar için sıcak turuncu — dikkat
      çekiyor ama saf kırmızı kadar "alarm" hissi vermiyor. */
@@ -29,6 +30,7 @@
   --color-accent-500: #f97316;
   --color-accent-600: #ea580c;
   --color-accent-700: #c2410c;
+  --color-accent-950: #431407;
 }
 
 body {

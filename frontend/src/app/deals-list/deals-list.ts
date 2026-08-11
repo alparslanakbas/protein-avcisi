@@ -1,5 +1,5 @@
 import { DecimalPipe } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, HostListener, OnInit, computed, inject, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { Deal } from '../core/deal.model';
@@ -9,6 +9,8 @@ import { ProductModal } from '../product-modal/product-modal';
 
 type ViewMode = 'deals' | 'all';
 
+const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.platform);
+
 @Component({
   selector: 'app-deals-list',
   imports: [DecimalPipe, FormsModule, ProductModal],
@@ -17,6 +19,9 @@ type ViewMode = 'deals' | 'all';
 export class DealsList implements OnInit {
   private readonly dealsService = inject(DealsService);
   protected readonly theme = inject(ThemeService);
+  private readonly searchInput = viewChild<{ nativeElement: HTMLInputElement }>('searchInput');
+
+  protected readonly shortcutLabel = isMac ? '⌘K' : 'Ctrl+K';
 
   protected readonly deals = signal<Deal[]>([]);
   protected readonly loading = signal(true);
@@ -159,5 +164,33 @@ export class DealsList implements OnInit {
 
   protected closeDeal(): void {
     this.selectedDeal.set(null);
+  }
+
+  // Gerçek besin değeri verisi olan ürünlerde (şimdilik sadece HIQ) servis
+  // başı fiyat gösteriyoruz. Sadece paket boyutu gram cinsindeyse hesaplıyoruz
+  // — "adet/kapsül" gibi birimlerde gram varsayımı yanlış olur, o yüzden
+  // uydurmak yerine null dönüp göstermiyoruz.
+  protected pricePerServing(deal: Deal): number | null {
+    if (!deal.servingSizeGrams || deal.servingSizeGrams <= 0 || !deal.size) return null;
+
+    const match = /^(\d+(?:[.,]\d+)?)\s*Gr$/i.exec(deal.size.trim());
+    if (!match) return null;
+
+    const packageGrams = Number(match[1].replace(',', '.'));
+    if (!packageGrams) return null;
+
+    const servings = packageGrams / deal.servingSizeGrams;
+    if (!servings) return null;
+
+    return deal.currentPrice / servings;
+  }
+
+  @HostListener('document:keydown', ['$event'])
+  protected onGlobalKeydown(event: KeyboardEvent): void {
+    const isShortcut = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k';
+    if (!isShortcut) return;
+
+    event.preventDefault();
+    this.searchInput()?.nativeElement.focus();
   }
 }

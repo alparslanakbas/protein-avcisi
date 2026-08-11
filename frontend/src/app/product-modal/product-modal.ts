@@ -23,7 +23,8 @@ const CHART_HEIGHT = 220;
 const CHART_PADDING_Y = 16;
 const AXIS_LABEL_COUNT = 5;
 
-const dateLabelFormatter = new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'short' });
+const axisDateFormatter = new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'short' });
+const tooltipDateFormatter = new Intl.DateTimeFormat('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
 @Component({
   selector: 'app-product-modal',
@@ -50,11 +51,35 @@ export class ProductModal {
   protected readonly minPrice = signal(0);
   protected readonly maxPrice = signal(0);
   protected readonly currentPrice = signal(0);
+  protected readonly hoverIndex = signal<number | null>(null);
 
-  protected readonly chartAreaPath = computed(() => this.buildAreaPath(this.points(), this.minPrice(), this.maxPrice()));
-  protected readonly chartLinePath = computed(() => this.buildLinePath(this.points(), this.minPrice(), this.maxPrice()));
-
+  protected readonly coordinates = computed(() => this.toCoordinates(this.points(), this.minPrice(), this.maxPrice()));
+  protected readonly chartAreaPath = computed(() => this.buildAreaPath(this.coordinates()));
+  protected readonly chartLinePath = computed(() => this.buildLinePath(this.coordinates()));
   protected readonly xAxisLabels = computed(() => this.buildXAxisLabels(this.points()));
+
+  protected readonly hoverInfo = computed(() => {
+    const idx = this.hoverIndex();
+    if (idx === null) return null;
+    const coords = this.coordinates();
+    const pts = this.points();
+    if (idx >= coords.length || idx >= pts.length) return null;
+
+    const [x, y] = coords[idx];
+    // Tooltip nokta ile birlikte kayıyor; grafiğin kenarlarına çok yakınken
+    // ortalı hizalama tooltip'in yarısını taşırıp kırpılmasına yol açıyordu
+    // (modal overflow-y-auto olduğu için overflow-x da örtük kısıtlanıyor).
+    // Kenara yakınsa hizalamayı o yöne kaydırıyoruz.
+    const align: 'left' | 'center' | 'right' = x < CHART_WIDTH * 0.12 ? 'left' : x > CHART_WIDTH * 0.88 ? 'right' : 'center';
+
+    return {
+      x,
+      y,
+      align,
+      price: pts[idx].price,
+      dateLabel: tooltipDateFormatter.format(new Date(pts[idx].scrapedAt)),
+    };
+  });
 
   protected readonly savingsText = computed(() => {
     const max = this.maxPrice();
@@ -86,6 +111,31 @@ export class ProductModal {
     return this.priceHistoryService.goToStoreUrl(this.deal().productId);
   }
 
+  protected onChartMouseMove(event: MouseEvent): void {
+    const coords = this.coordinates();
+    if (coords.length === 0) return;
+
+    const svg = event.currentTarget as SVGSVGElement;
+    const rect = svg.getBoundingClientRect();
+    const scaleX = CHART_WIDTH / rect.width;
+    const svgX = (event.clientX - rect.left) * scaleX;
+
+    let nearestIndex = 0;
+    let nearestDist = Infinity;
+    coords.forEach(([x], i) => {
+      const dist = Math.abs(x - svgX);
+      if (dist < nearestDist) {
+        nearestDist = dist;
+        nearestIndex = i;
+      }
+    });
+    this.hoverIndex.set(nearestIndex);
+  }
+
+  protected onChartMouseLeave(): void {
+    this.hoverIndex.set(null);
+  }
+
   private load(productId: number, days: number): void {
     this.loading.set(true);
     this.error.set(null);
@@ -106,8 +156,7 @@ export class ProductModal {
     });
   }
 
-  private buildLinePath(points: { price: number; scrapedAt: string }[], min: number, max: number): string {
-    const coords = this.toCoordinates(points, min, max);
+  private buildLinePath(coords: [number, number][]): string {
     if (coords.length === 0) return '';
     if (coords.length === 1) {
       const [[x, y]] = coords;
@@ -116,8 +165,7 @@ export class ProductModal {
     return coords.map(([x, y], i) => `${i === 0 ? 'M' : 'L'} ${x} ${y}`).join(' ');
   }
 
-  private buildAreaPath(points: { price: number; scrapedAt: string }[], min: number, max: number): string {
-    const coords = this.toCoordinates(points, min, max);
+  private buildAreaPath(coords: [number, number][]): string {
     if (coords.length === 0) return '';
     const first = coords[0];
     const last = coords[coords.length - 1];
@@ -133,13 +181,13 @@ export class ProductModal {
     const maxTime = Math.max(...times);
 
     if (maxTime === minTime) {
-      return [{ x: CHART_WIDTH / 2, label: dateLabelFormatter.format(new Date(minTime)) }];
+      return [{ x: CHART_WIDTH / 2, label: axisDateFormatter.format(new Date(minTime)) }];
     }
 
     return Array.from({ length: AXIS_LABEL_COUNT }, (_, i) => {
       const fraction = i / (AXIS_LABEL_COUNT - 1);
       const t = minTime + (maxTime - minTime) * fraction;
-      return { x: fraction * CHART_WIDTH, label: dateLabelFormatter.format(new Date(t)) };
+      return { x: fraction * CHART_WIDTH, label: axisDateFormatter.format(new Date(t)) };
     });
   }
 

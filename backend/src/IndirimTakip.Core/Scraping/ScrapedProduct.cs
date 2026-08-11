@@ -5,4 +5,8 @@ public record ScrapedProduct(
     string Url,
     string? ImageUrl,
     string? Category,
-    decimal Price);
+    decimal Price,
+    // Gerçek besin değeri tablosundan gelen porsiyon büyüklüğü (gram). Sadece
+    // marka bunu güvenilir şekilde sağlıyorsa doldurulur (şimdilik HIQ) —
+    // yoksa uydurmak yerine boş bırakılır.
+    decimal? ServingSizeGrams = null);

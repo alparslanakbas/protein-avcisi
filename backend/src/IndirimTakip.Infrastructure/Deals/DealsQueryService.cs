@@ -43,6 +43,7 @@ public class DealsQueryService(AppDbContext db)
                 r.Product.Category,
                 r.Product.Size,
                 r.Product.Flavor,
+                r.Product.ServingSizeGrams,
                 r.BrandName,
                 r.Latest!.Price,
                 r.ReferencePrice!.Value,

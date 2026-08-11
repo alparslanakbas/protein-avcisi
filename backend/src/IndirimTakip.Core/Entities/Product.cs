@@ -14,5 +14,9 @@ public class Product
     public string? Flavor { get; set; }
     public int ClickCount { get; set; }
 
+    // Gerçek besin değeri tablosundan gelen porsiyon büyüklüğü (gram).
+    // Sadece markanın verisi güvenilir şekilde sağladığı ürünlerde dolu.
+    public decimal? ServingSizeGrams { get; set; }
+
     public ICollection<PriceHistory> PriceHistories { get; set; } = new List<PriceHistory>();
 }

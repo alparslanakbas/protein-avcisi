@@ -8,6 +8,7 @@ public record DealDto(
     string? Category,
     string? Size,
     string? Flavor,
+    decimal? ServingSizeGrams,
     string BrandName,
     decimal CurrentPrice,
     decimal ReferencePrice,
