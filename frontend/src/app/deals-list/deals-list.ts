@@ -1,15 +1,17 @@
 import { DecimalPipe } from '@angular/common';
-import { Component, HostListener, OnInit, computed, inject, signal, viewChild } from '@angular/core';
+import { Component, HostListener, OnInit, inject, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { Deal } from '../core/deal.model';
-import { DealsService } from '../core/deals.service';
+import { DealsQuery, DealsService } from '../core/deals.service';
 import { ThemePreference, ThemeService } from '../core/theme.service';
 import { ProductModal } from '../product-modal/product-modal';
 
 type ViewMode = 'deals' | 'all';
 
 const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.platform);
+const PAGE_SIZE = 24;
+const SEARCH_DEBOUNCE_MS = 350;
 
 @Component({
   selector: 'app-deals-list',
@@ -20,6 +22,7 @@ export class DealsList implements OnInit {
   private readonly dealsService = inject(DealsService);
   protected readonly theme = inject(ThemeService);
   private readonly searchInput = viewChild<{ nativeElement: HTMLInputElement }>('searchInput');
+  private searchDebounceHandle: ReturnType<typeof setTimeout> | null = null;
 
   protected readonly shortcutLabel = isMac ? '⌘K' : 'Ctrl+K';
 
@@ -29,83 +32,71 @@ export class DealsList implements OnInit {
   protected readonly viewMode = signal<ViewMode>('deals');
   protected readonly selectedDeal = signal<Deal | null>(null);
 
+  protected readonly totalCount = signal(0);
+  protected readonly totalPages = signal(0);
+  protected readonly currentPage = signal(1);
+
   protected readonly searchQuery = signal('');
   protected readonly selectedBrands = signal<Set<string>>(new Set());
   protected readonly selectedCategories = signal<Set<string>>(new Set());
   protected readonly priceMin = signal<number | null>(null);
   protected readonly priceMax = signal<number | null>(null);
 
-  protected readonly availableBrands = computed(() =>
-    [...new Set(this.deals().map((d) => d.brandName))].sort((a, b) => a.localeCompare(b, 'tr')),
-  );
+  protected readonly availableBrands = signal<string[]>([]);
+  protected readonly availableCategories = signal<string[]>([]);
 
-  protected readonly availableCategories = computed(() =>
-    [...new Set(this.deals().map((d) => d.category).filter((c): c is string => !!c))].sort((a, b) =>
-      a.localeCompare(b, 'tr'),
-    ),
-  );
-
-  protected readonly filteredDeals = computed(() => {
-    const query = this.searchQuery().trim().toLocaleLowerCase('tr');
-    const brands = this.selectedBrands();
-    const categories = this.selectedCategories();
-    const min = this.priceMin();
-    const max = this.priceMax();
-
-    return this.deals().filter((deal) => {
-      if (query) {
-        // Kategori "protein-tozu" gibi tire'li geliyor; "protein tozu" araması da eşleşsin diye normalize ediyoruz.
-        const haystack = [deal.productName, deal.brandName, deal.category, deal.size, deal.flavor]
-          .filter(Boolean)
-          .join(' ')
-          .replace(/-/g, ' ')
-          .toLocaleLowerCase('tr');
-        if (!haystack.includes(query)) return false;
-      }
-      if (brands.size > 0 && !brands.has(deal.brandName)) return false;
-      if (categories.size > 0 && (!deal.category || !categories.has(deal.category))) return false;
-      if (min !== null && deal.currentPrice < min) return false;
-      if (max !== null && deal.currentPrice > max) return false;
-      return true;
-    });
-  });
-
-  protected readonly hasActiveFilters = computed(
-    () =>
-      this.selectedBrands().size > 0 ||
-      this.selectedCategories().size > 0 ||
-      this.priceMin() !== null ||
-      this.priceMax() !== null,
-  );
+  protected readonly hasActiveFilters = signal(false);
 
   ngOnInit(): void {
+    this.dealsService.getFilterOptions().subscribe((options) => {
+      this.availableBrands.set(options.brands);
+      this.availableCategories.set(options.categories);
+    });
     this.load();
   }
 
   protected setViewMode(mode: ViewMode): void {
     if (this.viewMode() === mode) return;
     this.viewMode.set(mode);
+    this.currentPage.set(1);
     this.load();
+  }
+
+  protected onSearchChange(value: string): void {
+    this.searchQuery.set(value);
+    if (this.searchDebounceHandle) clearTimeout(this.searchDebounceHandle);
+    this.searchDebounceHandle = setTimeout(() => {
+      this.currentPage.set(1);
+      this.load();
+    }, SEARCH_DEBOUNCE_MS);
   }
 
   protected toggleBrand(brand: string): void {
     const current = new Set(this.selectedBrands());
-    if (current.has(brand)) {
-      current.delete(brand);
-    } else {
-      current.add(brand);
-    }
+    current.has(brand) ? current.delete(brand) : current.add(brand);
     this.selectedBrands.set(current);
+    this.currentPage.set(1);
+    this.load();
   }
 
   protected toggleCategory(category: string): void {
     const current = new Set(this.selectedCategories());
-    if (current.has(category)) {
-      current.delete(category);
-    } else {
-      current.add(category);
-    }
+    current.has(category) ? current.delete(category) : current.add(category);
     this.selectedCategories.set(current);
+    this.currentPage.set(1);
+    this.load();
+  }
+
+  protected onPriceMinChange(value: number | null): void {
+    this.priceMin.set(value);
+    this.currentPage.set(1);
+    this.load();
+  }
+
+  protected onPriceMaxChange(value: number | null): void {
+    this.priceMax.set(value);
+    this.currentPage.set(1);
+    this.load();
   }
 
   protected clearFilters(): void {
@@ -113,27 +104,48 @@ export class DealsList implements OnInit {
     this.selectedCategories.set(new Set());
     this.priceMin.set(null);
     this.priceMax.set(null);
+    this.searchQuery.set('');
+    this.currentPage.set(1);
+    this.load();
   }
 
-  protected onPriceMinChange(value: number | null): void {
-    this.priceMin.set(value);
-  }
-
-  protected onPriceMaxChange(value: number | null): void {
-    this.priceMax.set(value);
+  protected goToPage(page: number): void {
+    if (page < 1 || page > this.totalPages() || page === this.currentPage()) return;
+    this.currentPage.set(page);
+    this.load();
+    // Sayfa değişince en üste dön, kullanıcı grid'in ortasında kalmasın.
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   private load(): void {
     this.loading.set(true);
     this.error.set(null);
 
-    const request$ = this.viewMode() === 'deals'
-      ? this.dealsService.getDeals()
-      : this.dealsService.getAllProducts();
+    const query: DealsQuery = {
+      brands: [...this.selectedBrands()],
+      categories: [...this.selectedCategories()],
+      search: this.searchQuery().trim() || undefined,
+      minPrice: this.priceMin(),
+      maxPrice: this.priceMax(),
+      page: this.currentPage(),
+      pageSize: PAGE_SIZE,
+    };
+
+    this.hasActiveFilters.set(
+      query.brands!.length > 0 ||
+        query.categories!.length > 0 ||
+        this.priceMin() !== null ||
+        this.priceMax() !== null ||
+        !!query.search,
+    );
+
+    const request$ = this.viewMode() === 'deals' ? this.dealsService.getDeals(query) : this.dealsService.getAllProducts(query);
 
     request$.subscribe({
-      next: (deals) => {
-        this.deals.set(deals);
+      next: (result) => {
+        this.deals.set(result.items);
+        this.totalCount.set(result.totalCount);
+        this.totalPages.set(result.totalPages);
         this.loading.set(false);
       },
       error: () => {

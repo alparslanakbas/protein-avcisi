@@ -18,7 +18,7 @@
           placeholder="Ürün veya marka ara..."
           #searchInput
           [ngModel]="searchQuery()"
-          (ngModelChange)="searchQuery.set($event)"
+          (ngModelChange)="onSearchChange($event)"
           class="w-full rounded-full border border-stone-200 bg-stone-50 py-2 pl-9 pr-14 text-sm text-stone-800 placeholder:text-stone-400 focus:border-brand-400 focus:bg-white focus:outline-none dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100 dark:placeholder:text-stone-500 dark:focus:bg-stone-900"
         />
         <kbd class="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 rounded border border-stone-300 bg-white px-1.5 py-0.5 text-[10px] font-medium text-stone-400 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-500">
@@ -123,7 +123,7 @@
       </button>
     </div>
 
-    @if (!loading() && !error() && deals().length > 0) {
+    @if (availableBrands().length > 0) {
       <div class="mb-8 flex flex-wrap items-center justify-center gap-2">
         @for (brand of availableBrands(); track brand) {
           <button
@@ -193,22 +193,20 @@
       </div>
     } @else if (deals().length === 0) {
       <div class="mx-auto max-w-md rounded-xl border border-stone-200 bg-white px-6 py-10 text-center text-stone-500 dark:border-stone-800 dark:bg-stone-900 dark:text-stone-400">
-        @if (viewMode() === 'deals') {
+        @if (hasActiveFilters()) {
+          Aramanla/filtrelerinle eşleşen ürün bulunamadı.
+          <button type="button" class="mt-2 block w-full text-sm font-semibold text-brand-600 dark:text-brand-400" (click)="clearFilters()">
+            Filtreleri temizle
+          </button>
+        } @else if (viewMode() === 'deals') {
           Şu anda tespit edilmiş bir indirim yok. Fiyat geçmişi biriktikçe buradaki liste otomatik dolacak.
         } @else {
           Henüz ürün taranmadı.
         }
       </div>
-    } @else if (filteredDeals().length === 0) {
-      <div class="mx-auto max-w-md rounded-xl border border-stone-200 bg-white px-6 py-10 text-center text-stone-500 dark:border-stone-800 dark:bg-stone-900 dark:text-stone-400">
-        Aramanla/filtrelerinle eşleşen ürün bulunamadı.
-        <button type="button" class="mt-2 block w-full text-sm font-semibold text-brand-600 dark:text-brand-400" (click)="clearFilters(); searchQuery.set('')">
-          Filtreleri temizle
-        </button>
-      </div>
     } @else {
       <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-        @for (deal of filteredDeals(); track deal.productId) {
+        @for (deal of deals(); track deal.productId) {
           <button
             type="button"
             (click)="openDeal(deal)"
@@ -255,6 +253,37 @@
           </button>
         }
       </div>
+
+      @if (totalPages() > 1) {
+        <div class="mt-10 flex items-center justify-center gap-3">
+          <button
+            type="button"
+            class="flex h-9 w-9 items-center justify-center rounded-full border border-stone-200 text-stone-500 transition-colors enabled:hover:border-brand-300 enabled:hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-stone-700 dark:text-stone-400 dark:enabled:hover:border-brand-500 dark:enabled:hover:text-brand-400"
+            [disabled]="currentPage() === 1"
+            (click)="goToPage(currentPage() - 1)"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 18l-6-6 6-6" />
+            </svg>
+          </button>
+
+          <span class="text-sm font-medium text-stone-600 dark:text-stone-300">
+            Sayfa {{ currentPage() }} / {{ totalPages() }}
+            <span class="text-stone-400 dark:text-stone-500">({{ totalCount() }} ürün)</span>
+          </span>
+
+          <button
+            type="button"
+            class="flex h-9 w-9 items-center justify-center rounded-full border border-stone-200 text-stone-500 transition-colors enabled:hover:border-brand-300 enabled:hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-stone-700 dark:text-stone-400 dark:enabled:hover:border-brand-500 dark:enabled:hover:text-brand-400"
+            [disabled]="currentPage() === totalPages()"
+            (click)="goToPage(currentPage() + 1)"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 18l6-6-6-6" />
+            </svg>
+          </button>
+        </div>
+      }
     }
 
     @if (selectedDeal(); as deal) {

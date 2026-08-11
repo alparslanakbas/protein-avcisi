@@ -41,17 +41,31 @@ app.MapPost("/api/dev/ingest/{brand}", async (string brand, IEnumerable<IBrandSc
     return Results.Ok(new { brand = scraper.BrandName, scrapedCount = count });
 });
 
-app.MapGet("/api/deals", async (DealsQueryService deals, string? brand, int? days, CancellationToken ct) =>
+app.MapGet("/api/deals", async (
+    DealsQueryService deals, string[]? brands, string[]? categories, string? search,
+    decimal? minPrice, decimal? maxPrice, int? days, int? page, int? pageSize, CancellationToken ct) =>
 {
     var windowDays = days is null or <= 0 ? 30 : days.Value;
-    var result = await deals.GetDealsAsync(windowDays, brand, onlyDiscounted: true, ct);
+    var result = await deals.GetDealsAsync(
+        windowDays, brands, categories, search, minPrice, maxPrice,
+        onlyDiscounted: true, page is null or <= 0 ? 1 : page.Value, pageSize is null or <= 0 ? 24 : pageSize.Value, ct);
     return Results.Ok(result);
 });
 
-app.MapGet("/api/products", async (DealsQueryService deals, string? brand, int? days, CancellationToken ct) =>
+app.MapGet("/api/products", async (
+    DealsQueryService deals, string[]? brands, string[]? categories, string? search,
+    decimal? minPrice, decimal? maxPrice, int? days, int? page, int? pageSize, CancellationToken ct) =>
 {
     var windowDays = days is null or <= 0 ? 30 : days.Value;
-    var result = await deals.GetDealsAsync(windowDays, brand, onlyDiscounted: false, ct);
+    var result = await deals.GetDealsAsync(
+        windowDays, brands, categories, search, minPrice, maxPrice,
+        onlyDiscounted: false, page is null or <= 0 ? 1 : page.Value, pageSize is null or <= 0 ? 24 : pageSize.Value, ct);
+    return Results.Ok(result);
+});
+
+app.MapGet("/api/filters", async (DealsQueryService deals, CancellationToken ct) =>
+{
+    var result = await deals.GetFilterOptionsAsync(ct);
     return Results.Ok(result);
 });
 

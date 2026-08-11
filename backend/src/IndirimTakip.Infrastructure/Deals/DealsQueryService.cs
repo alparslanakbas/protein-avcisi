@@ -4,18 +4,24 @@ namespace IndirimTakip.Infrastructure.Deals;
 
 public class DealsQueryService(AppDbContext db)
 {
-    public async Task<IReadOnlyList<DealDto>> GetDealsAsync(
-        int referenceWindowDays = 30,
-        string? brandName = null,
-        bool onlyDiscounted = true,
+    public async Task<PagedResult<DealDto>> GetDealsAsync(
+        int referenceWindowDays,
+        string[]? brands,
+        string[]? categories,
+        string? search,
+        decimal? minPrice,
+        decimal? maxPrice,
+        bool onlyDiscounted,
+        int page,
+        int pageSize,
         CancellationToken cancellationToken = default)
     {
         var referenceSince = DateTimeOffset.UtcNow.AddDays(-referenceWindowDays);
 
-        var rows = await (
+        var query =
             from p in db.Products
             join b in db.Brands on p.BrandId equals b.Id
-            where b.IsActive && (brandName == null || b.Name == brandName)
+            where b.IsActive
             select new
             {
                 Product = p,
@@ -27,14 +33,48 @@ public class DealsQueryService(AppDbContext db)
                 ReferencePrice = p.PriceHistories
                     .Where(ph => ph.ScrapedAt >= referenceSince)
                     .Max(ph => (decimal?)ph.Price),
-            }).ToListAsync(cancellationToken);
+            };
 
-        var withPrices = rows.Where(r => r.Latest is not null && r.ReferencePrice is not null);
+        if (brands is { Length: > 0 })
+            query = query.Where(r => brands.Contains(r.BrandName));
+
+        if (categories is { Length: > 0 })
+            query = query.Where(r => r.Product.Category != null && categories.Contains(r.Product.Category));
+
+        var searchTerm = search?.Trim().ToLower();
+        if (!string.IsNullOrEmpty(searchTerm))
+        {
+            // Kategori "protein-tozu" gibi tire'li saklanıyor; "protein tozu" araması
+            // da eşleşsin diye tire'leri boşluğa çevirip karşılaştırıyoruz.
+            query = query.Where(r =>
+                r.Product.Name.ToLower().Contains(searchTerm) ||
+                r.BrandName.ToLower().Contains(searchTerm) ||
+                (r.Product.Category != null && r.Product.Category.Replace("-", " ").ToLower().Contains(searchTerm)) ||
+                (r.Product.Size != null && r.Product.Size.ToLower().Contains(searchTerm)) ||
+                (r.Product.Flavor != null && r.Product.Flavor.ToLower().Contains(searchTerm)));
+        }
+
+        query = query.Where(r => r.Latest != null && r.ReferencePrice != null);
 
         if (onlyDiscounted)
-            withPrices = withPrices.Where(r => r.Latest!.Price < r.ReferencePrice);
+            query = query.Where(r => r.Latest!.Price < r.ReferencePrice);
 
-        return withPrices
+        if (minPrice is not null)
+            query = query.Where(r => r.Latest!.Price >= minPrice);
+
+        if (maxPrice is not null)
+            query = query.Where(r => r.Latest!.Price <= maxPrice);
+
+        var totalCount = await query.CountAsync(cancellationToken);
+
+        var pageRows = await query
+            .OrderByDescending(r => (r.ReferencePrice!.Value - r.Latest!.Price) / r.ReferencePrice.Value)
+            .ThenBy(r => r.Product.Name)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        var items = pageRows
             .Select(r => new DealDto(
                 r.Product.Id,
                 r.Product.Name,
@@ -49,8 +89,26 @@ public class DealsQueryService(AppDbContext db)
                 r.ReferencePrice!.Value,
                 Math.Round((r.ReferencePrice.Value - r.Latest.Price) / r.ReferencePrice.Value * 100, 1),
                 r.Latest.ScrapedAt))
-            .OrderByDescending(d => d.DiscountPercent)
-            .ThenBy(d => d.ProductName)
             .ToList();
+
+        return new PagedResult<DealDto>(items, totalCount, page, pageSize);
+    }
+
+    public async Task<FilterOptionsDto> GetFilterOptionsAsync(CancellationToken cancellationToken = default)
+    {
+        var brands = await db.Brands
+            .Where(b => b.IsActive)
+            .Select(b => b.Name)
+            .OrderBy(n => n)
+            .ToListAsync(cancellationToken);
+
+        var categories = await db.Products
+            .Where(p => p.Category != null)
+            .Select(p => p.Category!)
+            .Distinct()
+            .OrderBy(c => c)
+            .ToListAsync(cancellationToken);
+
+        return new FilterOptionsDto(brands, categories);
     }
 }
