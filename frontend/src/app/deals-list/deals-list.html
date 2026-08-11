@@ -192,11 +192,10 @@
     } @else {
       <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
         @for (deal of filteredDeals(); track deal.productId) {
-          <a
-            [href]="deal.productUrl"
-            target="_blank"
-            rel="noopener"
-            class="group flex flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white transition-all hover:-translate-y-1 hover:border-brand-200 hover:shadow-lg hover:shadow-stone-200/70 dark:border-stone-800 dark:bg-stone-900 dark:hover:border-brand-700 dark:hover:shadow-black/40"
+          <button
+            type="button"
+            (click)="openDeal(deal)"
+            class="group flex flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white text-left transition-all hover:-translate-y-1 hover:border-brand-200 hover:shadow-lg hover:shadow-stone-200/70 dark:border-stone-800 dark:bg-stone-900 dark:hover:border-brand-700 dark:hover:shadow-black/40"
           >
             <div class="relative aspect-square bg-stone-50 p-4 dark:bg-stone-800/60">
               @if (deal.imageUrl) {
@@ -233,9 +232,13 @@
                 }
               </div>
             </div>
-          </a>
+          </button>
         }
       </div>
+    }
+
+    @if (selectedDeal(); as deal) {
+      <app-product-modal [deal]="deal" (closed)="closeDeal()" />
     }
   </main>
 </div>

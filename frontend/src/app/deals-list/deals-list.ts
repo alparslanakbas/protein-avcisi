@@ -5,12 +5,13 @@ import { FormsModule } from '@angular/forms';
 import { Deal } from '../core/deal.model';
 import { DealsService } from '../core/deals.service';
 import { ThemePreference, ThemeService } from '../core/theme.service';
+import { ProductModal } from '../product-modal/product-modal';
 
 type ViewMode = 'deals' | 'all';
 
 @Component({
   selector: 'app-deals-list',
-  imports: [DecimalPipe, FormsModule],
+  imports: [DecimalPipe, FormsModule, ProductModal],
   templateUrl: './deals-list.html',
 })
 export class DealsList implements OnInit {
@@ -21,6 +22,7 @@ export class DealsList implements OnInit {
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
   protected readonly viewMode = signal<ViewMode>('deals');
+  protected readonly selectedDeal = signal<Deal | null>(null);
 
   protected readonly searchQuery = signal('');
   protected readonly selectedBrands = signal<Set<string>>(new Set());
@@ -149,5 +151,13 @@ export class DealsList implements OnInit {
 
   protected setTheme(preference: ThemePreference): void {
     this.theme.setPreference(preference);
+  }
+
+  protected openDeal(deal: Deal): void {
+    this.selectedDeal.set(deal);
+  }
+
+  protected closeDeal(): void {
+    this.selectedDeal.set(null);
   }
 }

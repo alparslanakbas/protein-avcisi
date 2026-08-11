@@ -1,0 +1,104 @@
+<div
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+  (click)="close()"
+>
+  <div
+    class="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white shadow-xl dark:bg-stone-900"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="flex items-start justify-between gap-4 border-b border-stone-100 p-5 dark:border-stone-800">
+      <div class="flex items-center gap-3">
+        @if (deal().imageUrl) {
+          <img [src]="deal().imageUrl" [alt]="deal().productName" class="h-14 w-14 rounded-lg bg-stone-50 object-contain p-1 dark:bg-stone-800" />
+        }
+        <div>
+          <span class="text-[11px] font-semibold uppercase tracking-wide text-brand-600 dark:text-brand-400">{{ deal().brandName }}</span>
+          <h2 class="text-sm font-bold leading-tight text-stone-900 dark:text-stone-100">{{ deal().productName }}</h2>
+        </div>
+      </div>
+      <button
+        type="button"
+        title="Kapat"
+        class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-stone-400 hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-stone-800 dark:hover:text-stone-300"
+        (click)="close()"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
+          <path stroke-linecap="round" d="M6 6l12 12M18 6L6 18" />
+        </svg>
+      </button>
+    </div>
+
+    <div class="p-5">
+      <h3 class="mb-3 text-sm font-bold text-stone-800 dark:text-stone-200">Fiyat Analizi</h3>
+
+      <div class="mb-4 flex gap-1">
+        @for (range of timeRanges; track range.label) {
+          <button
+            type="button"
+            class="rounded-full px-3 py-1 text-xs font-semibold transition-colors"
+            [class]="selectedRange().label === range.label
+              ? 'bg-brand-600 text-white'
+              : 'border border-stone-200 text-stone-500 hover:border-stone-300 dark:border-stone-700 dark:text-stone-400'"
+            (click)="selectRange(range)"
+          >
+            {{ range.label }}
+          </button>
+        }
+      </div>
+
+      @if (loading()) {
+        <div class="flex h-[220px] items-center justify-center text-sm text-stone-400 dark:text-stone-500">Yükleniyor...</div>
+      } @else if (error()) {
+        <div class="flex h-[220px] items-center justify-center text-sm text-red-500 dark:text-red-400">{{ error() }}</div>
+      } @else if (points().length === 0) {
+        <div class="flex h-[220px] items-center justify-center px-4 text-center text-sm text-stone-400 dark:text-stone-500">
+          Bu dönem için henüz fiyat verisi birikmedi.
+        </div>
+      } @else {
+        <svg viewBox="0 0 600 220" class="h-[220px] w-full" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="priceAreaGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="var(--color-brand-500)" stop-opacity="0.25" />
+              <stop offset="100%" stop-color="var(--color-brand-500)" stop-opacity="0" />
+            </linearGradient>
+          </defs>
+          <path [attr.d]="chartAreaPath()" fill="url(#priceAreaGradient)" />
+          <path [attr.d]="chartLinePath()" fill="none" stroke="var(--color-brand-600)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
+        </svg>
+
+        <div class="mt-3 grid grid-cols-3 gap-2 text-center">
+          <div class="rounded-lg bg-stone-50 px-2 py-2 dark:bg-stone-800/60">
+            <div class="text-[11px] text-stone-400 dark:text-stone-500">Dönem En Düşük</div>
+            <div class="text-sm font-bold text-stone-800 dark:text-stone-200">{{ minPrice() | number:'1.2-2' }} TL</div>
+          </div>
+          <div class="rounded-lg bg-brand-50 px-2 py-2 dark:bg-brand-950/30">
+            <div class="text-[11px] text-brand-600 dark:text-brand-400">Şu Anki Fiyat</div>
+            <div class="text-sm font-bold text-brand-700 dark:text-brand-400">{{ currentPrice() | number:'1.2-2' }} TL</div>
+          </div>
+          <div class="rounded-lg bg-stone-50 px-2 py-2 dark:bg-stone-800/60">
+            <div class="text-[11px] text-stone-400 dark:text-stone-500">Dönem En Yüksek</div>
+            <div class="text-sm font-bold text-stone-800 dark:text-stone-200">{{ maxPrice() | number:'1.2-2' }} TL</div>
+          </div>
+        </div>
+
+        @if (savingsText(); as savings) {
+          <p class="mt-3 rounded-lg bg-accent-50 px-3 py-2 text-center text-xs font-medium text-accent-700 dark:bg-accent-950/30 dark:text-accent-400">
+            Şu anki fiyat, seçili dönemin en yüksek fiyatına göre {{ savings.diff | number:'1.2-2' }} TL (%{{ savings.percent }}) daha ucuz.
+          </p>
+        }
+      }
+
+      <a
+        [href]="goToStoreUrl()"
+        target="_blank"
+        rel="noopener"
+        class="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-brand-700"
+      >
+        Mağazaya Git
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M7 17 17 7M9 7h8v8" />
+        </svg>
+      </a>
+    </div>
+  </div>
+</div>
