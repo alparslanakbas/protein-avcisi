@@ -21,6 +21,9 @@ const TIME_RANGES: TimeRangeOption[] = [
 const CHART_WIDTH = 600;
 const CHART_HEIGHT = 220;
 const CHART_PADDING_Y = 16;
+const AXIS_LABEL_COUNT = 5;
+
+const dateLabelFormatter = new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'short' });
 
 @Component({
   selector: 'app-product-modal',
@@ -36,7 +39,12 @@ export class ProductModal {
   protected readonly timeRanges = TIME_RANGES;
   protected readonly selectedRange = signal<TimeRangeOption>(TIME_RANGES[2]);
 
+  // "loading": bir istek sürüyor. "hasData": en az bir kez veri geldi.
+  // Sekme değişiminde eski grafiği gizlemek yerine üstünde soluk bir
+  // yükleniyor efekti gösteriyoruz — tüm modal her tıklamada "refresh"
+  // atmış gibi görünmesin diye.
   protected readonly loading = signal(true);
+  protected readonly hasData = signal(false);
   protected readonly error = signal<string | null>(null);
   protected readonly points = signal<{ price: number; scrapedAt: string }[]>([]);
   protected readonly minPrice = signal(0);
@@ -45,6 +53,8 @@ export class ProductModal {
 
   protected readonly chartAreaPath = computed(() => this.buildAreaPath(this.points(), this.minPrice(), this.maxPrice()));
   protected readonly chartLinePath = computed(() => this.buildLinePath(this.points(), this.minPrice(), this.maxPrice()));
+
+  protected readonly xAxisLabels = computed(() => this.buildXAxisLabels(this.points()));
 
   protected readonly savingsText = computed(() => {
     const max = this.maxPrice();
@@ -87,6 +97,7 @@ export class ProductModal {
         this.maxPrice.set(history.maxPrice);
         this.currentPrice.set(history.currentPrice);
         this.loading.set(false);
+        this.hasData.set(true);
       },
       error: () => {
         this.error.set('Fiyat geçmişi yüklenemedi.');
@@ -112,6 +123,24 @@ export class ProductModal {
     const last = coords[coords.length - 1];
     const line = coords.map(([x, y], i) => `${i === 0 ? 'M' : 'L'} ${x} ${y}`).join(' ');
     return `${line} L ${last[0]} ${CHART_HEIGHT} L ${first[0]} ${CHART_HEIGHT} Z`;
+  }
+
+  private buildXAxisLabels(points: { price: number; scrapedAt: string }[]): { x: number; label: string }[] {
+    if (points.length === 0) return [];
+
+    const times = points.map((p) => new Date(p.scrapedAt).getTime());
+    const minTime = Math.min(...times);
+    const maxTime = Math.max(...times);
+
+    if (maxTime === minTime) {
+      return [{ x: CHART_WIDTH / 2, label: dateLabelFormatter.format(new Date(minTime)) }];
+    }
+
+    return Array.from({ length: AXIS_LABEL_COUNT }, (_, i) => {
+      const fraction = i / (AXIS_LABEL_COUNT - 1);
+      const t = minTime + (maxTime - minTime) * fraction;
+      return { x: fraction * CHART_WIDTH, label: dateLabelFormatter.format(new Date(t)) };
+    });
   }
 
   private toCoordinates(points: { price: number; scrapedAt: string }[], min: number, max: number): [number, number][] {

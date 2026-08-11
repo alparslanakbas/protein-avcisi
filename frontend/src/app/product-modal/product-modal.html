@@ -46,7 +46,7 @@
         }
       </div>
 
-      @if (loading()) {
+      @if (!hasData() && loading()) {
         <div class="flex h-[220px] items-center justify-center text-sm text-stone-400 dark:text-stone-500">Yükleniyor...</div>
       } @else if (error()) {
         <div class="flex h-[220px] items-center justify-center text-sm text-red-500 dark:text-red-400">{{ error() }}</div>
@@ -55,20 +55,27 @@
           Bu dönem için henüz fiyat verisi birikmedi.
         </div>
       } @else {
-        <svg viewBox="0 0 600 220" class="h-[220px] w-full rounded-lg bg-stone-50 dark:bg-stone-800/40" preserveAspectRatio="none">
-          <defs>
-            <linearGradient id="priceAreaGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="var(--color-brand-500)" stop-opacity="0.25" />
-              <stop offset="100%" stop-color="var(--color-brand-500)" stop-opacity="0" />
-            </linearGradient>
-          </defs>
-          <!-- Izgara çizgileri: veri az/düz olsa bile alanın bir grafik olduğu belli olsun. -->
-          @for (gridY of [16, 71, 126, 181, 204]; track gridY) {
-            <line x1="0" [attr.y1]="gridY" x2="600" [attr.y2]="gridY" stroke="currentColor" class="text-stone-200 dark:text-stone-700" stroke-width="1" />
-          }
-          <path [attr.d]="chartAreaPath()" fill="url(#priceAreaGradient)" />
-          <path [attr.d]="chartLinePath()" fill="none" stroke="var(--color-brand-600)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
-        </svg>
+        <div class="transition-opacity" [class.opacity-50]="loading()">
+          <svg viewBox="0 0 600 220" class="h-[220px] w-full rounded-lg bg-stone-50 dark:bg-stone-800/40" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="priceAreaGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="var(--color-brand-500)" stop-opacity="0.25" />
+                <stop offset="100%" stop-color="var(--color-brand-500)" stop-opacity="0" />
+              </linearGradient>
+            </defs>
+            <!-- Izgara çizgileri: veri az/düz olsa bile alanın bir grafik olduğu belli olsun. -->
+            @for (gridY of [16, 71, 126, 181, 204]; track gridY) {
+              <line x1="0" [attr.y1]="gridY" x2="600" [attr.y2]="gridY" stroke="currentColor" class="text-stone-200 dark:text-stone-700" stroke-width="1" />
+            }
+            <path [attr.d]="chartAreaPath()" fill="url(#priceAreaGradient)" />
+            <path [attr.d]="chartLinePath()" fill="none" stroke="var(--color-brand-600)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
+          </svg>
+          <div class="relative mt-1 h-4 text-[10px] text-stone-400 dark:text-stone-500">
+            @for (tick of xAxisLabels(); track tick.label + tick.x) {
+              <span class="absolute -translate-x-1/2" [style.left.%]="(tick.x / 600) * 100">{{ tick.label }}</span>
+            }
+          </div>
+        </div>
 
         <div class="mt-3 grid grid-cols-3 gap-2 text-center">
           <div class="rounded-lg bg-stone-50 px-2 py-2 dark:bg-stone-800/60">
