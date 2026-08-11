@@ -121,7 +121,18 @@ export class ProductModal {
     const minTime = Math.min(...times);
     const maxTime = Math.max(...times);
     const timeSpan = maxTime - minTime || 1;
-    const priceSpan = max - min || 1;
+
+    // Fiyat hiç değişmemişse (min===max) çizgi grafiğin dibine yapışıp
+    // "boş" görünüyordu — bu durumda görsel aralığı fiyatın etrafında
+    // yapay olarak genişletip çizgiyi dikeyde ortalıyoruz.
+    let effectiveMin = min;
+    let effectiveMax = max;
+    if (max - min < 0.01) {
+      const padding = Math.max(max * 0.05, 1);
+      effectiveMin = min - padding;
+      effectiveMax = max + padding;
+    }
+    const priceSpan = effectiveMax - effectiveMin;
 
     return points.map((p, i) => {
       const t = new Date(p.scrapedAt).getTime();
@@ -129,7 +140,7 @@ export class ProductModal {
       const y =
         CHART_HEIGHT -
         CHART_PADDING_Y -
-        ((p.price - min) / priceSpan) * (CHART_HEIGHT - CHART_PADDING_Y * 2);
+        ((p.price - effectiveMin) / priceSpan) * (CHART_HEIGHT - CHART_PADDING_Y * 2);
       return [x, y] as [number, number];
     });
   }
