@@ -1,4 +1,5 @@
 using IndirimTakip.Core.Scraping;
+using IndirimTakip.Infrastructure.Coupons;
 using IndirimTakip.Infrastructure.Deals;
 using IndirimTakip.Infrastructure.Scraping;
 using IndirimTakip.Infrastructure.Scraping.Hardline;
@@ -52,6 +53,7 @@ public static class DependencyInjection
         services.AddScoped<ScrapeIngestionService>();
         services.AddScoped<DealsQueryService>();
         services.AddScoped<PriceHistoryQueryService>();
+        services.AddScoped<CouponService>();
         services.AddHostedService<ScrapingBackgroundService>();
 
         return services;

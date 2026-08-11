@@ -13,4 +13,8 @@ public record DealDto(
     decimal CurrentPrice,
     decimal ReferencePrice,
     decimal DiscountPercent,
+    // Markanın kendi beyan ettiği (doğrulanmamış) mağaza indirimi — DiscountPercent'ten
+    // (bizim gerçek fiyat geçmişimize dayanan) ayrı, UI'da ayrı etiketlenir.
+    decimal? StoreOldPrice,
+    decimal? StoreDiscountPercent,
     DateTimeOffset ScrapedAt);

@@ -8,6 +8,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Brand> Brands => Set<Brand>();
     public DbSet<Product> Products => Set<Product>();
     public DbSet<PriceHistory> PriceHistories => Set<PriceHistory>();
+    public DbSet<Coupon> Coupons => Set<Coupon>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -30,11 +31,22 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<PriceHistory>(ph =>
         {
             ph.Property(x => x.Price).HasPrecision(10, 2);
+            ph.Property(x => x.StoreOldPrice).HasPrecision(10, 2);
             ph.HasOne(x => x.Product)
                 .WithMany(x => x.PriceHistories)
                 .HasForeignKey(x => x.ProductId)
                 .OnDelete(DeleteBehavior.Cascade);
             ph.HasIndex(x => new { x.ProductId, x.ScrapedAt });
+        });
+
+        modelBuilder.Entity<Coupon>(c =>
+        {
+            c.Property(x => x.Code).HasMaxLength(100);
+            c.Property(x => x.Description).HasMaxLength(500);
+            c.HasOne(x => x.Brand)
+                .WithMany()
+                .HasForeignKey(x => x.BrandId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

@@ -59,12 +59,17 @@ public class SsnScraper(HttpClient httpClient) : IBrandScraper
                     var imgNode = node.SelectSingleNode(".//img");
                     var imageUrl = imgNode?.Attributes["data-src"]?.Value ?? imgNode?.Attributes["src"]?.Value;
 
+                    // price-old sadece indirim varsa ekleniyor — mağazanın kendi beyan
+                    // ettiği eski fiyat, "Mağaza İndirimi" için ayrı tutuluyor.
+                    var priceOldNode = node.SelectSingleNode(".//span[contains(@class,'price-old')]");
+
                     products[url] = new ScrapedProduct(
                         Name: HtmlEntity.DeEntitize(linkNode.InnerText).Trim(),
                         Url: url,
                         ImageUrl: imageUrl,
                         Category: slug,
-                        Price: TurkishPriceParser.Parse(priceNode.InnerText));
+                        Price: TurkishPriceParser.Parse(priceNode.InnerText),
+                        StoreOldPrice: priceOldNode is not null ? TurkishPriceParser.Parse(priceOldNode.InnerText) : null);
                 }
             }
         }

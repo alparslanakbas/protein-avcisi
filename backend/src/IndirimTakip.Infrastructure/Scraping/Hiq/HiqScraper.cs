@@ -41,7 +41,8 @@ public partial class HiqScraper(HttpClient httpClient) : IBrandScraper
                     ImageUrl: product.Images.Count > 0 ? product.Images[0].Src : null,
                     Category: string.IsNullOrWhiteSpace(product.ProductType) ? null : product.ProductType,
                     Price: variant.Price,
-                    ServingSizeGrams: ExtractServingSizeGrams(product.BodyHtml)));
+                    ServingSizeGrams: ExtractServingSizeGrams(product.BodyHtml),
+                    StoreOldPrice: variant.CompareAtPrice > variant.Price ? variant.CompareAtPrice : null));
             }
 
             if (response.Products.Count < 250)

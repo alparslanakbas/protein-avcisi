@@ -1,5 +1,6 @@
 using IndirimTakip.Core.Scraping;
 using IndirimTakip.Infrastructure;
+using IndirimTakip.Infrastructure.Coupons;
 using IndirimTakip.Infrastructure.Deals;
 using IndirimTakip.Infrastructure.Scraping;
 
@@ -48,7 +49,8 @@ app.MapGet("/api/deals", async (
     var windowDays = days is null or <= 0 ? 30 : days.Value;
     var result = await deals.GetDealsAsync(
         windowDays, brands, categories, search, minPrice, maxPrice,
-        onlyDiscounted: true, page is null or <= 0 ? 1 : page.Value, pageSize is null or <= 0 ? 24 : pageSize.Value, ct);
+        onlyDiscounted: true, onlyStoreDiscounted: false,
+        page is null or <= 0 ? 1 : page.Value, pageSize is null or <= 0 ? 24 : pageSize.Value, ct);
     return Results.Ok(result);
 });
 
@@ -59,7 +61,21 @@ app.MapGet("/api/products", async (
     var windowDays = days is null or <= 0 ? 30 : days.Value;
     var result = await deals.GetDealsAsync(
         windowDays, brands, categories, search, minPrice, maxPrice,
-        onlyDiscounted: false, page is null or <= 0 ? 1 : page.Value, pageSize is null or <= 0 ? 24 : pageSize.Value, ct);
+        onlyDiscounted: false, onlyStoreDiscounted: false,
+        page is null or <= 0 ? 1 : page.Value, pageSize is null or <= 0 ? 24 : pageSize.Value, ct);
+    return Results.Ok(result);
+});
+
+// Markanın kendi beyan ettiği (doğrulanmamış) kampanya/indirim fiyatına sahip ürünler.
+app.MapGet("/api/store-deals", async (
+    DealsQueryService deals, string[]? brands, string[]? categories, string? search,
+    decimal? minPrice, decimal? maxPrice, int? days, int? page, int? pageSize, CancellationToken ct) =>
+{
+    var windowDays = days is null or <= 0 ? 30 : days.Value;
+    var result = await deals.GetDealsAsync(
+        windowDays, brands, categories, search, minPrice, maxPrice,
+        onlyDiscounted: false, onlyStoreDiscounted: true,
+        page is null or <= 0 ? 1 : page.Value, pageSize is null or <= 0 ? 24 : pageSize.Value, ct);
     return Results.Ok(result);
 });
 
@@ -67,6 +83,21 @@ app.MapGet("/api/filters", async (DealsQueryService deals, CancellationToken ct)
 {
     var result = await deals.GetFilterOptionsAsync(ct);
     return Results.Ok(result);
+});
+
+app.MapGet("/api/coupons", async (CouponService coupons, CancellationToken ct) =>
+{
+    var result = await coupons.GetActiveCouponsAsync(ct);
+    return Results.Ok(result);
+});
+
+// Geçici elle-ekleme endpoint'i (roadmap'teki /api/dev/ingest ile aynı desende):
+// kupon kodları scrape edilmiyor, elle doğrulanıp buradan ekleniyor. Henüz auth
+// yok — /api/dev/ingest gibi bu da site canlıya çıkmadan önce korumaya alınmalı.
+app.MapPost("/api/dev/coupons", async (CreateCouponRequest request, CouponService coupons, CancellationToken ct) =>
+{
+    var result = await coupons.CreateAsync(request, ct);
+    return result is null ? Results.NotFound($"'{request.BrandName}' adında marka bulunamadı.") : Results.Ok(result);
 });
 
 app.MapGet("/api/products/{id:int}/price-history", async (int id, int? days, PriceHistoryQueryService service, CancellationToken ct) =>

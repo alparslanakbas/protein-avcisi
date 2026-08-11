@@ -28,6 +28,10 @@ export class DealsService {
     return this.http.get<PagedResult<Deal>>(`${API_BASE_URL}/api/products`, { params: this.buildParams(query) });
   }
 
+  getStoreDeals(query: DealsQuery): Observable<PagedResult<Deal>> {
+    return this.http.get<PagedResult<Deal>>(`${API_BASE_URL}/api/store-deals`, { params: this.buildParams(query) });
+  }
+
   getFilterOptions(): Observable<FilterOptions> {
     return this.http.get<FilterOptions>(`${API_BASE_URL}/api/filters`);
   }

@@ -2,12 +2,14 @@ import { DecimalPipe } from '@angular/common';
 import { Component, HostListener, OnInit, inject, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
+import { Coupon } from '../core/coupon.model';
+import { CouponsService } from '../core/coupons.service';
 import { Deal } from '../core/deal.model';
 import { DealsQuery, DealsService } from '../core/deals.service';
 import { ThemePreference, ThemeService } from '../core/theme.service';
 import { ProductModal } from '../product-modal/product-modal';
 
-type ViewMode = 'deals' | 'all';
+type ViewMode = 'deals' | 'all' | 'store';
 
 const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.platform);
 const PAGE_SIZE = 24;
@@ -20,6 +22,7 @@ const SEARCH_DEBOUNCE_MS = 350;
 })
 export class DealsList implements OnInit {
   private readonly dealsService = inject(DealsService);
+  private readonly couponsService = inject(CouponsService);
   protected readonly theme = inject(ThemeService);
   private readonly searchInput = viewChild<{ nativeElement: HTMLInputElement }>('searchInput');
   private searchDebounceHandle: ReturnType<typeof setTimeout> | null = null;
@@ -47,11 +50,14 @@ export class DealsList implements OnInit {
 
   protected readonly hasActiveFilters = signal(false);
 
+  protected readonly coupons = signal<Coupon[]>([]);
+
   ngOnInit(): void {
     this.dealsService.getFilterOptions().subscribe((options) => {
       this.availableBrands.set(options.brands);
       this.availableCategories.set(options.categories);
     });
+    this.couponsService.getCoupons().subscribe((coupons) => this.coupons.set(coupons));
     this.load();
   }
 
@@ -139,7 +145,12 @@ export class DealsList implements OnInit {
         !!query.search,
     );
 
-    const request$ = this.viewMode() === 'deals' ? this.dealsService.getDeals(query) : this.dealsService.getAllProducts(query);
+    const request$ =
+      this.viewMode() === 'deals'
+        ? this.dealsService.getDeals(query)
+        : this.viewMode() === 'store'
+          ? this.dealsService.getStoreDeals(query)
+          : this.dealsService.getAllProducts(query);
 
     request$.subscribe({
       next: (result) => {
@@ -157,6 +168,10 @@ export class DealsList implements OnInit {
 
   protected discountBadge(deal: Deal): string {
     return `-%${deal.discountPercent}`;
+  }
+
+  protected storeDiscountBadge(deal: Deal): string {
+    return `Mağaza -%${deal.storeDiscountPercent}`;
   }
 
   protected categoryLabel(category: string): string {

@@ -12,6 +12,7 @@ public class DealsQueryService(AppDbContext db)
         decimal? minPrice,
         decimal? maxPrice,
         bool onlyDiscounted,
+        bool onlyStoreDiscounted,
         int page,
         int pageSize,
         CancellationToken cancellationToken = default)
@@ -28,7 +29,7 @@ public class DealsQueryService(AppDbContext db)
                 BrandName = b.Name,
                 Latest = p.PriceHistories
                     .OrderByDescending(ph => ph.ScrapedAt)
-                    .Select(ph => new { ph.Price, ph.ScrapedAt })
+                    .Select(ph => new { ph.Price, ph.ScrapedAt, ph.StoreOldPrice })
                     .FirstOrDefault(),
                 ReferencePrice = p.PriceHistories
                     .Where(ph => ph.ScrapedAt >= referenceSince)
@@ -59,6 +60,9 @@ public class DealsQueryService(AppDbContext db)
         if (onlyDiscounted)
             query = query.Where(r => r.Latest!.Price < r.ReferencePrice);
 
+        if (onlyStoreDiscounted)
+            query = query.Where(r => r.Latest!.StoreOldPrice != null && r.Latest.StoreOldPrice > r.Latest.Price);
+
         if (minPrice is not null)
             query = query.Where(r => r.Latest!.Price >= minPrice);
 
@@ -67,8 +71,13 @@ public class DealsQueryService(AppDbContext db)
 
         var totalCount = await query.CountAsync(cancellationToken);
 
-        var pageRows = await query
-            .OrderByDescending(r => (r.ReferencePrice!.Value - r.Latest!.Price) / r.ReferencePrice.Value)
+        // Mağaza kampanyaları görünümünde mağazanın beyan ettiği indirim oranına göre,
+        // diğer görünümlerde bizim doğrulanmış indirim oranımıza göre sırala.
+        var orderedQuery = onlyStoreDiscounted
+            ? query.OrderByDescending(r => (r.Latest!.StoreOldPrice!.Value - r.Latest.Price) / r.Latest.StoreOldPrice.Value)
+            : query.OrderByDescending(r => (r.ReferencePrice!.Value - r.Latest!.Price) / r.ReferencePrice.Value);
+
+        var pageRows = await orderedQuery
             .ThenBy(r => r.Product.Name)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
@@ -88,6 +97,10 @@ public class DealsQueryService(AppDbContext db)
                 r.Latest!.Price,
                 r.ReferencePrice!.Value,
                 Math.Round((r.ReferencePrice.Value - r.Latest.Price) / r.ReferencePrice.Value * 100, 1),
+                r.Latest.StoreOldPrice,
+                r.Latest.StoreOldPrice is decimal storeOld && storeOld > 0
+                    ? Math.Round((storeOld - r.Latest.Price) / storeOld * 100, 1)
+                    : null,
                 r.Latest.ScrapedAt))
             .ToList();
 

@@ -36,13 +36,15 @@ public class HardlineScraper(HttpClient httpClient) : IBrandScraper
                 continue;
 
             var imgNode = node.SelectSingleNode(".//img");
+            var (price, storeOldPrice) = TurkishPriceParser.ParsePricePair(priceContainer.InnerText);
 
             products.Add(new ScrapedProduct(
                 Name: HtmlEntity.DeEntitize(linkNode.InnerText).Trim(),
                 Url: url,
                 ImageUrl: imgNode?.Attributes["src"]?.Value,
                 Category: null,
-                Price: TurkishPriceParser.ParseLastPriceInText(priceContainer.InnerText)));
+                Price: price,
+                StoreOldPrice: storeOldPrice));
         }
 
         return products;

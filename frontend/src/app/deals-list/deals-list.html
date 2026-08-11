@@ -86,12 +86,32 @@
         <path stroke-linecap="round" d="M12 11v5M12 8h.01" />
       </svg>
       <p>
-        Fiyat takibimiz henüz yeni başladı — indirim tespitimiz markanın beyan ettiği eski/yeni fiyata değil,
-        kendi topladığımız gerçek fiyat geçmişine dayanıyor. Ne kadar uzun süre takip edersek, gösterdiğimiz
-        indirimler o kadar isabetli olacak. Servis başı fiyat bilgisini de yalnızca gerçek besin değeri
-        verisine ulaşabildiğimiz ürünlerde gösteriyoruz, tahmini rakam paylaşmıyoruz.
+        İki tür indirim gösteriyoruz: <strong>"İndirimdekiler"</strong> bizim kendi topladığımız gerçek fiyat
+        geçmişine dayanır (markanın beyanına değil) — takip süresi uzadıkça isabeti artar.
+        <strong>"Mağaza Kampanyaları"</strong> ise markanın sitesinde kendi beyan ettiği indirim, henüz bizim
+        tarafımızdan doğrulanmamıştır. Servis başı fiyat bilgisini de yalnızca gerçek besin değeri verisine
+        ulaşabildiğimiz ürünlerde gösteriyoruz, tahmini rakam paylaşmıyoruz.
       </p>
     </div>
+
+    @if (coupons().length > 0) {
+      <div class="mx-auto mb-8 max-w-3xl">
+        <h2 class="mb-2 text-center text-xs font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
+          Kupon Kodları
+        </h2>
+        <div class="flex flex-wrap items-center justify-center gap-2">
+          @for (coupon of coupons(); track coupon.id) {
+            <div
+              class="flex items-center gap-2 rounded-full border border-accent-200 bg-accent-50 py-1.5 pl-3 pr-2 text-xs dark:border-accent-900/50 dark:bg-accent-950/20"
+            >
+              <span class="font-semibold text-stone-600 dark:text-stone-300">{{ coupon.brandName }}</span>
+              <code class="rounded-full bg-white px-2 py-0.5 font-mono font-bold text-accent-700 dark:bg-stone-900 dark:text-accent-400">{{ coupon.code }}</code>
+              <span class="text-stone-500 dark:text-stone-400">{{ coupon.description }}</span>
+            </div>
+          }
+        </div>
+      </div>
+    }
 
     <div
       class="mx-auto mb-8 flex h-20 max-w-3xl items-center justify-center rounded-xl border border-dashed border-stone-300 bg-stone-100 text-xs font-medium uppercase tracking-wide text-stone-400 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-500"
@@ -100,7 +120,7 @@
       Reklam Alanı
     </div>
 
-    <div class="mb-10 flex justify-center gap-2">
+    <div class="mb-10 flex flex-wrap justify-center gap-2">
       <button
         type="button"
         class="rounded-full px-5 py-2 text-sm font-semibold transition-colors"
@@ -110,6 +130,16 @@
         (click)="setViewMode('deals')"
       >
         İndirimdekiler
+      </button>
+      <button
+        type="button"
+        class="rounded-full px-5 py-2 text-sm font-semibold transition-colors"
+        [class]="viewMode() === 'store'
+          ? 'bg-brand-600 text-white shadow-sm shadow-brand-600/30'
+          : 'border border-stone-200 bg-white text-stone-600 hover:border-brand-300 hover:text-brand-700 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300 dark:hover:border-brand-500 dark:hover:text-brand-400'"
+        (click)="setViewMode('store')"
+      >
+        Mağaza Kampanyaları
       </button>
       <button
         type="button"
@@ -200,6 +230,8 @@
           </button>
         } @else if (viewMode() === 'deals') {
           Şu anda tespit edilmiş bir indirim yok. Fiyat geçmişi biriktikçe buradaki liste otomatik dolacak.
+        } @else if (viewMode() === 'store') {
+          Şu anda mağazaların kendi beyan ettiği bir kampanya tespit edilmedi.
         } @else {
           Henüz ürün taranmadı.
         }
@@ -226,6 +258,14 @@
                   {{ discountBadge(deal) }}
                 </span>
               }
+              @if (deal.storeDiscountPercent && deal.storeDiscountPercent > 0) {
+                <span
+                  title="Markanın kendi beyan ettiği indirim, bizim tarafımızdan doğrulanmamıştır"
+                  class="absolute right-2 top-2 rounded-full bg-stone-700/90 px-2 py-1 text-[10px] font-bold text-white shadow-sm dark:bg-stone-200/90 dark:text-stone-800"
+                >
+                  {{ storeDiscountBadge(deal) }}
+                </span>
+              }
             </div>
             <div class="flex flex-1 flex-col gap-1 p-3">
               <span class="text-[11px] font-semibold uppercase tracking-wide text-brand-600 dark:text-brand-400">{{ deal.brandName }}</span>
@@ -244,6 +284,8 @@
                 <span class="text-base font-extrabold text-stone-900 dark:text-stone-100">{{ deal.currentPrice | number:'1.2-2' }} TL</span>
                 @if (deal.discountPercent > 0) {
                   <span class="text-xs text-stone-400 line-through dark:text-stone-500">{{ deal.referencePrice | number:'1.2-2' }} TL</span>
+                } @else if (deal.storeDiscountPercent && deal.storeDiscountPercent > 0) {
+                  <span class="text-xs text-stone-400 line-through dark:text-stone-500">{{ deal.storeOldPrice | number:'1.2-2' }} TL</span>
                 }
               </div>
               @if (pricePerServing(deal); as perServing) {

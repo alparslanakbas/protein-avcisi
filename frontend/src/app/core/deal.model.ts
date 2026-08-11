@@ -11,5 +11,7 @@ export interface Deal {
   currentPrice: number;
   referencePrice: number;
   discountPercent: number;
+  storeOldPrice: number | null;
+  storeDiscountPercent: number | null;
   scrapedAt: string;
 }

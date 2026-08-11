@@ -58,6 +58,7 @@ public class ScrapeIngestionService(AppDbContext db)
             product.PriceHistories.Add(new PriceHistory
             {
                 Price = scraped.Price,
+                StoreOldPrice = scraped.StoreOldPrice,
                 ScrapedAt = scrapedAt,
             });
         }

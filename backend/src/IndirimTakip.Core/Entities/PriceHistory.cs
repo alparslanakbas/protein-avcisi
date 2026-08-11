@@ -7,5 +7,6 @@ public class PriceHistory
     public Product? Product { get; set; }
 
     public decimal Price { get; set; }
+    public decimal? StoreOldPrice { get; set; }
     public DateTimeOffset ScrapedAt { get; set; }
 }
