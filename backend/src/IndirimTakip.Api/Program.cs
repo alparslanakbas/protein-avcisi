@@ -55,4 +55,11 @@ app.MapGet("/api/products", async (DealsQueryService deals, string? brand, int? 
     return Results.Ok(result);
 });
 
+app.MapGet("/api/products/{id:int}/price-history", async (int id, int? days, PriceHistoryQueryService service, CancellationToken ct) =>
+{
+    var windowDays = days is null or <= 0 ? 30 : days.Value;
+    var result = await service.GetPriceHistoryAsync(id, windowDays, ct);
+    return result is null ? Results.NotFound() : Results.Ok(result);
+});
+
 app.Run();
