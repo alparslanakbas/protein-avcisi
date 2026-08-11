@@ -12,6 +12,7 @@ public class Product
     public string? Category { get; set; }
     public string? Size { get; set; }
     public string? Flavor { get; set; }
+    public int ClickCount { get; set; }
 
     public ICollection<PriceHistory> PriceHistories { get; set; } = new List<PriceHistory>();
 }

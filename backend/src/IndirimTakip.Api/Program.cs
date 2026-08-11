@@ -62,4 +62,19 @@ app.MapGet("/api/products/{id:int}/price-history", async (int id, int? days, Pri
     return result is null ? Results.NotFound() : Results.Ok(result);
 });
 
+// Affiliate altyapısı: ürün linkleri buradan geçiyor ki ileride affiliate
+// id eklemek kolay olsun (roadmap adım 7). Şimdilik sadece tıklama sayısını
+// tutuyor, dış siteye 302 ile yönlendiriyor.
+app.MapGet("/go/{productId:int}", async (int productId, AppDbContext db, CancellationToken ct) =>
+{
+    var product = await db.Products.FindAsync([productId], ct);
+    if (product is null)
+        return Results.NotFound();
+
+    product.ClickCount++;
+    await db.SaveChangesAsync(ct);
+
+    return Results.Redirect(product.Url, permanent: false);
+});
+
 app.Run();
