@@ -24,6 +24,12 @@ public class ScrapeIngestionService(AppDbContext db)
 
         foreach (var scraped in scrapedProducts)
         {
+            // Marka kendi kategorisini vermiyorsa (HIQ/Hardline/ProteinOcean) isimden tahmin et
+            // — arama kutusunun markadan bağımsız çalışması buna dayanıyor.
+            var category = scraped.Category ?? ProductAttributeParser.InferCategory(scraped.Name);
+            var size = ProductAttributeParser.ExtractSize(scraped.Name);
+            var flavor = ProductAttributeParser.ExtractFlavor(scraped.Name);
+
             if (!existingProducts.TryGetValue(scraped.Url, out var product))
             {
                 product = new Product
@@ -32,7 +38,9 @@ public class ScrapeIngestionService(AppDbContext db)
                     Name = scraped.Name,
                     Url = scraped.Url,
                     ImageUrl = scraped.ImageUrl,
-                    Category = scraped.Category,
+                    Category = category,
+                    Size = size,
+                    Flavor = flavor,
                 };
                 db.Products.Add(product);
             }
@@ -40,7 +48,9 @@ public class ScrapeIngestionService(AppDbContext db)
             {
                 product.Name = scraped.Name;
                 product.ImageUrl = scraped.ImageUrl;
-                product.Category = scraped.Category;
+                product.Category = category;
+                product.Size = size;
+                product.Flavor = flavor;
             }
 
             product.PriceHistories.Add(new PriceHistory

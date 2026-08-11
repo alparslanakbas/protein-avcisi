@@ -4,6 +4,8 @@ export interface Deal {
   productUrl: string;
   imageUrl: string | null;
   category: string | null;
+  size: string | null;
+  flavor: string | null;
   brandName: string;
   currentPrice: number;
   referencePrice: number;

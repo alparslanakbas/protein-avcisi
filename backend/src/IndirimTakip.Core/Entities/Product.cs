@@ -10,6 +10,8 @@ public class Product
     public required string Url { get; set; }
     public string? ImageUrl { get; set; }
     public string? Category { get; set; }
+    public string? Size { get; set; }
+    public string? Flavor { get; set; }
 
     public ICollection<PriceHistory> PriceHistories { get; set; } = new List<PriceHistory>();
 }

@@ -6,6 +6,8 @@ public record DealDto(
     string ProductUrl,
     string? ImageUrl,
     string? Category,
+    string? Size,
+    string? Flavor,
     string BrandName,
     decimal CurrentPrice,
     decimal ReferencePrice,

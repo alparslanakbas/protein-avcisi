@@ -41,6 +41,8 @@ public class DealsQueryService(AppDbContext db)
                 r.Product.Url,
                 r.Product.ImageUrl,
                 r.Product.Category,
+                r.Product.Size,
+                r.Product.Flavor,
                 r.BrandName,
                 r.Latest!.Price,
                 r.ReferencePrice!.Value,
