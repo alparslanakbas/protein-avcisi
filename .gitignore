@@ -18,6 +18,9 @@ dist/
 .DS_Store
 Thumbs.db
 
+# İş stratejisi / iç geliştirme günlüğü — public repo'da görünmesin
+CLAUDE.md
+
 # IDE
 .idea/
 .vscode/
