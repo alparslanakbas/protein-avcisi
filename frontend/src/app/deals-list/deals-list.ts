@@ -1,7 +1,8 @@
 import { DecimalPipe } from '@angular/common';
-import { Component, DestroyRef, HostListener, OnInit, inject, signal, viewChild } from '@angular/core';
+import { Component, DestroyRef, HostListener, OnInit, effect, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
+import { Meta, Title } from '@angular/platform-browser';
 import { ActivatedRoute, Router } from '@angular/router';
 
 import { Coupon } from '../core/coupon.model';
@@ -17,6 +18,10 @@ const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(na
 const PAGE_SIZE = 24;
 const SEARCH_DEBOUNCE_MS = 350;
 
+const DEFAULT_TITLE = 'Güncel İndirimler | ProteinAvcısı — Spor Takviyesi Fiyat Takibi';
+const DEFAULT_DESCRIPTION =
+  'Protein tozu, kreatin, pre-workout ve diğer spor takviyelerinde markanın beyanına değil, gerçek fiyat geçmişine dayanan doğrulanmış indirimler. HIQ, SSN, Hardline ve ProteinOcean tek yerde.';
+
 @Component({
   selector: 'app-deals-list',
   imports: [DecimalPipe, FormsModule, ProductModal],
@@ -28,6 +33,8 @@ export class DealsList implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly titleService = inject(Title);
+  private readonly metaService = inject(Meta);
   protected readonly theme = inject(ThemeService);
   private readonly searchInput = viewChild<{ nativeElement: HTMLInputElement }>('searchInput');
   private searchDebounceHandle: ReturnType<typeof setTimeout> | null = null;
@@ -56,6 +63,43 @@ export class DealsList implements OnInit {
   protected readonly hasActiveFilters = signal(false);
 
   protected readonly coupons = signal<Coupon[]>([]);
+
+  constructor() {
+    // Ürün modalı açıkken title/description/Open Graph o ürüne özel oluyor
+    // (SSR ile birleşince /urun/:id linki paylaşılınca veya Google'da
+    // gerçek ürün bilgisiyle görünüyor); kapanınca site geneline dönüyor.
+    effect(() => {
+      const deal = this.selectedDeal();
+
+      if (!deal) {
+        this.titleService.setTitle(DEFAULT_TITLE);
+        this.metaService.updateTag({ name: 'description', content: DEFAULT_DESCRIPTION });
+        this.metaService.updateTag({ property: 'og:title', content: DEFAULT_TITLE });
+        this.metaService.updateTag({ property: 'og:description', content: DEFAULT_DESCRIPTION });
+        this.metaService.updateTag({ property: 'og:type', content: 'website' });
+        this.metaService.removeTag('property="og:image"');
+        return;
+      }
+
+      const priceText = `${deal.currentPrice.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TL`;
+      const title = `${deal.productName} Fiyatı: ${priceText} | ${deal.brandName} — ProteinAvcısı`;
+      const description =
+        deal.discountPercent > 0
+          ? `${deal.productName} şu an ${priceText} — ${deal.brandName} markasında %${deal.discountPercent} doğrulanmış indirim. Fiyat geçmişini ProteinAvcısı'nda takip et.`
+          : `${deal.productName} güncel fiyatı ${priceText}. ${deal.brandName} markasının fiyat geçmişini ProteinAvcısı'nda takip et.`;
+
+      this.titleService.setTitle(title);
+      this.metaService.updateTag({ name: 'description', content: description });
+      this.metaService.updateTag({ property: 'og:title', content: title });
+      this.metaService.updateTag({ property: 'og:description', content: description });
+      this.metaService.updateTag({ property: 'og:type', content: 'product' });
+      if (deal.imageUrl) {
+        this.metaService.updateTag({ property: 'og:image', content: deal.imageUrl });
+      } else {
+        this.metaService.removeTag('property="og:image"');
+      }
+    });
+  }
 
   ngOnInit(): void {
     this.dealsService.getFilterOptions().subscribe((options) => {
