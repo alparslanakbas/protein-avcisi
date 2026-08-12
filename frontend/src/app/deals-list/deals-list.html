@@ -69,6 +69,8 @@
           </svg>
         </button>
       </div>
+
+      <app-share-button />
     </div>
   </header>
 
@@ -212,6 +214,22 @@
             Filtreleri Temizle
           </button>
         }
+      </div>
+
+      <div class="mb-8 flex items-center justify-center gap-2">
+        <label for="sortBy" class="text-xs font-medium text-stone-500 dark:text-stone-400">Sırala:</label>
+        <select
+          id="sortBy"
+          [ngModel]="sortBy()"
+          (ngModelChange)="onSortChange($event)"
+          class="rounded-full border border-stone-200 bg-white px-3 py-1.5 text-xs text-stone-700 focus:border-brand-400 focus:outline-none dark:border-stone-700 dark:bg-stone-900 dark:text-stone-200"
+        >
+          <option value="">Varsayılan (İndirim Oranı)</option>
+          <option value="price_asc">Fiyat: Düşükten Yükseğe</option>
+          <option value="price_desc">Fiyat: Yüksekten Düşüğe</option>
+          <option value="name_asc">İsim: A-Z</option>
+          <option value="name_desc">İsim: Z-A</option>
+        </select>
       </div>
     }
 

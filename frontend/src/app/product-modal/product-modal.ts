@@ -1,9 +1,10 @@
-import { DecimalPipe } from '@angular/common';
+import { DOCUMENT, DecimalPipe } from '@angular/common';
 import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
 
 import { Deal } from '../core/deal.model';
 import { PriceHistoryService } from '../core/price-history.service';
 import { formatRelativeTime } from '../core/relative-time';
+import { ShareButton } from '../share-button/share-button';
 
 interface TimeRangeOption {
   label: string;
@@ -29,14 +30,17 @@ const tooltipDateFormatter = new Intl.DateTimeFormat('tr-TR', { day: '2-digit', 
 
 @Component({
   selector: 'app-product-modal',
-  imports: [DecimalPipe],
+  imports: [DecimalPipe, ShareButton],
   templateUrl: './product-modal.html',
 })
 export class ProductModal {
   private readonly priceHistoryService = inject(PriceHistoryService);
+  private readonly document = inject(DOCUMENT);
 
   readonly deal = input.required<Deal>();
   readonly closed = output<void>();
+
+  protected readonly shareUrl = computed(() => `${this.document.location.origin}/urun/${this.deal().productId}`);
 
   protected readonly timeRanges = TIME_RANGES;
   protected readonly selectedRange = signal<TimeRangeOption>(TIME_RANGES[2]);

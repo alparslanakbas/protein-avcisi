@@ -17,16 +17,19 @@
           <p class="mt-0.5 text-[11px] text-stone-400 dark:text-stone-500">Fiyat kontrolü: {{ lastCheckedText() }}</p>
         </div>
       </div>
-      <button
-        type="button"
-        title="Kapat"
-        class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-stone-400 hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-stone-800 dark:hover:text-stone-300"
-        (click)="close()"
-      >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
-          <path stroke-linecap="round" d="M6 6l12 12M18 6L6 18" />
-        </svg>
-      </button>
+      <div class="flex shrink-0 items-center gap-1">
+        <app-share-button [title]="deal().productName" [shareUrl]="shareUrl()" />
+        <button
+          type="button"
+          title="Kapat"
+          class="flex h-8 w-8 items-center justify-center rounded-full text-stone-400 hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-stone-800 dark:hover:text-stone-300"
+          (click)="close()"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
+            <path stroke-linecap="round" d="M6 6l12 12M18 6L6 18" />
+          </svg>
+        </button>
+      </div>
     </div>
 
     <div class="p-5">

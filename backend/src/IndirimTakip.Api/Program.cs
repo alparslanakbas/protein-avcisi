@@ -58,24 +58,24 @@ app.MapPost("/api/dev/ingest/{brand}", async (string brand, IEnumerable<IBrandSc
 
 app.MapGet("/api/deals", async (
     DealsQueryService deals, string[]? brands, string[]? categories, string? search,
-    decimal? minPrice, decimal? maxPrice, int? days, int? page, int? pageSize, CancellationToken ct) =>
+    decimal? minPrice, decimal? maxPrice, int? days, string? sortBy, int? page, int? pageSize, CancellationToken ct) =>
 {
     var windowDays = days is null or <= 0 ? 30 : days.Value;
     var result = await deals.GetDealsAsync(
         windowDays, brands, categories, search, minPrice, maxPrice,
-        onlyDiscounted: true, onlyStoreDiscounted: false,
+        onlyDiscounted: true, onlyStoreDiscounted: false, sortBy,
         page is null or <= 0 ? 1 : page.Value, pageSize is null or <= 0 ? 24 : pageSize.Value, ct);
     return Results.Ok(result);
 });
 
 app.MapGet("/api/products", async (
     DealsQueryService deals, string[]? brands, string[]? categories, string? search,
-    decimal? minPrice, decimal? maxPrice, int? days, int? page, int? pageSize, CancellationToken ct) =>
+    decimal? minPrice, decimal? maxPrice, int? days, string? sortBy, int? page, int? pageSize, CancellationToken ct) =>
 {
     var windowDays = days is null or <= 0 ? 30 : days.Value;
     var result = await deals.GetDealsAsync(
         windowDays, brands, categories, search, minPrice, maxPrice,
-        onlyDiscounted: false, onlyStoreDiscounted: false,
+        onlyDiscounted: false, onlyStoreDiscounted: false, sortBy,
         page is null or <= 0 ? 1 : page.Value, pageSize is null or <= 0 ? 24 : pageSize.Value, ct);
     return Results.Ok(result);
 });
@@ -83,12 +83,12 @@ app.MapGet("/api/products", async (
 // Markanın kendi beyan ettiği (doğrulanmamış) kampanya/indirim fiyatına sahip ürünler.
 app.MapGet("/api/store-deals", async (
     DealsQueryService deals, string[]? brands, string[]? categories, string? search,
-    decimal? minPrice, decimal? maxPrice, int? days, int? page, int? pageSize, CancellationToken ct) =>
+    decimal? minPrice, decimal? maxPrice, int? days, string? sortBy, int? page, int? pageSize, CancellationToken ct) =>
 {
     var windowDays = days is null or <= 0 ? 30 : days.Value;
     var result = await deals.GetDealsAsync(
         windowDays, brands, categories, search, minPrice, maxPrice,
-        onlyDiscounted: false, onlyStoreDiscounted: true,
+        onlyDiscounted: false, onlyStoreDiscounted: true, sortBy,
         page is null or <= 0 ? 1 : page.Value, pageSize is null or <= 0 ? 24 : pageSize.Value, ct);
     return Results.Ok(result);
 });

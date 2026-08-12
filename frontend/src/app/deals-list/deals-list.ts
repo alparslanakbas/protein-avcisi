@@ -12,6 +12,7 @@ import { DealsQuery, DealsService } from '../core/deals.service';
 import { formatRelativeTime } from '../core/relative-time';
 import { ThemePreference, ThemeService } from '../core/theme.service';
 import { ProductModal } from '../product-modal/product-modal';
+import { ShareButton } from '../share-button/share-button';
 
 type ViewMode = 'deals' | 'all' | 'store';
 
@@ -25,7 +26,7 @@ const DEFAULT_DESCRIPTION =
 
 @Component({
   selector: 'app-deals-list',
-  imports: [DecimalPipe, FormsModule, ProductModal],
+  imports: [DecimalPipe, FormsModule, ProductModal, ShareButton],
   templateUrl: './deals-list.html',
 })
 export class DealsList implements OnInit {
@@ -59,6 +60,7 @@ export class DealsList implements OnInit {
   protected readonly selectedCategories = signal<Set<string>>(new Set());
   protected readonly priceMin = signal<number | null>(null);
   protected readonly priceMax = signal<number | null>(null);
+  protected readonly sortBy = signal<string>('');
 
   protected readonly availableBrands = signal<string[]>([]);
   protected readonly availableCategories = signal<string[]>([]);
@@ -181,6 +183,12 @@ export class DealsList implements OnInit {
     }, SEARCH_DEBOUNCE_MS);
   }
 
+  protected onSortChange(value: string): void {
+    this.sortBy.set(value);
+    this.currentPage.set(1);
+    this.load();
+  }
+
   protected toggleBrand(brand: string): void {
     const current = new Set(this.selectedBrands());
     current.has(brand) ? current.delete(brand) : current.add(brand);
@@ -237,6 +245,7 @@ export class DealsList implements OnInit {
       search: this.searchQuery().trim() || undefined,
       minPrice: this.priceMin(),
       maxPrice: this.priceMax(),
+      sortBy: this.sortBy() || undefined,
       page: this.currentPage(),
       pageSize: PAGE_SIZE,
     };

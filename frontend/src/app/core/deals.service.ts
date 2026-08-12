@@ -12,6 +12,7 @@ export interface DealsQuery {
   search?: string;
   minPrice?: number | null;
   maxPrice?: number | null;
+  sortBy?: string;
   page?: number;
   pageSize?: number;
 }
@@ -52,6 +53,7 @@ export class DealsService {
     if (query.search) params = params.set('search', query.search);
     if (query.minPrice != null) params = params.set('minPrice', query.minPrice);
     if (query.maxPrice != null) params = params.set('maxPrice', query.maxPrice);
+    if (query.sortBy) params = params.set('sortBy', query.sortBy);
     if (query.page) params = params.set('page', query.page);
     if (query.pageSize) params = params.set('pageSize', query.pageSize);
 

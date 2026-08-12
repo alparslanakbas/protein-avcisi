@@ -13,6 +13,7 @@ public class DealsQueryService(AppDbContext db)
         decimal? maxPrice,
         bool onlyDiscounted,
         bool onlyStoreDiscounted,
+        string? sortBy,
         int page,
         int pageSize,
         CancellationToken cancellationToken = default)
@@ -71,14 +72,21 @@ public class DealsQueryService(AppDbContext db)
 
         var totalCount = await query.CountAsync(cancellationToken);
 
-        // Mağaza kampanyaları görünümünde mağazanın beyan ettiği indirim oranına göre,
-        // diğer görünümlerde bizim doğrulanmış indirim oranımıza göre sırala.
-        var orderedQuery = onlyStoreDiscounted
-            ? query.OrderByDescending(r => (r.Latest!.StoreOldPrice!.Value - r.Latest.Price) / r.Latest.StoreOldPrice.Value)
-            : query.OrderByDescending(r => (r.ReferencePrice!.Value - r.Latest!.Price) / r.ReferencePrice.Value);
+        // Kullanıcı bir sıralama seçtiyse onu uygula; seçmediyse mağaza
+        // kampanyaları görünümünde mağazanın beyan ettiği indirim oranına,
+        // diğer görünümlerde bizim doğruladığımız indirim oranına göre sırala.
+        var orderedQuery = sortBy switch
+        {
+            "name_asc" => query.OrderBy(r => r.Product.Name),
+            "name_desc" => query.OrderByDescending(r => r.Product.Name),
+            "price_asc" => query.OrderBy(r => r.Latest!.Price).ThenBy(r => r.Product.Name),
+            "price_desc" => query.OrderByDescending(r => r.Latest!.Price).ThenBy(r => r.Product.Name),
+            _ => onlyStoreDiscounted
+                ? query.OrderByDescending(r => (r.Latest!.StoreOldPrice!.Value - r.Latest.Price) / r.Latest.StoreOldPrice.Value).ThenBy(r => r.Product.Name)
+                : query.OrderByDescending(r => (r.ReferencePrice!.Value - r.Latest!.Price) / r.ReferencePrice.Value).ThenBy(r => r.Product.Name),
+        };
 
         var pageRows = await orderedQuery
-            .ThenBy(r => r.Product.Name)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(cancellationToken);
