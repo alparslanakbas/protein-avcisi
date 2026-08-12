@@ -17,4 +17,12 @@ COPY --from=build /app/publish .
 # varsa onu kullan, yoksa 8080'e düş.
 ENV PORT=8080
 EXPOSE 8080
+
+# appsettings.json'ı izleyen FileSystemWatcher, Render'ın konteyner dosya
+# sisteminde native bir çökmeye (SIGABRT / status 134) yol açıyor — bu,
+# kısıtlı/overlay dosya sistemli konteyner ortamlarında bilinen bir .NET
+# sorunu. Config dosyalarını "değişince otomatik yenile" özelliğini
+# kapatarak dosya izleyicisinin hiç kurulmasını engelliyoruz (biz zaten
+# canlıda appsettings.json'ı çalışırken değiştirmiyoruz).
+ENV DOTNET_hostBuilder__reloadConfigOnChange=false
 ENTRYPOINT ["/bin/sh", "-c", "ASPNETCORE_URLS=http://+:${PORT} dotnet IndirimTakip.Api.dll"]
