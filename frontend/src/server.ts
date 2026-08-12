@@ -71,6 +71,22 @@ app.get('/sitemap.xml', async (req, res) => {
   }
 });
 
+// "Mağazaya Git" linki artık göreceli (/go/:id) — ziyaretçi bilinmeyen bir
+// "api.protein-avcisi..." adresine değil, kendi gördüğü domain'e tıklıyor
+// (dikkatli kullanıcılara phishing linki gibi görünüyordu). Burada backend'in
+// gerçek /go/{id}'sine sunucu tarafında proxy yapıp aynı 302'yi iletiyoruz —
+// tıklama sayacı backend'de aynen çalışmaya devam ediyor.
+app.get('/go/:id', async (req, res) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/go/${req.params.id}`, { redirect: 'manual' });
+    const location = response.headers.get('location');
+    res.redirect(302, location ?? '/');
+  } catch (error) {
+    console.error('/go/:id yönlendirmesi başarısız:', error);
+    res.redirect(302, '/');
+  }
+});
+
 app.get('/robots.txt', (req, res) => {
   const origin = `${req.protocol}://${req.get('host')}`;
   res.set('Content-Type', 'text/plain');

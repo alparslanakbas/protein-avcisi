@@ -15,7 +15,12 @@ export class PriceHistoryService {
     });
   }
 
+  // Bilinçli olarak API_BASE_URL değil, göreceli bir yol — böylece link
+  // ziyaretçinin gördüğü sitenin kendi domain'inde kalıyor (bilinmeyen bir
+  // "api.protein-avcisi..." adresine gitmek, dikkatli kullanıcılara
+  // phishing linki gibi görünüyordu). server.ts'te bu yol backend'in
+  // gerçek /go/{id}'sine sunucu tarafında proxy'leniyor.
   goToStoreUrl(productId: number): string {
-    return `${API_BASE_URL}/go/${productId}`;
+    return `/go/${productId}`;
   }
 }

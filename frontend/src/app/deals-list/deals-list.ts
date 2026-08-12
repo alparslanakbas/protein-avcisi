@@ -48,7 +48,12 @@ export class DealsList implements OnInit {
   protected readonly deals = signal<Deal[]>([]);
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
-  protected readonly viewMode = signal<ViewMode>('deals');
+  // Varsayılan sekme bilinçli olarak "store": "İndirimdekiler" (kendi
+  // doğruladığımız indirim) şu aşamada çoğunlukla boş geliyor — yeni bir
+  // ziyaretçinin ilk gördüğü şey boş bir sayfa olunca güven kırıcı oluyor
+  // (kullanıcı testinde gerçek geri bildirim). "Mağaza Kampanyaları" hep
+  // dolu, dürüstçe "doğrulanmamış" etiketli ama boş görünmüyor.
+  protected readonly viewMode = signal<ViewMode>('store');
   protected readonly selectedDeal = signal<Deal | null>(null);
 
   protected readonly totalCount = signal(0);
