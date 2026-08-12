@@ -20,9 +20,13 @@ const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(na
 const PAGE_SIZE = 24;
 const SEARCH_DEBOUNCE_MS = 350;
 
-const DEFAULT_TITLE = 'Güncel İndirimler | ProteinAvcısı — Spor Takviyesi Fiyat Takibi';
+// Title/description'da bilinçli olarak "Protein Avcısı" (boşluklu) kullanılıyor
+// — logodaki bitişik "ProteinAvcısı" yazımı marka kimliği olarak kalıyor, ama
+// insanlar arama kutusuna doğal olarak boşluklu yazıyor; arama motoruna dönük
+// metinlerde bu ayrımı güçlendirmek ucuz ve düşük riskli bir SEO düzeltmesi.
+const DEFAULT_TITLE = 'Protein Avcısı | Güncel İndirim ve Kampanyalar — Spor Takviyesi Fiyat Takibi';
 const DEFAULT_DESCRIPTION =
-  'Protein tozu, kreatin, pre-workout ve diğer spor takviyelerinde markanın beyanına değil, gerçek fiyat geçmişine dayanan doğrulanmış indirimler. HIQ, SSN, Hardline ve ProteinOcean tek yerde.';
+  'Protein Avcısı; protein tozu, kreatin, pre-workout ve diğer spor takviyelerinde markanın beyanına değil, gerçek fiyat geçmişine dayanan doğrulanmış indirimleri gösterir. HIQ, SSN, Hardline ve ProteinOcean tek yerde.';
 
 // Tasarım güncellemesi (bir geliştiricinin "daha fazla içerik/güven
 // unsuru" geri bildirimi üzerine): gerçek, uydurma olmayan sorular —
