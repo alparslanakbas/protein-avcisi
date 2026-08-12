@@ -12,7 +12,13 @@
           <img [src]="deal().imageUrl" [alt]="deal().productName" class="h-14 w-14 rounded-lg bg-stone-50 object-contain p-1 dark:bg-stone-800" />
         }
         <div>
-          <span class="text-[11px] font-semibold uppercase tracking-wide text-brand-600 dark:text-brand-400">{{ deal().brandName }}</span>
+          <a
+            [routerLink]="['/marka', deal().brandName.toLowerCase(), 'indirim-kodu']"
+            (click)="close()"
+            class="text-[11px] font-semibold uppercase tracking-wide text-brand-600 hover:underline dark:text-brand-400"
+          >
+            {{ deal().brandName }}
+          </a>
           <h2 class="text-sm font-bold leading-tight text-stone-900 dark:text-stone-100">{{ deal().productName }}</h2>
           <p class="mt-0.5 text-[11px] text-stone-400 dark:text-stone-500">Fiyat kontrolü: {{ lastCheckedText() }}</p>
         </div>

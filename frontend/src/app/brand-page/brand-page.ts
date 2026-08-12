@@ -25,6 +25,7 @@ export class BrandPage implements OnInit {
   protected readonly coupons = signal<Coupon[]>([]);
   protected readonly deals = signal<Deal[]>([]);
   protected readonly storeDeals = signal<Deal[]>([]);
+  protected readonly otherBrands = signal<string[]>([]);
   protected readonly loading = signal(true);
   protected readonly notFound = signal(false);
 
@@ -50,6 +51,9 @@ export class BrandPage implements OnInit {
         }
 
         this.brandName.set(match);
+        // Marka sayfaları birbirine link vermiyordu — diğer marka sayfalarına
+        // iç linkleme için mevcut marka çıkarılmış listeyi ayrıca tutuyoruz.
+        this.otherBrands.set(options.brands.filter((b) => b !== match));
         this.setMeta(match);
 
         this.couponsService.getCoupons().subscribe((coupons) => {

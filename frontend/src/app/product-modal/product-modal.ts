@@ -1,5 +1,6 @@
 import { DOCUMENT, DecimalPipe } from '@angular/common';
 import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 
 import { Deal } from '../core/deal.model';
 import { PriceHistoryService } from '../core/price-history.service';
@@ -30,7 +31,7 @@ const tooltipDateFormatter = new Intl.DateTimeFormat('tr-TR', { day: '2-digit', 
 
 @Component({
   selector: 'app-product-modal',
-  imports: [DecimalPipe, ShareButton],
+  imports: [DecimalPipe, ShareButton, RouterLink],
   templateUrl: './product-modal.html',
 })
 export class ProductModal {
