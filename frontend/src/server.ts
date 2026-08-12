@@ -12,6 +12,12 @@ import { API_BASE_URL } from './app/core/api.config';
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
 const app = express();
+// Render'ın edge proxy'si (Cloudflare) TLS'i kendi ucunda sonlandırıp
+// bize düz HTTP olarak iletiyor — bu ayar olmadan req.protocol her zaman
+// "http" dönüyordu (X-Forwarded-Proto header'ı yok sayılıyordu), bu da
+// sitemap.xml/robots.txt'teki tüm URL'lerin yanlışlıkla http:// ile
+// üretilmesine yol açıyordu.
+app.set('trust proxy', true);
 const angularApp = new AngularNodeAppEngine();
 
 interface SitemapEntry {
