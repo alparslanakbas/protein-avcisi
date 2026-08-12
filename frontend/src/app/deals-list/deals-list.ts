@@ -3,7 +3,7 @@ import { Component, DestroyRef, HostListener, OnInit, effect, inject, signal, vi
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Meta, Title } from '@angular/platform-browser';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { Coupon } from '../core/coupon.model';
 import { CouponsService } from '../core/coupons.service';
@@ -61,7 +61,7 @@ const FAQ_ITEMS: { question: string; answer: string }[] = [
 
 @Component({
   selector: 'app-deals-list',
-  imports: [DecimalPipe, FormsModule, ProductModal, ShareButton],
+  imports: [DecimalPipe, FormsModule, ProductModal, ShareButton, RouterLink],
   templateUrl: './deals-list.html',
 })
 export class DealsList implements OnInit {
@@ -108,6 +108,9 @@ export class DealsList implements OnInit {
   protected readonly hasActiveFilters = signal(false);
 
   protected readonly coupons = signal<Coupon[]>([]);
+
+  // Sayfa aşağı kaydırılınca sağ altta çıkan "yukarı çık" butonu için.
+  protected readonly showScrollTop = signal(false);
 
   // Ana sayfadaki gerçek istatistik şeridi için — filtreden bağımsız,
   // tüm katalog sayısı (mevcut sekme/filtreye göre değişen totalCount()'tan
@@ -405,5 +408,14 @@ export class DealsList implements OnInit {
 
     event.preventDefault();
     this.searchInput()?.nativeElement.focus();
+  }
+
+  @HostListener('window:scroll')
+  protected onWindowScroll(): void {
+    this.showScrollTop.set(window.scrollY > 400);
+  }
+
+  protected scrollToTop(): void {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 }

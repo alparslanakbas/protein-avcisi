@@ -1,12 +1,14 @@
 <div class="min-h-screen bg-stone-50 dark:bg-stone-950">
   <header class="border-b border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900">
     <div class="mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 py-4 sm:px-6">
-      <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600 text-sm font-extrabold text-white">
-        PA
-      </div>
-      <span class="text-lg font-bold text-stone-900 dark:text-stone-100">
-        Protein<span class="text-brand-600 dark:text-brand-400">Avcısı</span>
-      </span>
+      <a routerLink="/" class="flex items-center gap-2">
+        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600 text-sm font-extrabold text-white">
+          PA
+        </div>
+        <span class="text-lg font-bold text-stone-900 dark:text-stone-100">
+          Protein<span class="text-brand-600 dark:text-brand-400">Avcısı</span>
+        </span>
+      </a>
 
       <label class="relative order-3 w-full sm:order-none sm:ml-4 sm:w-auto sm:max-w-sm sm:flex-1">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400">
@@ -343,9 +345,21 @@
       </div>
 
       @if (totalPages() > 1) {
-        <div class="mt-10 flex items-center justify-center gap-3">
+        <div class="mt-10 flex items-center justify-center gap-2">
           <button
             type="button"
+            title="İlk Sayfa"
+            class="flex h-9 w-9 items-center justify-center rounded-full border border-stone-200 text-stone-500 transition-colors enabled:hover:border-brand-300 enabled:hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-stone-700 dark:text-stone-400 dark:enabled:hover:border-brand-500 dark:enabled:hover:text-brand-400"
+            [disabled]="currentPage() === 1"
+            (click)="goToPage(1)"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M18 18l-6-6 6-6M11 18l-6-6 6-6" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            title="Önceki Sayfa"
             class="flex h-9 w-9 items-center justify-center rounded-full border border-stone-200 text-stone-500 transition-colors enabled:hover:border-brand-300 enabled:hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-stone-700 dark:text-stone-400 dark:enabled:hover:border-brand-500 dark:enabled:hover:text-brand-400"
             [disabled]="currentPage() === 1"
             (click)="goToPage(currentPage() - 1)"
@@ -355,19 +369,31 @@
             </svg>
           </button>
 
-          <span class="text-sm font-medium text-stone-600 dark:text-stone-300">
+          <span class="px-1 text-sm font-medium text-stone-600 dark:text-stone-300">
             Sayfa {{ currentPage() }} / {{ totalPages() }}
             <span class="text-stone-400 dark:text-stone-500">({{ totalCount() }} ürün)</span>
           </span>
 
           <button
             type="button"
+            title="Sonraki Sayfa"
             class="flex h-9 w-9 items-center justify-center rounded-full border border-stone-200 text-stone-500 transition-colors enabled:hover:border-brand-300 enabled:hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-stone-700 dark:text-stone-400 dark:enabled:hover:border-brand-500 dark:enabled:hover:text-brand-400"
             [disabled]="currentPage() === totalPages()"
             (click)="goToPage(currentPage() + 1)"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
               <path stroke-linecap="round" stroke-linejoin="round" d="M9 18l6-6-6-6" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            title="Son Sayfa"
+            class="flex h-9 w-9 items-center justify-center rounded-full border border-stone-200 text-stone-500 transition-colors enabled:hover:border-brand-300 enabled:hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-stone-700 dark:text-stone-400 dark:enabled:hover:border-brand-500 dark:enabled:hover:text-brand-400"
+            [disabled]="currentPage() === totalPages()"
+            (click)="goToPage(totalPages())"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18l6-6-6-6M13 18l6-6-6-6" />
             </svg>
           </button>
         </div>
@@ -395,4 +421,17 @@
       <app-product-modal [deal]="deal" (closed)="closeDeal()" />
     }
   </main>
+
+  @if (showScrollTop()) {
+    <button
+      type="button"
+      title="Yukarı çık"
+      (click)="scrollToTop()"
+      class="fixed bottom-6 right-6 z-40 flex h-11 w-11 items-center justify-center rounded-full bg-brand-600 text-white shadow-lg shadow-brand-600/30 transition-colors hover:bg-brand-700"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-5 w-5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 19V5M5 12l7-7 7 7" />
+      </svg>
+    </button>
+  }
 </div>
