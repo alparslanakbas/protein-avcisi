@@ -2,10 +2,10 @@
   <header class="border-b border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900">
     <div class="mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 py-4 sm:px-6">
       <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600 text-sm font-extrabold text-white">
-        İT
+        PA
       </div>
       <span class="text-lg font-bold text-stone-900 dark:text-stone-100">
-        İndirim<span class="text-brand-600 dark:text-brand-400">Takip</span>
+        Protein<span class="text-brand-600 dark:text-brand-400">Avcısı</span>
       </span>
 
       <label class="relative order-3 w-full sm:order-none sm:ml-4 sm:w-auto sm:max-w-sm sm:flex-1">
@@ -291,6 +291,7 @@
               @if (pricePerServing(deal); as perServing) {
                 <span class="text-[11px] text-stone-400 dark:text-stone-500">Servis: ~{{ perServing | number:'1.2-2' }} TL</span>
               }
+              <span class="text-[10px] text-stone-300 dark:text-stone-600">Kontrol: {{ lastCheckedText(deal) }}</span>
             </div>
           </button>
         }
