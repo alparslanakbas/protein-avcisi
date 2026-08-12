@@ -24,6 +24,37 @@ const DEFAULT_TITLE = 'Güncel İndirimler | ProteinAvcısı — Spor Takviyesi 
 const DEFAULT_DESCRIPTION =
   'Protein tozu, kreatin, pre-workout ve diğer spor takviyelerinde markanın beyanına değil, gerçek fiyat geçmişine dayanan doğrulanmış indirimler. HIQ, SSN, Hardline ve ProteinOcean tek yerde.';
 
+// Tasarım güncellemesi (bir geliştiricinin "daha fazla içerik/güven
+// unsuru" geri bildirimi üzerine): gerçek, uydurma olmayan sorular —
+// hepsi zaten sitede var olan davranışları açıklıyor, pazarlama amaçlı
+// abartı yok. Aynı zamanda FAQPage structured data için de kullanılıyor.
+const FAQ_ITEMS: { question: string; answer: string }[] = [
+  {
+    question: '"İndirimdekiler" ile "Mağaza Kampanyaları" arasındaki fark nedir?',
+    answer:
+      '"İndirimdekiler", bizim topladığımız gerçek fiyat geçmişine dayanır — bir ürünün güncel fiyatı son 30 günün en yüksek fiyatından düşükse burada listelenir. "Mağaza Kampanyaları" ise markanın kendi sitesinde beyan ettiği eski/yeni fiyat farkıdır, henüz bizim tarafımızdan doğrulanmamıştır.',
+  },
+  {
+    question: 'Fiyatlar ne sıklıkla güncelleniyor?',
+    answer: 'Takip ettiğimiz markalar günde 4 kez otomatik olarak taranıyor, fiyat değişiklikleri buna göre güncelleniyor.',
+  },
+  {
+    question: 'Ürünü ProteinAvcısı üzerinden mi satın alıyorum?',
+    answer:
+      'Hayır. ProteinAvcısı bir satış sitesi değil, fiyat takip sitesidir. "Mağazaya Git" butonuna tıklayınca doğrudan ilgili markanın kendi sitesine yönlendirilirsin, satış işlemi orada gerçekleşir.',
+  },
+  {
+    question: 'Kupon kodlarını nereden buluyorsunuz?',
+    answer:
+      'Kupon kodları otomatik toplanmıyor — süresi geçmiş ya da hatalı bir kod göstermemek için yalnızca elle doğruladığımız kodları yayınlıyoruz.',
+  },
+  {
+    question: 'Neden bazı ürünlerde "servis başı fiyat" gösterilmiyor?',
+    answer:
+      'Bu bilgiyi yalnızca markanın gerçek besin değeri tablosuna ulaşabildiğimiz ürünlerde gösteriyoruz; tahmini bir rakam paylaşmıyoruz.',
+  },
+];
+
 @Component({
   selector: 'app-deals-list',
   imports: [DecimalPipe, FormsModule, ProductModal, ShareButton],
@@ -73,6 +104,12 @@ export class DealsList implements OnInit {
   protected readonly hasActiveFilters = signal(false);
 
   protected readonly coupons = signal<Coupon[]>([]);
+
+  // Ana sayfadaki gerçek istatistik şeridi için — filtreden bağımsız,
+  // tüm katalog sayısı (mevcut sekme/filtreye göre değişen totalCount()'tan
+  // ayrı). Uydurma bir rakam değil, /api/products'tan gelen gerçek toplam.
+  protected readonly siteProductCount = signal(0);
+  protected readonly faqItems = FAQ_ITEMS;
 
   constructor() {
     // Ürün modalı açıkken title/description/Open Graph o ürüne özel oluyor
@@ -146,6 +183,9 @@ export class DealsList implements OnInit {
       this.availableCategories.set(options.categories);
     });
     this.couponsService.getCoupons().subscribe((coupons) => this.coupons.set(coupons));
+    // pageSize:1 — sadece toplam sayıyı okumak için, tüm ürünleri çekmeye gerek yok.
+    this.dealsService.getAllProducts({ pageSize: 1 }).subscribe((result) => this.siteProductCount.set(result.totalCount));
+    this.addFaqStructuredData();
     this.load();
 
     // Ürün modalı artık URL'e bağlı (/urun/:id) — bileşen '' ve 'urun/:id'
@@ -170,6 +210,26 @@ export class DealsList implements OnInit {
         error: () => this.router.navigate(['/']),
       });
     });
+  }
+
+  // FAQ_ITEMS statik olduğu için (ürün modalındaki gibi değişmiyor) tek
+  // seferlik ekleniyor, ürün modalının açılıp kapanmasıyla ayrı bir
+  // <script> etiketi olarak kalıyor.
+  private addFaqStructuredData(): void {
+    const jsonLd = {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: FAQ_ITEMS.map((item) => ({
+        '@type': 'Question',
+        name: item.question,
+        acceptedAnswer: { '@type': 'Answer', text: item.answer },
+      })),
+    };
+
+    const script = this.document.createElement('script');
+    script.type = 'application/ld+json';
+    script.textContent = JSON.stringify(jsonLd);
+    this.document.head.appendChild(script);
   }
 
   protected setViewMode(mode: ViewMode): void {

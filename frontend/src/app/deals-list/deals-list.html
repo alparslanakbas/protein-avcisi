@@ -80,20 +80,47 @@
         Güncel İndirimler
       </h1>
       <p class="mt-2 text-stone-500 dark:text-stone-400">Spor takviyesi markalarındaki indirimler tek sayfada.</p>
+
+      @if (siteProductCount() > 0) {
+        <div class="mt-4 flex flex-wrap items-center justify-center gap-2 text-xs font-semibold text-stone-500 dark:text-stone-400">
+          <span class="rounded-full border border-stone-200 bg-white px-3 py-1 dark:border-stone-700 dark:bg-stone-900">{{ siteProductCount() }}+ Ürün Takip Ediliyor</span>
+          <span class="rounded-full border border-stone-200 bg-white px-3 py-1 dark:border-stone-700 dark:bg-stone-900">{{ availableBrands().length }} Marka</span>
+          <span class="rounded-full border border-stone-200 bg-white px-3 py-1 dark:border-stone-700 dark:bg-stone-900">Günde 4 Kez Otomatik Tarama</span>
+        </div>
+      }
     </div>
 
-    <div class="mx-auto mb-8 flex max-w-2xl items-start gap-2.5 rounded-xl border border-brand-100 bg-brand-50 px-4 py-3 text-sm text-brand-800 dark:border-brand-900/50 dark:bg-brand-950/20 dark:text-brand-300">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mt-0.5 h-4 w-4 shrink-0">
-        <circle cx="12" cy="12" r="9" />
-        <path stroke-linecap="round" d="M12 11v5M12 8h.01" />
-      </svg>
-      <p>
-        İki tür indirim gösteriyoruz: <strong>"İndirimdekiler"</strong> bizim kendi topladığımız gerçek fiyat
-        geçmişine dayanır (markanın beyanına değil) — takip süresi uzadıkça isabeti artar.
-        <strong>"Mağaza Kampanyaları"</strong> ise markanın sitesinde kendi beyan ettiği indirim, henüz bizim
-        tarafımızdan doğrulanmamıştır. Servis başı fiyat bilgisini de yalnızca gerçek besin değeri verisine
-        ulaşabildiğimiz ürünlerde gösteriyoruz, tahmini rakam paylaşmıyoruz.
-      </p>
+    <div class="mx-auto mb-8 grid max-w-3xl grid-cols-2 gap-3 sm:grid-cols-4">
+      <div class="flex flex-col items-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3 py-4 text-center dark:border-stone-800 dark:bg-stone-900">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-5 w-5 text-brand-600 dark:text-brand-400">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 17l6-6 4 4 8-8M15 7h6v6" />
+        </svg>
+        <span class="text-xs font-bold text-stone-800 dark:text-stone-200">Gerçek Fiyat Geçmişi</span>
+        <span class="text-[11px] leading-snug text-stone-500 dark:text-stone-400">Markanın beyanına değil, kendi topladığımız veriye dayanır.</span>
+      </div>
+      <div class="flex flex-col items-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3 py-4 text-center dark:border-stone-800 dark:bg-stone-900">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-5 w-5 text-brand-600 dark:text-brand-400">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4" />
+        </svg>
+        <span class="text-xs font-bold text-stone-800 dark:text-stone-200">Şeffaf Etiketleme</span>
+        <span class="text-[11px] leading-snug text-stone-500 dark:text-stone-400">Doğrulanmış indirim ve mağaza kampanyası her zaman ayrı gösterilir.</span>
+      </div>
+      <div class="flex flex-col items-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3 py-4 text-center dark:border-stone-800 dark:bg-stone-900">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-5 w-5 text-brand-600 dark:text-brand-400">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5" />
+        </svg>
+        <span class="text-xs font-bold text-stone-800 dark:text-stone-200">Otomatik Tarama</span>
+        <span class="text-[11px] leading-snug text-stone-500 dark:text-stone-400">Fiyatlar günde 4 kez otomatik olarak kontrol edilir.</span>
+      </div>
+      <div class="flex flex-col items-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3 py-4 text-center dark:border-stone-800 dark:bg-stone-900">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-5 w-5 text-brand-600 dark:text-brand-400">
+          <rect x="5" y="11" width="14" height="9" rx="2" />
+          <path stroke-linecap="round" d="M8 11V8a4 4 0 0 1 7.5-2" />
+        </svg>
+        <span class="text-xs font-bold text-stone-800 dark:text-stone-200">Ücretsiz &amp; Hesapsız</span>
+        <span class="text-[11px] leading-snug text-stone-500 dark:text-stone-400">Üye olmadan, hiçbir ücret ödemeden kullan.</span>
+      </div>
     </div>
 
     @if (coupons().length > 0) {
@@ -260,7 +287,7 @@
           <button
             type="button"
             (click)="openDeal(deal)"
-            class="group flex flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white text-left transition-all hover:-translate-y-1 hover:border-brand-200 hover:shadow-lg hover:shadow-stone-200/70 dark:border-stone-800 dark:bg-stone-900 dark:hover:border-brand-700 dark:hover:shadow-black/40"
+            class="group flex flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white text-left transition-all hover:-translate-y-1 hover:border-brand-300 hover:shadow-xl hover:shadow-brand-100/60 dark:border-stone-800 dark:bg-stone-900 dark:hover:border-brand-600 dark:hover:shadow-brand-950/40"
           >
             <div class="relative aspect-square bg-stone-50 p-4 dark:bg-stone-800/60">
               @if (deal.imageUrl) {
@@ -346,6 +373,23 @@
         </div>
       }
     }
+
+    <section class="mx-auto mt-14 max-w-2xl">
+      <h2 class="mb-4 text-center text-sm font-bold text-stone-800 dark:text-stone-200">Sık Sorulan Sorular</h2>
+      <div class="space-y-2">
+        @for (item of faqItems; track item.question) {
+          <details class="group rounded-xl border border-stone-200 bg-white px-4 py-3 dark:border-stone-800 dark:bg-stone-900">
+            <summary class="flex cursor-pointer list-none items-center justify-between gap-2 text-sm font-semibold text-stone-800 dark:text-stone-200">
+              {{ item.question }}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4 shrink-0 text-stone-400 transition-transform group-open:rotate-180">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6" />
+              </svg>
+            </summary>
+            <p class="mt-2 text-sm text-stone-500 dark:text-stone-400">{{ item.answer }}</p>
+          </details>
+        }
+      </div>
+    </section>
 
     @if (selectedDeal(); as deal) {
       <app-product-modal [deal]="deal" (closed)="closeDeal()" />
