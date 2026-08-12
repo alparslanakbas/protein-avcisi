@@ -26,6 +26,14 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+// Geçici /api/dev/* endpoint'leri (elle tarama tetikleme, kupon ekleme) canlıya
+// çıktıktan sonra da korumasız kaldı — herkes bu uçlara istek atıp taramayı
+// tetikleyebilir ya da sahte kupon ekleyebilirdi. Tam bir kullanıcı/auth sistemi
+// kurmak bu iki endpoint için aşırı mühendislik; basit bir paylaşılan anahtar
+// (header'da) yeterli. Anahtar ayarlanmamışsa (ör. yerelde unutulduysa) güvenli
+// tarafta kalıp erişimi tamamen reddediyoruz.
+var adminApiKey = app.Configuration["AdminApiKey"];
+
 // Uygulama açılırken bekleyen migration'ları otomatik uygula — hosting
 // platformunda elle migration komutu çalıştırmaya gerek kalmasın diye
 // (tek geliştiricili, küçük ölçekli bir proje için makul bir kısayol).
@@ -54,7 +62,7 @@ app.MapPost("/api/dev/ingest/{brand}", async (string brand, IEnumerable<IBrandSc
 
     var count = await ingestion.IngestAsync(scraper, ct);
     return Results.Ok(new { brand = scraper.BrandName, scrapedCount = count });
-});
+}).RequireAdminKey(adminApiKey);
 
 app.MapGet("/api/deals", async (
     DealsQueryService deals, string[]? brands, string[]? categories, string? search,
@@ -126,7 +134,7 @@ app.MapPost("/api/dev/coupons", async (CreateCouponRequest request, CouponServic
 {
     var result = await coupons.CreateAsync(request, ct);
     return result is null ? Results.NotFound($"'{request.BrandName}' adında marka bulunamadı.") : Results.Ok(result);
-});
+}).RequireAdminKey(adminApiKey);
 
 app.MapGet("/api/products/{id:int}/price-history", async (int id, int? days, PriceHistoryQueryService service, CancellationToken ct) =>
 {
@@ -151,3 +159,18 @@ app.MapGet("/go/{productId:int}", async (int productId, AppDbContext db, Cancell
 });
 
 app.Run();
+
+static class AdminAuthExtensions
+{
+    public static RouteHandlerBuilder RequireAdminKey(this RouteHandlerBuilder builder, string? expectedKey)
+    {
+        return builder.AddEndpointFilter(async (context, next) =>
+        {
+            var providedKey = context.HttpContext.Request.Headers["X-Admin-Key"].FirstOrDefault();
+            if (string.IsNullOrEmpty(expectedKey) || providedKey != expectedKey)
+                return Results.Unauthorized();
+
+            return await next(context);
+        });
+    }
+}
