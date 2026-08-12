@@ -3,6 +3,7 @@ import { Component, computed, effect, inject, input, output, signal } from '@ang
 
 import { Deal } from '../core/deal.model';
 import { PriceHistoryService } from '../core/price-history.service';
+import { formatRelativeTime } from '../core/relative-time';
 
 interface TimeRangeOption {
   label: string;
@@ -39,6 +40,7 @@ export class ProductModal {
 
   protected readonly timeRanges = TIME_RANGES;
   protected readonly selectedRange = signal<TimeRangeOption>(TIME_RANGES[2]);
+  protected readonly lastCheckedText = computed(() => formatRelativeTime(this.deal().scrapedAt));
 
   // "loading": bir istek sürüyor. "hasData": en az bir kez veri geldi.
   // Sekme değişiminde eski grafiği gizlemek yerine üstünde soluk bir

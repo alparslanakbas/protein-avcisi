@@ -9,6 +9,7 @@ import { Coupon } from '../core/coupon.model';
 import { CouponsService } from '../core/coupons.service';
 import { Deal } from '../core/deal.model';
 import { DealsQuery, DealsService } from '../core/deals.service';
+import { formatRelativeTime } from '../core/relative-time';
 import { ThemePreference, ThemeService } from '../core/theme.service';
 import { ProductModal } from '../product-modal/product-modal';
 
@@ -275,6 +276,10 @@ export class DealsList implements OnInit {
 
   protected storeDiscountBadge(deal: Deal): string {
     return `Mağaza -%${deal.storeDiscountPercent}`;
+  }
+
+  protected lastCheckedText(deal: Deal): string {
+    return formatRelativeTime(deal.scrapedAt);
   }
 
   protected categoryLabel(category: string): string {
