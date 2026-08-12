@@ -74,7 +74,10 @@ app.get('/sitemap.xml', async (req, res) => {
 app.get('/robots.txt', (req, res) => {
   const origin = `${req.protocol}://${req.get('host')}`;
   res.set('Content-Type', 'text/plain');
-  res.send(`User-agent: *\nAllow: /\n\nSitemap: ${origin}/sitemap.xml\n`);
+  // /go/{id} affiliate yönlendirmeleri gerçek bir içerik sayfası değil,
+  // dış siteye 302 atan bir uç nokta — botlar bunu ayrı bir "sayfa" gibi
+  // taramaya/indekslemeye çalışmasın diye kapatıyoruz.
+  res.send(`User-agent: *\nAllow: /\nDisallow: /go/\n\nSitemap: ${origin}/sitemap.xml\n`);
 });
 
 /**
