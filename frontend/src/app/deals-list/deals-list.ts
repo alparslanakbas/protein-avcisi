@@ -195,6 +195,20 @@ export class DealsList implements OnInit {
     this.addFaqStructuredData();
     this.load();
 
+    // Sayfa numarası URL'de ?page= olarak tutuluyor — tarayıcının geri/ileri
+    // (mouse yan tuşları dahil) butonlarının sayfalama geçmişinde doğru
+    // gezinebilmesi için. goToPage() zaten currentPage'i set edip load()
+    // çağırdığından, bu abonelik asıl olarak URL DIŞARIDAN değiştiğinde
+    // (geri/ileri tuşu, paylaşılan link) devreye giriyor — sayfa zaten
+    // eşleşiyorsa tekrar yüklemiyor.
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      const page = Math.max(1, Number(params.get('page')) || 1);
+      if (page !== this.currentPage()) {
+        this.currentPage.set(page);
+        this.load();
+      }
+    });
+
     // Ürün modalı artık URL'e bağlı (/urun/:id) — bileşen '' ve 'urun/:id'
     // arasında yeniden kurulmadan yaşadığı için (bkz. DealsRouteReuseStrategy)
     // parametre değişikliklerine burada tek seferlik abone oluyoruz.
@@ -244,6 +258,7 @@ export class DealsList implements OnInit {
     this.viewMode.set(mode);
     this.currentPage.set(1);
     this.load();
+    this.syncPageQueryParam(1, false);
   }
 
   protected onSearchChange(value: string): void {
@@ -252,6 +267,7 @@ export class DealsList implements OnInit {
     this.searchDebounceHandle = setTimeout(() => {
       this.currentPage.set(1);
       this.load();
+      this.syncPageQueryParam(1, false);
     }, SEARCH_DEBOUNCE_MS);
   }
 
@@ -259,6 +275,7 @@ export class DealsList implements OnInit {
     this.sortBy.set(value);
     this.currentPage.set(1);
     this.load();
+    this.syncPageQueryParam(1, false);
   }
 
   protected toggleBrand(brand: string): void {
@@ -267,6 +284,7 @@ export class DealsList implements OnInit {
     this.selectedBrands.set(current);
     this.currentPage.set(1);
     this.load();
+    this.syncPageQueryParam(1, false);
   }
 
   protected toggleCategory(category: string): void {
@@ -275,18 +293,21 @@ export class DealsList implements OnInit {
     this.selectedCategories.set(current);
     this.currentPage.set(1);
     this.load();
+    this.syncPageQueryParam(1, false);
   }
 
   protected onPriceMinChange(value: number | null): void {
     this.priceMin.set(value);
     this.currentPage.set(1);
     this.load();
+    this.syncPageQueryParam(1, false);
   }
 
   protected onPriceMaxChange(value: number | null): void {
     this.priceMax.set(value);
     this.currentPage.set(1);
     this.load();
+    this.syncPageQueryParam(1, false);
   }
 
   protected clearFilters(): void {
@@ -297,14 +318,30 @@ export class DealsList implements OnInit {
     this.searchQuery.set('');
     this.currentPage.set(1);
     this.load();
+    this.syncPageQueryParam(1, false);
   }
 
   protected goToPage(page: number): void {
     if (page < 1 || page > this.totalPages() || page === this.currentPage()) return;
     this.currentPage.set(page);
     this.load();
+    // Yeni bir tarayıcı geçmişi kaydı oluştur (push) — geri/ileri tuşlarıyla
+    // sayfalar arasında doğru gezinilsin diye. Filtre/arama/sıralama
+    // değişiklikleri bunun aksine replaceUrl kullanıyor (bkz. syncPageQueryParam
+    // çağrıları yukarıda) — her filtre tıklaması ayrı bir "geri" durağı
+    // olmasın diye.
+    this.syncPageQueryParam(page, true);
     // Sayfa değişince en üste dön, kullanıcı grid'in ortasında kalmasın.
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  private syncPageQueryParam(page: number, push: boolean): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { page: page > 1 ? page : null },
+      queryParamsHandling: 'merge',
+      replaceUrl: !push,
+    });
   }
 
   private load(): void {
