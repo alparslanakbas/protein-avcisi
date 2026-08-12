@@ -1,0 +1,100 @@
+import { DecimalPipe } from '@angular/common';
+import { Component, OnInit, inject, signal } from '@angular/core';
+import { Meta, Title } from '@angular/platform-browser';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+
+import { Coupon } from '../core/coupon.model';
+import { CouponsService } from '../core/coupons.service';
+import { Deal } from '../core/deal.model';
+import { DealsService } from '../core/deals.service';
+
+@Component({
+  selector: 'app-brand-page',
+  imports: [DecimalPipe, RouterLink],
+  templateUrl: './brand-page.html',
+})
+export class BrandPage implements OnInit {
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly dealsService = inject(DealsService);
+  private readonly couponsService = inject(CouponsService);
+  private readonly titleService = inject(Title);
+  private readonly metaService = inject(Meta);
+
+  protected readonly brandName = signal<string>('');
+  protected readonly coupons = signal<Coupon[]>([]);
+  protected readonly deals = signal<Deal[]>([]);
+  protected readonly storeDeals = signal<Deal[]>([]);
+  protected readonly loading = signal(true);
+  protected readonly notFound = signal(false);
+
+  ngOnInit(): void {
+    this.route.paramMap.subscribe((params) => {
+      const slug = params.get('brandSlug') ?? '';
+      this.loadBrand(slug);
+    });
+  }
+
+  private loadBrand(slug: string): void {
+    this.loading.set(true);
+
+    this.dealsService.getFilterOptions().subscribe({
+      next: (options) => {
+        const match = options.brands.find((b) => b.toLowerCase() === slug.toLowerCase());
+        if (!match) {
+          // Soft-404 yerine gerçek yönlendirme — geçersiz bir marka slug'ı
+          // arama motorlarına 200 + "bulunamadı" metniyle değil, / adresine
+          // yönlendirmeyle (SSR'da gerçek bir HTTP 302) dönmeli.
+          this.router.navigate(['/']);
+          return;
+        }
+
+        this.brandName.set(match);
+        this.setMeta(match);
+
+        this.couponsService.getCoupons().subscribe((coupons) => {
+          this.coupons.set(coupons.filter((c) => c.brandName === match));
+        });
+
+        this.dealsService.getDeals({ brands: [match], pageSize: 12 }).subscribe((result) => {
+          this.deals.set(result.items);
+        });
+
+        this.dealsService.getStoreDeals({ brands: [match], pageSize: 12 }).subscribe({
+          next: (result) => {
+            this.storeDeals.set(result.items);
+            this.loading.set(false);
+          },
+          error: () => this.loading.set(false),
+        });
+      },
+      error: () => {
+        this.notFound.set(true);
+        this.loading.set(false);
+      },
+    });
+  }
+
+  private setMeta(brand: string): void {
+    const title = `${brand} İndirim Kodu ve Kampanyaları 2026 | ProteinAvcısı`;
+    const description = `${brand} için güncel kupon kodları ve gerçek fiyat geçmişine dayanan doğrulanmış indirimler. ProteinAvcısı, ${brand} markasının fiyatlarını düzenli olarak takip ediyor.`;
+
+    this.titleService.setTitle(title);
+    this.metaService.updateTag({ name: 'description', content: description });
+    this.metaService.updateTag({ property: 'og:title', content: title });
+    this.metaService.updateTag({ property: 'og:description', content: description });
+    this.metaService.updateTag({ property: 'og:type', content: 'website' });
+  }
+
+  protected discountBadge(deal: Deal): string {
+    return `-%${deal.discountPercent}`;
+  }
+
+  protected storeDiscountBadge(deal: Deal): string {
+    return `Mağaza -%${deal.storeDiscountPercent}`;
+  }
+
+  protected goToProduct(deal: Deal): void {
+    this.router.navigate(['/urun', deal.productId]);
+  }
+}

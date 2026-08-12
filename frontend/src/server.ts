@@ -19,6 +19,11 @@ interface SitemapEntry {
   lastScrapedAt: string;
 }
 
+interface FilterOptions {
+  brands: string[];
+  categories: string[];
+}
+
 // sitemap.xml ürün sayısına göre büyüyor, statik dosya olamaz — ham veriyi
 // backend'den (/api/products/sitemap) çekip burada XML'e çeviriyoruz. Bu
 // sunucu zaten kendi public origin'ini (req üzerinden) bildiği için domain'i
@@ -27,8 +32,12 @@ app.get('/sitemap.xml', async (req, res) => {
   const origin = `${req.protocol}://${req.get('host')}`;
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/products/sitemap`);
-    const products = (await response.json()) as SitemapEntry[];
+    const [productsResponse, filtersResponse] = await Promise.all([
+      fetch(`${API_BASE_URL}/api/products/sitemap`),
+      fetch(`${API_BASE_URL}/api/filters`),
+    ]);
+    const products = (await productsResponse.json()) as SitemapEntry[];
+    const filters = (await filtersResponse.json()) as FilterOptions;
 
     const productUrls = products
       .map(
@@ -37,10 +46,20 @@ app.get('/sitemap.xml', async (req, res) => {
       )
       .join('');
 
+    // Marka indirim kodu sayfaları — "[Marka] indirim kodu" araması için
+    // hedeflenen SEO içerik sayfaları.
+    const brandUrls = filters.brands
+      .map(
+        (brand) =>
+          `<url><loc>${origin}/marka/${brand.toLowerCase()}/indirim-kodu</loc><changefreq>daily</changefreq><priority>0.9</priority></url>`,
+      )
+      .join('');
+
     const xml =
       `<?xml version="1.0" encoding="UTF-8"?>` +
       `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">` +
       `<url><loc>${origin}/</loc><changefreq>hourly</changefreq><priority>1.0</priority></url>` +
+      brandUrls +
       productUrls +
       `</urlset>`;
 
