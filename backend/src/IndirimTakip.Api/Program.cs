@@ -3,6 +3,7 @@ using IndirimTakip.Infrastructure;
 using IndirimTakip.Infrastructure.Coupons;
 using IndirimTakip.Infrastructure.Deals;
 using IndirimTakip.Infrastructure.Scraping;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,14 +13,27 @@ builder.Services.AddOpenApi();
 
 builder.Services.AddInfrastructure(builder.Configuration);
 
-const string AngularDevCorsPolicy = "AngularDev";
+// İzinli origin'ler appsettings'ten okunuyor (Development'ta localhost:4200,
+// production'da hosting platformunun ortam değişkeniyle gerçek frontend
+// domain'i eklenecek) — kod değişikliği gerekmeden ortam başına ayarlanabilsin.
+const string CorsPolicy = "Frontend";
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy(AngularDevCorsPolicy, policy =>
-        policy.WithOrigins("http://localhost:4200").AllowAnyHeader().AllowAnyMethod());
+    options.AddPolicy(CorsPolicy, policy =>
+        policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod());
 });
 
 var app = builder.Build();
+
+// Uygulama açılırken bekleyen migration'ları otomatik uygula — hosting
+// platformunda elle migration komutu çalıştırmaya gerek kalmasın diye
+// (tek geliştiricili, küçük ölçekli bir proje için makul bir kısayol).
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<IndirimTakip.Infrastructure.AppDbContext>();
+    db.Database.Migrate();
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -28,7 +42,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseCors(AngularDevCorsPolicy);
+app.UseCors(CorsPolicy);
 
 // Geçici tetikleme endpoint'i: gerçek zamanlanmış worker (roadmap'teki
 // BackgroundService) eklenene kadar taramayı elle tetiklemek için.
