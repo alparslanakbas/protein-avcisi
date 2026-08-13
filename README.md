@@ -1,8 +1,6 @@
 # ProteinAvcısı
 
 🔗 **Canlı site:** [proteinavcisi.com.tr](https://proteinavcisi.com.tr)
-*(ücretsiz katmanda barınıyor — birkaç dakika hareketsiz kalırsa ilk istekte uyanması
-biraz zaman alabilir)*
 
 Türkiye'deki spor takviyesi / protein tozu markalarının indirimlerini otomatik olarak
 takip edip tek bir sayfada listeleyen bir web sitesi.
