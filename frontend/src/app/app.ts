@@ -3,10 +3,11 @@ import { RouterLink, RouterOutlet } from '@angular/router';
 
 import { CATEGORY_LABELS } from './core/category-labels';
 import { DealsService } from './core/deals.service';
+import { NewsletterSignup } from './newsletter-signup/newsletter-signup';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink],
+  imports: [RouterOutlet, RouterLink, NewsletterSignup],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })

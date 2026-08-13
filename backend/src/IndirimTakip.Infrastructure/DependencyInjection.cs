@@ -6,6 +6,7 @@ using IndirimTakip.Infrastructure.Scraping.Hardline;
 using IndirimTakip.Infrastructure.Scraping.Hiq;
 using IndirimTakip.Infrastructure.Scraping.ProteinOcean;
 using IndirimTakip.Infrastructure.Scraping.Ssn;
+using IndirimTakip.Infrastructure.Subscribers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -55,6 +56,12 @@ public static class DependencyInjection
         services.AddScoped<PriceHistoryQueryService>();
         services.AddScoped<CouponService>();
         services.AddHostedService<ScrapingBackgroundService>();
+
+        services.AddHttpClient<IEmailSender, BrevoEmailSender>(client =>
+        {
+            client.BaseAddress = new Uri("https://api.brevo.com/");
+        });
+        services.AddScoped<SubscriberService>();
 
         return services;
     }

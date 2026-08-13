@@ -3,6 +3,7 @@ using IndirimTakip.Infrastructure;
 using IndirimTakip.Infrastructure.Coupons;
 using IndirimTakip.Infrastructure.Deals;
 using IndirimTakip.Infrastructure.Scraping;
+using IndirimTakip.Infrastructure.Subscribers;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -158,7 +159,65 @@ app.MapGet("/go/{productId:int}", async (int productId, AppDbContext db, Cancell
     return Results.Redirect(product.Url, permanent: false);
 });
 
+// E-posta bülteni: double opt-in zorunlu (İYS/KVKK gereği) — bu endpoint
+// hiçbir aboneyi doğrudan aktifleştirmiyor, sadece onay maili tetikliyor.
+app.MapPost("/api/subscribe", async (SubscribeRequest request, SubscriberService subscribers, HttpContext http, CancellationToken ct) =>
+{
+    if (string.IsNullOrWhiteSpace(request.Email) || !request.Email.Contains('@'))
+        return Results.BadRequest(new { message = "Geçerli bir e-posta adresi girin." });
+
+    var confirmBaseUrl = $"{http.Request.Scheme}://{http.Request.Host}";
+    await subscribers.SubscribeAsync(request, confirmBaseUrl, ct);
+    return Results.Ok(new { message = "E-postanı kontrol et, onay bağlantısı gönderdik." });
+});
+
+// Onay/abonelikten çıkma linkleri e-postadan doğrudan tıklanıyor, bu yüzden
+// JSON değil basit bir HTML sayfası dönüyor — ayrı bir frontend route'u
+// kurmak bu iki statik mesaj için gereksiz olurdu. charset=utf-8 elle
+// belirtilmezse tarayıcı Türkçe karakterleri bozuk gösterebiliyor.
+app.MapGet("/api/subscribe/confirm/{token}", async (string token, SubscriberService subscribers, CancellationToken ct) =>
+{
+    var success = await subscribers.ConfirmAsync(token, ct);
+    var html = success
+        ? BuildInfoPage("Aboneliğin onaylandı!", "Artık öne çıkan indirimlerden haberdar olacaksın.")
+        : BuildInfoPage("Bu bağlantı geçersiz.", "Onay linki süresi geçmiş ya da daha önce kullanılmış olabilir.");
+    return Results.Content(html, "text/html; charset=utf-8");
+});
+
+app.MapGet("/api/subscribe/unsubscribe/{token}", async (string token, SubscriberService subscribers, CancellationToken ct) =>
+{
+    var success = await subscribers.UnsubscribeAsync(token, ct);
+    var html = success
+        ? BuildInfoPage("Bültenden çıkarıldın.", "Fikrini değiştirirsen tekrar abone olabilirsin.")
+        : BuildInfoPage("Bu bağlantı geçersiz.", "Bağlantı süresi geçmiş ya da daha önce kullanılmış olabilir.");
+    return Results.Content(html, "text/html; charset=utf-8");
+});
+
 app.Run();
+
+// Onay/çıkış linklerinin ikisi de aynı markalı kart tasarımını kullanıyor —
+// site genelindeki renk paletiyle (brand-600 yeşil, stone nötrleri) tutarlı.
+static string BuildInfoPage(string heading, string message) => $"""
+    <!doctype html>
+    <html lang="tr">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Protein Avcısı</title>
+    </head>
+    <body style="margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;background:#fafaf9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+      <div style="max-width:420px;width:100%;background:#ffffff;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,0.08);padding:40px 32px;text-align:center;">
+        <div style="display:inline-flex;align-items:center;gap:8px;margin-bottom:28px;">
+          <div style="width:36px;height:36px;border-radius:8px;background:#059669;color:#fff;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;">PA</div>
+          <span style="font-size:18px;font-weight:700;color:#1c1917;">Protein<span style="color:#059669;">Avcısı</span></span>
+        </div>
+        <h1 style="font-size:20px;font-weight:800;color:#1c1917;margin:0 0 8px;">{heading}</h1>
+        <p style="font-size:14px;color:#78716c;margin:0 0 28px;line-height:1.5;">{message}</p>
+        <a href="https://proteinavcisi.com.tr" style="display:inline-block;background:#059669;color:#fff;text-decoration:none;font-weight:600;font-size:14px;padding:12px 28px;border-radius:9999px;">Siteye Dön</a>
+      </div>
+    </body>
+    </html>
+    """;
 
 static class AdminAuthExtensions
 {
