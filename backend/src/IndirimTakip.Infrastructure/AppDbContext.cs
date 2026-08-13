@@ -10,6 +10,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<PriceHistory> PriceHistories => Set<PriceHistory>();
     public DbSet<Coupon> Coupons => Set<Coupon>();
     public DbSet<Subscriber> Subscribers => Set<Subscriber>();
+    public DbSet<ProductWatch> ProductWatches => Set<ProductWatch>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -56,6 +57,19 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             s.Property(x => x.Token).HasMaxLength(64);
             s.HasIndex(x => x.Email).IsUnique();
             s.HasIndex(x => x.Token).IsUnique();
+        });
+
+        modelBuilder.Entity<ProductWatch>(w =>
+        {
+            w.HasOne(x => x.Subscriber)
+                .WithMany()
+                .HasForeignKey(x => x.SubscriberId)
+                .OnDelete(DeleteBehavior.Cascade);
+            w.HasOne(x => x.Product)
+                .WithMany()
+                .HasForeignKey(x => x.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+            w.HasIndex(x => new { x.SubscriberId, x.ProductId }).IsUnique();
         });
     }
 }

@@ -13,25 +13,38 @@ public class SubscriberService(AppDbContext db, IEmailSender emailSender)
 {
     public async Task SubscribeAsync(SubscribeRequest request, string confirmBaseUrl, CancellationToken cancellationToken = default)
     {
-        var email = request.Email.Trim().ToLowerInvariant();
+        var subscriber = await GetOrCreateSubscriberAsync(request.Email, cancellationToken);
+        if (subscriber.IsConfirmed)
+            return;
 
-        var subscriber = await db.Subscribers.FirstOrDefaultAsync(s => s.Email == email, cancellationToken);
+        await SendConfirmationEmailAsync(subscriber, confirmBaseUrl, cancellationToken);
+    }
+
+    // "Haber Ver" (ürün fiyat izleme) gibi başka akışların da abone
+    // kaydı oluşturması/bulması gerekiyor — aynı Subscriber tablosu ve
+    // aynı onay süreci kullanılıyor, ayrı bir izin mekanizması gerekmedi.
+    public async Task<Subscriber> GetOrCreateSubscriberAsync(string email, CancellationToken cancellationToken = default)
+    {
+        var normalized = email.Trim().ToLowerInvariant();
+
+        var subscriber = await db.Subscribers.FirstOrDefaultAsync(s => s.Email == normalized, cancellationToken);
         if (subscriber is null)
         {
             subscriber = new Subscriber
             {
-                Email = email,
+                Email = normalized,
                 Token = Guid.NewGuid().ToString("N"),
                 SubscribedAt = DateTimeOffset.UtcNow,
             };
             db.Subscribers.Add(subscriber);
             await db.SaveChangesAsync(cancellationToken);
         }
-        else if (subscriber.IsConfirmed)
-        {
-            return;
-        }
 
+        return subscriber;
+    }
+
+    public async Task SendConfirmationEmailAsync(Subscriber subscriber, string confirmBaseUrl, CancellationToken cancellationToken = default)
+    {
         var confirmUrl = $"{confirmBaseUrl}/api/subscribe/confirm/{subscriber.Token}";
         // E-posta istemcileri (Gmail dahil) flexbox'ı güvenilir desteklemiyor,
         // bu yüzden confirm sayfasındaki gibi değil, inline-block/vertical-align

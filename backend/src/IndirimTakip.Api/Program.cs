@@ -144,6 +144,18 @@ app.MapGet("/api/products/{id:int}/price-history", async (int id, int? days, Pri
     return result is null ? Results.NotFound() : Results.Ok(result);
 });
 
+// "Haber Ver" — bir sonraki taramada bu ürünün fiyatı gerçekten düşerse
+// tek seferlik bir bildirim e-postası gönderiliyor (bkz. ProductWatchNotifier).
+app.MapPost("/api/products/{id:int}/watch", async (int id, WatchProductRequest request, ProductWatchService watchService, HttpContext http, CancellationToken ct) =>
+{
+    if (string.IsNullOrWhiteSpace(request.Email) || !request.Email.Contains('@'))
+        return Results.BadRequest(new { message = "Geçerli bir e-posta adresi girin." });
+
+    var confirmBaseUrl = $"{http.Request.Scheme}://{http.Request.Host}";
+    var success = await watchService.WatchAsync(id, request, confirmBaseUrl, ct);
+    return success ? Results.Ok(new { message = "Fiyat düşünce sana haber vereceğiz." }) : Results.NotFound();
+});
+
 // Affiliate altyapısı: ürün linkleri buradan geçiyor ki ileride affiliate
 // id eklemek kolay olsun (roadmap adım 7). Şimdilik sadece tıklama sayısını
 // tutuyor, dış siteye 302 ile yönlendiriyor.

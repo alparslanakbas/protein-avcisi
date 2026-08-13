@@ -1,10 +1,11 @@
 using IndirimTakip.Core.Entities;
 using IndirimTakip.Core.Scraping;
+using IndirimTakip.Infrastructure.Subscribers;
 using Microsoft.EntityFrameworkCore;
 
 namespace IndirimTakip.Infrastructure.Scraping;
 
-public class ScrapeIngestionService(AppDbContext db)
+public class ScrapeIngestionService(AppDbContext db, ProductWatchNotifier watchNotifier)
 {
     public async Task<int> IngestAsync(IBrandScraper scraper, CancellationToken cancellationToken = default)
     {
@@ -21,6 +22,8 @@ public class ScrapeIngestionService(AppDbContext db)
         var existingProducts = await db.Products
             .Where(p => p.Brand!.Name == scraper.BrandName)
             .ToDictionaryAsync(p => p.Url, cancellationToken);
+
+        var touchedProducts = new List<Product>();
 
         foreach (var scraped in scrapedProducts)
         {
@@ -61,9 +64,15 @@ public class ScrapeIngestionService(AppDbContext db)
                 StoreOldPrice = scraped.StoreOldPrice,
                 ScrapedAt = scrapedAt,
             });
+            touchedProducts.Add(product);
         }
 
         await db.SaveChangesAsync(cancellationToken);
+
+        // "Haber Ver" bildirimleri — yeni ürünlerin Id'si de ancak
+        // SaveChangesAsync sonrası kesinleşiyor, bu yüzden burada.
+        await watchNotifier.CheckAndNotifyAsync(touchedProducts.Select(p => p.Id).ToList(), cancellationToken);
+
         return scrapedProducts.Count;
     }
 }

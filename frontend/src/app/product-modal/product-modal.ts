@@ -1,11 +1,13 @@
 import { DOCUMENT, DecimalPipe } from '@angular/common';
 import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
 import { canonicalOrigin } from '../core/canonical-link';
 import { Deal } from '../core/deal.model';
 import { PriceHistoryService } from '../core/price-history.service';
 import { formatRelativeTime } from '../core/relative-time';
+import { WatchService } from '../core/watch.service';
 import { ShareButton } from '../share-button/share-button';
 
 interface TimeRangeOption {
@@ -42,11 +44,12 @@ const tooltipDateTimeFormatter = new Intl.DateTimeFormat('tr-TR', {
 
 @Component({
   selector: 'app-product-modal',
-  imports: [DecimalPipe, ShareButton, RouterLink],
+  imports: [DecimalPipe, ShareButton, RouterLink, FormsModule],
   templateUrl: './product-modal.html',
 })
 export class ProductModal {
   private readonly priceHistoryService = inject(PriceHistoryService);
+  private readonly watchService = inject(WatchService);
   private readonly document = inject(DOCUMENT);
 
   readonly deal = input.required<Deal>();
@@ -70,6 +73,13 @@ export class ProductModal {
   protected readonly maxPrice = signal(0);
   protected readonly currentPrice = signal(0);
   protected readonly hoverIndex = signal<number | null>(null);
+
+  // "Haber Ver" — bu ürünün fiyatı bir sonraki taramada düşerse tek
+  // seferlik bir bildirim e-postası almak için.
+  protected readonly watchFormOpen = signal(false);
+  protected readonly watchEmail = signal('');
+  protected readonly watchSubmitting = signal(false);
+  protected readonly watchStatusMessage = signal<string | null>(null);
 
   protected readonly coordinates = computed(() => this.toCoordinates(this.points(), this.minPrice(), this.maxPrice()));
   protected readonly chartAreaPath = computed(() => this.buildAreaPath(this.coordinates()));
@@ -125,6 +135,29 @@ export class ProductModal {
     if (x <= 0) return 'left-0';
     if (x >= CHART_WIDTH) return '-translate-x-full';
     return '-translate-x-1/2';
+  }
+
+  protected toggleWatchForm(): void {
+    this.watchFormOpen.update((open) => !open);
+    this.watchStatusMessage.set(null);
+  }
+
+  protected onWatchSubmit(): void {
+    const email = this.watchEmail().trim();
+    if (!email) return;
+
+    this.watchSubmitting.set(true);
+    this.watchService.watch(this.deal().productId, email).subscribe({
+      next: (result) => {
+        this.watchStatusMessage.set(result.message);
+        this.watchEmail.set('');
+        this.watchSubmitting.set(false);
+      },
+      error: () => {
+        this.watchStatusMessage.set('Bir şeyler ters gitti, tekrar dener misin?');
+        this.watchSubmitting.set(false);
+      },
+    });
   }
 
   protected selectRange(range: TimeRangeOption): void {
