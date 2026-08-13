@@ -106,6 +106,16 @@ export class ProductModal {
     });
   }
 
+  // İlk ve son X ekseni etiketi tam kenara ortalanınca (-translate-x-1/2)
+  // yarısı konteynerin dışına taşıp kesiliyordu (mobilde özellikle belirgin,
+  // dar viewport'ta kenar payı daha az) — uçlardaki etiketleri kenara
+  // ortalamak yerine kenara yaslıyoruz, ortadakiler ortalı kalıyor.
+  protected xAxisLabelAlignClass(x: number): string {
+    if (x <= 0) return 'left-0';
+    if (x >= CHART_WIDTH) return '-translate-x-full';
+    return '-translate-x-1/2';
+  }
+
   protected selectRange(range: TimeRangeOption): void {
     this.selectedRange.set(range);
   }

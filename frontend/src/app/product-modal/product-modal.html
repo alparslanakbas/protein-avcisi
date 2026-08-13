@@ -107,7 +107,7 @@
           </div>
           <div class="relative mt-1 h-4 text-[10px] text-stone-400 dark:text-stone-500">
             @for (tick of xAxisLabels(); track tick.label + tick.x) {
-              <span class="absolute -translate-x-1/2" [style.left.%]="(tick.x / 600) * 100">{{ tick.label }}</span>
+              <span class="absolute" [class]="xAxisLabelAlignClass(tick.x)" [style.left.%]="(tick.x / 600) * 100">{{ tick.label }}</span>
             }
           </div>
         </div>
