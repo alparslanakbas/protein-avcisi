@@ -1,6 +1,6 @@
 # ProteinAvcısı
 
-🔗 **Canlı site:** [protein-avcisi.onrender.com](https://protein-avcisi.onrender.com)
+🔗 **Canlı site:** [proteinavcisi.com.tr](https://proteinavcisi.com.tr)
 *(ücretsiz katmanda barınıyor — birkaç dakika hareketsiz kalırsa ilk istekte uyanması
 biraz zaman alabilir)*
 
