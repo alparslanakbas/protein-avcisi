@@ -2,6 +2,7 @@ import { DOCUMENT, DecimalPipe } from '@angular/common';
 import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
+import { canonicalOrigin } from '../core/canonical-link';
 import { Deal } from '../core/deal.model';
 import { PriceHistoryService } from '../core/price-history.service';
 import { formatRelativeTime } from '../core/relative-time';
@@ -51,7 +52,7 @@ export class ProductModal {
   readonly deal = input.required<Deal>();
   readonly closed = output<void>();
 
-  protected readonly shareUrl = computed(() => `${this.document.location.origin}/urun/${this.deal().productId}`);
+  protected readonly shareUrl = computed(() => `${canonicalOrigin(this.document)}/urun/${this.deal().productId}`);
 
   protected readonly timeRanges = TIME_RANGES;
   protected readonly selectedRange = signal<TimeRangeOption>(TIME_RANGES[2]);

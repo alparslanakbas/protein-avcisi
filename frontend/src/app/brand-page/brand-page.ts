@@ -1,8 +1,9 @@
-import { DecimalPipe } from '@angular/common';
+import { DOCUMENT, DecimalPipe } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { Meta, Title } from '@angular/platform-browser';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
+import { setCanonicalLink } from '../core/canonical-link';
 import { Coupon } from '../core/coupon.model';
 import { CouponsService } from '../core/coupons.service';
 import { Deal } from '../core/deal.model';
@@ -20,6 +21,7 @@ export class BrandPage implements OnInit {
   private readonly couponsService = inject(CouponsService);
   private readonly titleService = inject(Title);
   private readonly metaService = inject(Meta);
+  private readonly document = inject(DOCUMENT);
 
   protected readonly brandName = signal<string>('');
   protected readonly coupons = signal<Coupon[]>([]);
@@ -88,6 +90,7 @@ export class BrandPage implements OnInit {
     this.metaService.updateTag({ property: 'og:title', content: title });
     this.metaService.updateTag({ property: 'og:description', content: description });
     this.metaService.updateTag({ property: 'og:type', content: 'website' });
+    setCanonicalLink(this.document, `/marka/${brand.toLowerCase()}/indirim-kodu`);
   }
 
   protected discountBadge(deal: Deal): string {

@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { Meta, Title } from '@angular/platform-browser';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
+import { canonicalOrigin, setCanonicalLink } from '../core/canonical-link';
 import { Coupon } from '../core/coupon.model';
 import { CouponsService } from '../core/coupons.service';
 import { Deal } from '../core/deal.model';
@@ -134,6 +135,7 @@ export class DealsList implements OnInit {
         this.metaService.removeTag('property="og:image"');
         this.structuredDataEl?.remove();
         this.structuredDataEl = null;
+        setCanonicalLink(this.document, '/');
         return;
       }
 
@@ -154,6 +156,7 @@ export class DealsList implements OnInit {
       } else {
         this.metaService.removeTag('property="og:image"');
       }
+      setCanonicalLink(this.document, `/urun/${deal.productId}`);
 
       // schema.org Product/Offer — Google'ın arama sonucunda fiyat gösterme
       // ihtimali için. "availability" bilinçli olarak yok: 4 markanın
@@ -169,7 +172,7 @@ export class DealsList implements OnInit {
         brand: { '@type': 'Brand', name: deal.brandName },
         offers: {
           '@type': 'Offer',
-          url: `${this.document.location.origin}/urun/${deal.productId}`,
+          url: `${canonicalOrigin(this.document)}/urun/${deal.productId}`,
           priceCurrency: 'TRY',
           price: deal.currentPrice.toFixed(2),
         },

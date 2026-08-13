@@ -1,8 +1,9 @@
-import { DecimalPipe } from '@angular/common';
+import { DOCUMENT, DecimalPipe } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { Meta, Title } from '@angular/platform-browser';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
+import { setCanonicalLink } from '../core/canonical-link';
 import { CATEGORY_LABELS } from '../core/category-labels';
 import { Deal } from '../core/deal.model';
 import { DealsService } from '../core/deals.service';
@@ -43,6 +44,7 @@ export class CategoryPage implements OnInit {
   private readonly dealsService = inject(DealsService);
   private readonly titleService = inject(Title);
   private readonly metaService = inject(Meta);
+  private readonly document = inject(DOCUMENT);
 
   protected readonly categorySlug = signal<string>('');
   protected readonly categoryLabel = signal<string>('');
@@ -82,6 +84,7 @@ export class CategoryPage implements OnInit {
             .map((c) => ({ slug: c, label: CATEGORY_LABELS[c] ?? c })),
         );
         this.setMeta(label);
+        setCanonicalLink(this.document, `/kategori/${match}`);
 
         this.dealsService.getDeals({ categories: [match], pageSize: 12 }).subscribe((result) => {
           this.deals.set(result.items);
