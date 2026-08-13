@@ -62,6 +62,7 @@ public static class DependencyInjection
             client.BaseAddress = new Uri("https://api.brevo.com/");
         });
         services.AddScoped<SubscriberService>();
+        services.AddScoped<DigestService>();
 
         return services;
     }

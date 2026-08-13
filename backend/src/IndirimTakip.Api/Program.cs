@@ -193,6 +193,18 @@ app.MapGet("/api/subscribe/unsubscribe/{token}", async (string token, Subscriber
     return Results.Content(html, "text/html; charset=utf-8");
 });
 
+// Geçici tetikleme endpoint'i (roadmap'teki /api/dev/ingest ile aynı desende):
+// bülten gönderimi henüz otomatik/zamanlanmış değil, elle tetikleniyor —
+// gerçek abone hacmi oluşana kadar sıklık/zamanlama konusunda erken karar
+// vermek istemedik (aynı gerekçeyle tarama da önce elle tetiklenip sonra
+// BackgroundService'e geçmişti).
+app.MapPost("/api/dev/send-digest", async (DigestService digest, HttpContext http, CancellationToken ct) =>
+{
+    var baseUrl = $"{http.Request.Scheme}://{http.Request.Host}";
+    var result = await digest.SendDigestAsync(baseUrl, ct);
+    return Results.Ok(result);
+}).RequireAdminKey(adminApiKey);
+
 app.Run();
 
 // Onay/çıkış linklerinin ikisi de aynı markalı kart tasarımını kullanıyor —
