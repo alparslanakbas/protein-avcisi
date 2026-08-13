@@ -1,0 +1,30 @@
+@if (consent.status() === null) {
+  <div class="fixed inset-x-0 bottom-0 z-40 border-t border-stone-200 bg-white/95 px-4 py-4 backdrop-blur dark:border-stone-800 dark:bg-stone-900/95 sm:px-6">
+    <div class="mx-auto flex max-w-6xl flex-col items-center gap-3 sm:flex-row sm:justify-between">
+      <p class="text-center text-xs text-stone-500 dark:text-stone-400 sm:text-left">
+        Bu site şu anda reklam veya analiz amaçlı çerez kullanmıyor — sadece tema tercihin gibi ayarlar
+        tarayıcının yerel depolamasında (localStorage) tutuluyor. İleride reklam/analitik eklenirse bu
+        tercihin geçerli olacak.
+        <a routerLink="/cerez-politikasi" class="font-medium text-brand-600 hover:underline dark:text-brand-400">
+          Çerez Politikası
+        </a>
+      </p>
+      <div class="flex shrink-0 items-center gap-2">
+        <button
+          type="button"
+          (click)="consent.reject()"
+          class="rounded-full border border-stone-200 px-4 py-1.5 text-xs font-semibold text-stone-500 transition-colors hover:border-stone-300 hover:text-stone-700 dark:border-stone-700 dark:text-stone-400 dark:hover:text-stone-200"
+        >
+          Reddet
+        </button>
+        <button
+          type="button"
+          (click)="consent.accept()"
+          class="rounded-full bg-brand-600 px-4 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-brand-700"
+        >
+          Kabul Et
+        </button>
+      </div>
+    </div>
+  </div>
+}
