@@ -65,6 +65,7 @@ public static class DependencyInjection
         services.AddScoped<DigestService>();
         services.AddScoped<ProductWatchService>();
         services.AddScoped<ProductWatchNotifier>();
+        services.AddHostedService<DigestBackgroundService>();
 
         return services;
     }

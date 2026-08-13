@@ -37,7 +37,7 @@ public class DigestService(AppDbContext db, DealsQueryService dealsQuery, IEmail
         {
             var unsubscribeUrl = $"{unsubscribeBaseUrl}/api/subscribe/unsubscribe/{subscriber.Token}";
             var html = BuildDigestHtml(dealsHtml, unsubscribeUrl);
-            await emailSender.SendAsync(subscriber.Email, "Protein Avcısı — Bugünün Öne Çıkan İndirimleri", html, cancellationToken);
+            await emailSender.SendAsync(subscriber.Email, "Protein Avcısı — Bu Haftanın Öne Çıkan İndirimleri", html, cancellationToken);
         }
 
         return new DigestResult(deals.Items.Count, subscribers.Count);
@@ -85,7 +85,7 @@ public class DigestService(AppDbContext db, DealsQueryService dealsQuery, IEmail
             <span style="font-size:18px;font-weight:700;color:#1c1917;vertical-align:middle;margin-left:8px;">Protein<span style="color:#059669;">Avcısı</span></span>
           </div>
           <div style="background:#ffffff;border:1px solid #e7e5e4;border-radius:16px;padding:24px 20px;">
-            <h1 style="font-size:16px;font-weight:800;color:#1c1917;margin:0 0 16px;">Bugünün Öne Çıkan İndirimleri</h1>
+            <h1 style="font-size:16px;font-weight:800;color:#1c1917;margin:0 0 16px;">Bu Haftanın Öne Çıkan İndirimleri</h1>
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
               {dealsHtml}
             </table>

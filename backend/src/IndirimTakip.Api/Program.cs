@@ -205,11 +205,9 @@ app.MapGet("/api/subscribe/unsubscribe/{token}", async (string token, Subscriber
     return Results.Content(html, "text/html; charset=utf-8");
 });
 
-// Geçici tetikleme endpoint'i (roadmap'teki /api/dev/ingest ile aynı desende):
-// bülten gönderimi henüz otomatik/zamanlanmış değil, elle tetikleniyor —
-// gerçek abone hacmi oluşana kadar sıklık/zamanlama konusunda erken karar
-// vermek istemedik (aynı gerekçeyle tarama da önce elle tetiklenip sonra
-// BackgroundService'e geçmişti).
+// Asıl gönderim artık DigestBackgroundService ile haftada bir otomatik
+// tetikleniyor — bu endpoint elle/anlık test tetiklemesi için hâlâ duruyor
+// (aynı /api/dev/ingest deseninde, BackgroundService eklendikten sonra da).
 app.MapPost("/api/dev/send-digest", async (DigestService digest, HttpContext http, CancellationToken ct) =>
 {
     var baseUrl = $"{http.Request.Scheme}://{http.Request.Host}";
