@@ -191,11 +191,17 @@ export class ProductModal {
       return [{ x: CHART_WIDTH / 2, label: axisDateFormatter.format(new Date(minTime)) }];
     }
 
-    return Array.from({ length: AXIS_LABEL_COUNT }, (_, i) => {
+    const candidates = Array.from({ length: AXIS_LABEL_COUNT }, (_, i) => {
       const fraction = i / (AXIS_LABEL_COUNT - 1);
       const t = minTime + (maxTime - minTime) * fraction;
       return { x: fraction * CHART_WIDTH, label: axisDateFormatter.format(new Date(t)) };
     });
+
+    // Veri aralığı kısayken (ör. fiyat takibi daha birkaç gün sürdüğünde)
+    // eşit zaman aralıklı 5 nokta aynı takvim gününe denk gelip aynı
+    // etiketi (ör. "11 Ağu") art arda birden fazla kez gösterebiliyordu —
+    // ardışık aynı etiketleri tekilleştiriyoruz.
+    return candidates.filter((c, i) => i === 0 || c.label !== candidates[i - 1].label);
   }
 
   private toCoordinates(points: { price: number; scrapedAt: string }[], min: number, max: number): [number, number][] {
