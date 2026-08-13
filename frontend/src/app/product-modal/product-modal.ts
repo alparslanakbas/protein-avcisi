@@ -28,6 +28,16 @@ const AXIS_LABEL_COUNT = 5;
 
 const axisDateFormatter = new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'short' });
 const tooltipDateFormatter = new Intl.DateTimeFormat('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+// Aynı gün içinde fiyat gerçekten değiştiyse (dedupeSameDaySamePrice sonrası
+// hâlâ aynı güne ait birden fazla nokta kaldıysa) sadece tarih yetersiz
+// kalıyor — o durumda saat de eklenip hangi anda değiştiği gösteriliyor.
+const tooltipDateTimeFormatter = new Intl.DateTimeFormat('tr-TR', {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+});
 
 @Component({
   selector: 'app-product-modal',
@@ -84,7 +94,7 @@ export class ProductModal {
       y,
       align,
       price: pts[idx].price,
-      dateLabel: tooltipDateFormatter.format(new Date(pts[idx].scrapedAt)),
+      dateLabel: this.tooltipDateLabel(pts, idx),
     };
   });
 
@@ -159,7 +169,7 @@ export class ProductModal {
 
     this.priceHistoryService.get(productId, days).subscribe({
       next: (history) => {
-        this.points.set(history.points);
+        this.points.set(this.dedupeSameDaySamePrice(history.points));
         this.minPrice.set(history.minPrice);
         this.maxPrice.set(history.maxPrice);
         this.currentPrice.set(history.currentPrice);
@@ -171,6 +181,41 @@ export class ProductModal {
         this.loading.set(false);
       },
     });
+  }
+
+  // Tarama günde birkaç kez çalıştığı için aynı gün içinde fiyat hiç
+  // değişmemişse birden fazla nokta birikiyordu — hover'da art arda aynı
+  // günü/fiyatı gösteren anlamsız duraklara yol açıyordu (saat/dakika
+  // göstermiyoruz, sadece gün). Aynı gün + aynı fiyat olan ardışık
+  // noktaları tek noktaya indiriyoruz; fiyat o gün içinde değiştiyse
+  // (gerçek bir bilgi) ikisi de kalıyor. Sadece grafiğin çizdiği/hover
+  // ettiği noktalar etkileniyor — En Düşük/En Yüksek/Şu Anki Fiyat
+  // kutuları hâlâ ham backend verisinden (history.minPrice vb.) geliyor.
+  // Aynı gün içinde (dedupe sonrası) başka bir nokta daha kaldıysa, bu
+  // gerçek bir gün-içi fiyat değişikliği demektir — sadece tarih göstermek
+  // hangi nokta hangi an olduğunu ayırt ettirmiyor, saat de ekleniyor.
+  private tooltipDateLabel(points: { price: number; scrapedAt: string }[], idx: number): string {
+    const day = axisDateFormatter.format(new Date(points[idx].scrapedAt));
+    const sameDayCount = points.filter((p) => axisDateFormatter.format(new Date(p.scrapedAt)) === day).length;
+    const formatter = sameDayCount > 1 ? tooltipDateTimeFormatter : tooltipDateFormatter;
+    return formatter.format(new Date(points[idx].scrapedAt));
+  }
+
+  private dedupeSameDaySamePrice(points: { price: number; scrapedAt: string }[]): { price: number; scrapedAt: string }[] {
+    const result: { price: number; scrapedAt: string }[] = [];
+
+    for (const point of points) {
+      const prev = result[result.length - 1];
+      const sameDay = prev && axisDateFormatter.format(new Date(prev.scrapedAt)) === axisDateFormatter.format(new Date(point.scrapedAt));
+
+      if (prev && sameDay && prev.price === point.price) {
+        result[result.length - 1] = point;
+      } else {
+        result.push(point);
+      }
+    }
+
+    return result;
   }
 
   private buildLinePath(coords: [number, number][]): string {
