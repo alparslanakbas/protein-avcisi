@@ -415,11 +415,11 @@ export class DealsList implements OnInit {
   }
 
   protected openDeal(deal: Deal): void {
-    this.router.navigate(['/urun', deal.productId]);
+    this.router.navigate(['/urun', deal.productId], { queryParamsHandling: 'preserve' });
   }
 
   protected closeDeal(): void {
-    this.router.navigate(['/']);
+    this.router.navigate(['/'], { queryParamsHandling: 'preserve' });
   }
 
   // Gerçek besin değeri verisi olan ürünlerde (şimdilik sadece HIQ) servis

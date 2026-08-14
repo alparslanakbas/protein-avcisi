@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Text.RegularExpressions;
 
 namespace IndirimTakip.Infrastructure.Scraping;
@@ -73,7 +72,10 @@ public static partial class ProductAttributeParser
 
     public static string? InferCategory(string productName)
     {
-        var normalized = productName.ToLower(new CultureInfo("tr-TR"));
+        // ToLowerInvariant bilinçli — tr-TR kültüründe büyük "I" küçülünce
+        // noktasız "ı" oluyor ("CREATINE" -> "creatıne"), bu da aşağıdaki
+        // İngilizce anahtar kelimelerle ("creatine" gibi) hiç eşleşmiyordu.
+        var normalized = productName.ToLowerInvariant();
 
         foreach (var (category, keywords) in CategoryKeywords)
         {
@@ -82,6 +84,21 @@ public static partial class ProductAttributeParser
         }
 
         return null;
+    }
+
+    // Arama kutusu için: kullanıcı "kreatin" yazdığında "creatine" geçen
+    // ürünleri de (ve tersini) bulabilsin diye kategori tahmininde zaten
+    // var olan Türkçe/İngilizce eşanlamlı kelime gruplarını yeniden
+    // kullanıyoruz — ayrı bir eşanlamlı sözlük bakımı gerekmiyor.
+    public static IReadOnlyCollection<string> GetSearchSynonyms(string term)
+    {
+        foreach (var (_, keywords) in CategoryKeywords)
+        {
+            if (keywords.Any(keyword => keyword.Contains(term, StringComparison.Ordinal) || term.Contains(keyword, StringComparison.Ordinal)))
+                return keywords;
+        }
+
+        return [];
     }
 
     [GeneratedRegex(@"(?<value>\d+(?:[.,]\d+)?)\s*(?<unit>gr|g|kg|mg|ml|lt|l|adet|tablet|kaps[uü]l|kaps|caps|softjel|[şs]ase)\b", RegexOptions.IgnoreCase)]

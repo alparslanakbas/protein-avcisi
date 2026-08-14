@@ -1,3 +1,4 @@
+using IndirimTakip.Infrastructure.Scraping;
 using Microsoft.EntityFrameworkCore;
 
 namespace IndirimTakip.Infrastructure.Deals;
@@ -46,14 +47,21 @@ public class DealsQueryService(AppDbContext db)
         var searchTerm = search?.Trim().ToLower();
         if (!string.IsNullOrEmpty(searchTerm))
         {
+            // "kreatin" yazınca "creatine" geçen ürünleri de bulsun diye
+            // (ve tersi) eşanlamlı terimlerle arama terimini genişletiyoruz.
+            var synonyms = ProductAttributeParser.GetSearchSynonyms(searchTerm);
+            var searchTerms = synonyms.Count > 0
+                ? synonyms.Append(searchTerm).Distinct().ToArray()
+                : [searchTerm];
+
             // Kategori "protein-tozu" gibi tire'li saklanıyor; "protein tozu" araması
             // da eşleşsin diye tire'leri boşluğa çevirip karşılaştırıyoruz.
             query = query.Where(r =>
-                r.Product.Name.ToLower().Contains(searchTerm) ||
-                r.BrandName.ToLower().Contains(searchTerm) ||
-                (r.Product.Category != null && r.Product.Category.Replace("-", " ").ToLower().Contains(searchTerm)) ||
-                (r.Product.Size != null && r.Product.Size.ToLower().Contains(searchTerm)) ||
-                (r.Product.Flavor != null && r.Product.Flavor.ToLower().Contains(searchTerm)));
+                searchTerms.Any(t => r.Product.Name.ToLower().Contains(t)) ||
+                searchTerms.Any(t => r.BrandName.ToLower().Contains(t)) ||
+                (r.Product.Category != null && searchTerms.Any(t => r.Product.Category.Replace("-", " ").ToLower().Contains(t))) ||
+                (r.Product.Size != null && searchTerms.Any(t => r.Product.Size.ToLower().Contains(t))) ||
+                (r.Product.Flavor != null && searchTerms.Any(t => r.Product.Flavor.ToLower().Contains(t))));
         }
 
         query = query.Where(r => r.Latest != null && r.ReferencePrice != null);
