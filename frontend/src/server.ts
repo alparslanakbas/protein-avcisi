@@ -30,6 +30,11 @@ interface FilterOptions {
   categories: string[];
 }
 
+interface ArticleSitemapEntry {
+  slug: string;
+  publishedAt: string;
+}
+
 // sitemap.xml ürün sayısına göre büyüyor, statik dosya olamaz — ham veriyi
 // backend'den (/api/products/sitemap) çekip burada XML'e çeviriyoruz. Bu
 // sunucu zaten kendi public origin'ini (req üzerinden) bildiği için domain'i
@@ -38,12 +43,14 @@ app.get('/sitemap.xml', async (req, res) => {
   const origin = `${req.protocol}://${req.get('host')}`;
 
   try {
-    const [productsResponse, filtersResponse] = await Promise.all([
+    const [productsResponse, filtersResponse, articlesResponse] = await Promise.all([
       fetch(`${API_BASE_URL}/api/products/sitemap`),
       fetch(`${API_BASE_URL}/api/filters`),
+      fetch(`${API_BASE_URL}/api/articles`),
     ]);
     const products = (await productsResponse.json()) as SitemapEntry[];
     const filters = (await filtersResponse.json()) as FilterOptions;
+    const articles = (await articlesResponse.json()) as ArticleSitemapEntry[];
 
     const productUrls = products
       .map(
@@ -73,6 +80,17 @@ app.get('/sitemap.xml', async (req, res) => {
       `<url><loc>${origin}/gizlilik-politikasi</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>` +
       `<url><loc>${origin}/cerez-politikasi</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>`;
 
+    // Rehber yazıları — bilgi amaçlı SEO içerikleri, ürün/kategori
+    // sayfalarıyla aynı önem seviyesinde (0.7).
+    const articleUrls =
+      `<url><loc>${origin}/rehber</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>` +
+      articles
+        .map(
+          (a) =>
+            `<url><loc>${origin}/rehber/${a.slug}</loc><lastmod>${new Date(a.publishedAt).toISOString()}</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>`,
+        )
+        .join('');
+
     const xml =
       `<?xml version="1.0" encoding="UTF-8"?>` +
       `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">` +
@@ -81,6 +99,7 @@ app.get('/sitemap.xml', async (req, res) => {
       categoryUrls +
       productUrls +
       legalUrls +
+      articleUrls +
       `</urlset>`;
 
     res.set('Content-Type', 'application/xml');

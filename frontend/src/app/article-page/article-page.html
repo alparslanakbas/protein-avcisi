@@ -1,0 +1,38 @@
+<div class="min-h-screen bg-stone-100 dark:bg-stone-950">
+  <header class="border-b border-stone-200 bg-stone-50 dark:border-stone-800 dark:bg-stone-900">
+    <div class="mx-auto flex max-w-6xl items-center gap-3 px-4 py-4 sm:px-6">
+      <a routerLink="/" class="flex items-center gap-2">
+        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600 text-sm font-extrabold text-white">PA</div>
+        <span class="text-lg font-bold text-stone-900 dark:text-stone-100">
+          Protein<span class="text-brand-600 dark:text-brand-400">Avcısı</span>
+        </span>
+      </a>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-2xl px-4 py-10 sm:px-6">
+    @if (loading()) {
+      <div class="py-24 text-center text-stone-400 dark:text-stone-500">Yükleniyor...</div>
+    } @else if (article(); as a) {
+      <a routerLink="/rehber" class="mb-4 inline-block text-xs font-semibold text-stone-400 hover:text-brand-600 dark:text-stone-500 dark:hover:text-brand-400">← Rehber</a>
+
+      <h1 class="text-3xl font-extrabold tracking-tight text-stone-900 dark:text-stone-100 sm:text-4xl">{{ a.title }}</h1>
+      <p class="mt-2 text-xs text-stone-400 dark:text-stone-500">{{ a.publishedAt | date:'d MMMM yyyy':'':'tr' }}</p>
+
+      @if (a.coverImageUrl) {
+        <div class="mt-6 aspect-[2/1] overflow-hidden rounded-2xl bg-stone-100 dark:bg-stone-800">
+          <img [src]="a.coverImageUrl" [alt]="a.title" class="h-full w-full object-cover" />
+        </div>
+      }
+
+      <article
+        class="prose prose-stone mt-8 max-w-none dark:prose-invert prose-headings:font-bold prose-a:text-brand-600 dark:prose-a:text-brand-400"
+        [innerHTML]="a.body"
+      ></article>
+
+      <div class="mt-10 border-t border-stone-200 pt-6 text-center dark:border-stone-800">
+        <a routerLink="/" class="text-sm font-semibold text-brand-600 hover:underline dark:text-brand-400">Tüm indirimleri gör →</a>
+      </div>
+    }
+  </main>
+</div>

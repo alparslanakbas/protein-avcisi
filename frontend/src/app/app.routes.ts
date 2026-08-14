@@ -1,5 +1,7 @@
 import { Routes } from '@angular/router';
 
+import { ArticleListPage } from './article-list-page/article-list-page';
+import { ArticlePage } from './article-page/article-page';
 import { BrandPage } from './brand-page/brand-page';
 import { CategoryPage } from './category-page/category-page';
 import { CookiePolicyPage } from './cookie-policy-page/cookie-policy-page';
@@ -13,4 +15,6 @@ export const routes: Routes = [
   { path: 'kategori/:categorySlug', component: CategoryPage },
   { path: 'gizlilik-politikasi', component: PrivacyPolicyPage },
   { path: 'cerez-politikasi', component: CookiePolicyPage },
+  { path: 'rehber', component: ArticleListPage },
+  { path: 'rehber/:slug', component: ArticlePage },
 ];

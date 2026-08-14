@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 /* Koyu mod: <html> elemanına "dark" class'ı eklenince devreye girer
    (ThemeService yönetiyor) — sistem tercihini otomatik takip etmez,

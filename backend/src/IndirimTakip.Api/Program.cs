@@ -1,5 +1,6 @@
 using IndirimTakip.Core.Scraping;
 using IndirimTakip.Infrastructure;
+using IndirimTakip.Infrastructure.Articles;
 using IndirimTakip.Infrastructure.Coupons;
 using IndirimTakip.Infrastructure.Deals;
 using IndirimTakip.Infrastructure.Scraping;
@@ -135,6 +136,26 @@ app.MapPost("/api/dev/coupons", async (CreateCouponRequest request, CouponServic
 {
     var result = await coupons.CreateAsync(request, ct);
     return result is null ? Results.NotFound($"'{request.BrandName}' adında marka bulunamadı.") : Results.Ok(result);
+}).RequireAdminKey(adminApiKey);
+
+// "Rehber" bilgi yazıları — SEO/güven amaçlı, kupon deseniyle aynı: elle
+// yazılıp elle eklenen içerik, otomatik üretilmiyor.
+app.MapGet("/api/articles", async (ArticleService articles, CancellationToken ct) =>
+{
+    var result = await articles.GetPublishedArticlesAsync(ct);
+    return Results.Ok(result);
+});
+
+app.MapGet("/api/articles/{slug}", async (string slug, ArticleService articles, CancellationToken ct) =>
+{
+    var result = await articles.GetBySlugAsync(slug, ct);
+    return result is null ? Results.NotFound() : Results.Ok(result);
+});
+
+app.MapPost("/api/dev/articles", async (CreateArticleRequest request, ArticleService articles, CancellationToken ct) =>
+{
+    var result = await articles.CreateAsync(request, ct);
+    return result is null ? Results.Conflict($"'{request.Slug}' slug'ı zaten kullanılıyor.") : Results.Ok(result);
 }).RequireAdminKey(adminApiKey);
 
 app.MapGet("/api/products/{id:int}/price-history", async (int id, int? days, PriceHistoryQueryService service, CancellationToken ct) =>

@@ -11,6 +11,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Coupon> Coupons => Set<Coupon>();
     public DbSet<Subscriber> Subscribers => Set<Subscriber>();
     public DbSet<ProductWatch> ProductWatches => Set<ProductWatch>();
+    public DbSet<Article> Articles => Set<Article>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -70,6 +71,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .HasForeignKey(x => x.ProductId)
                 .OnDelete(DeleteBehavior.Cascade);
             w.HasIndex(x => new { x.SubscriberId, x.ProductId }).IsUnique();
+        });
+
+        modelBuilder.Entity<Article>(a =>
+        {
+            a.Property(x => x.Title).HasMaxLength(200);
+            a.Property(x => x.Slug).HasMaxLength(200);
+            a.Property(x => x.Summary).HasMaxLength(500);
+            a.HasIndex(x => x.Slug).IsUnique();
         });
     }
 }

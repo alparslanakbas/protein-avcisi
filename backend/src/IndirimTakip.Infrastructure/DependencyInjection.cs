@@ -1,4 +1,5 @@
 using IndirimTakip.Core.Scraping;
+using IndirimTakip.Infrastructure.Articles;
 using IndirimTakip.Infrastructure.Coupons;
 using IndirimTakip.Infrastructure.Deals;
 using IndirimTakip.Infrastructure.Scraping;
@@ -55,6 +56,7 @@ public static class DependencyInjection
         services.AddScoped<DealsQueryService>();
         services.AddScoped<PriceHistoryQueryService>();
         services.AddScoped<CouponService>();
+        services.AddScoped<ArticleService>();
         services.AddHostedService<ScrapingBackgroundService>();
 
         services.AddHttpClient<IEmailSender, BrevoEmailSender>(client =>
