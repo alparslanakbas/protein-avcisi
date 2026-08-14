@@ -1,0 +1,70 @@
+<div class="min-h-screen bg-stone-100 dark:bg-stone-950">
+  <header class="border-b border-stone-200 bg-stone-50 dark:border-stone-800 dark:bg-stone-900">
+    <div class="mx-auto flex max-w-6xl items-center gap-3 px-4 py-4 sm:px-6">
+      <a routerLink="/" class="flex items-center gap-2">
+        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600 text-sm font-extrabold text-white">PA</div>
+        <span class="text-lg font-bold text-stone-900 dark:text-stone-100">
+          Protein<span class="text-brand-600 dark:text-brand-400">Avcısı</span>
+        </span>
+      </a>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+    <div class="mb-8 text-center">
+      <h1 class="text-3xl font-extrabold tracking-tight text-stone-900 dark:text-stone-100 sm:text-4xl">Favorilerim</h1>
+      <p class="mx-auto mt-3 max-w-xl text-stone-500 dark:text-stone-400">
+        Ürün sayfasındaki "Favorilere Ekle" ile kaydettiğin ürünlerin güncel fiyatları burada.
+      </p>
+    </div>
+
+    @if (loading()) {
+      <div class="py-24 text-center text-stone-400 dark:text-stone-500">Yükleniyor...</div>
+    } @else if (!hasToken() || favorites().length === 0) {
+      <div class="mx-auto max-w-md rounded-xl border border-stone-200 bg-stone-50 px-6 py-10 text-center text-stone-500 dark:border-stone-800 dark:bg-stone-900 dark:text-stone-400">
+        Henüz favori eklemedin. Bir ürünü açıp "Favorilere Ekle"ye tıkladığında burada göreceksin.
+        <a routerLink="/" class="mt-2 block w-full text-sm font-semibold text-brand-600 dark:text-brand-400">Ürünlere göz at</a>
+      </div>
+    } @else {
+      <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+        @for (deal of favorites(); track deal.productId) {
+          <div class="group relative flex flex-col overflow-hidden rounded-2xl border border-stone-200 bg-stone-50 text-left transition-all hover:-translate-y-1 hover:border-brand-300 hover:shadow-xl hover:shadow-brand-100/60 dark:border-stone-800 dark:bg-stone-900 dark:hover:border-brand-600 dark:hover:shadow-brand-950/40">
+            <button
+              type="button"
+              title="Favorilerden çıkar"
+              (click)="removeFavorite(deal)"
+              class="absolute right-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-stone-400 shadow-sm transition-colors hover:text-red-500 dark:bg-stone-900/90 dark:text-stone-500"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-3.5 w-3.5">
+                <path stroke-linecap="round" d="M6 6l12 12M18 6L6 18" />
+              </svg>
+            </button>
+            <button type="button" (click)="goToProduct(deal)" class="flex flex-1 flex-col text-left">
+              <div class="relative aspect-square bg-stone-50 p-3 dark:bg-stone-800/60">
+                @if (deal.imageUrl) {
+                  <img [src]="deal.imageUrl" [alt]="deal.productName" loading="lazy" class="h-full w-full object-contain" />
+                }
+                @if (deal.discountPercent > 0) {
+                  <span class="absolute left-2 top-2 rounded-full bg-accent-500 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
+                    -%{{ deal.discountPercent }}
+                  </span>
+                }
+              </div>
+              <div class="flex flex-1 flex-col gap-0.5 p-2.5">
+                <span class="text-[11px] font-semibold uppercase tracking-wide text-brand-600 dark:text-brand-400">{{ deal.brandName }}</span>
+                <h3 [title]="deal.productName" class="line-clamp-2 min-h-[2.5rem] text-xs font-semibold leading-tight text-stone-800 dark:text-stone-200">
+                  {{ deal.productName }}
+                </h3>
+                <span class="mt-auto text-sm font-extrabold text-stone-900 dark:text-stone-100">{{ deal.currentPrice | number:'1.2-2' }} TL</span>
+              </div>
+            </button>
+          </div>
+        }
+      </div>
+    }
+
+    <div class="mt-10 text-center">
+      <a routerLink="/" class="text-sm font-semibold text-brand-600 hover:underline dark:text-brand-400">← Ana sayfaya dön</a>
+    </div>
+  </main>
+</div>

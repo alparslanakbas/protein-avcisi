@@ -12,6 +12,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Subscriber> Subscribers => Set<Subscriber>();
     public DbSet<ProductWatch> ProductWatches => Set<ProductWatch>();
     public DbSet<Article> Articles => Set<Article>();
+    public DbSet<ProductFavorite> ProductFavorites => Set<ProductFavorite>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -79,6 +80,19 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             a.Property(x => x.Slug).HasMaxLength(200);
             a.Property(x => x.Summary).HasMaxLength(500);
             a.HasIndex(x => x.Slug).IsUnique();
+        });
+
+        modelBuilder.Entity<ProductFavorite>(f =>
+        {
+            f.HasOne(x => x.Subscriber)
+                .WithMany()
+                .HasForeignKey(x => x.SubscriberId)
+                .OnDelete(DeleteBehavior.Cascade);
+            f.HasOne(x => x.Product)
+                .WithMany()
+                .HasForeignKey(x => x.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+            f.HasIndex(x => new { x.SubscriberId, x.ProductId }).IsUnique();
         });
     }
 }

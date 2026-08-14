@@ -177,6 +177,32 @@ app.MapPost("/api/products/{id:int}/watch", async (int id, WatchProductRequest r
     return success ? Results.Ok(new { message = "Fiyat düşünce sana haber vereceğiz." }) : Results.NotFound();
 });
 
+// Favoriler ("listem") — hesap/login gerektirmiyor. İlk ekleme e-posta ile
+// yapılır, dönen token tarayıcıda saklanıp sonraki isteklerde kullanılır.
+// Haber Ver'in aksine hiç e-posta gönderilmiyor, bu yüzden onay akışına
+// hiç girmiyor.
+app.MapPost("/api/products/{id:int}/favorite", async (int id, FavoriteRequest request, FavoriteService favorites, CancellationToken ct) =>
+{
+    var token = await favorites.AddAsync(id, request.Token, request.Email, ct);
+    return token is null ? Results.NotFound() : Results.Ok(new { token });
+});
+
+app.MapDelete("/api/products/{id:int}/favorite", async (int id, string token, FavoriteService favorites, CancellationToken ct) =>
+{
+    var removed = await favorites.RemoveAsync(id, token, ct);
+    return removed ? Results.Ok() : Results.NotFound();
+});
+
+app.MapGet("/api/favorites", async (string token, FavoriteService favorites, DealsQueryService deals, CancellationToken ct) =>
+{
+    var productIds = await favorites.GetFavoriteProductIdsAsync(token, ct);
+    if (productIds is null)
+        return Results.NotFound();
+
+    var result = await deals.GetDealsByIdsAsync(productIds, cancellationToken: ct);
+    return Results.Ok(result);
+});
+
 // Affiliate altyapısı: ürün linkleri buradan geçiyor ki ileride affiliate
 // id eklemek kolay olsun (roadmap adım 7). Şimdilik sadece tıklama sayısını
 // tutuyor, dış siteye 302 ile yönlendiriyor.

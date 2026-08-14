@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 
 import { canonicalOrigin } from '../core/canonical-link';
 import { Deal } from '../core/deal.model';
+import { FavoritesService } from '../core/favorites.service';
 import { PriceHistoryService } from '../core/price-history.service';
 import { ProductFeedbackService } from '../core/product-feedback.service';
 import { formatRelativeTime } from '../core/relative-time';
@@ -52,6 +53,7 @@ export class ProductModal {
   private readonly priceHistoryService = inject(PriceHistoryService);
   private readonly watchService = inject(WatchService);
   private readonly productFeedbackService = inject(ProductFeedbackService);
+  private readonly favoritesService = inject(FavoritesService);
   private readonly document = inject(DOCUMENT);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
@@ -87,6 +89,16 @@ export class ProductModal {
   // "Bu bilgi faydalı mıydı?" — basit güven sinyali, tekrar oy vermeyi
   // (auth olmadığı için) localStorage ile engelliyoruz, backend'de dedup yok.
   protected readonly votedHelpful = signal<boolean | null>(null);
+
+  // Favoriler — hesap gerektirmiyor, ilk eklemede e-posta isteniyor
+  // (token localStorage'a kaydediliyor), sonraki ürünlerde tekrar
+  // sorulmuyor. "favorited" oturum bazlı iyimser (optimistic) bir
+  // durum — sayfa yenilenince sıfırlanır, tekrar tıklamak zararsız
+  // (backend zaten aynı favoriyi ikinci kez eklemiyor).
+  protected readonly favorited = signal(false);
+  protected readonly favoriteFormOpen = signal(false);
+  protected readonly favoriteEmail = signal('');
+  protected readonly favoriteSubmitting = signal(false);
 
   protected readonly coordinates = computed(() => this.toCoordinates(this.points(), this.minPrice(), this.maxPrice()));
   protected readonly chartAreaPath = computed(() => this.buildAreaPath(this.coordinates()));
@@ -125,6 +137,20 @@ export class ProductModal {
     return { diff, percent, periodName: this.selectedRange().periodName };
   });
 
+  // "Bu ürün son X günde Y kez indirime girdi" — ham veri yerine bir
+  // içgörü. points() zaten dedupeSameDaySamePrice'tan geçtiği için
+  // (aynı gün aynı fiyat tekrarları elenmiş) art arda gerçek fiyat
+  // düşüşlerini saymak yeterli. 0 ise hiç gösterilmiyor (boş/soğuk bir
+  // "0 kez" mesajı yerine sessiz kalmak tercih edildi).
+  protected readonly discountEventCount = computed(() => {
+    const pts = this.points();
+    let count = 0;
+    for (let i = 1; i < pts.length; i++) {
+      if (pts[i].price < pts[i - 1].price) count++;
+    }
+    return count;
+  });
+
   constructor() {
     effect(() => {
       // deal() veya selectedRange() değişince yeniden çek.
@@ -144,6 +170,14 @@ export class ProductModal {
       }
       const stored = localStorage.getItem(`product-vote-${productId}`);
       this.votedHelpful.set(stored === 'yes' ? true : stored === 'no' ? false : null);
+    });
+
+    // "favorited" da deal() bazlı sıfırlanmalı — aksi halde bir önceki
+    // üründeki "Favorilere Eklendi" durumu yeni ürüne sızardı.
+    effect(() => {
+      this.deal();
+      this.favorited.set(false);
+      this.favoriteFormOpen.set(false);
     });
   }
 
@@ -189,6 +223,40 @@ export class ProductModal {
       localStorage.setItem(`product-vote-${productId}`, helpful ? 'yes' : 'no');
     }
     this.productFeedbackService.vote(productId, helpful).subscribe();
+  }
+
+  protected toggleFavorite(): void {
+    if (this.favorited()) return;
+
+    // Zaten bir token varsa (daha önce başka bir üründe e-posta girilmiş)
+    // tekrar sormadan direkt ekle — sadece ilk seferde form açılıyor.
+    if (this.favoritesService.getToken()) {
+      this.addFavorite();
+    } else {
+      this.favoriteFormOpen.set(true);
+    }
+  }
+
+  protected onFavoriteSubmit(): void {
+    this.addFavorite(this.favoriteEmail().trim());
+  }
+
+  private addFavorite(email?: string): void {
+    if (email !== undefined && !email) return;
+
+    this.favoriteSubmitting.set(true);
+    this.favoritesService.add(this.deal().productId, email).subscribe({
+      next: (result) => {
+        this.favoritesService.saveToken(result.token);
+        this.favorited.set(true);
+        this.favoriteFormOpen.set(false);
+        this.favoriteEmail.set('');
+        this.favoriteSubmitting.set(false);
+      },
+      error: () => {
+        this.favoriteSubmitting.set(false);
+      },
+    });
   }
 
   protected selectRange(range: TimeRangeOption): void {

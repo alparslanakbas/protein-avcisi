@@ -163,6 +163,46 @@ public class DealsQueryService(AppDbContext db)
             row.Latest.ScrapedAt);
     }
 
+    // Favoriler listesi (/favorilerim) için — belirli bir ürün ID kümesini,
+    // sayfalama/sıralama olmadan toplu çekiyor. Ölçek küçük (bir kişinin
+    // favori listesi onlarca ürünü geçmez) bu yüzden basit tutuldu.
+    public async Task<IReadOnlyList<DealDto>> GetDealsByIdsAsync(
+        IReadOnlyCollection<int> productIds, int referenceWindowDays = 30, CancellationToken cancellationToken = default)
+    {
+        var referenceSince = DateTimeOffset.UtcNow.AddDays(-referenceWindowDays);
+
+        var rows = await (
+            from p in db.Products
+            join b in db.Brands on p.BrandId equals b.Id
+            where b.IsActive && productIds.Contains(p.Id)
+            select new
+            {
+                Product = p,
+                BrandName = b.Name,
+                Latest = p.PriceHistories
+                    .OrderByDescending(ph => ph.ScrapedAt)
+                    .Select(ph => new { ph.Price, ph.ScrapedAt, ph.StoreOldPrice })
+                    .FirstOrDefault(),
+                ReferencePrice = p.PriceHistories
+                    .Where(ph => ph.ScrapedAt >= referenceSince)
+                    .Max(ph => (decimal?)ph.Price),
+            }).ToListAsync(cancellationToken);
+
+        return rows
+            .Where(r => r.Latest != null && r.ReferencePrice != null)
+            .Select(r => new DealDto(
+                r.Product.Id, r.Product.Name, r.Product.Url, r.Product.ImageUrl,
+                r.Product.Category, r.Product.Size, r.Product.Flavor, r.Product.ServingSizeGrams,
+                r.BrandName, r.Latest!.Price, r.ReferencePrice!.Value,
+                Math.Round((r.ReferencePrice.Value - r.Latest.Price) / r.ReferencePrice.Value * 100, 1),
+                r.Latest.StoreOldPrice,
+                r.Latest.StoreOldPrice is decimal storeOld && storeOld > 0
+                    ? Math.Round((storeOld - r.Latest.Price) / storeOld * 100, 1)
+                    : null,
+                r.Latest.ScrapedAt))
+            .ToList();
+    }
+
     // sitemap.xml üretimi için hafif bir liste — DealDto'daki fiyat
     // hesaplarına gerek yok, sadece URL kurmak için Id ve son tarama
     // zamanı (lastmod) yeterli.
