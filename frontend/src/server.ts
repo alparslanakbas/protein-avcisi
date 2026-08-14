@@ -78,7 +78,8 @@ app.get('/sitemap.xml', async (req, res) => {
 
     const legalUrls =
       `<url><loc>${origin}/gizlilik-politikasi</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>` +
-      `<url><loc>${origin}/cerez-politikasi</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>`;
+      `<url><loc>${origin}/cerez-politikasi</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>` +
+      `<url><loc>${origin}/nasil-calisiyoruz</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>`;
 
     // Rehber yazıları — bilgi amaçlı SEO içerikleri, ürün/kategori
     // sayfalarıyla aynı önem seviyesinde (0.7).
