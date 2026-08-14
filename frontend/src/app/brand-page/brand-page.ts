@@ -9,6 +9,9 @@ import { CouponsService } from '../core/coupons.service';
 import { Deal } from '../core/deal.model';
 import { DealsService } from '../core/deals.service';
 
+type ViewMode = 'deals' | 'store' | 'all';
+const PAGE_SIZE = 24;
+
 @Component({
   selector: 'app-brand-page',
   imports: [DecimalPipe, RouterLink],
@@ -25,11 +28,18 @@ export class BrandPage implements OnInit {
 
   protected readonly brandName = signal<string>('');
   protected readonly coupons = signal<Coupon[]>([]);
-  protected readonly deals = signal<Deal[]>([]);
-  protected readonly storeDeals = signal<Deal[]>([]);
   protected readonly otherBrands = signal<string[]>([]);
   protected readonly loading = signal(true);
   protected readonly notFound = signal(false);
+
+  // Marka sayfası eskiden sadece indirimli/kampanyalı ürünleri gösteriyordu
+  // — normal fiyatlı ürünler tamamen görünmezdi (kategori sayfasıyla aynı
+  // sorun, aynı çözüm: ana sayfadaki sekme + sayfalama deseni).
+  protected readonly viewMode = signal<ViewMode>('all');
+  protected readonly items = signal<Deal[]>([]);
+  protected readonly totalCount = signal(0);
+  protected readonly totalPages = signal(0);
+  protected readonly currentPage = signal(1);
 
   ngOnInit(): void {
     this.route.paramMap.subscribe((params) => {
@@ -40,6 +50,8 @@ export class BrandPage implements OnInit {
 
   private loadBrand(slug: string): void {
     this.loading.set(true);
+    this.viewMode.set('all');
+    this.currentPage.set(1);
 
     this.dealsService.getFilterOptions().subscribe({
       next: (options) => {
@@ -62,23 +74,51 @@ export class BrandPage implements OnInit {
           this.coupons.set(coupons.filter((c) => c.brandName === match));
         });
 
-        this.dealsService.getDeals({ brands: [match], pageSize: 12 }).subscribe((result) => {
-          this.deals.set(result.items);
-        });
-
-        this.dealsService.getStoreDeals({ brands: [match], pageSize: 12 }).subscribe({
-          next: (result) => {
-            this.storeDeals.set(result.items);
-            this.loading.set(false);
-          },
-          error: () => this.loading.set(false),
-        });
+        this.loadItems();
       },
       error: () => {
         this.notFound.set(true);
         this.loading.set(false);
       },
     });
+  }
+
+  private loadItems(): void {
+    const brand = this.brandName();
+    if (!brand) return;
+
+    this.loading.set(true);
+    const query = { brands: [brand], page: this.currentPage(), pageSize: PAGE_SIZE };
+    const request$ =
+      this.viewMode() === 'deals'
+        ? this.dealsService.getDeals(query)
+        : this.viewMode() === 'store'
+          ? this.dealsService.getStoreDeals(query)
+          : this.dealsService.getAllProducts(query);
+
+    request$.subscribe({
+      next: (result) => {
+        this.items.set(result.items);
+        this.totalCount.set(result.totalCount);
+        this.totalPages.set(result.totalPages);
+        this.loading.set(false);
+      },
+      error: () => this.loading.set(false),
+    });
+  }
+
+  protected setViewMode(mode: ViewMode): void {
+    if (this.viewMode() === mode) return;
+    this.viewMode.set(mode);
+    this.currentPage.set(1);
+    this.loadItems();
+  }
+
+  protected goToPage(page: number): void {
+    if (page < 1 || page > this.totalPages() || page === this.currentPage()) return;
+    this.currentPage.set(page);
+    this.loadItems();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   private setMeta(brand: string): void {

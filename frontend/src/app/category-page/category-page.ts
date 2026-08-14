@@ -8,6 +8,9 @@ import { CATEGORY_LABELS } from '../core/category-labels';
 import { Deal } from '../core/deal.model';
 import { DealsService } from '../core/deals.service';
 
+type ViewMode = 'deals' | 'store' | 'all';
+const PAGE_SIZE = 24;
+
 // Bir geliştiricinin SEO geri bildirimi üzerine eklendi: kategori sayfaları
 // marka sayfalarıyla aynı desende ama şablon metin yerine her kategori için
 // gerçekten farklı, açıklayıcı bir giriş metni taşıyor — "ince içerik"
@@ -49,11 +52,20 @@ export class CategoryPage implements OnInit {
   protected readonly categorySlug = signal<string>('');
   protected readonly categoryLabel = signal<string>('');
   protected readonly categoryIntro = signal<string>('');
-  protected readonly deals = signal<Deal[]>([]);
-  protected readonly storeDeals = signal<Deal[]>([]);
   protected readonly otherCategories = signal<{ slug: string; label: string }[]>([]);
   protected readonly loading = signal(true);
   protected readonly notFound = signal(false);
+
+  // Kategori sayfası eskiden sadece indirimli/kampanyalı ürünleri gösteriyordu
+  // — normal fiyatlı ürünler tamamen görünmezdi. Ana sayfadaki aynı sekme +
+  // sayfalama deseni buraya da taşındı ki kategori bazında TÜM ürünler de
+  // görülebilsin (kullanıcı geri bildirimi: "kreatin kategorisinde sadece
+  // kampanyalı ürünler geliyor").
+  protected readonly viewMode = signal<ViewMode>('all');
+  protected readonly items = signal<Deal[]>([]);
+  protected readonly totalCount = signal(0);
+  protected readonly totalPages = signal(0);
+  protected readonly currentPage = signal(1);
 
   ngOnInit(): void {
     this.route.paramMap.subscribe((params) => {
@@ -64,6 +76,8 @@ export class CategoryPage implements OnInit {
 
   private loadCategory(slug: string): void {
     this.loading.set(true);
+    this.viewMode.set('all');
+    this.currentPage.set(1);
 
     this.dealsService.getFilterOptions().subscribe({
       next: (options) => {
@@ -86,23 +100,51 @@ export class CategoryPage implements OnInit {
         this.setMeta(label);
         setCanonicalLink(this.document, `/kategori/${match}`);
 
-        this.dealsService.getDeals({ categories: [match], pageSize: 12 }).subscribe((result) => {
-          this.deals.set(result.items);
-        });
-
-        this.dealsService.getStoreDeals({ categories: [match], pageSize: 12 }).subscribe({
-          next: (result) => {
-            this.storeDeals.set(result.items);
-            this.loading.set(false);
-          },
-          error: () => this.loading.set(false),
-        });
+        this.loadItems();
       },
       error: () => {
         this.notFound.set(true);
         this.loading.set(false);
       },
     });
+  }
+
+  private loadItems(): void {
+    const categorySlug = this.categorySlug();
+    if (!categorySlug) return;
+
+    this.loading.set(true);
+    const query = { categories: [categorySlug], page: this.currentPage(), pageSize: PAGE_SIZE };
+    const request$ =
+      this.viewMode() === 'deals'
+        ? this.dealsService.getDeals(query)
+        : this.viewMode() === 'store'
+          ? this.dealsService.getStoreDeals(query)
+          : this.dealsService.getAllProducts(query);
+
+    request$.subscribe({
+      next: (result) => {
+        this.items.set(result.items);
+        this.totalCount.set(result.totalCount);
+        this.totalPages.set(result.totalPages);
+        this.loading.set(false);
+      },
+      error: () => this.loading.set(false),
+    });
+  }
+
+  protected setViewMode(mode: ViewMode): void {
+    if (this.viewMode() === mode) return;
+    this.viewMode.set(mode);
+    this.currentPage.set(1);
+    this.loadItems();
+  }
+
+  protected goToPage(page: number): void {
+    if (page < 1 || page > this.totalPages() || page === this.currentPage()) return;
+    this.currentPage.set(page);
+    this.loadItems();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   private setMeta(label: string): void {
