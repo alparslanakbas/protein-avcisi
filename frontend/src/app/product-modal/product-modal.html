@@ -184,6 +184,34 @@
       @if (watchStatusMessage(); as message) {
         <p class="mt-2 text-center text-xs text-brand-600 dark:text-brand-400">{{ message }}</p>
       }
+
+      <div class="mt-5 flex items-center justify-center gap-2 border-t border-stone-100 pt-4 dark:border-stone-800">
+        @if (votedHelpful() === null) {
+          <span class="text-xs text-stone-400 dark:text-stone-500">Bu bilgi faydalı mıydı?</span>
+          <button
+            type="button"
+            title="Faydalı"
+            (click)="vote(true)"
+            class="flex h-7 w-7 items-center justify-center rounded-full text-stone-400 transition-colors hover:bg-brand-50 hover:text-brand-600 dark:text-stone-500 dark:hover:bg-brand-950/30 dark:hover:text-brand-400"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M7 11v10H4a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1h3Zm0 0 4.5-9a2 2 0 0 1 2 2v5h4.76a2 2 0 0 1 1.98 2.29l-1.14 7A2 2 0 0 1 17.14 20H7" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            title="Faydalı değil"
+            (click)="vote(false)"
+            class="flex h-7 w-7 items-center justify-center rounded-full text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-700 dark:text-stone-500 dark:hover:bg-stone-800 dark:hover:text-stone-300"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M17 13V3h3a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1h-3Zm0 0-4.5 9a2 2 0 0 1-2-2v-5H5.74a2 2 0 0 1-1.98-2.29l1.14-7A2 2 0 0 1 6.86 4H17" />
+            </svg>
+          </button>
+        } @else {
+          <span class="text-xs text-stone-400 dark:text-stone-500">Geri bildirimin için teşekkürler!</span>
+        }
+      </div>
     </div>
   </div>
 </div>

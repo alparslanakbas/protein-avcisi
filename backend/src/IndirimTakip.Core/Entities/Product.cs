@@ -14,6 +14,11 @@ public class Product
     public string? Flavor { get; set; }
     public int ClickCount { get; set; }
 
+    // Ürün sayfasındaki "Bu bilgi faydalı mıydı?" oyu — basit bir güven
+    // sinyali, auth gerektirmiyor (ClickCount ile aynı desen).
+    public int HelpfulYesCount { get; set; }
+    public int HelpfulNoCount { get; set; }
+
     // Gerçek besin değeri tablosundan gelen porsiyon büyüklüğü (gram).
     // Sadece markanın verisi güvenilir şekilde sağladığı ürünlerde dolu.
     public decimal? ServingSizeGrams { get; set; }

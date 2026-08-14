@@ -1,11 +1,12 @@
-import { DOCUMENT, DecimalPipe } from '@angular/common';
-import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
+import { DOCUMENT, DecimalPipe, isPlatformBrowser } from '@angular/common';
+import { Component, PLATFORM_ID, computed, effect, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
 import { canonicalOrigin } from '../core/canonical-link';
 import { Deal } from '../core/deal.model';
 import { PriceHistoryService } from '../core/price-history.service';
+import { ProductFeedbackService } from '../core/product-feedback.service';
 import { formatRelativeTime } from '../core/relative-time';
 import { WatchService } from '../core/watch.service';
 import { ShareButton } from '../share-button/share-button';
@@ -50,7 +51,9 @@ const tooltipDateTimeFormatter = new Intl.DateTimeFormat('tr-TR', {
 export class ProductModal {
   private readonly priceHistoryService = inject(PriceHistoryService);
   private readonly watchService = inject(WatchService);
+  private readonly productFeedbackService = inject(ProductFeedbackService);
   private readonly document = inject(DOCUMENT);
+  private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   readonly deal = input.required<Deal>();
   readonly closed = output<void>();
@@ -80,6 +83,10 @@ export class ProductModal {
   protected readonly watchEmail = signal('');
   protected readonly watchSubmitting = signal(false);
   protected readonly watchStatusMessage = signal<string | null>(null);
+
+  // "Bu bilgi faydalı mıydı?" — basit güven sinyali, tekrar oy vermeyi
+  // (auth olmadığı için) localStorage ile engelliyoruz, backend'de dedup yok.
+  protected readonly votedHelpful = signal<boolean | null>(null);
 
   protected readonly coordinates = computed(() => this.toCoordinates(this.points(), this.minPrice(), this.maxPrice()));
   protected readonly chartAreaPath = computed(() => this.buildAreaPath(this.coordinates()));
@@ -125,6 +132,19 @@ export class ProductModal {
       const range = this.selectedRange();
       this.load(deal.productId, range.days);
     });
+
+    // Modal aynı bileşen örneği üzerinden farklı ürünler arasında yeniden
+    // kullanıldığı için (route reuse), oy durumu her deal() değişiminde
+    // o ürüne özel yeniden okunmalı.
+    effect(() => {
+      const productId = this.deal().productId;
+      if (!this.isBrowser) {
+        this.votedHelpful.set(null);
+        return;
+      }
+      const stored = localStorage.getItem(`product-vote-${productId}`);
+      this.votedHelpful.set(stored === 'yes' ? true : stored === 'no' ? false : null);
+    });
   }
 
   // İlk ve son X ekseni etiketi tam kenara ortalanınca (-translate-x-1/2)
@@ -158,6 +178,17 @@ export class ProductModal {
         this.watchSubmitting.set(false);
       },
     });
+  }
+
+  protected vote(helpful: boolean): void {
+    if (this.votedHelpful() !== null) return;
+
+    const productId = this.deal().productId;
+    this.votedHelpful.set(helpful);
+    if (this.isBrowser) {
+      localStorage.setItem(`product-vote-${productId}`, helpful ? 'yes' : 'no');
+    }
+    this.productFeedbackService.vote(productId, helpful).subscribe();
   }
 
   protected selectRange(range: TimeRangeOption): void {

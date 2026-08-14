@@ -192,6 +192,24 @@ app.MapGet("/go/{productId:int}", async (int productId, AppDbContext db, Cancell
     return Results.Redirect(product.Url, permanent: false);
 });
 
+// "Bu bilgi faydalı mıydı?" oyu — basit güven sinyali, /go ile aynı desende
+// (auth yok, kim oy verdiğini takip etmiyoruz — tekrar oy vermeyi frontend
+// localStorage ile engelliyor, backend'de dedup gerekmiyor).
+app.MapPost("/api/products/{id:int}/vote", async (int id, VoteRequest request, AppDbContext db, CancellationToken ct) =>
+{
+    var product = await db.Products.FindAsync([id], ct);
+    if (product is null)
+        return Results.NotFound();
+
+    if (request.Helpful)
+        product.HelpfulYesCount++;
+    else
+        product.HelpfulNoCount++;
+
+    await db.SaveChangesAsync(ct);
+    return Results.Ok();
+});
+
 // E-posta bülteni: double opt-in zorunlu (İYS/KVKK gereği) — bu endpoint
 // hiçbir aboneyi doğrudan aktifleştirmiyor, sadece onay maili tetikliyor.
 app.MapPost("/api/subscribe", async (SubscribeRequest request, SubscriberService subscribers, HttpContext http, CancellationToken ct) =>
@@ -276,3 +294,5 @@ static class AdminAuthExtensions
         });
     }
 }
+
+record VoteRequest(bool Helpful);
