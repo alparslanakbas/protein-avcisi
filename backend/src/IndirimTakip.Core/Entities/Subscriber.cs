@@ -13,4 +13,5 @@ public class Subscriber
     public DateTimeOffset SubscribedAt { get; set; }
     public DateTimeOffset? ConfirmedAt { get; set; }
     public DateTimeOffset? UnsubscribedAt { get; set; }
+    public DateTimeOffset? LastConfirmationEmailSentAt { get; set; }
 }

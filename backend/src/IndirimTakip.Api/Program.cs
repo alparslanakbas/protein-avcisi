@@ -5,7 +5,10 @@ using IndirimTakip.Infrastructure.Coupons;
 using IndirimTakip.Infrastructure.Deals;
 using IndirimTakip.Infrastructure.Scraping;
 using IndirimTakip.Infrastructure.Subscribers;
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,6 +17,35 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOpenApi();
 
 builder.Services.AddInfrastructure(builder.Configuration);
+
+// Render/Cloudflare arkasında çalışıyoruz — gerçek istemci IP'si X-Forwarded-For
+// header'ında geliyor, KnownProxies/KnownNetworks boş bırakılmazsa ASP.NET Core
+// varsayılan olarak sadece loopback proxy'e güvenip header'ı yok sayar (rate
+// limiter aşağıda IP'ye göre partition'lıyor, bu yüzden gerçek IP şart).
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
+// 2026-08-15: /api/subscribe ve /api/products/{id}/watch her çağrıda gerçek bir
+// e-posta gönderiyor, hiçbir rate limit yoktu — bir bot/kötü niyetli istek aynı
+// e-postayı art arda tek dakikada 20+ kez göndertip Brevo'nun o adresi kara
+// listeye almasına yol açtı. IP başına 5 dakikada 5 istekle sınırlandı (SubscriberService'teki
+// e-posta bazlı cooldown'a ek bir katman).
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("EmailSensitive", httpContext => RateLimitPartition.GetFixedWindowLimiter(
+        partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        factory: _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 5,
+            Window = TimeSpan.FromMinutes(5),
+            QueueLimit = 0,
+        }));
+});
 
 // İzinli origin'ler appsettings'ten okunuyor (Development'ta localhost:4200,
 // production'da hosting platformunun ortam değişkeniyle gerçek frontend
@@ -51,8 +83,10 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
+app.UseForwardedHeaders();
 app.UseHttpsRedirection();
 app.UseCors(CorsPolicy);
+app.UseRateLimiter();
 
 // Geçici tetikleme endpoint'i: gerçek zamanlanmış worker (roadmap'teki
 // BackgroundService) eklenene kadar taramayı elle tetiklemek için.
@@ -184,13 +218,13 @@ app.MapGet("/api/products/{id:int}/price-history", async (int id, int? days, Pri
 // tek seferlik bir bildirim e-postası gönderiliyor (bkz. ProductWatchNotifier).
 app.MapPost("/api/products/{id:int}/watch", async (int id, WatchProductRequest request, ProductWatchService watchService, HttpContext http, CancellationToken ct) =>
 {
-    if (string.IsNullOrWhiteSpace(request.Email) || !request.Email.Contains('@'))
+    if (!IsValidEmail(request.Email))
         return Results.BadRequest(new { message = "Geçerli bir e-posta adresi girin." });
 
     var confirmBaseUrl = $"{http.Request.Scheme}://{http.Request.Host}";
     var success = await watchService.WatchAsync(id, request, confirmBaseUrl, ct);
     return success ? Results.Ok(new { message = "Fiyat düşünce sana haber vereceğiz." }) : Results.NotFound();
-});
+}).RequireRateLimiting("EmailSensitive");
 
 // Favoriler ("listem") — hesap/login gerektirmiyor. İlk ekleme e-posta ile
 // yapılır, dönen token tarayıcıda saklanıp sonraki isteklerde kullanılır.
@@ -255,13 +289,13 @@ app.MapPost("/api/products/{id:int}/vote", async (int id, VoteRequest request, A
 // hiçbir aboneyi doğrudan aktifleştirmiyor, sadece onay maili tetikliyor.
 app.MapPost("/api/subscribe", async (SubscribeRequest request, SubscriberService subscribers, HttpContext http, CancellationToken ct) =>
 {
-    if (string.IsNullOrWhiteSpace(request.Email) || !request.Email.Contains('@'))
+    if (!IsValidEmail(request.Email))
         return Results.BadRequest(new { message = "Geçerli bir e-posta adresi girin." });
 
     var confirmBaseUrl = $"{http.Request.Scheme}://{http.Request.Host}";
     await subscribers.SubscribeAsync(request, confirmBaseUrl, ct);
     return Results.Ok(new { message = "E-postanı kontrol et, onay bağlantısı gönderdik." });
-});
+}).RequireRateLimiting("EmailSensitive");
 
 // Onay/abonelikten çıkma linkleri e-postadan doğrudan tıklanıyor, bu yüzden
 // JSON değil basit bir HTML sayfası dönüyor — ayrı bir frontend route'u
@@ -344,6 +378,27 @@ static string BuildInfoPage(string heading, string message) => $"""
     </body>
     </html>
     """;
+
+// 2026-08-15: sadece "@" içeriyor mu kontrolü, "a;b@x.com" / "a\"b@x.com" gibi
+// RFC 5322'ye göre bile geçersiz string'lerin Subscribers tablosuna girmesine
+// izin veriyordu (bir güvenlik açığı arayan biri bunları test etmişti — bkz.
+// CLAUDE.md). SQL injection zaten EF Core'un parametreli sorguları sayesinde
+// mümkün değildi, bu sadece veri hijyeni için — MailAddress'in kendi format
+// doğrulamasına güveniyoruz, ayrı bir regex bakımı gerekmiyor.
+static bool IsValidEmail(string? email)
+{
+    if (string.IsNullOrWhiteSpace(email))
+        return false;
+
+    try
+    {
+        return new System.Net.Mail.MailAddress(email).Address == email.Trim();
+    }
+    catch (FormatException)
+    {
+        return false;
+    }
+}
 
 static class AdminAuthExtensions
 {

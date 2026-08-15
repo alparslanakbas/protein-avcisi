@@ -11,6 +11,16 @@ public record SubscribeRequest(string Email);
 // sessizce görmezden geliniyor (spam gibi tekrar mail atmasın diye).
 public class SubscriberService(AppDbContext db, IEmailSender emailSender)
 {
+    // 2026-08-15: /api/subscribe ve /api/products/{id}/watch, henuz onaylanmamis
+    // bir abone icin CAGRILDIGI HER SEFERINDE onay maili gonderiyordu - rate
+    // limit'siz bir uc, ayni e-postayla art arda cagrilinca (bot/kotu niyetli
+    // istek) tek dakikada onlarca mail gitmesine, Brevo'nun o adresi kara
+    // listeye almasina yol acti. Bu cooldown, IP-bazli rate limit'e (Program.cs)
+    // ek bir savunma katmani - IP degistirilerek limit atlatilsa bile ayni
+    // e-postaya kisa surede ikinci bir mail gitmiyor.
+    private static readonly TimeSpan ConfirmationEmailCooldown = TimeSpan.FromMinutes(5);
+
+
     public async Task SubscribeAsync(SubscribeRequest request, string confirmBaseUrl, CancellationToken cancellationToken = default)
     {
         var subscriber = await GetOrCreateSubscriberAsync(request.Email, cancellationToken);
@@ -45,6 +55,9 @@ public class SubscriberService(AppDbContext db, IEmailSender emailSender)
 
     public async Task SendConfirmationEmailAsync(Subscriber subscriber, string confirmBaseUrl, CancellationToken cancellationToken = default)
     {
+        if (subscriber.LastConfirmationEmailSentAt is { } lastSent && DateTimeOffset.UtcNow - lastSent < ConfirmationEmailCooldown)
+            return;
+
         var confirmUrl = $"{confirmBaseUrl}/api/subscribe/confirm/{subscriber.Token}";
         // E-posta istemcileri (Gmail dahil) flexbox'ı güvenilir desteklemiyor,
         // bu yüzden confirm sayfasındaki gibi değil, inline-block/vertical-align
@@ -71,6 +84,9 @@ public class SubscriberService(AppDbContext db, IEmailSender emailSender)
             """;
 
         await emailSender.SendAsync(subscriber.Email, "Protein Avcısı bültenine abone ol", html, cancellationToken);
+
+        subscriber.LastConfirmationEmailSentAt = DateTimeOffset.UtcNow;
+        await db.SaveChangesAsync(cancellationToken);
     }
 
     public async Task<bool> ConfirmAsync(string token, CancellationToken cancellationToken = default)
