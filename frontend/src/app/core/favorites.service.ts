@@ -20,12 +20,15 @@ export class FavoritesService {
     return this.isBrowser ? localStorage.getItem(TOKEN_KEY) : null;
   }
 
-  saveToken(token: string): void {
-    if (this.isBrowser) localStorage.setItem(TOKEN_KEY, token);
+  saveToken(token: string | null): void {
+    // token null gelebilir — e-posta zaten başka bir aboneye aitse backend
+    // artık o hesabın token'ını ifşa etmiyor (bkz. 2026-08-15 güvenlik
+    // düzeltmesi), bu durumda localStorage'a hiçbir şey yazmıyoruz.
+    if (this.isBrowser && token) localStorage.setItem(TOKEN_KEY, token);
   }
 
-  add(productId: number, email?: string): Observable<{ token: string }> {
-    return this.http.post<{ token: string }>(`${API_BASE_URL}/api/products/${productId}/favorite`, {
+  add(productId: number, email?: string): Observable<{ token: string | null }> {
+    return this.http.post<{ token: string | null }>(`${API_BASE_URL}/api/products/${productId}/favorite`, {
       token: this.getToken(),
       email: email ?? null,
     });

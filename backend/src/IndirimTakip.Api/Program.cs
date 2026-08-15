@@ -45,6 +45,20 @@ builder.Services.AddRateLimiter(options =>
             Window = TimeSpan.FromMinutes(5),
             QueueLimit = 0,
         }));
+
+    // /go, /vote, favori silme gibi e-posta göndermeyen ama otomatik istekle
+    // sayaç şişirmeye (ClickCount, HelpfulYesCount vb.) açık uçlar için daha
+    // gevşek, genel bir limit — gerçek bir kullanıcının dakikada 60'tan fazla
+    // ürün tıklaması/oylaması olağan değil, ama sayfada gezinirken rahatsız
+    // etmeyecek kadar cömert.
+    options.AddPolicy("General", httpContext => RateLimitPartition.GetFixedWindowLimiter(
+        partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        factory: _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 60,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0,
+        }));
 });
 
 // İzinli origin'ler appsettings'ten okunuyor (Development'ta localhost:4200,
@@ -108,7 +122,7 @@ app.MapGet("/api/deals", async (
     var result = await deals.GetDealsAsync(
         windowDays, brands, categories, search, minPrice, maxPrice,
         onlyDiscounted: true, onlyStoreDiscounted: false, sortBy,
-        page is null or <= 0 ? 1 : page.Value, pageSize is null or <= 0 ? 24 : pageSize.Value, ct);
+        page is null or <= 0 ? 1 : page.Value, NormalizePageSize(pageSize), ct);
     return Results.Ok(result);
 });
 
@@ -120,7 +134,7 @@ app.MapGet("/api/products", async (
     var result = await deals.GetDealsAsync(
         windowDays, brands, categories, search, minPrice, maxPrice,
         onlyDiscounted: false, onlyStoreDiscounted: false, sortBy,
-        page is null or <= 0 ? 1 : page.Value, pageSize is null or <= 0 ? 24 : pageSize.Value, ct);
+        page is null or <= 0 ? 1 : page.Value, NormalizePageSize(pageSize), ct);
     return Results.Ok(result);
 });
 
@@ -133,7 +147,7 @@ app.MapGet("/api/store-deals", async (
     var result = await deals.GetDealsAsync(
         windowDays, brands, categories, search, minPrice, maxPrice,
         onlyDiscounted: false, onlyStoreDiscounted: true, sortBy,
-        page is null or <= 0 ? 1 : page.Value, pageSize is null or <= 0 ? 24 : pageSize.Value, ct);
+        page is null or <= 0 ? 1 : page.Value, NormalizePageSize(pageSize), ct);
     return Results.Ok(result);
 });
 
@@ -232,15 +246,18 @@ app.MapPost("/api/products/{id:int}/watch", async (int id, WatchProductRequest r
 // hiç girmiyor.
 app.MapPost("/api/products/{id:int}/favorite", async (int id, FavoriteRequest request, FavoriteService favorites, CancellationToken ct) =>
 {
-    var token = await favorites.AddAsync(id, request.Token, request.Email, ct);
-    return token is null ? Results.NotFound() : Results.Ok(new { token });
-});
+    if (string.IsNullOrEmpty(request.Token) && !IsValidEmail(request.Email))
+        return Results.BadRequest(new { message = "Geçerli bir e-posta adresi girin." });
+
+    var (success, token) = await favorites.AddAsync(id, request.Token, request.Email, ct);
+    return success ? Results.Ok(new { token }) : Results.NotFound();
+}).RequireRateLimiting("EmailSensitive");
 
 app.MapDelete("/api/products/{id:int}/favorite", async (int id, string token, FavoriteService favorites, CancellationToken ct) =>
 {
     var removed = await favorites.RemoveAsync(id, token, ct);
     return removed ? Results.Ok() : Results.NotFound();
-});
+}).RequireRateLimiting("General");
 
 app.MapGet("/api/favorites", async (string token, FavoriteService favorites, DealsQueryService deals, CancellationToken ct) =>
 {
@@ -265,7 +282,7 @@ app.MapGet("/go/{productId:int}", async (int productId, AppDbContext db, Cancell
     await db.SaveChangesAsync(ct);
 
     return Results.Redirect(product.Url, permanent: false);
-});
+}).RequireRateLimiting("General");
 
 // "Bu bilgi faydalı mıydı?" oyu — basit güven sinyali, /go ile aynı desende
 // (auth yok, kim oy verdiğini takip etmiyoruz — tekrar oy vermeyi frontend
@@ -283,7 +300,7 @@ app.MapPost("/api/products/{id:int}/vote", async (int id, VoteRequest request, A
 
     await db.SaveChangesAsync(ct);
     return Results.Ok();
-});
+}).RequireRateLimiting("General");
 
 // E-posta bülteni: double opt-in zorunlu (İYS/KVKK gereği) — bu endpoint
 // hiçbir aboneyi doğrudan aktifleştirmiyor, sadece onay maili tetikliyor.
@@ -399,6 +416,10 @@ static bool IsValidEmail(string? email)
         return false;
     }
 }
+
+// 2026-08-15 güvenlik denetimi: pageSize'a hiç üst sınır yoktu (ör.
+// ?pageSize=5000000 gibi bir istek büyük bir sıralı sorguya yol açabilirdi).
+static int NormalizePageSize(int? pageSize) => pageSize is null or <= 0 ? 24 : Math.Min(pageSize.Value, 100);
 
 static class AdminAuthExtensions
 {

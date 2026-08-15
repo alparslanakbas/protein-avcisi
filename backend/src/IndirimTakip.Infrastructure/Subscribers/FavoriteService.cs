@@ -12,15 +12,25 @@ public record FavoriteRequest(string? Token, string? Email);
 // sonraki ekleme/kaldırma/listeleme isteklerinde kullanıyor.
 public class FavoriteService(AppDbContext db, SubscriberService subscribers)
 {
-    public async Task<string?> AddAsync(int productId, string? token, string? email, CancellationToken cancellationToken = default)
+    // 2026-08-15 güvenlik denetimi: bu metot önceden var olan bir abonenin
+    // Token'ını sadece e-postasını bilerek isteyen herkese döndürüyordu —
+    // Token hem onay hem abonelikten çıkma hem favoriler için kullanıldığı
+    // için, bu bir kişinin e-postasını bilen başkasının onun bülten aboneliğini
+    // (double opt-in atlatarak) onaylamasına/iptal etmesine, favorilerini
+    // okuyup değiştirmesine izin veriyordu. Artık Token SADECE bu çağrıda
+    // gerçekten YENİ oluşturulan bir abone için dönüyor; e-posta zaten kayıtlı
+    // bir aboneye aitse favori yine ekleniyor (Success=true) ama Token null
+    // dönüyor — o hesabın token'ına yalnızca zaten sahip olan (localStorage'da
+    // tutan) erişebilir.
+    public async Task<(bool Success, string? Token)> AddAsync(int productId, string? token, string? email, CancellationToken cancellationToken = default)
     {
         var productExists = await db.Products.AnyAsync(p => p.Id == productId, cancellationToken);
         if (!productExists)
-            return null;
+            return (false, null);
 
-        var subscriber = await ResolveSubscriberAsync(token, email, cancellationToken);
+        var (subscriber, isNewSubscriber) = await ResolveSubscriberAsync(token, email, cancellationToken);
         if (subscriber is null)
-            return null;
+            return (false, null);
 
         var alreadyFavorited = await db.ProductFavorites.AnyAsync(
             f => f.SubscriberId == subscriber.Id && f.ProductId == productId, cancellationToken);
@@ -36,7 +46,7 @@ public class FavoriteService(AppDbContext db, SubscriberService subscribers)
             await db.SaveChangesAsync(cancellationToken);
         }
 
-        return subscriber.Token;
+        return (true, isNewSubscriber ? subscriber.Token : null);
     }
 
     public async Task<bool> RemoveAsync(int productId, string token, CancellationToken cancellationToken = default)
@@ -67,15 +77,21 @@ public class FavoriteService(AppDbContext db, SubscriberService subscribers)
             .ToListAsync(cancellationToken);
     }
 
-    private async Task<Subscriber?> ResolveSubscriberAsync(string? token, string? email, CancellationToken cancellationToken)
+    private async Task<(Subscriber? Subscriber, bool IsNewSubscriber)> ResolveSubscriberAsync(string? token, string? email, CancellationToken cancellationToken)
     {
         if (!string.IsNullOrEmpty(token))
         {
             var existing = await db.Subscribers.FirstOrDefaultAsync(s => s.Token == token, cancellationToken);
             if (existing is not null)
-                return existing;
+                return (existing, false);
         }
 
-        return string.IsNullOrWhiteSpace(email) ? null : await subscribers.GetOrCreateSubscriberAsync(email, cancellationToken);
+        if (string.IsNullOrWhiteSpace(email))
+            return (null, false);
+
+        var normalized = email.Trim().ToLowerInvariant();
+        var alreadyExisted = await db.Subscribers.AnyAsync(s => s.Email == normalized, cancellationToken);
+        var subscriber = await subscribers.GetOrCreateSubscriberAsync(email, cancellationToken);
+        return (subscriber, !alreadyExisted);
     }
 }
