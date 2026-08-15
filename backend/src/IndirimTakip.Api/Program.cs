@@ -96,11 +96,32 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
+else
+{
+    // HSTS yereldeki http geliştirmeyi bozmasın diye sadece production'da.
+    app.UseHsts();
+}
 
 app.UseForwardedHeaders();
 app.UseHttpsRedirection();
 app.UseCors(CorsPolicy);
 app.UseRateLimiter();
+
+// 2026-08-15 güvenlik denetimi: tarayıcı seviyesinde ek bir savunma katmanı
+// hiç yoktu. Bu API çoğunlukla JSON döndürüyor (bu header'lar orada etkisiz)
+// ama /api/subscribe/confirm ve /unsubscribe gerçek HTML sayfası dönüyor —
+// e-postadan doğrudan tıklanan bu sayfalar clickjacking/MIME-sniffing gibi
+// saldırılara açık olmasın diye. CSP inline style'lara izin veriyor
+// (BuildInfoPage stil için bunu kullanıyor) ama script'i tamamen kapatıyor.
+app.Use(async (context, next) =>
+{
+    context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
+    context.Response.Headers.Append("X-Frame-Options", "DENY");
+    context.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
+    context.Response.Headers.Append("Content-Security-Policy",
+        "default-src 'none'; style-src 'unsafe-inline'; img-src 'self'; base-uri 'none'; frame-ancestors 'none'");
+    await next();
+});
 
 // Geçici tetikleme endpoint'i: gerçek zamanlanmış worker (roadmap'teki
 // BackgroundService) eklenene kadar taramayı elle tetiklemek için.
