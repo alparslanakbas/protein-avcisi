@@ -5,6 +5,10 @@ namespace IndirimTakip.Infrastructure.Coupons;
 
 public record CreateCouponRequest(string BrandName, string Code, string Description, DateTimeOffset? ValidUntil);
 
+// IsActive dahil — süresi geçen/yanlış çıkan bir kuponu deaktive etmenin
+// API üzerinden hiçbir yolu yoktu, sadece doğrudan DB erişimiyle mümkündü.
+public record UpdateCouponRequest(string? Code, string? Description, DateTimeOffset? ValidUntil, bool? IsActive);
+
 public class CouponService(AppDbContext db)
 {
     public async Task<IReadOnlyList<CouponDto>> GetActiveCouponsAsync(CancellationToken cancellationToken = default)
@@ -37,5 +41,21 @@ public class CouponService(AppDbContext db)
         await db.SaveChangesAsync(cancellationToken);
 
         return new CouponDto(coupon.Id, brand.Name, coupon.Code, coupon.Description, coupon.ValidUntil, coupon.LastVerifiedAt);
+    }
+
+    public async Task<CouponDto?> UpdateAsync(int id, UpdateCouponRequest request, CancellationToken cancellationToken = default)
+    {
+        var coupon = await db.Coupons.Include(c => c.Brand).FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+        if (coupon is null)
+            return null;
+
+        if (request.Code is not null) coupon.Code = request.Code;
+        if (request.Description is not null) coupon.Description = request.Description;
+        if (request.ValidUntil is not null) coupon.ValidUntil = request.ValidUntil;
+        if (request.IsActive is not null) coupon.IsActive = request.IsActive.Value;
+
+        await db.SaveChangesAsync(cancellationToken);
+
+        return new CouponDto(coupon.Id, coupon.Brand!.Name, coupon.Code, coupon.Description, coupon.ValidUntil, coupon.LastVerifiedAt);
     }
 }

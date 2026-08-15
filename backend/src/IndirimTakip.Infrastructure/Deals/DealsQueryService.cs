@@ -1,10 +1,34 @@
+using IndirimTakip.Core.Entities;
 using IndirimTakip.Infrastructure.Scraping;
 using Microsoft.EntityFrameworkCore;
 
 namespace IndirimTakip.Infrastructure.Deals;
 
+// GetDealsAsync/GetProductByIdAsync/GetDealsByIdsAsync'in ortak sorgu şekli —
+// önceden anonim tip olarak 3 yerde ayrı ayrı tanımlanıyordu, DealDto'ya
+// çevrilirken de aynı hesaplama (indirim yüzdesi vb.) elle tekrarlanıyordu.
+// Bkz. MapToDealDto.
+internal sealed record PricePointRow(decimal Price, DateTimeOffset ScrapedAt, decimal? StoreOldPrice);
+internal sealed record DealRow(Product Product, string BrandName, PricePointRow? Latest, decimal? ReferencePrice);
+
 public class DealsQueryService(AppDbContext db)
 {
+    private static DealDto MapToDealDto(DealRow row)
+    {
+        var latest = row.Latest!;
+        var referencePrice = row.ReferencePrice!.Value;
+        return new DealDto(
+            row.Product.Id, row.Product.Name, row.Product.Url, row.Product.ImageUrl,
+            row.Product.Category, row.Product.Size, row.Product.Flavor, row.Product.ServingSizeGrams,
+            row.BrandName, latest.Price, referencePrice,
+            Math.Round((referencePrice - latest.Price) / referencePrice * 100, 1),
+            latest.StoreOldPrice,
+            latest.StoreOldPrice is decimal storeOld && storeOld > 0
+                ? Math.Round((storeOld - latest.Price) / storeOld * 100, 1)
+                : null,
+            latest.ScrapedAt);
+    }
+
     public async Task<PagedResult<DealDto>> GetDealsAsync(
         int referenceWindowDays,
         string[]? brands,
@@ -25,18 +49,16 @@ public class DealsQueryService(AppDbContext db)
             from p in db.Products
             join b in db.Brands on p.BrandId equals b.Id
             where b.IsActive
-            select new
-            {
-                Product = p,
-                BrandName = b.Name,
-                Latest = p.PriceHistories
+            select new DealRow(
+                p,
+                b.Name,
+                p.PriceHistories
                     .OrderByDescending(ph => ph.ScrapedAt)
-                    .Select(ph => new { ph.Price, ph.ScrapedAt, ph.StoreOldPrice })
+                    .Select(ph => new PricePointRow(ph.Price, ph.ScrapedAt, ph.StoreOldPrice))
                     .FirstOrDefault(),
-                ReferencePrice = p.PriceHistories
+                p.PriceHistories
                     .Where(ph => ph.ScrapedAt >= referenceSince)
-                    .Max(ph => (decimal?)ph.Price),
-            };
+                    .Max(ph => (decimal?)ph.Price));
 
         if (brands is { Length: > 0 })
             query = query.Where(r => brands.Contains(r.BrandName));
@@ -99,26 +121,7 @@ public class DealsQueryService(AppDbContext db)
             .Take(pageSize)
             .ToListAsync(cancellationToken);
 
-        var items = pageRows
-            .Select(r => new DealDto(
-                r.Product.Id,
-                r.Product.Name,
-                r.Product.Url,
-                r.Product.ImageUrl,
-                r.Product.Category,
-                r.Product.Size,
-                r.Product.Flavor,
-                r.Product.ServingSizeGrams,
-                r.BrandName,
-                r.Latest!.Price,
-                r.ReferencePrice!.Value,
-                Math.Round((r.ReferencePrice.Value - r.Latest.Price) / r.ReferencePrice.Value * 100, 1),
-                r.Latest.StoreOldPrice,
-                r.Latest.StoreOldPrice is decimal storeOld && storeOld > 0
-                    ? Math.Round((storeOld - r.Latest.Price) / storeOld * 100, 1)
-                    : null,
-                r.Latest.ScrapedAt))
-            .ToList();
+        var items = pageRows.Select(MapToDealDto).ToList();
 
         return new PagedResult<DealDto>(items, totalCount, page, pageSize);
     }
@@ -135,32 +138,21 @@ public class DealsQueryService(AppDbContext db)
             from p in db.Products
             join b in db.Brands on p.BrandId equals b.Id
             where b.IsActive && p.Id == productId
-            select new
-            {
-                Product = p,
-                BrandName = b.Name,
-                Latest = p.PriceHistories
+            select new DealRow(
+                p,
+                b.Name,
+                p.PriceHistories
                     .OrderByDescending(ph => ph.ScrapedAt)
-                    .Select(ph => new { ph.Price, ph.ScrapedAt, ph.StoreOldPrice })
+                    .Select(ph => new PricePointRow(ph.Price, ph.ScrapedAt, ph.StoreOldPrice))
                     .FirstOrDefault(),
-                ReferencePrice = p.PriceHistories
+                p.PriceHistories
                     .Where(ph => ph.ScrapedAt >= referenceSince)
-                    .Max(ph => (decimal?)ph.Price),
-            }).FirstOrDefaultAsync(cancellationToken);
+                    .Max(ph => (decimal?)ph.Price))).FirstOrDefaultAsync(cancellationToken);
 
         if (row?.Latest is null || row.ReferencePrice is null)
             return null;
 
-        return new DealDto(
-            row.Product.Id, row.Product.Name, row.Product.Url, row.Product.ImageUrl,
-            row.Product.Category, row.Product.Size, row.Product.Flavor, row.Product.ServingSizeGrams,
-            row.BrandName, row.Latest.Price, row.ReferencePrice.Value,
-            Math.Round((row.ReferencePrice.Value - row.Latest.Price) / row.ReferencePrice.Value * 100, 1),
-            row.Latest.StoreOldPrice,
-            row.Latest.StoreOldPrice is decimal storeOld && storeOld > 0
-                ? Math.Round((storeOld - row.Latest.Price) / storeOld * 100, 1)
-                : null,
-            row.Latest.ScrapedAt);
+        return MapToDealDto(row);
     }
 
     // Favoriler listesi (/favorilerim) için — belirli bir ürün ID kümesini,
@@ -175,31 +167,20 @@ public class DealsQueryService(AppDbContext db)
             from p in db.Products
             join b in db.Brands on p.BrandId equals b.Id
             where b.IsActive && productIds.Contains(p.Id)
-            select new
-            {
-                Product = p,
-                BrandName = b.Name,
-                Latest = p.PriceHistories
+            select new DealRow(
+                p,
+                b.Name,
+                p.PriceHistories
                     .OrderByDescending(ph => ph.ScrapedAt)
-                    .Select(ph => new { ph.Price, ph.ScrapedAt, ph.StoreOldPrice })
+                    .Select(ph => new PricePointRow(ph.Price, ph.ScrapedAt, ph.StoreOldPrice))
                     .FirstOrDefault(),
-                ReferencePrice = p.PriceHistories
+                p.PriceHistories
                     .Where(ph => ph.ScrapedAt >= referenceSince)
-                    .Max(ph => (decimal?)ph.Price),
-            }).ToListAsync(cancellationToken);
+                    .Max(ph => (decimal?)ph.Price))).ToListAsync(cancellationToken);
 
         return rows
             .Where(r => r.Latest != null && r.ReferencePrice != null)
-            .Select(r => new DealDto(
-                r.Product.Id, r.Product.Name, r.Product.Url, r.Product.ImageUrl,
-                r.Product.Category, r.Product.Size, r.Product.Flavor, r.Product.ServingSizeGrams,
-                r.BrandName, r.Latest!.Price, r.ReferencePrice!.Value,
-                Math.Round((r.ReferencePrice.Value - r.Latest.Price) / r.ReferencePrice.Value * 100, 1),
-                r.Latest.StoreOldPrice,
-                r.Latest.StoreOldPrice is decimal storeOld && storeOld > 0
-                    ? Math.Round((storeOld - r.Latest.Price) / storeOld * 100, 1)
-                    : null,
-                r.Latest.ScrapedAt))
+            .Select(MapToDealDto)
             .ToList();
     }
 

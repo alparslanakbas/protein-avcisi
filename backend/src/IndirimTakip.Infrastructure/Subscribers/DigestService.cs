@@ -1,6 +1,7 @@
 using System.Globalization;
 using IndirimTakip.Infrastructure.Deals;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 
 namespace IndirimTakip.Infrastructure.Subscribers;
 
@@ -10,7 +11,7 @@ public record DigestResult(int DealCount, int SubscriberCount);
 // döngüsünün tespit ettiği en yüksek indirimlerden genel bir özet, tüm
 // onaylı abonelere aynı içerikle gönderiliyor. Sadece abonelikten çıkma
 // linki her abone için kişiye özel (kendi token'ı).
-public class DigestService(AppDbContext db, DealsQueryService dealsQuery, IEmailSender emailSender)
+public class DigestService(AppDbContext db, DealsQueryService dealsQuery, IEmailSender emailSender, IConfiguration configuration)
 {
     private const int FeaturedDealCount = 6;
     private static readonly CultureInfo TurkishCulture = CultureInfo.GetCultureInfo("tr-TR");
@@ -31,21 +32,34 @@ public class DigestService(AppDbContext db, DealsQueryService dealsQuery, IEmail
             .Where(s => s.IsConfirmed && s.UnsubscribedAt == null)
             .ToListAsync(cancellationToken);
 
-        var dealsHtml = string.Concat(deals.Items.Select(BuildDealRowHtml));
+        var frontendBaseUrl = configuration["FrontendBaseUrl"] ?? "https://www.proteinavcisi.com.tr";
+        var dealsHtml = string.Concat(deals.Items.Select(deal => BuildDealRowHtml(deal, frontendBaseUrl)));
 
+        // Her göndermeyi kendi try/catch'ine alıyoruz — bir alıcının gönderimi
+        // (ör. Brevo'dan geçici bir hata) patlarsa listedeki diğer abonelerin
+        // de o haftaki bülteni hiç almaması gibi ciddi bir sonuca yol açmasın.
+        var sentCount = 0;
         foreach (var subscriber in subscribers)
         {
             var unsubscribeUrl = $"{unsubscribeBaseUrl}/api/subscribe/unsubscribe/{subscriber.Token}";
-            var html = BuildDigestHtml(dealsHtml, unsubscribeUrl);
-            await emailSender.SendAsync(subscriber.Email, "Protein Avcısı — Bu Haftanın Öne Çıkan İndirimleri", html, cancellationToken);
+            var html = BuildDigestHtml(dealsHtml, unsubscribeUrl, frontendBaseUrl);
+            try
+            {
+                await emailSender.SendAsync(subscriber.Email, "Protein Avcısı — Bu Haftanın Öne Çıkan İndirimleri", html, cancellationToken);
+                sentCount++;
+            }
+            catch (Exception)
+            {
+                // Tek bir abonenin gönderimi başarısız olsa da döngü devam etsin.
+            }
         }
 
-        return new DigestResult(deals.Items.Count, subscribers.Count);
+        return new DigestResult(deals.Items.Count, sentCount);
     }
 
-    private static string BuildDealRowHtml(DealDto deal)
+    private static string BuildDealRowHtml(DealDto deal, string frontendBaseUrl)
     {
-        var productUrl = $"https://proteinavcisi.com.tr/urun/{deal.ProductId}";
+        var productUrl = $"{frontendBaseUrl}/urun/{deal.ProductId}";
         var imageHtml = deal.ImageUrl is not null
             ? $"""<img src="{deal.ImageUrl}" alt="" width="72" height="72" style="display:block;border-radius:8px;object-fit:contain;background:#f5f5f4;" />"""
             : """<div style="width:72px;height:72px;border-radius:8px;background:#f5f5f4;"></div>""";
@@ -78,7 +92,7 @@ public class DigestService(AppDbContext db, DealsQueryService dealsQuery, IEmail
     // Deal kartları için <table> düzeni bilinçli — e-posta istemcileri arasında
     // (özellikle görsel + metnin yan yana durduğu bu tarz çok-sütunlu
     // yerleşimlerde) en güvenilir sonucu tablo veriyor, flex/grid değil.
-    private static string BuildDigestHtml(string dealsHtml, string unsubscribeUrl) => $"""
+    private static string BuildDigestHtml(string dealsHtml, string unsubscribeUrl, string frontendBaseUrl) => $"""
         <div style="max-width:480px;margin:0 auto;padding:32px 24px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
           <div style="text-align:center;margin-bottom:24px;">
             <span style="display:inline-block;width:36px;height:36px;line-height:36px;border-radius:8px;background:#059669;color:#ffffff;font-weight:800;font-size:14px;text-align:center;vertical-align:middle;">PA</span>
@@ -90,7 +104,7 @@ public class DigestService(AppDbContext db, DealsQueryService dealsQuery, IEmail
               {dealsHtml}
             </table>
             <div style="text-align:center;margin-top:24px;">
-              <a href="https://proteinavcisi.com.tr" style="display:inline-block;background:#059669;color:#ffffff;text-decoration:none;font-weight:600;font-size:13px;padding:10px 24px;border-radius:9999px;">Tüm İndirimleri Gör</a>
+              <a href="{frontendBaseUrl}" style="display:inline-block;background:#059669;color:#ffffff;text-decoration:none;font-weight:600;font-size:13px;padding:10px 24px;border-radius:9999px;">Tüm İndirimleri Gör</a>
             </div>
           </div>
           <p style="font-size:11px;color:#a8a29e;line-height:1.5;text-align:center;margin-top:20px;">

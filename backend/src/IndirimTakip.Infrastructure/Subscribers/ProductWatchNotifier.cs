@@ -1,6 +1,7 @@
 using System.Globalization;
 using IndirimTakip.Core.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 
 namespace IndirimTakip.Infrastructure.Subscribers;
 
@@ -9,7 +10,7 @@ namespace IndirimTakip.Infrastructure.Subscribers;
 // ama henüz bildirilmemiş) izleme olan ürünleri kontrol ediyor — 600+ ürünün
 // tamamı için değil, sadece gerçekten izlenen küçük bir alt küme için sorgu
 // çalıştırıyor.
-public class ProductWatchNotifier(AppDbContext db, IEmailSender emailSender)
+public class ProductWatchNotifier(AppDbContext db, IEmailSender emailSender, IConfiguration configuration)
 {
     private static readonly CultureInfo TurkishCulture = CultureInfo.GetCultureInfo("tr-TR");
 
@@ -26,6 +27,8 @@ public class ProductWatchNotifier(AppDbContext db, IEmailSender emailSender)
 
         if (activeWatches.Count == 0)
             return;
+
+        var frontendBaseUrl = configuration["FrontendBaseUrl"] ?? "https://www.proteinavcisi.com.tr";
 
         foreach (var group in activeWatches.GroupBy(w => w.ProductId))
         {
@@ -47,18 +50,30 @@ public class ProductWatchNotifier(AppDbContext db, IEmailSender emailSender)
 
             foreach (var watch in group)
             {
-                var html = BuildNotifyHtml(watch.Product!, oldPrice, newPrice);
-                await emailSender.SendAsync(watch.Subscriber!.Email, $"{watch.Product!.Name} fiyatı düştü!", html, cancellationToken);
-                watch.NotifiedAt = DateTimeOffset.UtcNow;
+                var html = BuildNotifyHtml(watch.Product!, oldPrice, newPrice, frontendBaseUrl);
+                try
+                {
+                    await emailSender.SendAsync(watch.Subscriber!.Email, $"{watch.Product!.Name} fiyatı düştü!", html, cancellationToken);
+                    watch.NotifiedAt = DateTimeOffset.UtcNow;
+                }
+                catch (Exception)
+                {
+                    // Bu abonenin gönderimi başarısız oldu — izleme aktif kalsın,
+                    // bir sonraki tarama döngüsünde tekrar denenecek. Diğer
+                    // abonelerin/ürünlerin bildirimini engellemesin diye devam.
+                }
             }
-        }
 
-        await db.SaveChangesAsync(cancellationToken);
+            // Grup bazında kaydediyoruz — döngü ortasında bir grup patlarsa
+            // önceki gruplarda başarıyla gönderilmiş bildirimlerin NotifiedAt
+            // işaretlemesi kaybolmasın diye tek bir toplu SaveChanges yerine.
+            await db.SaveChangesAsync(cancellationToken);
+        }
     }
 
-    private static string BuildNotifyHtml(Product product, decimal oldPrice, decimal newPrice)
+    private static string BuildNotifyHtml(Product product, decimal oldPrice, decimal newPrice, string frontendBaseUrl)
     {
-        var productUrl = $"https://proteinavcisi.com.tr/urun/{product.Id}";
+        var productUrl = $"{frontendBaseUrl}/urun/{product.Id}";
         var imageHtml = product.ImageUrl is not null
             ? $"""<img src="{product.ImageUrl}" alt="" width="96" height="96" style="display:block;border-radius:8px;object-fit:contain;background:#f5f5f4;margin:0 auto 16px;" />"""
             : "";

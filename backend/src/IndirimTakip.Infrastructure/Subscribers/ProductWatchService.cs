@@ -17,11 +17,11 @@ public class ProductWatchService(AppDbContext db, SubscriberService subscribers)
 
         var subscriber = await subscribers.GetOrCreateSubscriberAsync(request.Email, cancellationToken);
 
-        var alreadyWatching = await db.ProductWatches.AnyAsync(
-            w => w.SubscriberId == subscriber.Id && w.ProductId == productId && w.NotifiedAt == null,
+        var existingWatch = await db.ProductWatches.FirstOrDefaultAsync(
+            w => w.SubscriberId == subscriber.Id && w.ProductId == productId,
             cancellationToken);
 
-        if (!alreadyWatching)
+        if (existingWatch is null)
         {
             db.ProductWatches.Add(new ProductWatch
             {
@@ -31,6 +31,18 @@ public class ProductWatchService(AppDbContext db, SubscriberService subscribers)
             });
             await db.SaveChangesAsync(cancellationToken);
         }
+        else if (existingWatch.NotifiedAt is not null)
+        {
+            // (SubscriberId, ProductId) üzerinde unique index var — daha önce
+            // bildirim gönderilmiş bir kaydı görmezden gelip ikinci bir satır
+            // eklemeye çalışmak index çakışmasıyla 500'e yol açıyordu. Kullanıcı
+            // tekrar izlemek isterse aynı satırı "sıfırlayıp" yeniden aktif
+            // ediyoruz.
+            existingWatch.NotifiedAt = null;
+            existingWatch.CreatedAt = DateTimeOffset.UtcNow;
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        // else: existingWatch zaten aktif (NotifiedAt == null), hiçbir şey yapma.
 
         // Genel bülten onayı aynı zamanda "Haber Ver" bildirimleri için de
         // izin niteliğinde — ayrı bir onay akışı kurmak bu hafif özellik

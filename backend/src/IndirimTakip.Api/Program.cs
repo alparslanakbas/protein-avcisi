@@ -5,6 +5,7 @@ using IndirimTakip.Infrastructure.Coupons;
 using IndirimTakip.Infrastructure.Deals;
 using IndirimTakip.Infrastructure.Scraping;
 using IndirimTakip.Infrastructure.Subscribers;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
@@ -82,6 +83,11 @@ var app = builder.Build();
 // tarafta kalıp erişimi tamamen reddediyoruz.
 var adminApiKey = app.Configuration["AdminApiKey"];
 
+// Onay/abonelikten çıkma sayfalarındaki "Siteye Dön" linki ve bültendeki
+// ürün/site linkleri için — tek yerden yönetiliyor ki domain değişince
+// (bu proje bu oturumda bile 2 kez değiştirdi) unutulan bir yer kalmasın.
+var frontendBaseUrl = app.Configuration["FrontendBaseUrl"] ?? "https://www.proteinavcisi.com.tr";
+
 // Uygulama açılırken bekleyen migration'ları otomatik uygula — hosting
 // platformunda elle migration komutu çalıştırmaya gerek kalmasın diye
 // (tek geliştiricili, küçük ölçekli bir proje için makul bir kısayol).
@@ -104,6 +110,24 @@ if (app.Environment.IsDevelopment())
 // ve HSTS header'ı sessizce hiç eklenmez (gerçek bir bug olarak yakalandı,
 // bkz. CLAUDE.md 2026-08-15).
 app.UseForwardedHeaders();
+
+// Global hata yakalama — önceden yoktu, herhangi bir endpoint'te beklenmeyen
+// bir exception çıplak, tutarsız bir 500 olarak dönüyordu (hiç loglanmadan).
+// Exception detayını istemciye sızdırmıyoruz, sadece loglayıp genel bir JSON
+// hata mesajı dönüyoruz.
+app.UseExceptionHandler(errorApp =>
+{
+    errorApp.Run(async context =>
+    {
+        var exceptionFeature = context.Features.Get<IExceptionHandlerFeature>();
+        if (exceptionFeature?.Error is { } ex)
+            app.Logger.LogError(ex, "İşlenmeyen hata: {Method} {Path}", context.Request.Method, context.Request.Path);
+
+        context.Response.ContentType = "application/json";
+        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        await context.Response.WriteAsJsonAsync(new { message = "Beklenmeyen bir hata oluştu." });
+    });
+});
 
 if (!app.Environment.IsDevelopment())
 {
@@ -143,42 +167,28 @@ app.MapPost("/api/dev/ingest/{brand}", async (string brand, IEnumerable<IBrandSc
     return Results.Ok(new { brand = scraper.BrandName, scrapedCount = count });
 }).RequireAdminKey(adminApiKey);
 
-app.MapGet("/api/deals", async (
-    DealsQueryService deals, string[]? brands, string[]? categories, string? search,
-    decimal? minPrice, decimal? maxPrice, int? days, string? sortBy, int? page, int? pageSize, CancellationToken ct) =>
+// /api/deals, /api/products, /api/store-deals aynı sorgu parametrelerini
+// kabul edip sadece onlyDiscounted/onlyStoreDiscounted bayraklarıyla
+// ayrışıyordu — üç yerde neredeyse birebir kopya kod yerine tek bir yerden.
+void MapDealsQueryEndpoint(string route, bool onlyDiscounted, bool onlyStoreDiscounted)
 {
-    var windowDays = days is null or <= 0 ? 30 : days.Value;
-    var result = await deals.GetDealsAsync(
-        windowDays, brands, categories, search, minPrice, maxPrice,
-        onlyDiscounted: true, onlyStoreDiscounted: false, sortBy,
-        page is null or <= 0 ? 1 : page.Value, NormalizePageSize(pageSize), ct);
-    return Results.Ok(result);
-});
+    app.MapGet(route, async (
+        DealsQueryService deals, string[]? brands, string[]? categories, string? search,
+        decimal? minPrice, decimal? maxPrice, int? days, string? sortBy, int? page, int? pageSize, CancellationToken ct) =>
+    {
+        var windowDays = days is null or <= 0 ? 30 : days.Value;
+        var result = await deals.GetDealsAsync(
+            windowDays, brands, categories, search, minPrice, maxPrice,
+            onlyDiscounted, onlyStoreDiscounted, sortBy,
+            page is null or <= 0 ? 1 : page.Value, NormalizePageSize(pageSize), ct);
+        return Results.Ok(result);
+    });
+}
 
-app.MapGet("/api/products", async (
-    DealsQueryService deals, string[]? brands, string[]? categories, string? search,
-    decimal? minPrice, decimal? maxPrice, int? days, string? sortBy, int? page, int? pageSize, CancellationToken ct) =>
-{
-    var windowDays = days is null or <= 0 ? 30 : days.Value;
-    var result = await deals.GetDealsAsync(
-        windowDays, brands, categories, search, minPrice, maxPrice,
-        onlyDiscounted: false, onlyStoreDiscounted: false, sortBy,
-        page is null or <= 0 ? 1 : page.Value, NormalizePageSize(pageSize), ct);
-    return Results.Ok(result);
-});
-
+MapDealsQueryEndpoint("/api/deals", onlyDiscounted: true, onlyStoreDiscounted: false);
+MapDealsQueryEndpoint("/api/products", onlyDiscounted: false, onlyStoreDiscounted: false);
 // Markanın kendi beyan ettiği (doğrulanmamış) kampanya/indirim fiyatına sahip ürünler.
-app.MapGet("/api/store-deals", async (
-    DealsQueryService deals, string[]? brands, string[]? categories, string? search,
-    decimal? minPrice, decimal? maxPrice, int? days, string? sortBy, int? page, int? pageSize, CancellationToken ct) =>
-{
-    var windowDays = days is null or <= 0 ? 30 : days.Value;
-    var result = await deals.GetDealsAsync(
-        windowDays, brands, categories, search, minPrice, maxPrice,
-        onlyDiscounted: false, onlyStoreDiscounted: true, sortBy,
-        page is null or <= 0 ? 1 : page.Value, NormalizePageSize(pageSize), ct);
-    return Results.Ok(result);
-});
+MapDealsQueryEndpoint("/api/store-deals", onlyDiscounted: false, onlyStoreDiscounted: true);
 
 // Marka karşılaştırma sayfaları için — kategori bazında ortalama fiyat.
 app.MapGet("/api/brand-comparison", async (string brand1, string brand2, DealsQueryService deals, CancellationToken ct) =>
@@ -220,6 +230,15 @@ app.MapPost("/api/dev/coupons", async (CreateCouponRequest request, CouponServic
 {
     var result = await coupons.CreateAsync(request, ct);
     return result is null ? Results.NotFound($"'{request.BrandName}' adında marka bulunamadı.") : Results.Ok(result);
+}).RequireAdminKey(adminApiKey);
+
+// Süresi geçen/yanlış çıkan bir kuponu deaktive edebilmek için (Article'daki
+// PUT deseniyle aynı) — önceden sadece ekleme vardı, bir kuponu kapatmanın
+// API üzerinden hiçbir yolu yoktu.
+app.MapPut("/api/dev/coupons/{id:int}", async (int id, UpdateCouponRequest request, CouponService coupons, CancellationToken ct) =>
+{
+    var result = await coupons.UpdateAsync(id, request, ct);
+    return result is null ? Results.NotFound() : Results.Ok(result);
 }).RequireAdminKey(adminApiKey);
 
 // "Rehber" bilgi yazıları — SEO/güven amaçlı, kupon deseniyle aynı: elle
@@ -351,8 +370,8 @@ app.MapGet("/api/subscribe/confirm/{token}", async (string token, SubscriberServ
 {
     var success = await subscribers.ConfirmAsync(token, ct);
     var html = success
-        ? BuildInfoPage("Aboneliğin onaylandı!", "Artık öne çıkan indirimlerden haberdar olacaksın.")
-        : BuildInfoPage("Bu bağlantı geçersiz.", "Onay linki süresi geçmiş ya da daha önce kullanılmış olabilir.");
+        ? BuildInfoPage("Aboneliğin onaylandı!", "Artık öne çıkan indirimlerden haberdar olacaksın.", frontendBaseUrl)
+        : BuildInfoPage("Bu bağlantı geçersiz.", "Onay linki süresi geçmiş ya da daha önce kullanılmış olabilir.", frontendBaseUrl);
     return Results.Content(html, "text/html; charset=utf-8");
 });
 
@@ -360,8 +379,8 @@ app.MapGet("/api/subscribe/unsubscribe/{token}", async (string token, Subscriber
 {
     var success = await subscribers.UnsubscribeAsync(token, ct);
     var html = success
-        ? BuildInfoPage("Bültenden çıkarıldın.", "Fikrini değiştirirsen tekrar abone olabilirsin.")
-        : BuildInfoPage("Bu bağlantı geçersiz.", "Bağlantı süresi geçmiş ya da daha önce kullanılmış olabilir.");
+        ? BuildInfoPage("Bültenden çıkarıldın.", "Fikrini değiştirirsen tekrar abone olabilirsin.", frontendBaseUrl)
+        : BuildInfoPage("Bu bağlantı geçersiz.", "Bağlantı süresi geçmiş ya da daha önce kullanılmış olabilir.", frontendBaseUrl);
     return Results.Content(html, "text/html; charset=utf-8");
 });
 
@@ -403,7 +422,9 @@ app.Run();
 
 // Onay/çıkış linklerinin ikisi de aynı markalı kart tasarımını kullanıyor —
 // site genelindeki renk paletiyle (brand-600 yeşil, stone nötrleri) tutarlı.
-static string BuildInfoPage(string heading, string message) => $"""
+// frontendBaseUrl config'ten geliyor — bu proje domainini bu oturumda 2 kez
+// değiştirdi, hardcoded bir adresin unutulup eskide kalması gerçek bir risk.
+static string BuildInfoPage(string heading, string message, string frontendBaseUrl) => $"""
     <!doctype html>
     <html lang="tr">
     <head>
@@ -419,7 +440,7 @@ static string BuildInfoPage(string heading, string message) => $"""
         </div>
         <h1 style="font-size:20px;font-weight:800;color:#1c1917;margin:0 0 8px;">{heading}</h1>
         <p style="font-size:14px;color:#78716c;margin:0 0 28px;line-height:1.5;">{message}</p>
-        <a href="https://proteinavcisi.com.tr" style="display:inline-block;background:#059669;color:#fff;text-decoration:none;font-weight:600;font-size:14px;padding:12px 28px;border-radius:9999px;">Siteye Dön</a>
+        <a href="{frontendBaseUrl}" style="display:inline-block;background:#059669;color:#fff;text-decoration:none;font-weight:600;font-size:14px;padding:12px 28px;border-radius:9999px;">Siteye Dön</a>
       </div>
     </body>
     </html>
