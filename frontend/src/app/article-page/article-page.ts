@@ -1,11 +1,11 @@
 import { DOCUMENT, DatePipe } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
-import { Meta, Title } from '@angular/platform-browser';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { Article } from '../core/article.model';
 import { ArticlesService } from '../core/articles.service';
-import { canonicalOrigin, setCanonicalLink } from '../core/canonical-link';
+import { canonicalOrigin } from '../core/canonical-link';
+import { PageMetaService, upsertJsonLdScript } from '../core/page-meta.service';
 
 @Component({
   selector: 'app-article-page',
@@ -16,8 +16,7 @@ export class ArticlePage implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly articlesService = inject(ArticlesService);
-  private readonly titleService = inject(Title);
-  private readonly metaService = inject(Meta);
+  private readonly pageMeta = inject(PageMetaService);
   private readonly document = inject(DOCUMENT);
   private structuredDataEl: HTMLScriptElement | null = null;
 
@@ -47,13 +46,13 @@ export class ArticlePage implements OnInit {
   private setMeta(article: Article): void {
     const title = `${article.title} | ProteinAvcısı Rehber`;
 
-    this.titleService.setTitle(title);
-    this.metaService.updateTag({ name: 'description', content: article.summary });
-    this.metaService.updateTag({ property: 'og:title', content: title });
-    this.metaService.updateTag({ property: 'og:description', content: article.summary });
-    this.metaService.updateTag({ property: 'og:type', content: 'article' });
-    this.metaService.updateTag({ property: 'og:image', content: article.coverImageUrl ?? `${canonicalOrigin(this.document)}/og-image.png` });
-    setCanonicalLink(this.document, `/rehber/${article.slug}`);
+    this.pageMeta.set({
+      title,
+      description: article.summary,
+      canonicalPath: `/rehber/${article.slug}`,
+      ogType: 'article',
+      ogImage: article.coverImageUrl ?? undefined,
+    });
 
     const jsonLd = {
       '@context': 'https://schema.org',
@@ -66,11 +65,6 @@ export class ArticlePage implements OnInit {
       mainEntityOfPage: `${canonicalOrigin(this.document)}/rehber/${article.slug}`,
     };
 
-    if (!this.structuredDataEl) {
-      this.structuredDataEl = this.document.createElement('script');
-      this.structuredDataEl.type = 'application/ld+json';
-      this.document.head.appendChild(this.structuredDataEl);
-    }
-    this.structuredDataEl.textContent = JSON.stringify(jsonLd);
+    this.structuredDataEl = upsertJsonLdScript(this.document, this.structuredDataEl, jsonLd);
   }
 }

@@ -1,13 +1,12 @@
-import { DOCUMENT, DecimalPipe } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
-import { Meta, Title } from '@angular/platform-browser';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
-import { setCanonicalLink } from '../core/canonical-link';
 import { Coupon } from '../core/coupon.model';
 import { CouponsService } from '../core/coupons.service';
 import { Deal } from '../core/deal.model';
 import { DealsService } from '../core/deals.service';
+import { PageMetaService } from '../core/page-meta.service';
 
 type ViewMode = 'deals' | 'store' | 'all';
 const PAGE_SIZE = 24;
@@ -22,15 +21,19 @@ export class BrandPage implements OnInit {
   private readonly router = inject(Router);
   private readonly dealsService = inject(DealsService);
   private readonly couponsService = inject(CouponsService);
-  private readonly titleService = inject(Title);
-  private readonly metaService = inject(Meta);
-  private readonly document = inject(DOCUMENT);
+  private readonly pageMeta = inject(PageMetaService);
 
   protected readonly brandName = signal<string>('');
   protected readonly coupons = signal<Coupon[]>([]);
   protected readonly otherBrands = signal<string[]>([]);
   protected readonly loading = signal(true);
-  protected readonly notFound = signal(false);
+  // Adı "notFound" değil "loadError" — bu yalnızca /api/filters isteği
+  // BAŞARISIZ olunca set ediliyor (network/API hatası). Geçersiz bir marka
+  // slug'ı zaten aşağıda gerçek bir yönlendirmeyle ('/') ele alınıyor, hiç
+  // bu duruma düşmüyor — eski "Bu marka bulunamadı" metni bu yüzden
+  // yanıltıcıydı, gerçek bir yükleme hatasını "marka yok" gibi gösteriyordu.
+  protected readonly loadError = signal(false);
+  protected readonly itemsError = signal(false);
 
   // Marka sayfası eskiden sadece indirimli/kampanyalı ürünleri gösteriyordu
   // — normal fiyatlı ürünler tamamen görünmezdi (kategori sayfasıyla aynı
@@ -77,7 +80,7 @@ export class BrandPage implements OnInit {
         this.loadItems();
       },
       error: () => {
-        this.notFound.set(true);
+        this.loadError.set(true);
         this.loading.set(false);
       },
     });
@@ -88,6 +91,7 @@ export class BrandPage implements OnInit {
     if (!brand) return;
 
     this.loading.set(true);
+    this.itemsError.set(false);
     const query = { brands: [brand], page: this.currentPage(), pageSize: PAGE_SIZE };
     const request$ =
       this.viewMode() === 'deals'
@@ -103,7 +107,10 @@ export class BrandPage implements OnInit {
         this.totalPages.set(result.totalPages);
         this.loading.set(false);
       },
-      error: () => this.loading.set(false),
+      error: () => {
+        this.itemsError.set(true);
+        this.loading.set(false);
+      },
     });
   }
 
@@ -125,12 +132,11 @@ export class BrandPage implements OnInit {
     const title = `${brand} İndirim Kodu ve Kampanyaları 2026 | ProteinAvcısı`;
     const description = `${brand} için güncel kupon kodları ve gerçek fiyat geçmişine dayanan doğrulanmış indirimler. ProteinAvcısı, ${brand} markasının fiyatlarını düzenli olarak takip ediyor.`;
 
-    this.titleService.setTitle(title);
-    this.metaService.updateTag({ name: 'description', content: description });
-    this.metaService.updateTag({ property: 'og:title', content: title });
-    this.metaService.updateTag({ property: 'og:description', content: description });
-    this.metaService.updateTag({ property: 'og:type', content: 'website' });
-    setCanonicalLink(this.document, `/marka/${brand.toLowerCase()}/indirim-kodu`);
+    this.pageMeta.set({
+      title,
+      description,
+      canonicalPath: `/marka/${brand.toLowerCase()}/indirim-kodu`,
+    });
   }
 
   protected discountBadge(deal: Deal): string {

@@ -1,12 +1,11 @@
-import { DOCUMENT, DecimalPipe } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
-import { Meta, Title } from '@angular/platform-browser';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { BrandComparison } from '../core/brand-comparison.model';
 import { BrandComparisonService } from '../core/brand-comparison.service';
-import { setCanonicalLink } from '../core/canonical-link';
 import { CATEGORY_LABELS } from '../core/category-labels';
+import { PageMetaService } from '../core/page-meta.service';
 
 @Component({
   selector: 'app-brand-comparison-page',
@@ -17,9 +16,7 @@ export class BrandComparisonPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly comparisonService = inject(BrandComparisonService);
-  private readonly titleService = inject(Title);
-  private readonly metaService = inject(Meta);
-  private readonly document = inject(DOCUMENT);
+  private readonly pageMeta = inject(PageMetaService);
 
   protected readonly comparison = signal<BrandComparison | null>(null);
   protected readonly loading = signal(true);
@@ -55,12 +52,11 @@ export class BrandComparisonPage implements OnInit {
     const title = `${comparison.brand1} vs ${comparison.brand2} Fiyat Karşılaştırması | ProteinAvcısı`;
     const description = `${comparison.brand1} ve ${comparison.brand2} markalarının kategori bazında güncel ortalama fiyatlarını karşılaştır — gerçek fiyat verisine dayanır.`;
 
-    this.titleService.setTitle(title);
-    this.metaService.updateTag({ name: 'description', content: description });
-    this.metaService.updateTag({ property: 'og:title', content: title });
-    this.metaService.updateTag({ property: 'og:description', content: description });
-    this.metaService.updateTag({ property: 'og:type', content: 'website' });
-    setCanonicalLink(this.document, `/karsilastir/${this.pairSlug()}`);
+    this.pageMeta.set({
+      title,
+      description,
+      canonicalPath: `/karsilastir/${this.pairSlug()}`,
+    });
   }
 
   protected categoryLabel(category: string): string {

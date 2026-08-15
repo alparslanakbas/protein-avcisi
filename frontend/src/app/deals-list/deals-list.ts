@@ -2,14 +2,14 @@ import { DOCUMENT, DecimalPipe } from '@angular/common';
 import { Component, DestroyRef, HostListener, OnInit, effect, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { Meta, Title } from '@angular/platform-browser';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
-import { canonicalOrigin, setCanonicalLink } from '../core/canonical-link';
+import { canonicalOrigin } from '../core/canonical-link';
 import { Coupon } from '../core/coupon.model';
 import { CouponsService } from '../core/coupons.service';
 import { Deal } from '../core/deal.model';
 import { DealsQuery, DealsService } from '../core/deals.service';
+import { PageMetaService, upsertJsonLdScript } from '../core/page-meta.service';
 import { formatRelativeTime } from '../core/relative-time';
 import { ThemePreference, ThemeService } from '../core/theme.service';
 import { ProductModal } from '../product-modal/product-modal';
@@ -71,8 +71,7 @@ export class DealsList implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly titleService = inject(Title);
-  private readonly metaService = inject(Meta);
+  private readonly pageMeta = inject(PageMetaService);
   private readonly document = inject(DOCUMENT);
   protected readonly theme = inject(ThemeService);
   private readonly searchInput = viewChild<{ nativeElement: HTMLInputElement }>('searchInput');
@@ -127,15 +126,13 @@ export class DealsList implements OnInit {
       const deal = this.selectedDeal();
 
       if (!deal) {
-        this.titleService.setTitle(DEFAULT_TITLE);
-        this.metaService.updateTag({ name: 'description', content: DEFAULT_DESCRIPTION });
-        this.metaService.updateTag({ property: 'og:title', content: DEFAULT_TITLE });
-        this.metaService.updateTag({ property: 'og:description', content: DEFAULT_DESCRIPTION });
-        this.metaService.updateTag({ property: 'og:type', content: 'website' });
-        this.metaService.updateTag({ property: 'og:image', content: `${canonicalOrigin(this.document)}/og-image.png` });
+        this.pageMeta.set({
+          title: DEFAULT_TITLE,
+          description: DEFAULT_DESCRIPTION,
+          canonicalPath: '/',
+        });
         this.structuredDataEl?.remove();
         this.structuredDataEl = null;
-        setCanonicalLink(this.document, '/');
         return;
       }
 
@@ -146,13 +143,13 @@ export class DealsList implements OnInit {
           ? `${deal.productName} şu an ${priceText} — ${deal.brandName} markasında %${deal.discountPercent} doğrulanmış indirim. Fiyat geçmişini ProteinAvcısı'nda takip et.`
           : `${deal.productName} güncel fiyatı ${priceText}. ${deal.brandName} markasının fiyat geçmişini ProteinAvcısı'nda takip et.`;
 
-      this.titleService.setTitle(title);
-      this.metaService.updateTag({ name: 'description', content: description });
-      this.metaService.updateTag({ property: 'og:title', content: title });
-      this.metaService.updateTag({ property: 'og:description', content: description });
-      this.metaService.updateTag({ property: 'og:type', content: 'product' });
-      this.metaService.updateTag({ property: 'og:image', content: deal.imageUrl ?? `${canonicalOrigin(this.document)}/og-image.png` });
-      setCanonicalLink(this.document, `/urun/${deal.productId}`);
+      this.pageMeta.set({
+        title,
+        description,
+        canonicalPath: `/urun/${deal.productId}`,
+        ogType: 'product',
+        ogImage: deal.imageUrl ?? undefined,
+      });
 
       // schema.org Product/Offer — Google'ın arama sonucunda fiyat gösterme
       // ihtimali için. "availability" bilinçli olarak yok: 4 markanın
@@ -174,12 +171,7 @@ export class DealsList implements OnInit {
         },
       };
 
-      if (!this.structuredDataEl) {
-        this.structuredDataEl = this.document.createElement('script');
-        this.structuredDataEl.type = 'application/ld+json';
-        this.document.head.appendChild(this.structuredDataEl);
-      }
-      this.structuredDataEl.textContent = JSON.stringify(jsonLd);
+      this.structuredDataEl = upsertJsonLdScript(this.document, this.structuredDataEl, jsonLd);
     });
   }
 

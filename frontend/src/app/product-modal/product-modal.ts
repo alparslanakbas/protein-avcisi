@@ -6,6 +6,7 @@ import { RouterLink } from '@angular/router';
 import { canonicalOrigin } from '../core/canonical-link';
 import { Deal } from '../core/deal.model';
 import { FavoritesService } from '../core/favorites.service';
+import { PricePoint } from '../core/price-history.model';
 import { PriceHistoryService } from '../core/price-history.service';
 import { ProductFeedbackService } from '../core/product-feedback.service';
 import { formatRelativeTime } from '../core/relative-time';
@@ -73,7 +74,7 @@ export class ProductModal {
   protected readonly loading = signal(true);
   protected readonly hasData = signal(false);
   protected readonly error = signal<string | null>(null);
-  protected readonly points = signal<{ price: number; scrapedAt: string }[]>([]);
+  protected readonly points = signal<PricePoint[]>([]);
   protected readonly minPrice = signal(0);
   protected readonly maxPrice = signal(0);
   protected readonly currentPrice = signal(0);
@@ -99,6 +100,7 @@ export class ProductModal {
   protected readonly favoriteFormOpen = signal(false);
   protected readonly favoriteEmail = signal('');
   protected readonly favoriteSubmitting = signal(false);
+  protected readonly favoriteErrorMessage = signal<string | null>(null);
 
   protected readonly coordinates = computed(() => this.toCoordinates(this.points(), this.minPrice(), this.maxPrice()));
   protected readonly chartAreaPath = computed(() => this.buildAreaPath(this.coordinates()));
@@ -178,6 +180,7 @@ export class ProductModal {
       this.deal();
       this.favorited.set(false);
       this.favoriteFormOpen.set(false);
+      this.favoriteErrorMessage.set(null);
     });
   }
 
@@ -245,6 +248,7 @@ export class ProductModal {
     if (email !== undefined && !email) return;
 
     this.favoriteSubmitting.set(true);
+    this.favoriteErrorMessage.set(null);
     this.favoritesService.add(this.deal().productId, email).subscribe({
       next: (result) => {
         this.favoritesService.saveToken(result.token);
@@ -254,6 +258,7 @@ export class ProductModal {
         this.favoriteSubmitting.set(false);
       },
       error: () => {
+        this.favoriteErrorMessage.set('Bir şeyler ters gitti, tekrar dener misin?');
         this.favoriteSubmitting.set(false);
       },
     });
@@ -327,15 +332,15 @@ export class ProductModal {
   // Aynı gün içinde (dedupe sonrası) başka bir nokta daha kaldıysa, bu
   // gerçek bir gün-içi fiyat değişikliği demektir — sadece tarih göstermek
   // hangi nokta hangi an olduğunu ayırt ettirmiyor, saat de ekleniyor.
-  private tooltipDateLabel(points: { price: number; scrapedAt: string }[], idx: number): string {
+  private tooltipDateLabel(points: PricePoint[], idx: number): string {
     const day = axisDateFormatter.format(new Date(points[idx].scrapedAt));
     const sameDayCount = points.filter((p) => axisDateFormatter.format(new Date(p.scrapedAt)) === day).length;
     const formatter = sameDayCount > 1 ? tooltipDateTimeFormatter : tooltipDateFormatter;
     return formatter.format(new Date(points[idx].scrapedAt));
   }
 
-  private dedupeSameDaySamePrice(points: { price: number; scrapedAt: string }[]): { price: number; scrapedAt: string }[] {
-    const result: { price: number; scrapedAt: string }[] = [];
+  private dedupeSameDaySamePrice(points: PricePoint[]): PricePoint[] {
+    const result: PricePoint[] = [];
 
     for (const point of points) {
       const prev = result[result.length - 1];
@@ -368,7 +373,7 @@ export class ProductModal {
     return `${line} L ${last[0]} ${CHART_HEIGHT} L ${first[0]} ${CHART_HEIGHT} Z`;
   }
 
-  private buildXAxisLabels(points: { price: number; scrapedAt: string }[]): { x: number; label: string }[] {
+  private buildXAxisLabels(points: PricePoint[]): { x: number; label: string }[] {
     if (points.length === 0) return [];
 
     const times = points.map((p) => new Date(p.scrapedAt).getTime());
@@ -392,7 +397,7 @@ export class ProductModal {
     return candidates.filter((c, i) => i === 0 || c.label !== candidates[i - 1].label);
   }
 
-  private toCoordinates(points: { price: number; scrapedAt: string }[], min: number, max: number): [number, number][] {
+  private toCoordinates(points: PricePoint[], min: number, max: number): [number, number][] {
     if (points.length === 0) return [];
 
     const times = points.map((p) => new Date(p.scrapedAt).getTime());

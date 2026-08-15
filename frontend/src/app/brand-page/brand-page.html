@@ -11,9 +11,9 @@
   </header>
 
   <main class="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-    @if (notFound()) {
-      <div class="mx-auto max-w-md rounded-xl border border-stone-200 bg-stone-50 px-6 py-10 text-center text-stone-500 dark:border-stone-800 dark:bg-stone-900 dark:text-stone-400">
-        Bu marka bulunamadı.
+    @if (loadError()) {
+      <div class="mx-auto max-w-md rounded-xl border border-red-200 bg-red-50 px-6 py-8 text-center text-red-600 dark:border-red-900 dark:bg-red-950/40 dark:text-red-400">
+        Marka bilgileri yüklenemedi. Lütfen daha sonra tekrar dene.
         <a routerLink="/" class="mt-2 block w-full text-sm font-semibold text-brand-600 dark:text-brand-400">Ana sayfaya dön</a>
       </div>
     } @else {
@@ -77,6 +77,10 @@
 
       @if (loading()) {
         <div class="py-24 text-center text-stone-400 dark:text-stone-400">Yükleniyor...</div>
+      } @else if (itemsError()) {
+        <div class="mx-auto max-w-md rounded-xl border border-red-200 bg-red-50 px-6 py-8 text-center text-red-600 dark:border-red-900 dark:bg-red-950/40 dark:text-red-400">
+          Ürünler yüklenemedi. Lütfen daha sonra tekrar dene.
+        </div>
       } @else if (items().length === 0) {
         <div class="mx-auto max-w-md rounded-xl border border-stone-200 bg-stone-50 px-6 py-10 text-center text-stone-500 dark:border-stone-800 dark:bg-stone-900 dark:text-stone-400">
           Bu görünümde {{ brandName() }} için ürün yok.

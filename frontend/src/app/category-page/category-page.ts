@@ -1,12 +1,11 @@
-import { DOCUMENT, DecimalPipe } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
-import { Meta, Title } from '@angular/platform-browser';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
-import { setCanonicalLink } from '../core/canonical-link';
 import { CATEGORY_LABELS } from '../core/category-labels';
 import { Deal } from '../core/deal.model';
 import { DealsService } from '../core/deals.service';
+import { PageMetaService } from '../core/page-meta.service';
 
 type ViewMode = 'deals' | 'store' | 'all';
 const PAGE_SIZE = 24;
@@ -45,16 +44,18 @@ export class CategoryPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly dealsService = inject(DealsService);
-  private readonly titleService = inject(Title);
-  private readonly metaService = inject(Meta);
-  private readonly document = inject(DOCUMENT);
+  private readonly pageMeta = inject(PageMetaService);
 
   protected readonly categorySlug = signal<string>('');
   protected readonly categoryLabel = signal<string>('');
   protected readonly categoryIntro = signal<string>('');
   protected readonly otherCategories = signal<{ slug: string; label: string }[]>([]);
   protected readonly loading = signal(true);
-  protected readonly notFound = signal(false);
+  // bkz. brand-page.ts'teki aynı isim/gerekçe: bu yalnızca /api/filters
+  // isteği başarısız olunca set ediliyor, geçersiz slug zaten yönlendirmeyle
+  // ele alınıyor — "notFound" ismi yanıltıcıydı.
+  protected readonly loadError = signal(false);
+  protected readonly itemsError = signal(false);
 
   // Kategori sayfası eskiden sadece indirimli/kampanyalı ürünleri gösteriyordu
   // — normal fiyatlı ürünler tamamen görünmezdi. Ana sayfadaki aynı sekme +
@@ -97,13 +98,12 @@ export class CategoryPage implements OnInit {
             .filter((c) => c !== match)
             .map((c) => ({ slug: c, label: CATEGORY_LABELS[c] ?? c })),
         );
-        this.setMeta(label);
-        setCanonicalLink(this.document, `/kategori/${match}`);
+        this.setMeta(label, match);
 
         this.loadItems();
       },
       error: () => {
-        this.notFound.set(true);
+        this.loadError.set(true);
         this.loading.set(false);
       },
     });
@@ -114,6 +114,7 @@ export class CategoryPage implements OnInit {
     if (!categorySlug) return;
 
     this.loading.set(true);
+    this.itemsError.set(false);
     const query = { categories: [categorySlug], page: this.currentPage(), pageSize: PAGE_SIZE };
     const request$ =
       this.viewMode() === 'deals'
@@ -129,7 +130,10 @@ export class CategoryPage implements OnInit {
         this.totalPages.set(result.totalPages);
         this.loading.set(false);
       },
-      error: () => this.loading.set(false),
+      error: () => {
+        this.itemsError.set(true);
+        this.loading.set(false);
+      },
     });
   }
 
@@ -147,15 +151,15 @@ export class CategoryPage implements OnInit {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  private setMeta(label: string): void {
+  private setMeta(label: string, slug: string): void {
     const title = `${label} Fiyatları ve İndirimleri | ProteinAvcısı`;
     const description = `${label} kategorisindeki güncel fiyatlar, gerçek fiyat geçmişine dayanan doğrulanmış indirimler ve mağaza kampanyaları. ProteinAvcısı, fiyatları düzenli olarak takip ediyor.`;
 
-    this.titleService.setTitle(title);
-    this.metaService.updateTag({ name: 'description', content: description });
-    this.metaService.updateTag({ property: 'og:title', content: title });
-    this.metaService.updateTag({ property: 'og:description', content: description });
-    this.metaService.updateTag({ property: 'og:type', content: 'website' });
+    this.pageMeta.set({
+      title,
+      description,
+      canonicalPath: `/kategori/${slug}`,
+    });
   }
 
   protected discountBadge(deal: Deal): string {

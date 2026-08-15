@@ -1,11 +1,11 @@
-import { DOCUMENT, DecimalPipe } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
-import { Meta, Title } from '@angular/platform-browser';
+import { Meta } from '@angular/platform-browser';
 import { Router, RouterLink } from '@angular/router';
 
-import { setCanonicalLink } from '../core/canonical-link';
 import { Deal } from '../core/deal.model';
 import { FavoritesService } from '../core/favorites.service';
+import { PageMetaService } from '../core/page-meta.service';
 
 @Component({
   selector: 'app-favorites-page',
@@ -15,21 +15,23 @@ import { FavoritesService } from '../core/favorites.service';
 export class FavoritesPage implements OnInit {
   private readonly favoritesService = inject(FavoritesService);
   private readonly router = inject(Router);
-  private readonly titleService = inject(Title);
+  private readonly pageMeta = inject(PageMetaService);
   private readonly metaService = inject(Meta);
-  private readonly document = inject(DOCUMENT);
 
   protected readonly favorites = signal<Deal[]>([]);
   protected readonly loading = signal(true);
+  protected readonly loadError = signal(false);
   protected readonly hasToken = signal(false);
 
   ngOnInit(): void {
-    this.titleService.setTitle('Favorilerim | ProteinAvcısı');
-    this.metaService.updateTag({ name: 'description', content: 'Favorilerine eklediğin ürünlerin güncel fiyatlarını buradan takip et.' });
+    this.pageMeta.set({
+      title: 'Favorilerim | ProteinAvcısı',
+      description: 'Favorilerine eklediğin ürünlerin güncel fiyatlarını buradan takip et.',
+      canonicalPath: '/favorilerim',
+    });
     // Kişiye özel içerik (localStorage token'ına bağlı) — arama motoru
     // botları için anlamsız/boş görünür, indekslenmesin diye noindex.
     this.metaService.updateTag({ name: 'robots', content: 'noindex' });
-    setCanonicalLink(this.document, '/favorilerim');
 
     this.hasToken.set(!!this.favoritesService.getToken());
     this.favoritesService.list().subscribe({
@@ -37,7 +39,10 @@ export class FavoritesPage implements OnInit {
         this.favorites.set(deals);
         this.loading.set(false);
       },
-      error: () => this.loading.set(false),
+      error: () => {
+        this.loadError.set(true);
+        this.loading.set(false);
+      },
     });
   }
 

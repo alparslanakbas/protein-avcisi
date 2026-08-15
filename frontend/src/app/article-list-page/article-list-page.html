@@ -20,6 +20,10 @@
 
     @if (loading()) {
       <div class="py-24 text-center text-stone-400 dark:text-stone-400">Yükleniyor...</div>
+    } @else if (loadError()) {
+      <div class="mx-auto max-w-md rounded-xl border border-red-200 bg-red-50 px-6 py-8 text-center text-red-600 dark:border-red-900 dark:bg-red-950/40 dark:text-red-400">
+        Rehber yazıları yüklenemedi. Lütfen daha sonra tekrar dene.
+      </div>
     } @else if (articles().length === 0) {
       <div class="mx-auto max-w-md rounded-xl border border-stone-200 bg-stone-50 px-6 py-10 text-center text-stone-500 dark:border-stone-800 dark:bg-stone-900 dark:text-stone-400">
         Henüz bir rehber yazısı yok, yakında eklenecek.

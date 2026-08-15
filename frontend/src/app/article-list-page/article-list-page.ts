@@ -1,11 +1,9 @@
-import { DOCUMENT } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
-import { Meta, Title } from '@angular/platform-browser';
 import { RouterLink } from '@angular/router';
 
 import { ArticleSummary } from '../core/article.model';
 import { ArticlesService } from '../core/articles.service';
-import { setCanonicalLink } from '../core/canonical-link';
+import { PageMetaService } from '../core/page-meta.service';
 
 @Component({
   selector: 'app-article-list-page',
@@ -14,27 +12,28 @@ import { setCanonicalLink } from '../core/canonical-link';
 })
 export class ArticleListPage implements OnInit {
   private readonly articlesService = inject(ArticlesService);
-  private readonly titleService = inject(Title);
-  private readonly metaService = inject(Meta);
-  private readonly document = inject(DOCUMENT);
+  private readonly pageMeta = inject(PageMetaService);
 
   protected readonly articles = signal<ArticleSummary[]>([]);
   protected readonly loading = signal(true);
+  protected readonly loadError = signal(false);
 
   ngOnInit(): void {
-    const title = 'Rehber | ProteinAvcısı';
-    const description = 'Protein tozu, kreatin, pre-workout ve diğer spor takviyeleri hakkında bilgi amaçlı rehberler — hangi ürünü nasıl seçeceğine dair gerçek, tarafsız içerik.';
-
-    this.titleService.setTitle(title);
-    this.metaService.updateTag({ name: 'description', content: description });
-    setCanonicalLink(this.document, '/rehber');
+    this.pageMeta.set({
+      title: 'Rehber | ProteinAvcısı',
+      description: 'Protein tozu, kreatin, pre-workout ve diğer spor takviyeleri hakkında bilgi amaçlı rehberler — hangi ürünü nasıl seçeceğine dair gerçek, tarafsız içerik.',
+      canonicalPath: '/rehber',
+    });
 
     this.articlesService.getArticles().subscribe({
       next: (articles) => {
         this.articles.set(articles);
         this.loading.set(false);
       },
-      error: () => this.loading.set(false),
+      error: () => {
+        this.loadError.set(true);
+        this.loading.set(false);
+      },
     });
   }
 }

@@ -1,6 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, catchError, shareReplay, throwError } from 'rxjs';
 
 import { API_BASE_URL } from './api.config';
 import { Deal } from './deal.model';
@@ -37,8 +37,25 @@ export class DealsService {
     return this.http.get<Deal>(`${API_BASE_URL}/api/products/${id}`);
   }
 
+  // Header, ana sayfa, marka ve kategori sayfaları hepsi kendi başlangıcında
+  // bunu ayrı ayrı çağırıyordu (aynı sayfa yüklemesinde 4 ayrı /api/filters
+  // isteği) — marka/kategori listesi neredeyse hiç değişmediği için tek
+  // istek paylaşılıp önbelleğe alınıyor. Hata durumunda önbellek sıfırlanıp
+  // sonraki çağrı gerçekten yeniden dener (shareReplay hatayı da sonsuza
+  // kadar tekrar oynatır, bu istemiyoruz).
+  private filterOptions$: Observable<FilterOptions> | null = null;
+
   getFilterOptions(): Observable<FilterOptions> {
-    return this.http.get<FilterOptions>(`${API_BASE_URL}/api/filters`);
+    if (!this.filterOptions$) {
+      this.filterOptions$ = this.http.get<FilterOptions>(`${API_BASE_URL}/api/filters`).pipe(
+        catchError((err) => {
+          this.filterOptions$ = null;
+          return throwError(() => err);
+        }),
+        shareReplay(1),
+      );
+    }
+    return this.filterOptions$;
   }
 
   private buildParams(query: DealsQuery): HttpParams {
