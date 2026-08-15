@@ -69,10 +69,12 @@
           <div class="relative">
             <svg
               viewBox="0 0 600 220"
-              class="h-[220px] w-full cursor-crosshair rounded-lg bg-stone-50 dark:bg-stone-800/40"
+              class="h-[220px] w-full touch-none cursor-crosshair rounded-lg bg-stone-50 dark:bg-stone-800/40"
               preserveAspectRatio="none"
               (mousemove)="onChartMouseMove($event)"
               (mouseleave)="onChartMouseLeave()"
+              (touchstart)="onChartTouchMove($event)"
+              (touchmove)="onChartTouchMove($event)"
             >
               <defs>
                 <linearGradient id="priceAreaGradient" x1="0" y1="0" x2="0" y2="1">

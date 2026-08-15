@@ -277,13 +277,35 @@ export class ProductModal {
   }
 
   protected onChartMouseMove(event: MouseEvent): void {
+    this.updateHoverFromClientX(event.currentTarget as SVGSVGElement, event.clientX);
+  }
+
+  protected onChartMouseLeave(): void {
+    this.hoverIndex.set(null);
+  }
+
+  // Mobilde mousemove tetiklenmiyor (dokunma, gerçek bir sürükleme değil
+  // tek tek tap olarak algılanıyordu) — Akakçe'deki gibi parmağı grafik
+  // üzerinde gezdirince noktanın kesintisiz takip etmesi için touchstart/
+  // touchmove'a ayrıca bağlandı, aynı en-yakın-nokta hesabını kullanıyor.
+  // touchend'de bilinçli olarak hoverIndex sıfırlanmıyor — parmak kalkınca
+  // son değer görünür kalıyor, kaybolmuyor.
+  protected onChartTouchMove(event: TouchEvent): void {
+    const touch = event.touches[0];
+    if (!touch) return;
+    // Grafik içindeyken sayfanın kaydırılmasını (scroll) engelliyoruz —
+    // aksi halde parmak grafikte gezinirken modal da kayardı.
+    event.preventDefault();
+    this.updateHoverFromClientX(event.currentTarget as SVGSVGElement, touch.clientX);
+  }
+
+  private updateHoverFromClientX(svg: SVGSVGElement, clientX: number): void {
     const coords = this.coordinates();
     if (coords.length === 0) return;
 
-    const svg = event.currentTarget as SVGSVGElement;
     const rect = svg.getBoundingClientRect();
     const scaleX = CHART_WIDTH / rect.width;
-    const svgX = (event.clientX - rect.left) * scaleX;
+    const svgX = (clientX - rect.left) * scaleX;
 
     let nearestIndex = 0;
     let nearestDist = Infinity;
@@ -295,10 +317,6 @@ export class ProductModal {
       }
     });
     this.hoverIndex.set(nearestIndex);
-  }
-
-  protected onChartMouseLeave(): void {
-    this.hoverIndex.set(null);
   }
 
   private load(productId: number, days: number): void {
