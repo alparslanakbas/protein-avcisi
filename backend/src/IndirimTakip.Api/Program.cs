@@ -103,6 +103,13 @@ app.MapGet("/api/store-deals", async (
     return Results.Ok(result);
 });
 
+// Marka karşılaştırma sayfaları için — kategori bazında ortalama fiyat.
+app.MapGet("/api/brand-comparison", async (string brand1, string brand2, DealsQueryService deals, CancellationToken ct) =>
+{
+    var result = await deals.GetBrandComparisonAsync(brand1, brand2, ct);
+    return result is null ? Results.NotFound() : Results.Ok(result);
+});
+
 app.MapGet("/api/filters", async (DealsQueryService deals, CancellationToken ct) =>
 {
     var result = await deals.GetFilterOptionsAsync(ct);
@@ -286,6 +293,30 @@ app.MapPost("/api/dev/send-digest", async (DigestService digest, HttpContext htt
     var baseUrl = $"{http.Request.Scheme}://{http.Request.Host}";
     var result = await digest.SendDigestAsync(baseUrl, ct);
     return Results.Ok(result);
+}).RequireAdminKey(adminApiKey);
+
+// Markalara "bu hafta size şu kadar tıklama gönderdik" raporu hazırlamak
+// için — ClickCount tarihsiz/kümülatif bir sayaç olduğundan (tek tek
+// tıklama zaman damgası tutulmuyor) burada dönen sayılar site açılışından
+// beri toplam tıklamalar. Haftalık rapor için: bu endpoint'i her hafta
+// aynı gün çalıştırıp bir önceki haftanın sayısından fark alınmalı
+// (elle, tarih bazlı bir tıklama günlüğü tutmak MVP'de aşırı mühendislik).
+app.MapGet("/api/dev/click-report", async (AppDbContext db, CancellationToken ct) =>
+{
+    var report = await db.Products
+        .Where(p => p.Brand!.IsActive)
+        .GroupBy(p => p.Brand!.Name)
+        .Select(g => new
+        {
+            Brand = g.Key,
+            TotalClicks = g.Sum(p => p.ClickCount),
+            ProductCount = g.Count(),
+            TopProducts = g.OrderByDescending(p => p.ClickCount).Take(5).Select(p => new { p.Name, p.ClickCount }),
+        })
+        .OrderByDescending(r => r.TotalClicks)
+        .ToListAsync(ct);
+
+    return Results.Ok(report);
 }).RequireAdminKey(adminApiKey);
 
 app.Run();

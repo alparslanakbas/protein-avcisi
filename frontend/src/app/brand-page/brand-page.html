@@ -187,6 +187,20 @@
             }
           </div>
         </div>
+
+        <div class="mt-6 text-center">
+          <h2 class="mb-3 text-sm font-bold text-stone-800 dark:text-stone-200">Fiyat Karşılaştırması</h2>
+          <div class="flex flex-wrap items-center justify-center gap-2">
+            @for (brand of otherBrands(); track brand) {
+              <a
+                [routerLink]="['/karsilastir', comparisonPairSlug(brand)]"
+                class="rounded-full border border-brand-200 bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700 transition-colors hover:border-brand-400 dark:border-brand-900/50 dark:bg-brand-950/20 dark:text-brand-400"
+              >
+                {{ brandName() }} vs {{ brand }}
+              </a>
+            }
+          </div>
+        </div>
       }
 
       <div class="mt-6 text-center">

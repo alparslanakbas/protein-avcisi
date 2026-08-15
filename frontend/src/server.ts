@@ -81,6 +81,20 @@ app.get('/sitemap.xml', async (req, res) => {
       `<url><loc>${origin}/cerez-politikasi</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>` +
       `<url><loc>${origin}/nasil-calisiyoruz</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>`;
 
+    // Marka karşılaştırma sayfaları — tüm marka ikilileri, alfabetik
+    // sırayla (brand-comparison-page.ts'teki canonical URL mantığıyla
+    // aynı) tek bir kanonik URL üretiliyor.
+    const comparisonPairs: string[] = [];
+    const sortedBrands = [...filters.brands].map((b) => b.toLowerCase()).sort();
+    for (let i = 0; i < sortedBrands.length; i++) {
+      for (let j = i + 1; j < sortedBrands.length; j++) {
+        comparisonPairs.push(`${sortedBrands[i]}-vs-${sortedBrands[j]}`);
+      }
+    }
+    const comparisonUrls = comparisonPairs
+      .map((pair) => `<url><loc>${origin}/karsilastir/${pair}</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>`)
+      .join('');
+
     // Rehber yazıları — bilgi amaçlı SEO içerikleri, ürün/kategori
     // sayfalarıyla aynı önem seviyesinde (0.7).
     const articleUrls =
@@ -101,6 +115,7 @@ app.get('/sitemap.xml', async (req, res) => {
       productUrls +
       legalUrls +
       articleUrls +
+      comparisonUrls +
       `</urlset>`;
 
     res.set('Content-Type', 'application/xml');

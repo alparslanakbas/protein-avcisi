@@ -4,6 +4,7 @@ import { ArticleListPage } from './article-list-page/article-list-page';
 import { ArticlePage } from './article-page/article-page';
 import { BrandPage } from './brand-page/brand-page';
 import { CategoryPage } from './category-page/category-page';
+import { BrandComparisonPage } from './brand-comparison-page/brand-comparison-page';
 import { CookiePolicyPage } from './cookie-policy-page/cookie-policy-page';
 import { DealsList } from './deals-list/deals-list';
 import { FavoritesPage } from './favorites-page/favorites-page';
@@ -21,4 +22,5 @@ export const routes: Routes = [
   { path: 'rehber/:slug', component: ArticlePage },
   { path: 'nasil-calisiyoruz', component: HowItWorksPage },
   { path: 'favorilerim', component: FavoritesPage },
+  { path: 'karsilastir/:pair', component: BrandComparisonPage },
 ];

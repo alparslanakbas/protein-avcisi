@@ -144,4 +144,13 @@ export class BrandPage implements OnInit {
   protected goToProduct(deal: Deal): void {
     this.router.navigate(['/urun', deal.productId]);
   }
+
+  // Alfabetik sıralama ile tek bir kanonik URL üretiyoruz (hiq-vs-ssn hep
+  // aynı sırada) — aksi halde aynı içeriğe iki farklı URL'den erişilebilir
+  // olurdu (duplicate content riski).
+  protected comparisonPairSlug(otherBrand: string): string {
+    const current = this.brandName().toLowerCase();
+    const other = otherBrand.toLowerCase();
+    return [current, other].sort().join('-vs-');
+  }
 }

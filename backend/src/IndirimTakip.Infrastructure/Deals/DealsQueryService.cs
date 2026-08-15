@@ -203,6 +203,56 @@ public class DealsQueryService(AppDbContext db)
             .ToList();
     }
 
+    // Marka karşılaştırma sayfaları (/karsilastir/x-vs-y) için — kategori
+    // bazında ortalama güncel fiyat karşılaştırması. Statik/elle yazılan
+    // bir içerik değil, her istekte canlı veriden hesaplanıyor — yeni bir
+    // marka/ürün eklendikçe otomatik güncel kalır.
+    public async Task<BrandComparisonDto?> GetBrandComparisonAsync(string brand1, string brand2, CancellationToken cancellationToken = default)
+    {
+        var b1 = await db.Brands.FirstOrDefaultAsync(b => b.IsActive && b.Name.ToLower() == brand1.ToLower(), cancellationToken);
+        var b2 = await db.Brands.FirstOrDefaultAsync(b => b.IsActive && b.Name.ToLower() == brand2.ToLower(), cancellationToken);
+        if (b1 is null || b2 is null || b1.Id == b2.Id)
+            return null;
+
+        var avg1 = await GetCategoryAveragesAsync(b1.Id, cancellationToken);
+        var avg2 = await GetCategoryAveragesAsync(b2.Id, cancellationToken);
+
+        var categories = avg1.Keys.Union(avg2.Keys)
+            .OrderBy(c => c)
+            .Select(c =>
+            {
+                avg1.TryGetValue(c, out var v1);
+                avg2.TryGetValue(c, out var v2);
+                return new CategoryComparisonDto(
+                    c,
+                    v1.count > 0 ? Math.Round(v1.avg, 2) : null, v1.count,
+                    v2.count > 0 ? Math.Round(v2.avg, 2) : null, v2.count);
+            })
+            .ToList();
+
+        var total1 = await db.Products.CountAsync(p => p.BrandId == b1.Id, cancellationToken);
+        var total2 = await db.Products.CountAsync(p => p.BrandId == b2.Id, cancellationToken);
+
+        return new BrandComparisonDto(b1.Name, b2.Name, total1, total2, categories);
+    }
+
+    private async Task<Dictionary<string, (decimal avg, int count)>> GetCategoryAveragesAsync(int brandId, CancellationToken cancellationToken)
+    {
+        var rows = await (
+            from p in db.Products
+            where p.BrandId == brandId && p.Category != null
+            select new
+            {
+                Category = p.Category!,
+                Latest = p.PriceHistories.OrderByDescending(ph => ph.ScrapedAt).Select(ph => (decimal?)ph.Price).FirstOrDefault(),
+            }).ToListAsync(cancellationToken);
+
+        return rows
+            .Where(r => r.Latest is not null)
+            .GroupBy(r => r.Category)
+            .ToDictionary(g => g.Key, g => (g.Average(r => r.Latest!.Value), g.Count()));
+    }
+
     // sitemap.xml üretimi için hafif bir liste — DealDto'daki fiyat
     // hesaplarına gerek yok, sadece URL kurmak için Id ve son tarama
     // zamanı (lastmod) yeterli.
