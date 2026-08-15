@@ -96,13 +96,21 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
-else
+
+// UseForwardedHeaders MUTLAKA UseHsts'ten önce çalışmalı — HSTS middleware'i
+// isteğin https olup olmadığına (Request.IsHttps) bakıp header'ı ona göre
+// ekliyor/atlıyor; Render/Cloudflare TLS'i kendi ucunda sonlandırıp bize http
+// ilettiği için X-Forwarded-Proto işlenmeden önce IsHttps hep false görünür
+// ve HSTS header'ı sessizce hiç eklenmez (gerçek bir bug olarak yakalandı,
+// bkz. CLAUDE.md 2026-08-15).
+app.UseForwardedHeaders();
+
+if (!app.Environment.IsDevelopment())
 {
     // HSTS yereldeki http geliştirmeyi bozmasın diye sadece production'da.
     app.UseHsts();
 }
 
-app.UseForwardedHeaders();
 app.UseHttpsRedirection();
 app.UseCors(CorsPolicy);
 app.UseRateLimiter();
