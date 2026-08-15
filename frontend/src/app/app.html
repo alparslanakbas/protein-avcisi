@@ -30,14 +30,14 @@
 
     @if (brands().length > 0) {
       <div class="mt-6 border-t border-stone-100 pt-4 dark:border-stone-800">
-        <p class="mb-2 text-center text-[11px] font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
+        <p class="mb-2 text-center text-[11px] font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-400">
           Marka Kampanyaları
         </p>
         <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
           @for (brand of brands(); track brand) {
             <a
               [routerLink]="['/marka', brand.toLowerCase(), 'indirim-kodu']"
-              class="text-xs text-stone-500 hover:text-brand-600 hover:underline dark:text-stone-400 dark:hover:text-brand-400"
+              class="inline-block py-1 text-xs text-stone-500 hover:text-brand-600 hover:underline dark:text-stone-400 dark:hover:text-brand-400"
             >
               {{ brand }} İndirim Kodu
             </a>
@@ -48,14 +48,14 @@
 
     @if (categories().length > 0) {
       <div class="mt-6 border-t border-stone-100 pt-4 dark:border-stone-800">
-        <p class="mb-2 text-center text-[11px] font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
+        <p class="mb-2 text-center text-[11px] font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-400">
           Kategoriler
         </p>
         <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
           @for (category of categories(); track category.slug) {
             <a
               [routerLink]="['/kategori', category.slug]"
-              class="text-xs text-stone-500 hover:text-brand-600 hover:underline dark:text-stone-400 dark:hover:text-brand-400"
+              class="inline-block py-1 text-xs text-stone-500 hover:text-brand-600 hover:underline dark:text-stone-400 dark:hover:text-brand-400"
             >
               {{ category.label }}
             </a>
@@ -64,21 +64,21 @@
       </div>
     }
 
-    <div class="mt-6 border-t border-stone-100 pt-4 text-center text-xs text-stone-400 dark:border-stone-800 dark:text-stone-500">
+    <div class="mt-6 border-t border-stone-100 pt-4 text-center text-xs text-stone-400 dark:border-stone-800 dark:text-stone-400">
       <p>
         © {{ currentYear }} ProteinAvcısı. Fiyatlar ilgili markaların kendi web sitelerinden otomatik olarak
         toplanmaktadır; satış işlemleri ilgili markanın sitesi üzerinden gerçekleşir.
       </p>
-      <p class="mt-2">
-        <a routerLink="/favorilerim" class="hover:text-brand-600 hover:underline dark:hover:text-brand-400">Favorilerim</a>
+      <p class="mt-2 leading-loose">
+        <a routerLink="/favorilerim" class="inline-block py-1 hover:text-brand-600 hover:underline dark:hover:text-brand-400">Favorilerim</a>
         <span class="mx-1.5">·</span>
-        <a routerLink="/rehber" class="hover:text-brand-600 hover:underline dark:hover:text-brand-400">Rehber</a>
+        <a routerLink="/rehber" class="inline-block py-1 hover:text-brand-600 hover:underline dark:hover:text-brand-400">Rehber</a>
         <span class="mx-1.5">·</span>
-        <a routerLink="/nasil-calisiyoruz" class="hover:text-brand-600 hover:underline dark:hover:text-brand-400">Nasıl Çalışıyoruz?</a>
+        <a routerLink="/nasil-calisiyoruz" class="inline-block py-1 hover:text-brand-600 hover:underline dark:hover:text-brand-400">Nasıl Çalışıyoruz?</a>
         <span class="mx-1.5">·</span>
-        <a routerLink="/gizlilik-politikasi" class="hover:text-brand-600 hover:underline dark:hover:text-brand-400">Gizlilik Politikası</a>
+        <a routerLink="/gizlilik-politikasi" class="inline-block py-1 hover:text-brand-600 hover:underline dark:hover:text-brand-400">Gizlilik Politikası</a>
         <span class="mx-1.5">·</span>
-        <a routerLink="/cerez-politikasi" class="hover:text-brand-600 hover:underline dark:hover:text-brand-400">Çerez Politikası</a>
+        <a routerLink="/cerez-politikasi" class="inline-block py-1 hover:text-brand-600 hover:underline dark:hover:text-brand-400">Çerez Politikası</a>
       </p>
     </div>
   </div>

@@ -2,7 +2,7 @@
   <header class="border-b border-stone-200 bg-stone-50 dark:border-stone-800 dark:bg-stone-900">
     <div class="mx-auto flex max-w-6xl items-center gap-3 px-4 py-4 sm:px-6">
       <a routerLink="/" class="flex items-center gap-2">
-        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600 text-sm font-extrabold text-white">PA</div>
+        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-700 text-sm font-extrabold text-white">PA</div>
         <span class="text-lg font-bold text-stone-900 dark:text-stone-100">
           Protein<span class="text-brand-600 dark:text-brand-400">Avcısı</span>
         </span>
@@ -19,7 +19,7 @@
     </div>
 
     @if (loading()) {
-      <div class="py-24 text-center text-stone-400 dark:text-stone-500">Yükleniyor...</div>
+      <div class="py-24 text-center text-stone-400 dark:text-stone-400">Yükleniyor...</div>
     } @else if (!hasToken() || favorites().length === 0) {
       <div class="mx-auto max-w-md rounded-xl border border-stone-200 bg-stone-50 px-6 py-10 text-center text-stone-500 dark:border-stone-800 dark:bg-stone-900 dark:text-stone-400">
         Henüz favori eklemedin. Bir ürünü açıp "Favorilere Ekle"ye tıkladığında burada göreceksin.
@@ -33,7 +33,7 @@
               type="button"
               title="Favorilerden çıkar"
               (click)="removeFavorite(deal)"
-              class="absolute right-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-stone-400 shadow-sm transition-colors hover:text-red-500 dark:bg-stone-900/90 dark:text-stone-500"
+              class="absolute right-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-stone-400 shadow-sm transition-colors hover:text-red-500 dark:bg-stone-900/90 dark:text-stone-400"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-3.5 w-3.5">
                 <path stroke-linecap="round" d="M6 6l12 12M18 6L6 18" />

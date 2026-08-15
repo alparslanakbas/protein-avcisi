@@ -2,7 +2,7 @@
   <header class="border-b border-stone-200 bg-stone-50 dark:border-stone-800 dark:bg-stone-900">
     <div class="mx-auto flex max-w-6xl items-center gap-3 px-4 py-4 sm:px-6">
       <a routerLink="/" class="flex items-center gap-2">
-        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600 text-sm font-extrabold text-white">PA</div>
+        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-700 text-sm font-extrabold text-white">PA</div>
         <span class="text-lg font-bold text-stone-900 dark:text-stone-100">
           Protein<span class="text-brand-600 dark:text-brand-400">Avcısı</span>
         </span>
@@ -47,7 +47,7 @@
           type="button"
           class="rounded-full px-5 py-2 text-sm font-semibold transition-colors"
           [class]="viewMode() === 'deals'
-            ? 'bg-brand-600 text-white shadow-sm shadow-brand-600/30'
+            ? 'bg-brand-700 text-white shadow-sm shadow-brand-600/30'
             : 'border border-stone-200 bg-white text-stone-600 hover:border-brand-300 hover:text-brand-700 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300 dark:hover:border-brand-500 dark:hover:text-brand-400'"
           (click)="setViewMode('deals')"
         >
@@ -57,7 +57,7 @@
           type="button"
           class="rounded-full px-5 py-2 text-sm font-semibold transition-colors"
           [class]="viewMode() === 'store'
-            ? 'bg-brand-600 text-white shadow-sm shadow-brand-600/30'
+            ? 'bg-brand-700 text-white shadow-sm shadow-brand-600/30'
             : 'border border-stone-200 bg-white text-stone-600 hover:border-brand-300 hover:text-brand-700 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300 dark:hover:border-brand-500 dark:hover:text-brand-400'"
           (click)="setViewMode('store')"
         >
@@ -67,7 +67,7 @@
           type="button"
           class="rounded-full px-5 py-2 text-sm font-semibold transition-colors"
           [class]="viewMode() === 'all'
-            ? 'bg-brand-600 text-white shadow-sm shadow-brand-600/30'
+            ? 'bg-brand-700 text-white shadow-sm shadow-brand-600/30'
             : 'border border-stone-200 bg-white text-stone-600 hover:border-brand-300 hover:text-brand-700 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300 dark:hover:border-brand-500 dark:hover:text-brand-400'"
           (click)="setViewMode('all')"
         >
@@ -76,7 +76,7 @@
       </div>
 
       @if (loading()) {
-        <div class="py-24 text-center text-stone-400 dark:text-stone-500">Yükleniyor...</div>
+        <div class="py-24 text-center text-stone-400 dark:text-stone-400">Yükleniyor...</div>
       } @else if (items().length === 0) {
         <div class="mx-auto max-w-md rounded-xl border border-stone-200 bg-stone-50 px-6 py-10 text-center text-stone-500 dark:border-stone-800 dark:bg-stone-900 dark:text-stone-400">
           Bu görünümde {{ brandName() }} için ürün yok.
@@ -144,7 +144,7 @@
 
             <span class="px-1 text-sm font-medium text-stone-600 dark:text-stone-300">
               Sayfa {{ currentPage() }} / {{ totalPages() }}
-              <span class="text-stone-400 dark:text-stone-500">({{ totalCount() }} ürün)</span>
+              <span class="text-stone-400 dark:text-stone-400">({{ totalCount() }} ürün)</span>
             </span>
 
             <button
