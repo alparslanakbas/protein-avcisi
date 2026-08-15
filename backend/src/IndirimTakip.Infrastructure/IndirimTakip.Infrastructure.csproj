@@ -22,4 +22,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- Test projesinin internal sınıflara (ör. TurkishPriceParser) erişebilmesi için. -->
+    <InternalsVisibleTo Include="IndirimTakip.Infrastructure.Tests" />
+  </ItemGroup>
+
 </Project>

@@ -35,7 +35,7 @@ public static partial class ProductAttributeParser
     [
         ("protein-tozu", ["protein", "whey", "isolate", "izole", "casein", "kazein"]),
         ("kreatin", ["creatine", "kreatin"]),
-        ("amino-asitler", ["amino", "bcaa", "eaa", "glutamin", "arginin", "arjinin", "sitrulin", "citrulline"]),
+        ("amino-asitler", ["amino", "bcaa", "eaa", "glutamin", "arginin", "arjinin", "sitrulin", "citrulline", "alanine", "alanin"]),
         ("pre-workout", ["pre workout", "preworkout", "pump", "nitric", "hellfire", "pre-workout"]),
         ("yag-yakici", ["burner", "yag yakici", "thermo", "l-carnitine", "karnitin", "carnitine", "cla"]),
         ("kilo-hacim", ["gainer", "mass", "kilo", "hacim"]),
