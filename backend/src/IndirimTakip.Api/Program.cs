@@ -238,7 +238,7 @@ app.MapPost("/api/products/{id:int}/watch", async (int id, WatchProductRequest r
     var confirmBaseUrl = $"{http.Request.Scheme}://{http.Request.Host}";
     var success = await watchService.WatchAsync(id, request, confirmBaseUrl, ct);
     return success ? Results.Ok(new { message = "Fiyat düşünce sana haber vereceğiz." }) : Results.NotFound();
-}).RequireRateLimiting("EmailSensitive");
+}).RequireRateLimiting("EmailSensitive").LogSensitiveRequest(app.Logger);
 
 // Favoriler ("listem") — hesap/login gerektirmiyor. İlk ekleme e-posta ile
 // yapılır, dönen token tarayıcıda saklanıp sonraki isteklerde kullanılır.
@@ -251,13 +251,13 @@ app.MapPost("/api/products/{id:int}/favorite", async (int id, FavoriteRequest re
 
     var (success, token) = await favorites.AddAsync(id, request.Token, request.Email, ct);
     return success ? Results.Ok(new { token }) : Results.NotFound();
-}).RequireRateLimiting("EmailSensitive");
+}).RequireRateLimiting("EmailSensitive").LogSensitiveRequest(app.Logger);
 
 app.MapDelete("/api/products/{id:int}/favorite", async (int id, string token, FavoriteService favorites, CancellationToken ct) =>
 {
     var removed = await favorites.RemoveAsync(id, token, ct);
     return removed ? Results.Ok() : Results.NotFound();
-}).RequireRateLimiting("General");
+}).RequireRateLimiting("General").LogSensitiveRequest(app.Logger);
 
 app.MapGet("/api/favorites", async (string token, FavoriteService favorites, DealsQueryService deals, CancellationToken ct) =>
 {
@@ -312,7 +312,7 @@ app.MapPost("/api/subscribe", async (SubscribeRequest request, SubscriberService
     var confirmBaseUrl = $"{http.Request.Scheme}://{http.Request.Host}";
     await subscribers.SubscribeAsync(request, confirmBaseUrl, ct);
     return Results.Ok(new { message = "E-postanı kontrol et, onay bağlantısı gönderdik." });
-}).RequireRateLimiting("EmailSensitive");
+}).RequireRateLimiting("EmailSensitive").LogSensitiveRequest(app.Logger);
 
 // Onay/abonelikten çıkma linkleri e-postadan doğrudan tıklanıyor, bu yüzden
 // JSON değil basit bir HTML sayfası dönüyor — ayrı bir frontend route'u
@@ -431,6 +431,25 @@ static class AdminAuthExtensions
             if (string.IsNullOrEmpty(expectedKey) || providedKey != expectedKey)
                 return Results.Unauthorized();
 
+            return await next(context);
+        });
+    }
+}
+
+// 2026-08-15 güvenlik olayı sonrası eklendi: e-posta gönderen/yazma yapan
+// uçlarda hiç istek logu yoktu, kötüye kullanım olduğunda Render loglarında
+// hiçbir iz kalmıyordu. IP + yöntem + yol + zaman `app.Logger` üzerinden
+// (Render'ın stdout'u yakaladığı standart kanal) logluyor — ayrı bir log
+// servisi/DB tablosu kurmak burada aşırı mühendislik olurdu.
+static class RequestLoggingExtensions
+{
+    public static RouteHandlerBuilder LogSensitiveRequest(this RouteHandlerBuilder builder, ILogger logger)
+    {
+        return builder.AddEndpointFilter(async (context, next) =>
+        {
+            var ip = context.HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            logger.LogInformation("Hassas istek: {Ip} {Method} {Path}",
+                ip, context.HttpContext.Request.Method, context.HttpContext.Request.Path);
             return await next(context);
         });
     }
