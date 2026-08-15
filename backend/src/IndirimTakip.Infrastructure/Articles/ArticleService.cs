@@ -5,6 +5,10 @@ namespace IndirimTakip.Infrastructure.Articles;
 
 public record CreateArticleRequest(string Title, string Slug, string Summary, string Body, string? CoverImageUrl);
 
+// Mevcut bir yazıyı düzenlemek için (ör. derinleştirme) — Slug/PublishedAt
+// değişmiyor, sadece içerik alanları güncellenebiliyor.
+public record UpdateArticleRequest(string? Title, string? Summary, string? Body, string? CoverImageUrl);
+
 public class ArticleService(AppDbContext db)
 {
     public async Task<IReadOnlyList<ArticleSummaryDto>> GetPublishedArticlesAsync(CancellationToken cancellationToken = default)
@@ -42,6 +46,22 @@ public class ArticleService(AppDbContext db)
             IsPublished = true,
         };
         db.Articles.Add(article);
+        await db.SaveChangesAsync(cancellationToken);
+
+        return new ArticleDto(article.Id, article.Title, article.Slug, article.Summary, article.Body, article.CoverImageUrl, article.PublishedAt);
+    }
+
+    public async Task<ArticleDto?> UpdateAsync(string slug, UpdateArticleRequest request, CancellationToken cancellationToken = default)
+    {
+        var article = await db.Articles.FirstOrDefaultAsync(a => a.Slug == slug, cancellationToken);
+        if (article is null)
+            return null;
+
+        if (request.Title is not null) article.Title = request.Title;
+        if (request.Summary is not null) article.Summary = request.Summary;
+        if (request.Body is not null) article.Body = request.Body;
+        if (request.CoverImageUrl is not null) article.CoverImageUrl = request.CoverImageUrl;
+
         await db.SaveChangesAsync(cancellationToken);
 
         return new ArticleDto(article.Id, article.Title, article.Slug, article.Summary, article.Body, article.CoverImageUrl, article.PublishedAt);

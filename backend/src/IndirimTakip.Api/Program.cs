@@ -158,6 +158,14 @@ app.MapPost("/api/dev/articles", async (CreateArticleRequest request, ArticleSer
     return result is null ? Results.Conflict($"'{request.Slug}' slug'ı zaten kullanılıyor.") : Results.Ok(result);
 }).RequireAdminKey(adminApiKey);
 
+// Mevcut bir yazıyı düzenlemek için (ör. derinleştirme) — kısmi güncelleme,
+// gönderilmeyen alanlar olduğu gibi kalır.
+app.MapPut("/api/dev/articles/{slug}", async (string slug, UpdateArticleRequest request, ArticleService articles, CancellationToken ct) =>
+{
+    var result = await articles.UpdateAsync(slug, request, ct);
+    return result is null ? Results.NotFound() : Results.Ok(result);
+}).RequireAdminKey(adminApiKey);
+
 app.MapGet("/api/products/{id:int}/price-history", async (int id, int? days, PriceHistoryQueryService service, CancellationToken ct) =>
 {
     var windowDays = days is null or <= 0 ? 30 : days.Value;
