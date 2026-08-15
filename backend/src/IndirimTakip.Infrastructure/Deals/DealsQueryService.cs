@@ -4,19 +4,26 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IndirimTakip.Infrastructure.Deals;
 
-// GetDealsAsync/GetProductByIdAsync/GetDealsByIdsAsync'in ortak sorgu şekli —
-// önceden anonim tip olarak 3 yerde ayrı ayrı tanımlanıyordu, DealDto'ya
-// çevrilirken de aynı hesaplama (indirim yüzdesi vb.) elle tekrarlanıyordu.
-// Bkz. MapToDealDto.
-internal sealed record PricePointRow(decimal Price, DateTimeOffset ScrapedAt, decimal? StoreOldPrice);
-internal sealed record DealRow(Product Product, string BrandName, PricePointRow? Latest, decimal? ReferencePrice);
+// GetDealsAsync/GetProductByIdAsync/GetDealsByIdsAsync'in ortak DealDto'ya
+// çevirme mantığı (indirim yüzdesi vb.) burada tek yerde toplanıyor. ÖNEMLİ:
+// bu record sadece materialize edildikten (ToListAsync/FirstOrDefaultAsync)
+// SONRA, bellek içinde kuruluyor — EF Core'un SQL'e çevirmesi gereken bir
+// projeksiyonun parçası DEĞİL. İlk halinde "Latest" iç içe ayrı bir record
+// (PricePointRow) olarak doğrudan sorgu projeksiyonunda kuruluyordu; sonraki
+// .Where() filtreleri o iç içe record'un alanlarına (r.Latest!.Price vb.)
+// eriştiğinde EF Core "could not be translated" hatasıyla 500 dönüyordu
+// (canlıda yakalandı). Çözüm: sorgu tarafında filtreleme/sıralama düz bir
+// anonim tip + PriceHistory ENTITY'si (Latest) üzerinden yapılıyor — EF
+// Core'un native desteklediği bir kalıp — DealRow'a çevirme işi listeye
+// dönüştükten sonra yapılıyor.
+internal sealed record DealRow(Product Product, string BrandName, PriceHistory Latest, decimal ReferencePrice);
 
 public class DealsQueryService(AppDbContext db)
 {
     private static DealDto MapToDealDto(DealRow row)
     {
-        var latest = row.Latest!;
-        var referencePrice = row.ReferencePrice!.Value;
+        var latest = row.Latest;
+        var referencePrice = row.ReferencePrice;
         return new DealDto(
             row.Product.Id, row.Product.Name, row.Product.Url, row.Product.ImageUrl,
             row.Product.Category, row.Product.Size, row.Product.Flavor, row.Product.ServingSizeGrams,
@@ -49,16 +56,15 @@ public class DealsQueryService(AppDbContext db)
             from p in db.Products
             join b in db.Brands on p.BrandId equals b.Id
             where b.IsActive
-            select new DealRow(
-                p,
-                b.Name,
-                p.PriceHistories
-                    .OrderByDescending(ph => ph.ScrapedAt)
-                    .Select(ph => new PricePointRow(ph.Price, ph.ScrapedAt, ph.StoreOldPrice))
-                    .FirstOrDefault(),
-                p.PriceHistories
+            select new
+            {
+                Product = p,
+                BrandName = b.Name,
+                Latest = p.PriceHistories.OrderByDescending(ph => ph.ScrapedAt).FirstOrDefault(),
+                ReferencePrice = p.PriceHistories
                     .Where(ph => ph.ScrapedAt >= referenceSince)
-                    .Max(ph => (decimal?)ph.Price));
+                    .Max(ph => (decimal?)ph.Price),
+            };
 
         if (brands is { Length: > 0 })
             query = query.Where(r => brands.Contains(r.BrandName));
@@ -121,7 +127,10 @@ public class DealsQueryService(AppDbContext db)
             .Take(pageSize)
             .ToListAsync(cancellationToken);
 
-        var items = pageRows.Select(MapToDealDto).ToList();
+        var items = pageRows
+            .Select(r => new DealRow(r.Product, r.BrandName, r.Latest!, r.ReferencePrice!.Value))
+            .Select(MapToDealDto)
+            .ToList();
 
         return new PagedResult<DealDto>(items, totalCount, page, pageSize);
     }
@@ -138,21 +147,20 @@ public class DealsQueryService(AppDbContext db)
             from p in db.Products
             join b in db.Brands on p.BrandId equals b.Id
             where b.IsActive && p.Id == productId
-            select new DealRow(
-                p,
-                b.Name,
-                p.PriceHistories
-                    .OrderByDescending(ph => ph.ScrapedAt)
-                    .Select(ph => new PricePointRow(ph.Price, ph.ScrapedAt, ph.StoreOldPrice))
-                    .FirstOrDefault(),
-                p.PriceHistories
+            select new
+            {
+                Product = p,
+                BrandName = b.Name,
+                Latest = p.PriceHistories.OrderByDescending(ph => ph.ScrapedAt).FirstOrDefault(),
+                ReferencePrice = p.PriceHistories
                     .Where(ph => ph.ScrapedAt >= referenceSince)
-                    .Max(ph => (decimal?)ph.Price))).FirstOrDefaultAsync(cancellationToken);
+                    .Max(ph => (decimal?)ph.Price),
+            }).FirstOrDefaultAsync(cancellationToken);
 
         if (row?.Latest is null || row.ReferencePrice is null)
             return null;
 
-        return MapToDealDto(row);
+        return MapToDealDto(new DealRow(row.Product, row.BrandName, row.Latest, row.ReferencePrice.Value));
     }
 
     // Favoriler listesi (/favorilerim) için — belirli bir ürün ID kümesini,
@@ -167,19 +175,19 @@ public class DealsQueryService(AppDbContext db)
             from p in db.Products
             join b in db.Brands on p.BrandId equals b.Id
             where b.IsActive && productIds.Contains(p.Id)
-            select new DealRow(
-                p,
-                b.Name,
-                p.PriceHistories
-                    .OrderByDescending(ph => ph.ScrapedAt)
-                    .Select(ph => new PricePointRow(ph.Price, ph.ScrapedAt, ph.StoreOldPrice))
-                    .FirstOrDefault(),
-                p.PriceHistories
+            select new
+            {
+                Product = p,
+                BrandName = b.Name,
+                Latest = p.PriceHistories.OrderByDescending(ph => ph.ScrapedAt).FirstOrDefault(),
+                ReferencePrice = p.PriceHistories
                     .Where(ph => ph.ScrapedAt >= referenceSince)
-                    .Max(ph => (decimal?)ph.Price))).ToListAsync(cancellationToken);
+                    .Max(ph => (decimal?)ph.Price),
+            }).ToListAsync(cancellationToken);
 
         return rows
             .Where(r => r.Latest != null && r.ReferencePrice != null)
+            .Select(r => new DealRow(r.Product, r.BrandName, r.Latest!, r.ReferencePrice!.Value))
             .Select(MapToDealDto)
             .ToList();
     }
