@@ -38,7 +38,7 @@ builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
     options.AddPolicy("EmailSensitive", httpContext => RateLimitPartition.GetFixedWindowLimiter(
-        partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        partitionKey: RequestLoggingExtensions.GetClientIp(httpContext),
         factory: _ => new FixedWindowRateLimiterOptions
         {
             PermitLimit = 5,
@@ -52,7 +52,7 @@ builder.Services.AddRateLimiter(options =>
     // ürün tıklaması/oylaması olağan değil, ama sayfada gezinirken rahatsız
     // etmeyecek kadar cömert.
     options.AddPolicy("General", httpContext => RateLimitPartition.GetFixedWindowLimiter(
-        partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        partitionKey: RequestLoggingExtensions.GetClientIp(httpContext),
         factory: _ => new FixedWindowRateLimiterOptions
         {
             PermitLimit = 60,
@@ -447,11 +447,28 @@ static class RequestLoggingExtensions
     {
         return builder.AddEndpointFilter(async (context, next) =>
         {
-            var ip = context.HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            var ip = GetClientIp(context.HttpContext);
             logger.LogInformation("Hassas istek: {Ip} {Method} {Path}",
                 ip, context.HttpContext.Request.Method, context.HttpContext.Request.Path);
             return await next(context);
         });
+    }
+
+    // 2026-08-15: Render + Cloudflare çift proxy zincirinde RemoteIpAddress
+    // (ForwardedHeaders middleware'den sonra bile) Render'ın kendi iç ağındaki
+    // bir IP'yi döndürüyordu (10.x.x.x), gerçek ziyaretçi IP'si kayboluyordu —
+    // bu da rate limiter'ın ve istek loglarının işe yaramamasına yol açıyordu
+    // (tüm istekler aynı "IP" gibi görünüp ortak bir limiti paylaşıyordu).
+    // Cloudflare'in CF-Connecting-IP header'ı tam bunun için var — Cloudflare
+    // bunu kendi edge'inde üretip origin'e gönderiyor, dışarıdan sahtesi
+    // yazılamaz (Cloudflare kendi değerini her zaman ezer). Cloudflare
+    // arkasında değilsek (yerel geliştirme) normal RemoteIpAddress'e düşer.
+    public static string GetClientIp(HttpContext context)
+    {
+        var cfConnectingIp = context.Request.Headers["CF-Connecting-IP"].FirstOrDefault();
+        return !string.IsNullOrEmpty(cfConnectingIp)
+            ? cfConnectingIp
+            : context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
     }
 }
 
