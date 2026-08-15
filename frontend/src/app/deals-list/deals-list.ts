@@ -132,7 +132,7 @@ export class DealsList implements OnInit {
         this.metaService.updateTag({ property: 'og:title', content: DEFAULT_TITLE });
         this.metaService.updateTag({ property: 'og:description', content: DEFAULT_DESCRIPTION });
         this.metaService.updateTag({ property: 'og:type', content: 'website' });
-        this.metaService.removeTag('property="og:image"');
+        this.metaService.updateTag({ property: 'og:image', content: `${canonicalOrigin(this.document)}/og-image.png` });
         this.structuredDataEl?.remove();
         this.structuredDataEl = null;
         setCanonicalLink(this.document, '/');
@@ -151,11 +151,7 @@ export class DealsList implements OnInit {
       this.metaService.updateTag({ property: 'og:title', content: title });
       this.metaService.updateTag({ property: 'og:description', content: description });
       this.metaService.updateTag({ property: 'og:type', content: 'product' });
-      if (deal.imageUrl) {
-        this.metaService.updateTag({ property: 'og:image', content: deal.imageUrl });
-      } else {
-        this.metaService.removeTag('property="og:image"');
-      }
+      this.metaService.updateTag({ property: 'og:image', content: deal.imageUrl ?? `${canonicalOrigin(this.document)}/og-image.png` });
       setCanonicalLink(this.document, `/urun/${deal.productId}`);
 
       // schema.org Product/Offer — Google'ın arama sonucunda fiyat gösterme

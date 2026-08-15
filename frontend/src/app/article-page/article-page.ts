@@ -52,11 +52,7 @@ export class ArticlePage implements OnInit {
     this.metaService.updateTag({ property: 'og:title', content: title });
     this.metaService.updateTag({ property: 'og:description', content: article.summary });
     this.metaService.updateTag({ property: 'og:type', content: 'article' });
-    if (article.coverImageUrl) {
-      this.metaService.updateTag({ property: 'og:image', content: article.coverImageUrl });
-    } else {
-      this.metaService.removeTag('property="og:image"');
-    }
+    this.metaService.updateTag({ property: 'og:image', content: article.coverImageUrl ?? `${canonicalOrigin(this.document)}/og-image.png` });
     setCanonicalLink(this.document, `/rehber/${article.slug}`);
 
     const jsonLd = {
