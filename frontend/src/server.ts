@@ -27,6 +27,7 @@ const angularApp = new AngularNodeAppEngine();
 const ssrInternalHeaders: HeadersInit = process.env['SSR_INTERNAL_SECRET']
   ? { 'X-Internal-Request': process.env['SSR_INTERNAL_SECRET'] }
   : {};
+console.log(`SSR_INTERNAL_SECRET ayarlı mı: ${!!process.env['SSR_INTERNAL_SECRET']}`);
 
 interface SitemapEntry {
   id: number;
