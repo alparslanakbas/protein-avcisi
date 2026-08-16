@@ -20,15 +20,6 @@ const app = express();
 app.set('trust proxy', true);
 const angularApp = new AngularNodeAppEngine();
 
-// SsrInternalHeaderInterceptor'daki aynı gerekçe: bu sunucunun backend'e
-// attığı istekler Cloudflare Bot Fight Mode'un atladığı bir header taşıyor.
-// Angular'ın HttpClient'ı bunu interceptor'dan alıyor, burada elle fetch()
-// çağıran uç noktalar (sitemap, /go/:id proxy) için aynı header'ı manuel ekliyoruz.
-const ssrInternalHeaders: HeadersInit = process.env['SSR_INTERNAL_SECRET']
-  ? { 'X-Internal-Request': process.env['SSR_INTERNAL_SECRET'] }
-  : {};
-console.log(`SSR_INTERNAL_SECRET ayarlı mı: ${!!process.env['SSR_INTERNAL_SECRET']}`);
-
 interface SitemapEntry {
   id: number;
   lastScrapedAt: string;
@@ -53,9 +44,9 @@ app.get('/sitemap.xml', async (req, res) => {
 
   try {
     const [productsResponse, filtersResponse, articlesResponse] = await Promise.all([
-      fetch(`${API_BASE_URL}/api/products/sitemap`, { headers: ssrInternalHeaders }),
-      fetch(`${API_BASE_URL}/api/filters`, { headers: ssrInternalHeaders }),
-      fetch(`${API_BASE_URL}/api/articles`, { headers: ssrInternalHeaders }),
+      fetch(`${API_BASE_URL}/api/products/sitemap`),
+      fetch(`${API_BASE_URL}/api/filters`),
+      fetch(`${API_BASE_URL}/api/articles`),
     ]);
     const products = (await productsResponse.json()) as SitemapEntry[];
     const filters = (await filtersResponse.json()) as FilterOptions;
@@ -142,7 +133,7 @@ app.get('/sitemap.xml', async (req, res) => {
 // tıklama sayacı backend'de aynen çalışmaya devam ediyor.
 app.get('/go/:id', async (req, res) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/go/${req.params.id}`, { redirect: 'manual', headers: ssrInternalHeaders });
+    const response = await fetch(`${API_BASE_URL}/go/${req.params.id}`, { redirect: 'manual' });
     const location = response.headers.get('location');
     res.redirect(302, location ?? '/');
   } catch (error) {
