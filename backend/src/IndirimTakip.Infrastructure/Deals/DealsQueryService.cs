@@ -20,6 +20,20 @@ internal sealed record DealRow(Product Product, string BrandName, PriceHistory L
 
 public class DealsQueryService(AppDbContext db)
 {
+    // Markalar kendi sitelerinde bir ürünün SKU/URL'sini değiştirdiğinde
+    // scraper eski kaydı bir daha bulamıyor, PriceHistory eklenmesi duruyor
+    // — ama Product kaydı fiyat geçmişini kaybetmemek için veritabanında
+    // kalmaya devam ediyor (bkz. ScrapeIngestionService, bilinçli bir karar).
+    // Tüm markalar 6 saatte bir tarandığı için bu süreden çok daha uzun
+    // (48 saat, ~2 kat güvenlik payı) hiç güncellenmemiş bir ürün gerçekten
+    // artık markanın feed'inde yoktur — kullanıcıya "aktif takip ediliyor"
+    // gibi görünen ama aslında donmuş bir kart göstermemek için liste/
+    // istatistik sorgularından gizleniyor. Veri SİLİNMİYOR: doğrudan ürün
+    // linki (GetProductByIdAsync) ve favoriler (GetDealsByIdsAsync) hâlâ
+    // erişilebilir — kullanıcı zaten bildiği/favorilediği bir ürünün
+    // "artık güncellenmiyor" bilgisini saklamak yanıltıcı olurdu.
+    private static readonly TimeSpan StaleThreshold = TimeSpan.FromHours(48);
+
     private static DealDto MapToDealDto(DealRow row)
     {
         var latest = row.Latest;
@@ -52,6 +66,7 @@ public class DealsQueryService(AppDbContext db)
         CancellationToken cancellationToken = default)
     {
         var referenceSince = DateTimeOffset.UtcNow.AddDays(-referenceWindowDays);
+        var staleSince = DateTimeOffset.UtcNow.Subtract(StaleThreshold);
 
         var query =
             from p in db.Products
@@ -69,6 +84,9 @@ public class DealsQueryService(AppDbContext db)
                     .Where(ph => ph.ScrapedAt >= referenceSince)
                     .Min(ph => (decimal?)ph.Price),
             };
+
+        // Donmuş/hayalet ürünleri gizle — bkz. StaleThreshold üzerindeki yorum.
+        query = query.Where(r => r.Latest != null && r.Latest.ScrapedAt >= staleSince);
 
         if (brands is { Length: > 0 })
             query = query.Where(r => brands.Contains(r.BrandName));
@@ -275,18 +293,19 @@ public class DealsQueryService(AppDbContext db)
     public async Task<HomepageStatsDto> GetHomepageStatsAsync(int referenceWindowDays = 30, CancellationToken cancellationToken = default)
     {
         var referenceSince = DateTimeOffset.UtcNow.AddDays(-referenceWindowDays);
+        var staleSince = DateTimeOffset.UtcNow.Subtract(StaleThreshold);
 
-        var totalProducts = await (
+        // Donmuş/hayalet ürünleri gizle — bkz. StaleThreshold üzerindeki yorum.
+        var activeProducts =
             from p in db.Products
             join b in db.Brands on p.BrandId equals b.Id
-            where b.IsActive
-            select p.Id).CountAsync(cancellationToken);
+            where b.IsActive && p.PriceHistories.OrderByDescending(ph => ph.ScrapedAt).Select(ph => ph.ScrapedAt).FirstOrDefault() >= staleSince
+            select p;
 
-        var rows = await (
-            from p in db.Products
-            join b in db.Brands on p.BrandId equals b.Id
-            where b.IsActive
-            select new
+        var totalProducts = await activeProducts.CountAsync(cancellationToken);
+
+        var rows = await activeProducts
+            .Select(p => new
             {
                 Latest = p.PriceHistories.OrderByDescending(ph => ph.ScrapedAt).Select(ph => (decimal?)ph.Price).FirstOrDefault(),
                 ReferencePrice = p.PriceHistories.Where(ph => ph.ScrapedAt >= referenceSince).Max(ph => (decimal?)ph.Price),
