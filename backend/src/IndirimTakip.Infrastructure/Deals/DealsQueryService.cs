@@ -48,7 +48,7 @@ public class DealsQueryService(AppDbContext db)
                 ? Math.Round((storeOld - latest.Price) / storeOld * 100, 1)
                 : null,
             latest.ScrapedAt,
-            latest.Price <= row.ThirtyDayLowPrice);
+            latest.Price <= row.ThirtyDayLowPrice && row.ThirtyDayLowPrice < referencePrice);
     }
 
     public async Task<PagedResult<DealDto>> GetDealsAsync(
@@ -318,7 +318,9 @@ public class DealsQueryService(AppDbContext db)
             }).ToListAsync(cancellationToken);
 
         var discountCount = rows.Count(r => r.Latest is not null && r.ReferencePrice is not null && r.Latest < r.ReferencePrice);
-        var thirtyDayLowCount = rows.Count(r => r.Latest is not null && r.ThirtyDayLowPrice is not null && r.Latest <= r.ThirtyDayLowPrice);
+        var thirtyDayLowCount = rows.Count(r =>
+            r.Latest is not null && r.ThirtyDayLowPrice is not null && r.ReferencePrice is not null
+            && r.Latest <= r.ThirtyDayLowPrice && r.ThirtyDayLowPrice < r.ReferencePrice);
         var lastScanAt = await db.PriceHistories.MaxAsync(ph => (DateTimeOffset?)ph.ScrapedAt, cancellationToken);
 
         return new HomepageStatsDto(totalProducts, discountCount, thirtyDayLowCount, lastScanAt);
