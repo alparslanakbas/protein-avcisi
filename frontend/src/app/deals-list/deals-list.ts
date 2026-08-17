@@ -1,5 +1,6 @@
 import { DOCUMENT, DecimalPipe } from '@angular/common';
-import { Component, DestroyRef, HostListener, OnInit, computed, effect, inject, signal, viewChild } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Component, DestroyRef, HostListener, OnInit, RESPONSE_INIT, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -96,6 +97,10 @@ export class DealsList implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly pageMeta = inject(PageMetaService);
   private readonly document = inject(DOCUMENT);
+  // SSR sırasında gerçek HTTP status kodunu değiştirmek için — bkz.
+  // productLoadError üzerindeki yorum. Sadece platform-server'da dolu
+  // gelir, tarayıcıda `null` — optional injection bu yüzden gerekli.
+  private readonly responseInit = inject(RESPONSE_INIT, { optional: true });
   protected readonly theme = inject(ThemeService);
   private readonly searchInput = viewChild<{ nativeElement: HTMLInputElement }>('searchInput');
   private searchDebounceHandle: ReturnType<typeof setTimeout> | null = null;
@@ -117,6 +122,18 @@ export class DealsList implements OnInit {
   // dolu, dürüstçe "doğrulanmamış" etiketli ama boş görünmüyor.
   protected readonly viewMode = signal<ViewMode>('store');
   protected readonly selectedDeal = signal<Deal | null>(null);
+  // Gerçek Search Console bulgusu (2026-08-17): /urun/:id yüklenirken
+  // OLUŞAN HERHANGİ bir hata (gerçek 404 de, backend'e geçici
+  // ulaşılamama da) aynı şekilde ana sayfaya 302 yönlendiriyordu — bir
+  // önceki Cloudflare Bot Fight Mode olayında backend'e giden SSR
+  // istekleri geçici engellenince bu, Googlebot'a "bu ürün artık yok,
+  // kalıcı olarak taşındı" yanlış sinyalini vermiş, Google 10 ürün
+  // sayfasını "Yönlendirmeli sayfa" diye işaretleyip indexlemeyi
+  // bırakmıştı. Artık sadece backend'in GERÇEKTEN 404 dönmesi ana
+  // sayfaya yönlendiriyor; ağ hatası/5xx gibi geçici sorunlarda bu
+  // sinyal set ediliyor — sayfa yönlendirmiyor, HTTP durumu 503
+  // (geçici, tekrar dene) oluyor, "kalıcı olarak yok" (302) DEMİYOR.
+  protected readonly productLoadError = signal(false);
 
   protected readonly totalCount = signal(0);
   protected readonly totalPages = signal(0);
@@ -291,9 +308,20 @@ export class DealsList implements OnInit {
         return;
       }
 
+      this.productLoadError.set(false);
       this.dealsService.getProductById(id).subscribe({
         next: (deal) => this.selectedDeal.set(deal),
-        error: () => this.router.navigate(['/']),
+        error: (err: HttpErrorResponse) => {
+          if (err.status === 404) {
+            this.router.navigate(['/']);
+            return;
+          }
+          // Geçici sorun (ağ hatası, backend 5xx/erişilemez) — "artık yok"
+          // sinyali (302) vermiyoruz, "şu an geçici olarak yüklenemedi"
+          // diyoruz. SSR'da bu gerçek bir HTTP 503 olarak dönüyor.
+          this.productLoadError.set(true);
+          if (this.responseInit) this.responseInit.status = 503;
+        },
       });
     });
   }

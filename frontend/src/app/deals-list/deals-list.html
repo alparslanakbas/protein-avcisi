@@ -602,6 +602,16 @@
 
     @if (selectedDeal(); as deal) {
       <app-product-modal [deal]="deal" (closed)="closeDeal()" />
+    } @else if (productLoadError()) {
+      <!-- Gerçek 404 değil, geçici bir yükleme sorunu (bkz. productLoadError
+           üzerindeki yorum) — botlara/kullanıcıya "artık yok" değil "şu an
+           erişilemiyor" sinyali veriyoruz, ana sayfaya yönlendirmiyoruz. -->
+      <div class="noc-shell fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div class="max-w-md rounded-[14px] bg-[var(--noc-card)] p-6 text-center text-[var(--noc-text)] shadow-[var(--noc-shadow-md)]">
+          <p class="text-[15px]">Ürün bilgisi şu anda yüklenemedi. Lütfen birazdan tekrar dene.</p>
+          <a routerLink="/" class="mt-4 inline-block text-sm font-medium text-[var(--noc-accent)]">Ana sayfaya dön</a>
+        </div>
+      </div>
     }
   </main>
 
