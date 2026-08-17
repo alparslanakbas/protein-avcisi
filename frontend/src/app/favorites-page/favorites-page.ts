@@ -1,5 +1,6 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { Meta } from '@angular/platform-browser';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
@@ -14,7 +15,7 @@ import { SiteHeader } from '../site-header/site-header';
 
 @Component({
   selector: 'app-favorites-page',
-  imports: [DecimalPipe, RouterLink, ProductModal, SiteHeader],
+  imports: [DecimalPipe, RouterLink, ProductModal, SiteHeader, FormsModule],
   templateUrl: './favorites-page.html',
 })
 export class FavoritesPage implements OnInit {
@@ -34,6 +35,14 @@ export class FavoritesPage implements OnInit {
   // bkz. category-page.ts'teki aynı gerekçe.
   protected readonly selectedDeal = signal<Deal | null>(null);
 
+  // Favori listesi kurtarma — token bu cihazda yoksa e-posta girip link
+  // isteyebiliyor (bkz. FavoritesService.recover, backend'deki
+  // FavoriteService.SendRecoveryEmailAsync). product-modal.ts'teki
+  // watch/favorite inline form desenleriyle aynı signal yapısı.
+  protected readonly recoverEmail = signal('');
+  protected readonly recoverSubmitting = signal(false);
+  protected readonly recoverStatusMessage = signal<string | null>(null);
+
   ngOnInit(): void {
     this.pageMeta.set({
       title: 'Favorilerim | ProteinAvcısı',
@@ -44,17 +53,19 @@ export class FavoritesPage implements OnInit {
     // botları için anlamsız/boş görünür, indekslenmesin diye noindex.
     this.metaService.updateTag({ name: 'robots', content: 'noindex' });
 
+    // E-postadan tıklanan kurtarma linki (?recover=TOKEN) — token'ı bu
+    // cihaza kaydedip URL'den temizliyoruz (tarayıcı geçmişinde/paylaşımda
+    // token açıkta kalmasın diye). Sadece ilk yüklemede kontrol etmek
+    // yeterli, bu yüzden snapshot kullanılıyor (queryParamMap aboneliği
+    // aşağıda ayrıca ?urun= için sürüyor).
+    const recoverToken = this.route.snapshot.queryParamMap.get('recover');
+    if (recoverToken) {
+      this.favoritesService.saveToken(recoverToken);
+      this.router.navigate([], { relativeTo: this.route, queryParams: { recover: null }, queryParamsHandling: 'merge', replaceUrl: true });
+    }
+
     this.hasToken.set(!!this.favoritesService.getToken());
-    this.favoritesService.list().subscribe({
-      next: (deals) => {
-        this.favorites.set(deals);
-        this.loading.set(false);
-      },
-      error: () => {
-        this.loadError.set(true);
-        this.loading.set(false);
-      },
-    });
+    this.loadFavorites();
 
     this.route.queryParamMap.subscribe((params) => {
       const idParam = params.get('urun');
@@ -74,6 +85,37 @@ export class FavoritesPage implements OnInit {
         next: (deal) => this.selectedDeal.set(deal),
         error: () => this.selectedDeal.set(null),
       });
+    });
+  }
+
+  private loadFavorites(): void {
+    this.loading.set(true);
+    this.favoritesService.list().subscribe({
+      next: (deals) => {
+        this.favorites.set(deals);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.loadError.set(true);
+        this.loading.set(false);
+      },
+    });
+  }
+
+  protected submitRecover(): void {
+    const email = this.recoverEmail().trim();
+    if (!email) return;
+
+    this.recoverSubmitting.set(true);
+    this.favoritesService.recover(email).subscribe({
+      next: (result) => {
+        this.recoverStatusMessage.set(result.message);
+        this.recoverSubmitting.set(false);
+      },
+      error: () => {
+        this.recoverStatusMessage.set('Bir şeyler ters gitti, tekrar dener misin?');
+        this.recoverSubmitting.set(false);
+      },
     });
   }
 

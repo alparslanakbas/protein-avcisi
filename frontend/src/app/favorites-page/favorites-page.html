@@ -11,7 +11,39 @@
       <div class="py-24 text-center text-[var(--noc-neutral-500)]">Yükleniyor...</div>
     } @else if (loadError()) {
       <div class="mx-auto mt-8 max-w-md rounded-[8px] bg-[var(--noc-surface)] px-6 py-8 text-center">Favoriler yüklenemedi. Lütfen daha sonra tekrar dene.</div>
-    } @else if (!hasToken() || favorites().length === 0) {
+    } @else if (!hasToken()) {
+      <div class="mx-auto mt-8 max-w-md rounded-[8px] bg-[var(--noc-surface)] px-6 py-10 text-center text-[var(--noc-neutral-500)]">
+        Henüz favori eklemedin. Bir ürünü açıp "Favorilere Ekle"ye tıkladığında burada göreceksin.
+        <a routerLink="/" class="mt-2 block w-full text-sm font-medium text-[var(--noc-accent)]">Ürünlere göz at</a>
+
+        <div class="mt-6 border-t border-[var(--noc-divider)] pt-6 text-left">
+          <p class="text-center text-xs text-[var(--noc-neutral-500)]">
+            Daha önce favori eklediysen ama bu cihazda/tarayıcıda göremiyorsan, e-postana bir link gönderelim.
+          </p>
+          <form (ngSubmit)="submitRecover()" class="mt-3 flex gap-2">
+            <input
+              type="email"
+              name="recoverEmail"
+              required
+              placeholder="E-posta adresin"
+              [ngModel]="recoverEmail()"
+              (ngModelChange)="recoverEmail.set($event)"
+              class="min-w-0 flex-1 rounded-[8px] border border-[var(--noc-divider)] bg-[var(--noc-card)] px-3 py-1.5 text-xs text-[var(--noc-text)] placeholder:text-[var(--noc-neutral-500)] focus:border-[var(--noc-accent)] focus:outline-none"
+            />
+            <button
+              type="submit"
+              [disabled]="recoverSubmitting()"
+              class="shrink-0 rounded-[8px] border border-[var(--noc-accent)] px-4 py-1.5 text-xs font-medium text-[var(--noc-accent)] transition-colors hover:bg-[color-mix(in_srgb,var(--noc-accent)_12%,transparent)] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {{ recoverSubmitting() ? 'Gönderiliyor...' : 'Linki gönder' }}
+            </button>
+          </form>
+          @if (recoverStatusMessage(); as message) {
+            <p class="mt-2 text-center text-xs text-[var(--noc-neutral-500)]">{{ message }}</p>
+          }
+        </div>
+      </div>
+    } @else if (favorites().length === 0) {
       <div class="mx-auto mt-8 max-w-md rounded-[8px] bg-[var(--noc-surface)] px-6 py-10 text-center text-[var(--noc-neutral-500)]">
         Henüz favori eklemedin. Bir ürünü açıp "Favorilere Ekle"ye tıkladığında burada göreceksin.
         <a routerLink="/" class="mt-2 block w-full text-sm font-medium text-[var(--noc-accent)]">Ürünlere göz at</a>

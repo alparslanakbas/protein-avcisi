@@ -45,4 +45,12 @@ export class FavoritesService {
     if (!token) return of([]);
     return this.http.get<Deal[]>(`${API_BASE_URL}/api/favorites`, { params: { token } });
   }
+
+  // Bu cihazda token kaybolduysa (temizlenen tarayıcı verisi, farklı bir
+  // tarayıcı/uygulama vb.) — e-postaya token'ı içeren bir link gönderiliyor.
+  // Yanıt e-postanın kayıtlı olup olmadığından bağımsız hep aynı (backend
+  // enumeration'ı önlüyor), bu yüzden burada da tek bir mesaj döndürülüyor.
+  recover(email: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${API_BASE_URL}/api/favorites/recover`, { email });
+  }
 }

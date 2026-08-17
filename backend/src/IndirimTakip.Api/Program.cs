@@ -336,6 +336,21 @@ app.MapGet("/api/favorites", async (string token, FavoriteService favorites, Dea
     return Results.Ok(result);
 });
 
+// Favori listesi kurtarma — localStorage token'ı kaybolan kullanıcı (farklı
+// cihaz/tarayıcı, temizlenen site verisi vb. — gerçek bir kullanıcı raporuyla
+// fark edildi) e-postasını girip token'ı içeren bir linki e-postasına
+// alabiliyor. Email enumeration'ı önlemek için (bkz. 2026-08-15 token ifşası
+// düzeltmesiyle aynı gerekçe) yanıt e-postanın kayıtlı olup olmadığından
+// bağımsız hep aynı — sadece format geçersizse ayırt edici bir hata dönüyoruz.
+app.MapPost("/api/favorites/recover", async (RecoverFavoritesRequest request, FavoriteService favorites, CancellationToken ct) =>
+{
+    if (!IsValidEmail(request.Email))
+        return Results.BadRequest(new { message = "Geçerli bir e-posta adresi girin." });
+
+    await favorites.SendRecoveryEmailAsync(request.Email, frontendBaseUrl, ct);
+    return Results.Ok(new { message = "Bu e-posta kayıtlıysa favori linkini gönderdik." });
+}).RequireRateLimiting("EmailSensitive").LogSensitiveRequest(app.Logger);
+
 // Affiliate altyapısı: ürün linkleri buradan geçiyor ki ileride affiliate
 // id eklemek kolay olsun (roadmap adım 7). Şimdilik sadece tıklama sayısını
 // tutuyor, dış siteye 302 ile yönlendiriyor.
@@ -542,3 +557,4 @@ static class RequestLoggingExtensions
 }
 
 record VoteRequest(bool Helpful);
+record RecoverFavoritesRequest(string Email);

@@ -14,4 +14,8 @@ public class Subscriber
     public DateTimeOffset? ConfirmedAt { get; set; }
     public DateTimeOffset? UnsubscribedAt { get; set; }
     public DateTimeOffset? LastConfirmationEmailSentAt { get; set; }
+    // Favori listesi kurtarma maili (bkz. FavoriteService.SendRecoveryEmailAsync)
+    // için ayrı bir cooldown alanı — onay mailiyle aynı amaç ama farklı akış,
+    // ikisinin birbirini sıfırlamaması için ayrı tutuluyor.
+    public DateTimeOffset? LastRecoveryEmailSentAt { get; set; }
 }
