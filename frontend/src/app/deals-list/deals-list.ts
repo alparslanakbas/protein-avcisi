@@ -1,6 +1,6 @@
-import { DOCUMENT, DecimalPipe } from '@angular/common';
+import { DOCUMENT, DecimalPipe, isPlatformServer } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, DestroyRef, HostListener, OnInit, RESPONSE_INIT, computed, effect, inject, signal, viewChild } from '@angular/core';
+import { Component, DestroyRef, HostListener, OnInit, PLATFORM_ID, RESPONSE_INIT, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -101,10 +101,12 @@ export class DealsList implements OnInit {
   // productLoadError üzerindeki yorum. Sadece platform-server'da dolu
   // gelir, tarayıcıda `null` — optional injection bu yüzden gerekli.
   private readonly responseInit = inject(RESPONSE_INIT, { optional: true });
+  private readonly isServer = isPlatformServer(inject(PLATFORM_ID));
   protected readonly theme = inject(ThemeService);
   private readonly searchInput = viewChild<{ nativeElement: HTMLInputElement }>('searchInput');
   private searchDebounceHandle: ReturnType<typeof setTimeout> | null = null;
   private structuredDataEl: HTMLScriptElement | null = null;
+  private faqStructuredDataEl: HTMLScriptElement | null = null;
 
   protected readonly shortcutLabel = isMac ? '⌘K' : 'Ctrl+K';
 
@@ -134,6 +136,21 @@ export class DealsList implements OnInit {
   // sinyal set ediliyor — sayfa yönlendirmiyor, HTTP durumu 503
   // (geçici, tekrar dene) oluyor, "kalıcı olarak yok" (302) DEMİYOR.
   protected readonly productLoadError = signal(false);
+
+  // Gerçek SEO içerik denetimi bulgusu (2026-08-17): /urun/:id, route
+  // reuse sayesinde ana sayfayla aynı bileşeni paylaşıyor — modal
+  // açıldığında arka plandaki TÜM ana sayfa (hero, 24 ürünlük grid,
+  // kuponlar, rehber tanıtımı, SSS) SSR HTML'inden hiç çıkarılmıyordu.
+  // 20 ürün sayfası ikili karşılaştırıldığında ortalama %91.7 (maks
+  // %97) içerik benzerliği bulundu — muhtemelen Google'ın 559 ürün
+  // sayfasının çoğunu "keşfedildi ama indexlenmedi" bırakmasının asıl
+  // nedeni. Çözüm: SADECE SSR'da, bir ürün seçiliyken, arka plan
+  // içeriğini render'dan çıkarıyoruz — CSR'da (tarayıcıda) davranış
+  // HİÇ değişmiyor (modal zaten tüm ekranı kapladığı için kullanıcı
+  // arka planı görmüyor), sadece bot/SSR çıktısı artık sadece o ürüne
+  // özel içeriği taşıyor. H1 bu kuralın DIŞINDA tutuluyor (her zaman
+  // render edilmeli).
+  protected readonly showFullHomepageContent = computed(() => !this.isServer || !this.selectedDeal());
 
   protected readonly totalCount = signal(0);
   protected readonly totalPages = signal(0);
@@ -220,8 +237,26 @@ export class DealsList implements OnInit {
         });
         this.structuredDataEl?.remove();
         this.structuredDataEl = null;
+        // Gerçek SEO içerik denetimi bulgusu (2026-08-17): bu FAQPage
+        // JSON-LD'si eskiden ngOnInit'te KOŞULSUZ bir kez ekleniyordu —
+        // /urun/:id ilk yüklenen sayfa olduğunda bile SSR HTML'ine
+        // giriyordu (görünür SSS metni showFullHomepageContent() ile
+        // gizlense de, bu structured data ondan bağımsız bir mekanizmaydı).
+        // Artık selectedDeal()'e reaktif: sadece ana sayfa durumunda var.
+        this.faqStructuredDataEl = upsertJsonLdScript(this.document, this.faqStructuredDataEl, {
+          '@context': 'https://schema.org',
+          '@type': 'FAQPage',
+          mainEntity: FAQ_ITEMS.map((item) => ({
+            '@type': 'Question',
+            name: item.question,
+            acceptedAnswer: { '@type': 'Answer', text: item.answer },
+          })),
+        });
         return;
       }
+
+      this.faqStructuredDataEl?.remove();
+      this.faqStructuredDataEl = null;
 
       const priceText = `${deal.currentPrice.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TL`;
       const title = `${deal.productName} Fiyatı: ${priceText} | ${deal.brandName} — ProteinAvcısı`;
@@ -274,7 +309,6 @@ export class DealsList implements OnInit {
     this.favoritesService.list().subscribe((list) => this.favoritesCount.set(list.length));
     this.articlesService.getArticles().subscribe((articles) => this.articles.set(articles.slice(0, 3)));
     this.loadHeroDeal();
-    this.addFaqStructuredData();
     this.load();
 
     // Sayfa numarası URL'de ?page= olarak tutuluyor — tarayıcının geri/ileri
@@ -324,26 +358,6 @@ export class DealsList implements OnInit {
         },
       });
     });
-  }
-
-  // FAQ_ITEMS statik olduğu için (ürün modalındaki gibi değişmiyor) tek
-  // seferlik ekleniyor, ürün modalının açılıp kapanmasıyla ayrı bir
-  // <script> etiketi olarak kalıyor.
-  private addFaqStructuredData(): void {
-    const jsonLd = {
-      '@context': 'https://schema.org',
-      '@type': 'FAQPage',
-      mainEntity: FAQ_ITEMS.map((item) => ({
-        '@type': 'Question',
-        name: item.question,
-        acceptedAnswer: { '@type': 'Answer', text: item.answer },
-      })),
-    };
-
-    const script = this.document.createElement('script');
-    script.type = 'application/ld+json';
-    script.textContent = JSON.stringify(jsonLd);
-    this.document.head.appendChild(script);
   }
 
   protected setViewMode(mode: ViewMode): void {
