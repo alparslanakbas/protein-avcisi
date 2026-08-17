@@ -1,4 +1,5 @@
-const ABSOLUTE_DATE_FORMATTER = new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'short' });
+// timeZone sabit Europe/Istanbul — bkz. product-modal.ts'teki aynı gerekçe.
+const ABSOLUTE_DATE_FORMATTER = new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'short', timeZone: 'Europe/Istanbul' });
 
 // Sunucu/istemci farkı yok — sadece Date matematiği, SSR'da da güvenli.
 // Sekmede uzun süre açık kalan bir sayfada metin bayatlayabilir (canlı

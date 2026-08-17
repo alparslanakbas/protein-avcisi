@@ -33,8 +33,16 @@ const CHART_HEIGHT = 220;
 const CHART_PADDING_Y = 16;
 const AXIS_LABEL_COUNT = 5;
 
-const axisDateFormatter = new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'short' });
-const tooltipDateFormatter = new Intl.DateTimeFormat('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+// timeZone sabit Europe/Istanbul — kullanıcının kendi cihaz saat dilimine
+// bırakılırsa (ör. yurt dışından erişim, ya da SSR'ın sunucu saat dilimi
+// tarayıcıdan farklıysa) aynı fiyat noktası farklı ziyaretçilere farklı
+// "gün"e ait gösterilebilirdi. Gerçek bir örnek: ProteinOcean'ın ilk
+// taraması UTC 21:10'da olmuştu — bu, tarayıcı yerel saatine bırakılan
+// eski davranışta bazı saat dilimlerinde "11 Ağustos", TR saatinde ise
+// "10 Ağustos"un son dakikaları oluyordu; sabitleme bu tutarsızlığı
+// ortadan kaldırıyor (site zaten sadece TR pazarına hizmet ediyor).
+const axisDateFormatter = new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'short', timeZone: 'Europe/Istanbul' });
+const tooltipDateFormatter = new Intl.DateTimeFormat('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Europe/Istanbul' });
 // Aynı gün içinde fiyat gerçekten değiştiyse (dedupeSameDaySamePrice sonrası
 // hâlâ aynı güne ait birden fazla nokta kaldıysa) sadece tarih yetersiz
 // kalıyor — o durumda saat de eklenip hangi anda değiştiği gösteriliyor.
@@ -44,6 +52,7 @@ const tooltipDateTimeFormatter = new Intl.DateTimeFormat('tr-TR', {
   year: 'numeric',
   hour: '2-digit',
   minute: '2-digit',
+  timeZone: 'Europe/Istanbul',
 });
 
 @Component({

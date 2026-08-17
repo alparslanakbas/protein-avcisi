@@ -34,8 +34,11 @@ const SEARCH_DEBOUNCE_MS = 350;
 // grafiğinden çok daha küçük, kendi ölçüleri (Nocturne referansı: 280×90).
 const HERO_CHART = { width: 280, height: 90, paddingY: 8 };
 
-const SCAN_TIME_FORMATTER = new Intl.DateTimeFormat('tr-TR', { hour: '2-digit', minute: '2-digit' });
-const SCAN_DATE_FORMATTER = new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'long' });
+// timeZone sabit Europe/Istanbul — bkz. product-modal.ts'teki aynı gerekçe
+// (kullanıcının cihaz saat dilimine bırakılırsa aynı an farklı ziyaretçilere
+// farklı "gün/saat" gösterebilirdi, site sadece TR pazarına hizmet ediyor).
+const SCAN_TIME_FORMATTER = new Intl.DateTimeFormat('tr-TR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Istanbul' });
+const SCAN_DATE_FORMATTER = new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'long', timeZone: 'Europe/Istanbul' });
 
 // Title/description'da bilinçli olarak "Protein Avcısı" (boşluklu) kullanılıyor
 // — logodaki bitişik "ProteinAvcısı" yazımı marka kimliği olarak kalıyor, ama
