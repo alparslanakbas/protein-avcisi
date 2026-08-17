@@ -168,7 +168,20 @@
             <span class="h-px w-[26px] bg-[var(--noc-accent)]"></span>
             <span class="text-[11px] font-medium uppercase tracking-[0.14em] text-[var(--noc-accent)]">Gerçek Fiyat Geçmişi</span>
           </div>
-          <h1 class="text-[38px] font-medium leading-[1.02] tracking-[-0.03em] sm:text-[56px]">Etiket oyununa gelme.</h1>
+          <!-- /urun/:id'de bu bileşen route reuse ile yeniden kullanıldığı
+               için (bkz. DealsRouteReuseStrategy) sayfanın tek H1'i her
+               zaman bu jenerik hero metniydi — ürün modalı açıkken bile.
+               title/description/canonical/JSON-LD zaten ürüne özeldi ama
+               H1 hiç değişmiyordu (SEO denetiminde bulundu). Modal tüm
+               ekranı kapladığı için (fixed inset-0) bu H1'in metni
+               değişse de kullanıcı görsel olarak fark etmiyor. -->
+          <h1 class="text-[38px] font-medium leading-[1.02] tracking-[-0.03em] sm:text-[56px]">
+            @if (selectedDeal(); as deal) {
+              {{ deal.productName }} Fiyatı ve Fiyat Geçmişi
+            } @else {
+              Etiket oyununa gelme.
+            }
+          </h1>
           <p class="mt-3 text-[16px] leading-[1.6] text-[var(--noc-neutral-300)]">
             {{ availableBrands().length }} markanın her ürününü günde 4 kez tarıyoruz. Bir fiyat gerçekten düştüyse burada
             görürsün — mağaza "eski fiyat" yazdığı için değil, 30 günlük geçmiş öyle söylediği için.

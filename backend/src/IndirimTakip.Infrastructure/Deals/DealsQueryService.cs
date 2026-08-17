@@ -272,13 +272,18 @@ public class DealsQueryService(AppDbContext db)
 
     // sitemap.xml üretimi için hafif bir liste — DealDto'daki fiyat
     // hesaplarına gerek yok, sadece URL kurmak için Id ve son tarama
-    // zamanı (lastmod) yeterli.
+    // zamanı (lastmod) yeterli. Donmuş/hayalet ürünler burada da hariç
+    // tutuluyor (bkz. StaleThreshold) — aksi halde sitemap, artık site
+    // içinde hiçbir yerden linklenmeyen (kategori/marka listelerinde
+    // görünmeyen) URL'leri Google'a "tara" diye bildirmeye devam ederdi.
     public async Task<IReadOnlyList<SitemapEntryDto>> GetSitemapEntriesAsync(CancellationToken cancellationToken = default)
     {
+        var staleSince = DateTimeOffset.UtcNow.Subtract(StaleThreshold);
+
         return await (
             from p in db.Products
             join b in db.Brands on p.BrandId equals b.Id
-            where b.IsActive
+            where b.IsActive && p.PriceHistories.OrderByDescending(ph => ph.ScrapedAt).Select(ph => ph.ScrapedAt).FirstOrDefault() >= staleSince
             select new SitemapEntryDto(
                 p.Id,
                 p.PriceHistories.OrderByDescending(ph => ph.ScrapedAt).Select(ph => ph.ScrapedAt).FirstOrDefault()))
