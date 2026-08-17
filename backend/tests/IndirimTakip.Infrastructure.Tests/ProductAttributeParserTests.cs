@@ -14,6 +14,44 @@ public class ProductAttributeParserTests
     [InlineData("SSN ... Whey Protein Tozu", "protein-tozu")]
     [InlineData("HIQ Beta Alanine 300g", "amino-asitler")]
     [InlineData("HIQ B.M.F. Extreme Thermo Burner", "yag-yakici")]
+    // Regresyon testi: l-carnitine-cla CategoryKeywords'te hiç yoktu, bu
+    // yüzden HIQ/Hardline/ProteinOcean'ın L-Carnitine ürünleri yanlışlıkla
+    // yag-yakici'nin anahtar kelime listesine (l-carnitine/karnitin/cla)
+    // takılıp o kategoriye düşüyordu — kullanıcı canlıda kategori sayfasında
+    // L-Carnitine'de sadece SSN görünce fark etti (SSN kendi slug'ını elle
+    // veriyor, diğerleri InferCategory'ye bağımlı).
+    [InlineData("HIQ L-Carnitine Tartare 120 Kapsül", "l-carnitine-cla")]
+    [InlineData("Hardline L-Karnitin Matrix 3000 Mg", "l-carnitine-cla")]
+    [InlineData("L-CARNITINE SHOT", "l-carnitine-cla")]
+    // Regresyon testi: Türkçe büyük noktalı "İ" ToLowerInvariant ile hiç
+    // küçülmüyordu ("VİTAMİNİ" -> "vİtamİnİ"), bu da tüm-büyük-harfli Türkçe
+    // ürün isimlerinin "vitamin" gibi anahtar kelimelerle eşleşmesini
+    // engelliyordu.
+    [InlineData("C VİTAMİNİ EFERVESAN", "vitamin")]
+    // Kapsamlı kategori taraması (2026-08-17): önceden hiçbir kategoriye
+    // düşmeyen gerçek ürün örnekleri, canlı veriden bulundu.
+    [InlineData("HIQ Gain Deluxe 3 kg", "kilo-hacim")]
+    [InlineData("HIQ Maltodextrin 1500g Unflavored", "kilo-hacim")]
+    [InlineData("GLYCINE", "amino-asitler")]
+    [InlineData("Taurine 300 Gr", "amino-asitler")]
+    [InlineData("BIOTIN", "vitamin")]
+    [InlineData("HIQ Collagen Vitaplus 300g", "protein-tozu")]
+    [InlineData("Hipro 908 Gr", "protein-tozu")]
+    // Markalı/özel karışım isimleri (isimden çıkarım değil tahmin olurdu)
+    // bilinçli olarak null kalmalı — ör. GH-UP, Smash Pro gibi.
+    [InlineData("HIQ Gh-Up 120 Kapsül", null)]
+    // İkinci tur (kullanıcı isteğiyle tüm 235 ürün tek tek incelendi):
+    // markalı ama şeffaf isimler (bileşeni doğrudan taşıyanlar) eklendi.
+    [InlineData("Hardline Creapure 120 Kapsül", "kreatin")]
+    [InlineData("Hardline Glutapure 300 Gr", "amino-asitler")]
+    [InlineData("HIQ High Pro+ 900gr", "protein-tozu")]
+    [InlineData("ALCAR", "l-carnitine-cla")]
+    [InlineData("Hardline Carnıfıt 500 Ml", "l-carnitine-cla")]
+    [InlineData("CAFFEINE", "pre-workout")]
+    [InlineData("TERMOJENİK PAKET", "yag-yakici")]
+    [InlineData("HIQ Glucoflex 60 Kapsül", "vitamin")]
+    [InlineData("HIQ Curcumin 30 Sıvı Kapsül", "vitamin")]
+    [InlineData("SPIRULINA POWDER", "vitamin")]
     [InlineData("Bilinmeyen bir ürün adı", null)]
     public void InferCategory_dogru_kategoriyi_donuyor(string productName, string? expectedCategory)
     {

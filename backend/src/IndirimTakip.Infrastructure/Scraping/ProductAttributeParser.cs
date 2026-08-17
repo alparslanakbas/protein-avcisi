@@ -33,13 +33,47 @@ public static partial class ProductAttributeParser
     // slug'larıyla tutarlı olacak şekilde adlandırıldı.
     private static readonly (string Category, string[] Keywords)[] CategoryKeywords =
     [
-        ("protein-tozu", ["protein", "whey", "isolate", "izole", "casein", "kazein"]),
-        ("kreatin", ["creatine", "kreatin"]),
-        ("amino-asitler", ["amino", "bcaa", "eaa", "glutamin", "arginin", "arjinin", "sitrulin", "citrulline", "alanine", "alanin"]),
-        ("pre-workout", ["pre workout", "preworkout", "pump", "nitric", "hellfire", "pre-workout"]),
-        ("yag-yakici", ["burner", "yag yakici", "thermo", "l-carnitine", "karnitin", "carnitine", "cla"]),
-        ("kilo-hacim", ["gainer", "mass", "kilo", "hacim"]),
-        ("vitamin", ["vitamin", "mineral", "magnesium", "magnezyum", "zinc", "cinko", "omega", "multivitamin"]),
+        // "collagen"/"hipro"/"high pro" eklendi (2026-08-17 kapsamlı kategori
+        // taraması) — üçü de gerçek protein ürünleri, HIQ/Hardline'da hiç
+        // yakalanmıyordu. "high pro" araya boşluklu yazıldığı için "hipro"
+        // (Hardline'ın bitişik yazımı) onu yakalamıyordu, ayrıca eklendi.
+        // "creapure"/"glutapure" markalı ama şeffaf isimler (Creapure = saf
+        // kreatin monohidrat, Glutapure = Hardline'ın glutamin ürün adı) —
+        // gerçek bileşeni doğrudan taşıyor, tahmin değil.
+        ("protein-tozu", ["protein", "whey", "isolate", "izole", "casein", "kazein", "collagen", "hipro", "high pro"]),
+        ("kreatin", ["creatine", "kreatin", "creapure"]),
+        // Aynı taramada eklenen tekil amino asitler — "amino" kelimesi geçmeyen
+        // (ör. sadece "Glycine", "Taurine" yazan) ürünler hiç yakalanmıyordu.
+        ("amino-asitler", ["amino", "bcaa", "eaa", "glutamin", "arginin", "arjinin", "sitrulin", "citrulline", "alanine", "alanin", "glycine", "taurine", "theanine", "tyrosine", "leucine", "glutapure"]),
+        // "caffeine" eklendi: hem HIQ/Hardline/ProteinOcean'da tek başına
+        // satılan kafein ürünleri var, enerji/odaklanma amaçlı pre-workout
+        // ailesine en yakın kategori bu.
+        ("pre-workout", ["pre workout", "preworkout", "pump", "nitric", "hellfire", "pre-workout", "caffeine"]),
+        // SSN kendi ürünlerinde bu kategoriyi doğrudan veriyor (elle set edilmiş
+        // slug); diğer markalarda (HIQ/Hardline/ProteinOcean) daha önce burada
+        // hiç bir giriş olmadığı için l-carnitine/karnitin/cla ürünleri yanlışlıkla
+        // "yag-yakici"nin anahtar kelime listesine düşüp o kategoriye gidiyordu —
+        // kullanıcı L-Carnitine kategori sayfasında sadece SSN görünce fark etti.
+        // "alcar" (Acetyl L-Carnitine'in sektörde standart kısaltması) ve
+        // Hardline'ın "Carnifit"/"Carnıfıt" (Carni+Fit) ürün adı da eklendi.
+        ("l-carnitine-cla", ["l-carnitine", "karnitin", "carnitine", "cla", "alcar", "carnifit", "carnıfıt"]),
+        // "termojenik" (bundle paket adında geçiyor, kelimenin kendisi zaten
+        // "yağ yakıcı/termojenik" anlamına geliyor) eklendi.
+        ("yag-yakici", ["burner", "yag yakici", "thermo", "termojenik"]),
+        // "gain" ayrı eklendi: "gainer" ile eşleşmeyen "HIQ Gain Deluxe" gibi
+        // ürünler var. Karbonhidrat/kütle kaynakları da (maltodextrin,
+        // dextrose, Vitargo, Cream of Rice, Carbopure) bu kategoriye eklendi.
+        ("kilo-hacim", ["gainer", "gain", "mass", "kilo", "hacim", "maltodextrin", "dextrose", "vitargo", "cream of rice", "carbopure"]),
+        // Kapsamlı kategori taraması (2026-08-17): vitamin/mineral kategorisinin
+        // kendi açıklaması zaten geniş bir yelpaze tanımlıyor ("multivitaminden
+        // omega-3'e, magnezyumdan çinkoya") — bu ruhla, önceden hiç bir kategoriye
+        // düşmeyen ama gerçek, tanınabilir sağlık takviyesi bileşenleri eklendi.
+        // "glucoflex" (Glucosamine+Flex, HIQ'nun eklem sağlığı ürünü, mevcut
+        // glucosamine ailesiyle aynı yerde), "curcumin" (zerdeçal özütü) ve
+        // "spirulina" (tanınmış bir süperfood takviyesi) de eklendi.
+        // Markalı/özel karışım isimleri (GH-UP, Smash Pro, T-Prime vb.) BİLİNÇLİ
+        // OLARAK eklenmedi — isimden çıkarım değil tahmin olurdu.
+        ("vitamin", ["vitamin", "mineral", "magnesium", "magnezyum", "zinc", "cinko", "omega", "multivitamin", "biotin", "coenzyme", "ginkgo", "glutathione", "hyaluronic", "inulin", "milk thistle", "panax", "ginseng", "psyllium", "rhodiola", "saw palmetto", "selenium", "tribulus", "zma", "glucosamine", "chondroitin", "nmn", "tudca", "ester-c", "5-htp", "b-complex", "lion's mane", "maca", "iron", "chromium", "glucoflex", "curcumin", "spirulina"]),
         ("saglikli-atistirmaliklar", ["bar", "cookie", "kurabiye", "atistirmalik", "rice cake", "pirinc"]),
     ];
 
@@ -75,7 +109,13 @@ public static partial class ProductAttributeParser
         // ToLowerInvariant bilinçli — tr-TR kültüründe büyük "I" küçülünce
         // noktasız "ı" oluyor ("CREATINE" -> "creatıne"), bu da aşağıdaki
         // İngilizce anahtar kelimelerle ("creatine" gibi) hiç eşleşmiyordu.
-        var normalized = productName.ToLowerInvariant();
+        // İkinci, ayrı bir tuzak daha var: Türkçe büyük noktalı "İ"
+        // (ör. "C VİTAMİNİ") ToLowerInvariant ile HİÇ küçülmüyor (invariant
+        // kültürde bu harf için basit bir eşleme yok) — "vİtamİnİ" olarak
+        // kalıp "vitamin" anahtar kelimesiyle asla eşleşmiyordu (canlı veride
+        // yüzlerce ürünün kategorisiz kalmasının gerçek sebeplerinden biriydi).
+        // Elle .Replace ile düzeltiliyor, culture-sensitive ToLower'a dönmeden.
+        var normalized = productName.Replace('İ', 'i').ToLowerInvariant();
 
         foreach (var (category, keywords) in CategoryKeywords)
         {
