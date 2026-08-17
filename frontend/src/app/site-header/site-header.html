@@ -5,7 +5,11 @@
       <span class="text-[18px] font-medium">PROTEİN<span class="text-[var(--noc-accent)]">AVCISI</span></span>
     </a>
 
-    <div class="flex items-center gap-4 text-sm">
+    <!-- Nav linkleri mobilde (sm altı) gizli — mobil alt sekme çubuğu (MobileTabBar)
+         zaten İndirimler/Kategoriler/Rehber/Takip listem'i sağlıyor, burada tekrar
+         göstermek header'ı flex-wrap olmadan taşırıyordu (bkz. kullanıcı bildirimi:
+         "anasayfa hariç diğer sayfalarda sağda siyah boşluk"). -->
+    <div class="hidden items-center gap-4 text-sm sm:flex">
       <a routerLink="/" routerLinkActive="text-[var(--noc-accent)]" [routerLinkActiveOptions]="{ exact: true }" class="hover:text-[var(--noc-accent)]">İndirimler</a>
 
       <div class="relative">
@@ -64,7 +68,7 @@
     <a
       routerLink="/favorilerim"
       routerLinkActive="border-[var(--noc-accent)] text-[var(--noc-accent)]"
-      class="inline-flex items-center gap-1.5 rounded-[8px] border border-[var(--noc-divider)] px-3 py-[6px] text-sm hover:bg-[color-mix(in_srgb,var(--noc-text)_7%,transparent)]"
+      class="hidden items-center gap-1.5 rounded-[8px] border border-[var(--noc-divider)] px-3 py-[6px] text-sm hover:bg-[color-mix(in_srgb,var(--noc-text)_7%,transparent)] sm:inline-flex"
     >
       Takip listem
       @if (favoritesCount() > 0) {
