@@ -316,8 +316,8 @@ app.MapPost("/api/products/{id:int}/favorite", async (int id, FavoriteRequest re
     if (string.IsNullOrEmpty(request.Token) && !IsValidEmail(request.Email))
         return Results.BadRequest(new { message = "Geçerli bir e-posta adresi girin." });
 
-    var (success, token) = await favorites.AddAsync(id, request.Token, request.Email, ct);
-    return success ? Results.Ok(new { token }) : Results.NotFound();
+    var (success, token, recoverySent) = await favorites.AddAsync(id, request.Token, request.Email, frontendBaseUrl, ct);
+    return success ? Results.Ok(new { token, recoverySent }) : Results.NotFound();
 }).RequireRateLimiting("EmailSensitive").LogSensitiveRequest(app.Logger);
 
 app.MapDelete("/api/products/{id:int}/favorite", async (int id, string token, FavoriteService favorites, CancellationToken ct) =>

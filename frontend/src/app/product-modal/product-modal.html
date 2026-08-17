@@ -190,6 +190,10 @@
         <p class="mt-2 text-center text-xs text-red-600 dark:text-red-400">{{ message }}</p>
       }
 
+      @if (favoriteStatusMessage(); as message) {
+        <p class="mt-2 text-center text-xs text-[var(--noc-accent)]">{{ message }}</p>
+      }
+
       @if (!watchStatusMessage()) {
         <button
           type="button"

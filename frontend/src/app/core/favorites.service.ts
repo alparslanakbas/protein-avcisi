@@ -27,8 +27,13 @@ export class FavoritesService {
     if (this.isBrowser && token) localStorage.setItem(TOKEN_KEY, token);
   }
 
-  add(productId: number, email?: string): Observable<{ token: string | null }> {
-    return this.http.post<{ token: string | null }>(`${API_BASE_URL}/api/products/${productId}/favorite`, {
+  // recoverySent: e-posta zaten var olan bir aboneye aitse (bu cihazda hiç
+  // token yoksa) backend arka planda bir kurtarma maili gönderiyor — bu
+  // cihaz da aynı e-postayla favorilerini görebilsin diye. Kullanıcı
+  // gerçek bir testte bunu bulamayınca (favori eklendi ama listede hiç
+  // görünmüyordu) eklendi, bkz. FavoriteService.AddAsync.
+  add(productId: number, email?: string): Observable<{ token: string | null; recoverySent: boolean }> {
+    return this.http.post<{ token: string | null; recoverySent: boolean }>(`${API_BASE_URL}/api/products/${productId}/favorite`, {
       token: this.getToken(),
       email: email ?? null,
     });

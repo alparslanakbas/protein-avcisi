@@ -111,6 +111,7 @@ export class ProductModal {
   protected readonly favoriteEmail = signal('');
   protected readonly favoriteSubmitting = signal(false);
   protected readonly favoriteErrorMessage = signal<string | null>(null);
+  protected readonly favoriteStatusMessage = signal<string | null>(null);
 
   protected readonly coordinates = computed(() =>
     toCoordinates(this.points(), this.minPrice(), this.maxPrice(), {
@@ -197,6 +198,7 @@ export class ProductModal {
       this.favorited.set(false);
       this.favoriteFormOpen.set(false);
       this.favoriteErrorMessage.set(null);
+      this.favoriteStatusMessage.set(null);
     });
   }
 
@@ -272,6 +274,15 @@ export class ProductModal {
         this.favoriteFormOpen.set(false);
         this.favoriteEmail.set('');
         this.favoriteSubmitting.set(false);
+        // Token null ama bu cihaz zaten önceden token almışsa (result.token
+        // null olması normal — bkz. token null dönme kuralı) hiçbir ek
+        // mesaj gerekmiyor, liste zaten doğru çalışacak. recoverySent true
+        // ise bu cihazda hiç token yoktu, e-posta gönderildi.
+        this.favoriteStatusMessage.set(
+          result.recoverySent
+            ? 'Favorilere eklendi! Bu cihazda listeni görebilmek için e-postana gönderdiğimiz linke tıkla.'
+            : null,
+        );
       },
       error: () => {
         this.favoriteErrorMessage.set('Bir şeyler ters gitti, tekrar dener misin?');

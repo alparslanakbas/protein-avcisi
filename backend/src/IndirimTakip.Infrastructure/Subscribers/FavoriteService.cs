@@ -5,6 +5,14 @@ namespace IndirimTakip.Infrastructure.Subscribers;
 
 public record FavoriteRequest(string? Token, string? Email);
 
+// ResolveSubscriberAsync'in aboneyi HANGİ yoldan bulduğunu ayırt etmek için —
+// AddAsync sadece "yeni mi değil mi" bilmek yetmiyor: e-posta zaten var olan
+// bir aboneye ait çıktığında (ByExistingEmail), bu cihazda token hiç yoktur,
+// favorinin eklendiği "görünmez" kalır (bkz. 2026-08-18'de gerçek bir
+// kullanıcı raporuyla bulunan bug: favori sunucuda ekleniyordu ama bu
+// cihaz hiç token almadığı için /favorilerim boş görünüyordu).
+internal enum SubscriberResolution { ByToken, ByExistingEmail, NewlyCreated }
+
 // Hesap/login gerektirmeyen "favorilerim" listesi — Subscriber'ın e-posta+
 // token altyapısını (Haber Ver ile aynı) yeniden kullanıyor ama hiç
 // e-posta göndermiyor, bu yüzden onay akışına (IsConfirmed) hiç girmiyor.
@@ -22,19 +30,23 @@ public class FavoriteService(AppDbContext db, SubscriberService subscribers, IEm
     // için, bu bir kişinin e-postasını bilen başkasının onun bülten aboneliğini
     // (double opt-in atlatarak) onaylamasına/iptal etmesine, favorilerini
     // okuyup değiştirmesine izin veriyordu. Artık Token SADECE bu çağrıda
-    // gerçekten YENİ oluşturulan bir abone için dönüyor; e-posta zaten kayıtlı
-    // bir aboneye aitse favori yine ekleniyor (Success=true) ama Token null
-    // dönüyor — o hesabın token'ına yalnızca zaten sahip olan (localStorage'da
-    // tutan) erişebilir.
-    public async Task<(bool Success, string? Token)> AddAsync(int productId, string? token, string? email, CancellationToken cancellationToken = default)
+    // gerçekten YENİ oluşturulan bir abone için dönüyor.
+    // 2026-08-18: e-posta zaten var olan bir aboneye aitse (ByExistingEmail)
+    // favori yine ekleniyor ama bu cihazda hiç token yok — kullanıcı
+    // gerçek bir testte bunu "favori eklendi ama listede hiç görünmüyor"
+    // olarak yaşadı. Artık bu durumda otomatik olarak aynı kurtarma
+    // maili gönderiliyor (RecoverySent=true) ki kullanıcı bu cihazı da
+    // aynı e-postayla kurtarabilsin.
+    public async Task<(bool Success, string? Token, bool RecoverySent)> AddAsync(
+        int productId, string? token, string? email, string frontendBaseUrl, CancellationToken cancellationToken = default)
     {
         var productExists = await db.Products.AnyAsync(p => p.Id == productId, cancellationToken);
         if (!productExists)
-            return (false, null);
+            return (false, null, false);
 
-        var (subscriber, isNewSubscriber) = await ResolveSubscriberAsync(token, email, cancellationToken);
+        var (subscriber, resolution) = await ResolveSubscriberAsync(token, email, cancellationToken);
         if (subscriber is null)
-            return (false, null);
+            return (false, null, false);
 
         var alreadyFavorited = await db.ProductFavorites.AnyAsync(
             f => f.SubscriberId == subscriber.Id && f.ProductId == productId, cancellationToken);
@@ -50,7 +62,26 @@ public class FavoriteService(AppDbContext db, SubscriberService subscribers, IEm
             await db.SaveChangesAsync(cancellationToken);
         }
 
-        return (true, isNewSubscriber ? subscriber.Token : null);
+        var recoverySent = false;
+        if (resolution == SubscriberResolution.ByExistingEmail)
+        {
+            try
+            {
+                // Cooldown SendRecoveryEmailAsync içinde zaten kontrol ediliyor
+                // (kısa süre önce gerçek bir kurtarma maili gittiyse burada
+                // sessizce hiçbir şey göndermez) — favori her durumda eklenmiş
+                // sayılır, e-posta gönderiminin başarısız olması bunu bozmasın
+                // diye hatayı yutuyoruz.
+                await SendRecoveryEmailAsync(subscriber.Email, frontendBaseUrl, cancellationToken);
+                recoverySent = true;
+            }
+            catch
+            {
+                // yutuluyor — bkz. yukarıdaki açıklama.
+            }
+        }
+
+        return (true, resolution == SubscriberResolution.NewlyCreated ? subscriber.Token : null, recoverySent);
     }
 
     public async Task<bool> RemoveAsync(int productId, string token, CancellationToken cancellationToken = default)
@@ -128,21 +159,21 @@ public class FavoriteService(AppDbContext db, SubscriberService subscribers, IEm
         await db.SaveChangesAsync(cancellationToken);
     }
 
-    private async Task<(Subscriber? Subscriber, bool IsNewSubscriber)> ResolveSubscriberAsync(string? token, string? email, CancellationToken cancellationToken)
+    private async Task<(Subscriber? Subscriber, SubscriberResolution Resolution)> ResolveSubscriberAsync(string? token, string? email, CancellationToken cancellationToken)
     {
         if (!string.IsNullOrEmpty(token))
         {
             var existing = await db.Subscribers.FirstOrDefaultAsync(s => s.Token == token, cancellationToken);
             if (existing is not null)
-                return (existing, false);
+                return (existing, SubscriberResolution.ByToken);
         }
 
         if (string.IsNullOrWhiteSpace(email))
-            return (null, false);
+            return (null, SubscriberResolution.ByToken);
 
         var normalized = email.Trim().ToLowerInvariant();
         var alreadyExisted = await db.Subscribers.AnyAsync(s => s.Email == normalized, cancellationToken);
         var subscriber = await subscribers.GetOrCreateSubscriberAsync(email, cancellationToken);
-        return (subscriber, !alreadyExisted);
+        return (subscriber, alreadyExisted ? SubscriberResolution.ByExistingEmail : SubscriberResolution.NewlyCreated);
     }
 }
