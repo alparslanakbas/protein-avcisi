@@ -1,6 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
+import { friendlyErrorMessage } from '../core/friendly-error-message';
 import { SubscribeService } from '../core/subscribe.service';
 
 @Component({
@@ -30,8 +31,8 @@ export class NewsletterSignup {
         this.email.set('');
         this.submitting.set(false);
       },
-      error: () => {
-        this.statusMessage.set('Bir şeyler ters gitti, birazdan tekrar dener misin?');
+      error: (err) => {
+        this.statusMessage.set(friendlyErrorMessage(err, 'Bir şeyler ters gitti, birazdan tekrar dener misin?'));
         this.statusIsError.set(true);
         this.submitting.set(false);
       },

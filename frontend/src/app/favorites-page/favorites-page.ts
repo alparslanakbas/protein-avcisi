@@ -7,6 +7,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Deal } from '../core/deal.model';
 import { DealsService } from '../core/deals.service';
 import { FavoritesService } from '../core/favorites.service';
+import { friendlyErrorMessage } from '../core/friendly-error-message';
 import { PageMetaService } from '../core/page-meta.service';
 import { PriceHistoryService } from '../core/price-history.service';
 import { formatRelativeTime } from '../core/relative-time';
@@ -112,8 +113,8 @@ export class FavoritesPage implements OnInit {
         this.recoverStatusMessage.set(result.message);
         this.recoverSubmitting.set(false);
       },
-      error: () => {
-        this.recoverStatusMessage.set('Bir şeyler ters gitti, tekrar dener misin?');
+      error: (err) => {
+        this.recoverStatusMessage.set(friendlyErrorMessage(err));
         this.recoverSubmitting.set(false);
       },
     });

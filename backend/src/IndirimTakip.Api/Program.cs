@@ -35,6 +35,13 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 // e-postayı art arda tek dakikada 20+ kez göndertip Brevo'nun o adresi kara
 // listeye almasına yol açtı. IP başına 5 dakikada 5 istekle sınırlandı (SubscriberService'teki
 // e-posta bazlı cooldown'a ek bir katman).
+// 2026-08-18: bu limit "favori ekle" + "kurtarma linki" ikilisini de kapsayacak
+// şekilde genişleyince (aynı IP havuzunu paylaşıyorlar) gerçek bir kullanıcı
+// normal kullanımda (birkaç favori + kurtarma denemesi) buna takıldı. Asıl
+// saldırı koruması zaten AYRI bir katmanda (SubscriberService/FavoriteService'teki
+// e-posta bazlı 5 dakikalık cooldown — aynı adrese art arda mail gitmesini
+// bağımsız olarak engelliyor), bu yüzden IP limitini 10'a çıkarmak o korumayı
+// zayıflatmıyor, sadece normal kullanım için nefes payı veriyor.
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -42,7 +49,7 @@ builder.Services.AddRateLimiter(options =>
         partitionKey: RequestLoggingExtensions.GetClientIp(httpContext),
         factory: _ => new FixedWindowRateLimiterOptions
         {
-            PermitLimit = 5,
+            PermitLimit = 10,
             Window = TimeSpan.FromMinutes(5),
             QueueLimit = 0,
         }));

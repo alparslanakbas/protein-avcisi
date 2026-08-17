@@ -6,6 +6,7 @@ import { RouterLink } from '@angular/router';
 import { canonicalOrigin } from '../core/canonical-link';
 import { Deal } from '../core/deal.model';
 import { FavoritesService } from '../core/favorites.service';
+import { friendlyErrorMessage } from '../core/friendly-error-message';
 import { PricePoint } from '../core/price-history.model';
 import { PriceHistoryService } from '../core/price-history.service';
 import { ProductFeedbackService } from '../core/product-feedback.service';
@@ -228,8 +229,8 @@ export class ProductModal {
         this.watchEmail.set('');
         this.watchSubmitting.set(false);
       },
-      error: () => {
-        this.watchStatusMessage.set('Bir şeyler ters gitti, tekrar dener misin?');
+      error: (err) => {
+        this.watchStatusMessage.set(friendlyErrorMessage(err));
         this.watchSubmitting.set(false);
       },
     });
@@ -280,12 +281,12 @@ export class ProductModal {
         // ise bu cihazda hiç token yoktu, e-posta gönderildi.
         this.favoriteStatusMessage.set(
           result.recoverySent
-            ? 'Favorilere eklendi! Bu cihazda listeni görebilmek için e-postana gönderdiğimiz linke tıkla.'
+            ? 'Favorilere eklendi! Bu cihazda listeni görebilmek için e-postana gönderdiğimiz linke tıkla (farklı bir tarayıcı kullanıyorsan oradan da ayrıca tıklaman gerekir).'
             : null,
         );
       },
-      error: () => {
-        this.favoriteErrorMessage.set('Bir şeyler ters gitti, tekrar dener misin?');
+      error: (err) => {
+        this.favoriteErrorMessage.set(friendlyErrorMessage(err));
         this.favoriteSubmitting.set(false);
       },
     });

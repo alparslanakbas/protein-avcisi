@@ -146,7 +146,10 @@ public class FavoriteService(AppDbContext db, SubscriberService subscribers, IEm
                 <div style="text-align:center;margin:24px 0;">
                   <a href="{recoverUrl}" style="display:inline-block;background:#059669;color:#ffffff;text-decoration:none;font-weight:600;font-size:14px;padding:12px 32px;border-radius:9999px;">Favorilerimi Göster</a>
                 </div>
-                <p style="font-size:12px;color:#a8a29e;line-height:1.5;margin:20px 0 0;">
+                <p style="font-size:12px;color:#a8a29e;line-height:1.5;margin:0 0 8px;">
+                  Birden fazla tarayıcı kullanıyorsan (ör. hem Chrome hem Edge), bu linke her birinden ayrı ayrı tıklaman gerekir — her tarayıcı kendi listesini ayrı hatırlar.
+                </p>
+                <p style="font-size:12px;color:#a8a29e;line-height:1.5;margin:0;">
                   Bu isteği sen yapmadıysan bu e-postayı yok sayabilirsin, herhangi bir işlem yapılmayacak.
                 </p>
               </div>
