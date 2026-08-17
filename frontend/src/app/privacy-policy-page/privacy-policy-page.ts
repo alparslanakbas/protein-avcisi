@@ -2,10 +2,11 @@ import { Component, OnInit, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { PageMetaService } from '../core/page-meta.service';
+import { SiteHeader } from '../site-header/site-header';
 
 @Component({
   selector: 'app-privacy-policy-page',
-  imports: [RouterLink],
+  imports: [RouterLink, SiteHeader],
   templateUrl: './privacy-policy-page.html',
 })
 export class PrivacyPolicyPage implements OnInit {

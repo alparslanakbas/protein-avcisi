@@ -1,0 +1,75 @@
+<header class="shadow-[inset_0_-1px_0_var(--noc-divider)]">
+  <div class="mx-auto flex max-w-[1280px] items-center gap-4 px-[28px] py-[15px]">
+    <a routerLink="/" class="mr-auto flex items-center gap-2">
+      <div class="flex h-[30px] w-[30px] items-center justify-center rounded-[8px] border border-[var(--noc-accent)] text-xs font-medium text-[var(--noc-accent)]">PA</div>
+      <span class="text-[18px] font-medium">PROTEİN<span class="text-[var(--noc-accent)]">AVCISI</span></span>
+    </a>
+
+    <div class="flex items-center gap-4 text-sm">
+      <a routerLink="/" routerLinkActive="text-[var(--noc-accent)]" [routerLinkActiveOptions]="{ exact: true }" class="hover:text-[var(--noc-accent)]">İndirimler</a>
+
+      <div class="relative">
+        <button
+          type="button"
+          class="flex items-center gap-1"
+          [class]="categoriesOpen() ? 'text-[var(--noc-accent)]' : 'hover:text-[var(--noc-accent)]'"
+          (click)="toggleCategories()"
+        >
+          Kategoriler
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-3.5 w-3.5 transition-transform" [class.rotate-180]="categoriesOpen()">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6" />
+          </svg>
+        </button>
+
+        @if (categoriesOpen()) {
+          <!-- Dışarı tıklayınca kapatmak için tam ekran görünmez backdrop. -->
+          <div class="fixed inset-0 z-40" (click)="closeCategories()"></div>
+          <div class="absolute left-0 top-full z-50 mt-2 w-56 rounded-[8px] bg-[var(--noc-card)] p-1.5 shadow-[var(--noc-shadow-md)]">
+            @for (category of categories(); track category.slug) {
+              <a
+                [routerLink]="['/kategori', category.slug]"
+                (click)="closeCategories()"
+                class="block rounded-[6px] px-3 py-2 text-sm hover:bg-[color-mix(in_srgb,var(--noc-text)_7%,transparent)] hover:text-[var(--noc-accent)]"
+              >
+                {{ category.label }}
+              </a>
+            }
+            <div class="my-1 border-t border-[var(--noc-divider)]"></div>
+            <a
+              routerLink="/kategoriler"
+              (click)="closeCategories()"
+              class="block rounded-[6px] px-3 py-2 text-sm font-medium text-[var(--noc-accent)] hover:bg-[color-mix(in_srgb,var(--noc-text)_7%,transparent)]"
+            >
+              Tüm Kategoriler →
+            </a>
+          </div>
+        }
+      </div>
+
+      <a routerLink="/rehber" routerLinkActive="text-[var(--noc-accent)]" class="hover:text-[var(--noc-accent)]">Rehber</a>
+    </div>
+
+    <div class="flex items-center gap-1 rounded-[8px] border border-[var(--noc-divider)] p-1">
+      <button type="button" title="Açık tema" class="flex h-7 w-7 items-center justify-center rounded-[6px]" [class]="theme.preference() === 'light' ? 'text-[var(--noc-accent)]' : 'text-[var(--noc-neutral-500)] hover:text-[var(--noc-text)]'" (click)="setTheme('light')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><circle cx="12" cy="12" r="4" /><path stroke-linecap="round" d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" /></svg>
+      </button>
+      <button type="button" title="Koyu tema" class="flex h-7 w-7 items-center justify-center rounded-[6px]" [class]="theme.preference() === 'dark' ? 'text-[var(--noc-accent)]' : 'text-[var(--noc-neutral-500)] hover:text-[var(--noc-text)]'" (click)="setTheme('dark')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z" /></svg>
+      </button>
+      <button type="button" title="Sistem teması" class="flex h-7 w-7 items-center justify-center rounded-[6px]" [class]="theme.preference() === 'system' ? 'text-[var(--noc-accent)]' : 'text-[var(--noc-neutral-500)] hover:text-[var(--noc-text)]'" (click)="setTheme('system')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><rect x="3" y="4" width="18" height="12" rx="2" /><path stroke-linecap="round" d="M8 20h8M12 16v4" /></svg>
+      </button>
+    </div>
+
+    <a
+      routerLink="/favorilerim"
+      routerLinkActive="border-[var(--noc-accent)] text-[var(--noc-accent)]"
+      class="inline-flex items-center gap-1.5 rounded-[8px] border border-[var(--noc-divider)] px-3 py-[6px] text-sm hover:bg-[color-mix(in_srgb,var(--noc-text)_7%,transparent)]"
+    >
+      Takip listem
+      @if (favoritesCount() > 0) {
+        <span class="rounded-full px-1.5 text-xs font-medium" style="background: var(--noc-accent-800); color: var(--noc-accent-100)">{{ favoritesCount() }}</span>
+      }
+    </a>
+  </div>
+</header>

@@ -1,0 +1,41 @@
+<div class="noc-shell min-h-screen bg-[var(--noc-bg)] text-[var(--noc-text)]">
+  <app-site-header />
+
+  <main class="mx-auto max-w-[1280px] px-[28px] py-[22px]">
+    <nav class="mb-2 text-xs text-[var(--noc-neutral-500)]">
+      <a routerLink="/" class="hover:text-[var(--noc-accent)]">Ana Sayfa</a> / Kategoriler
+    </nav>
+    <h1 class="text-[38px] font-medium tracking-[-0.03em] sm:text-[42px]">Tüm Kategoriler</h1>
+    <p class="mt-2 max-w-2xl text-[15px] text-[var(--noc-neutral-300)]">
+      Takip ettiğimiz tüm spor takviyesi kategorileri, gerçek ürün sayılarıyla.
+    </p>
+
+    @if (loadError()) {
+      <div class="mx-auto mt-8 max-w-md rounded-[8px] bg-[var(--noc-surface)] px-6 py-8 text-center">
+        Kategoriler yüklenemedi. Lütfen daha sonra tekrar dene.
+      </div>
+    } @else if (loading()) {
+      <div class="py-24 text-center text-[var(--noc-neutral-500)]">Yükleniyor...</div>
+    } @else {
+      <div class="mt-[22px] grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        @for (category of categories(); track category.slug) {
+          <a
+            [routerLink]="['/kategori', category.slug]"
+            class="flex flex-col gap-[8.4px] rounded-[14px] bg-[var(--noc-card)] p-[16.8px] shadow-[var(--noc-shadow-sm)] transition-shadow hover:shadow-[var(--noc-shadow-md)]"
+          >
+            <div class="flex items-center justify-between">
+              <h2 class="text-[17px] font-medium">{{ category.label }}</h2>
+              <span class="rounded-[6px] border border-[var(--noc-divider)] px-2 py-0.5 text-xs text-[var(--noc-neutral-500)]">{{ category.productCount }} ürün</span>
+            </div>
+            <p class="line-clamp-3 text-[13px] leading-relaxed text-[var(--noc-neutral-300)]">{{ category.intro }}</p>
+            <span class="mt-auto pt-2 text-xs font-medium text-[var(--noc-accent)]">İncele →</span>
+          </a>
+        }
+      </div>
+    }
+
+    <div class="mt-10 text-center">
+      <a routerLink="/" class="text-sm font-medium text-[var(--noc-accent)]">Tüm markaların indirimlerini gör →</a>
+    </div>
+  </main>
+</div>

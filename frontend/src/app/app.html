@@ -1,22 +1,22 @@
 <router-outlet />
 
-<footer class="border-t border-stone-200 bg-stone-50 dark:border-stone-800 dark:bg-stone-900">
-  <div class="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+<footer class="noc-shell border-t border-[var(--noc-divider)] bg-[var(--noc-bg)] text-[var(--noc-text)]">
+  <div class="mx-auto max-w-[1280px] px-[28px] pb-[78px] pt-[22.4px] sm:pb-[22.4px]">
     <div class="flex flex-col items-center gap-4 text-center sm:flex-row sm:justify-between sm:text-left">
       <div>
-        <span class="text-base font-bold text-stone-900 dark:text-stone-100">
-          Protein<span class="text-brand-600 dark:text-brand-400">Avcısı</span>
+        <span class="text-[15px] font-medium">
+          PROTEİN<span class="text-[var(--noc-accent)]">AVCISI</span>
         </span>
-        <p class="mt-1 text-xs text-stone-500 dark:text-stone-400">
+        <p class="mt-1 text-xs text-[var(--noc-neutral-500)]">
           Spor takviyesi markalarındaki indirimleri gerçek fiyat geçmişine dayanarak takip ediyoruz.
         </p>
       </div>
-      <div class="text-xs text-stone-500 dark:text-stone-400">
+      <div class="text-xs text-[var(--noc-neutral-500)]">
         <p>
           İş birliği / reklam için:
           <a
             href="mailto:destek@proteinavcisi.com.tr"
-            class="font-medium text-brand-600 hover:underline dark:text-brand-400"
+            class="font-medium text-[var(--noc-accent)] hover:underline"
           >
             destek&#64;proteinavcisi.com.tr
           </a>
@@ -24,20 +24,20 @@
       </div>
     </div>
 
-    <div class="mt-6 border-t border-stone-100 pt-4 dark:border-stone-800">
+    <div class="mt-6 border-t border-[var(--noc-divider)] pt-4">
       <app-newsletter-signup />
     </div>
 
     @if (brands().length > 0) {
-      <div class="mt-6 border-t border-stone-100 pt-4 dark:border-stone-800">
-        <p class="mb-2 text-center text-[11px] font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-400">
+      <div class="mt-6 border-t border-[var(--noc-divider)] pt-4">
+        <p class="mb-2 text-center text-[11px] font-medium uppercase tracking-[0.1em] text-[var(--noc-neutral-500)]">
           Marka Kampanyaları
         </p>
         <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
           @for (brand of brands(); track brand) {
             <a
               [routerLink]="['/marka', brand.toLowerCase(), 'indirim-kodu']"
-              class="inline-block py-1 text-xs text-stone-500 hover:text-brand-600 hover:underline dark:text-stone-400 dark:hover:text-brand-400"
+              class="inline-block py-1 text-xs text-[var(--noc-neutral-500)] hover:text-[var(--noc-accent)] hover:underline"
             >
               {{ brand }} İndirim Kodu
             </a>
@@ -47,41 +47,48 @@
     }
 
     @if (categories().length > 0) {
-      <div class="mt-6 border-t border-stone-100 pt-4 dark:border-stone-800">
-        <p class="mb-2 text-center text-[11px] font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-400">
+      <div class="mt-6 border-t border-[var(--noc-divider)] pt-4">
+        <p class="mb-2 text-center text-[11px] font-medium uppercase tracking-[0.1em] text-[var(--noc-neutral-500)]">
           Kategoriler
         </p>
         <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
           @for (category of categories(); track category.slug) {
             <a
               [routerLink]="['/kategori', category.slug]"
-              class="inline-block py-1 text-xs text-stone-500 hover:text-brand-600 hover:underline dark:text-stone-400 dark:hover:text-brand-400"
+              class="inline-block py-1 text-xs text-[var(--noc-neutral-500)] hover:text-[var(--noc-accent)] hover:underline"
             >
               {{ category.label }}
             </a>
           }
+          <a
+            routerLink="/kategoriler"
+            class="inline-block py-1 text-xs font-medium text-[var(--noc-accent)] hover:underline"
+          >
+            Tüm Kategoriler →
+          </a>
         </div>
       </div>
     }
 
-    <div class="mt-6 border-t border-stone-100 pt-4 text-center text-xs text-stone-400 dark:border-stone-800 dark:text-stone-400">
+    <div class="mt-6 border-t border-[var(--noc-divider)] pt-4 text-center text-xs text-[var(--noc-neutral-500)]">
       <p>
         © {{ currentYear }} ProteinAvcısı. Fiyatlar ilgili markaların kendi web sitelerinden otomatik olarak
         toplanmaktadır; satış işlemleri ilgili markanın sitesi üzerinden gerçekleşir.
       </p>
       <p class="mt-2 leading-loose">
-        <a routerLink="/favorilerim" class="inline-block py-1 hover:text-brand-600 hover:underline dark:hover:text-brand-400">Favorilerim</a>
+        <a routerLink="/favorilerim" class="inline-block py-1 hover:text-[var(--noc-accent)] hover:underline">Favorilerim</a>
         <span class="mx-1.5">·</span>
-        <a routerLink="/rehber" class="inline-block py-1 hover:text-brand-600 hover:underline dark:hover:text-brand-400">Rehber</a>
+        <a routerLink="/rehber" class="inline-block py-1 hover:text-[var(--noc-accent)] hover:underline">Rehber</a>
         <span class="mx-1.5">·</span>
-        <a routerLink="/nasil-calisiyoruz" class="inline-block py-1 hover:text-brand-600 hover:underline dark:hover:text-brand-400">Nasıl Çalışıyoruz?</a>
+        <a routerLink="/nasil-calisiyoruz" class="inline-block py-1 hover:text-[var(--noc-accent)] hover:underline">Nasıl Çalışıyoruz?</a>
         <span class="mx-1.5">·</span>
-        <a routerLink="/gizlilik-politikasi" class="inline-block py-1 hover:text-brand-600 hover:underline dark:hover:text-brand-400">Gizlilik Politikası</a>
+        <a routerLink="/gizlilik-politikasi" class="inline-block py-1 hover:text-[var(--noc-accent)] hover:underline">Gizlilik Politikası</a>
         <span class="mx-1.5">·</span>
-        <a routerLink="/cerez-politikasi" class="inline-block py-1 hover:text-brand-600 hover:underline dark:hover:text-brand-400">Çerez Politikası</a>
+        <a routerLink="/cerez-politikasi" class="inline-block py-1 hover:text-[var(--noc-accent)] hover:underline">Çerez Politikası</a>
       </p>
     </div>
   </div>
 </footer>
 
 <app-cookie-consent-banner />
+<app-mobile-tab-bar />

@@ -1,0 +1,6 @@
+@if (hasEnoughData()) {
+  <svg viewBox="0 0 100 28" preserveAspectRatio="none" class="h-7 w-full">
+    <path [attr.d]="areaPath()" fill="var(--noc-accent)" opacity="0.15" />
+    <path [attr.d]="linePath()" fill="none" stroke="var(--noc-accent)" stroke-width="1.5" vector-effect="non-scaling-stroke" />
+  </svg>
+}

@@ -16,7 +16,7 @@ namespace IndirimTakip.Infrastructure.Deals;
 // anonim tip + PriceHistory ENTITY'si (Latest) üzerinden yapılıyor — EF
 // Core'un native desteklediği bir kalıp — DealRow'a çevirme işi listeye
 // dönüştükten sonra yapılıyor.
-internal sealed record DealRow(Product Product, string BrandName, PriceHistory Latest, decimal ReferencePrice);
+internal sealed record DealRow(Product Product, string BrandName, PriceHistory Latest, decimal ReferencePrice, decimal ThirtyDayLowPrice);
 
 public class DealsQueryService(AppDbContext db)
 {
@@ -33,7 +33,8 @@ public class DealsQueryService(AppDbContext db)
             latest.StoreOldPrice is decimal storeOld && storeOld > 0
                 ? Math.Round((storeOld - latest.Price) / storeOld * 100, 1)
                 : null,
-            latest.ScrapedAt);
+            latest.ScrapedAt,
+            latest.Price <= row.ThirtyDayLowPrice);
     }
 
     public async Task<PagedResult<DealDto>> GetDealsAsync(
@@ -64,6 +65,9 @@ public class DealsQueryService(AppDbContext db)
                 ReferencePrice = p.PriceHistories
                     .Where(ph => ph.ScrapedAt >= referenceSince)
                     .Max(ph => (decimal?)ph.Price),
+                ThirtyDayLowPrice = p.PriceHistories
+                    .Where(ph => ph.ScrapedAt >= referenceSince)
+                    .Min(ph => (decimal?)ph.Price),
             };
 
         if (brands is { Length: > 0 })
@@ -128,7 +132,7 @@ public class DealsQueryService(AppDbContext db)
             .ToListAsync(cancellationToken);
 
         var items = pageRows
-            .Select(r => new DealRow(r.Product, r.BrandName, r.Latest!, r.ReferencePrice!.Value))
+            .Select(r => new DealRow(r.Product, r.BrandName, r.Latest!, r.ReferencePrice!.Value, r.ThirtyDayLowPrice!.Value))
             .Select(MapToDealDto)
             .ToList();
 
@@ -155,12 +159,15 @@ public class DealsQueryService(AppDbContext db)
                 ReferencePrice = p.PriceHistories
                     .Where(ph => ph.ScrapedAt >= referenceSince)
                     .Max(ph => (decimal?)ph.Price),
+                ThirtyDayLowPrice = p.PriceHistories
+                    .Where(ph => ph.ScrapedAt >= referenceSince)
+                    .Min(ph => (decimal?)ph.Price),
             }).FirstOrDefaultAsync(cancellationToken);
 
-        if (row?.Latest is null || row.ReferencePrice is null)
+        if (row?.Latest is null || row.ReferencePrice is null || row.ThirtyDayLowPrice is null)
             return null;
 
-        return MapToDealDto(new DealRow(row.Product, row.BrandName, row.Latest, row.ReferencePrice.Value));
+        return MapToDealDto(new DealRow(row.Product, row.BrandName, row.Latest, row.ReferencePrice.Value, row.ThirtyDayLowPrice.Value));
     }
 
     // Favoriler listesi (/favorilerim) için — belirli bir ürün ID kümesini,
@@ -183,11 +190,14 @@ public class DealsQueryService(AppDbContext db)
                 ReferencePrice = p.PriceHistories
                     .Where(ph => ph.ScrapedAt >= referenceSince)
                     .Max(ph => (decimal?)ph.Price),
+                ThirtyDayLowPrice = p.PriceHistories
+                    .Where(ph => ph.ScrapedAt >= referenceSince)
+                    .Min(ph => (decimal?)ph.Price),
             }).ToListAsync(cancellationToken);
 
         return rows
-            .Where(r => r.Latest != null && r.ReferencePrice != null)
-            .Select(r => new DealRow(r.Product, r.BrandName, r.Latest!, r.ReferencePrice!.Value))
+            .Where(r => r.Latest != null && r.ReferencePrice != null && r.ThirtyDayLowPrice != null)
+            .Select(r => new DealRow(r.Product, r.BrandName, r.Latest!, r.ReferencePrice!.Value, r.ThirtyDayLowPrice!.Value))
             .Select(MapToDealDto)
             .ToList();
     }
@@ -255,6 +265,39 @@ public class DealsQueryService(AppDbContext db)
                 p.Id,
                 p.PriceHistories.OrderByDescending(ph => ph.ScrapedAt).Select(ph => ph.ScrapedAt).FirstOrDefault()))
             .ToListAsync(cancellationToken);
+    }
+
+    // Ana sayfadaki "canlı tarama şeridi" için — her istekte canlı hesaplanan
+    // özet sayılar (GetBrandComparisonAsync'teki aynı "sabit içerik değil,
+    // DB'den canlı hesapla" desende). DiscountCount/ThirtyDayLowCount, GetDealsAsync'in
+    // onlyDiscounted / IsAtThirtyDayLow ile AYNI referans pencere mantığını kullanır,
+    // sadece burada tek bir toplu geçişte sayılıyor.
+    public async Task<HomepageStatsDto> GetHomepageStatsAsync(int referenceWindowDays = 30, CancellationToken cancellationToken = default)
+    {
+        var referenceSince = DateTimeOffset.UtcNow.AddDays(-referenceWindowDays);
+
+        var totalProducts = await (
+            from p in db.Products
+            join b in db.Brands on p.BrandId equals b.Id
+            where b.IsActive
+            select p.Id).CountAsync(cancellationToken);
+
+        var rows = await (
+            from p in db.Products
+            join b in db.Brands on p.BrandId equals b.Id
+            where b.IsActive
+            select new
+            {
+                Latest = p.PriceHistories.OrderByDescending(ph => ph.ScrapedAt).Select(ph => (decimal?)ph.Price).FirstOrDefault(),
+                ReferencePrice = p.PriceHistories.Where(ph => ph.ScrapedAt >= referenceSince).Max(ph => (decimal?)ph.Price),
+                ThirtyDayLowPrice = p.PriceHistories.Where(ph => ph.ScrapedAt >= referenceSince).Min(ph => (decimal?)ph.Price),
+            }).ToListAsync(cancellationToken);
+
+        var discountCount = rows.Count(r => r.Latest is not null && r.ReferencePrice is not null && r.Latest < r.ReferencePrice);
+        var thirtyDayLowCount = rows.Count(r => r.Latest is not null && r.ThirtyDayLowPrice is not null && r.Latest <= r.ThirtyDayLowPrice);
+        var lastScanAt = await db.PriceHistories.MaxAsync(ph => (DateTimeOffset?)ph.ScrapedAt, cancellationToken);
+
+        return new HomepageStatsDto(totalProducts, discountCount, thirtyDayLowCount, lastScanAt);
     }
 
     public async Task<FilterOptionsDto> GetFilterOptionsAsync(CancellationToken cancellationToken = default)

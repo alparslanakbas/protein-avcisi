@@ -1,217 +1,232 @@
-<div class="min-h-screen bg-stone-100 dark:bg-stone-950">
-  <header class="border-b border-stone-200 bg-stone-50 dark:border-stone-800 dark:bg-stone-900">
-    <div class="mx-auto flex max-w-6xl items-center gap-3 px-4 py-4 sm:px-6">
-      <a routerLink="/" class="flex items-center gap-2">
-        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-700 text-sm font-extrabold text-white">PA</div>
-        <span class="text-lg font-bold text-stone-900 dark:text-stone-100">
-          Protein<span class="text-brand-600 dark:text-brand-400">Avcısı</span>
-        </span>
-      </a>
-    </div>
-  </header>
+<div class="noc-shell min-h-screen bg-[var(--noc-bg)] text-[var(--noc-text)]">
+  <app-site-header />
 
-  <main class="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+  <main class="mx-auto max-w-[1280px] px-[28px] py-[22px]">
     @if (loadError()) {
-      <div class="mx-auto max-w-md rounded-xl border border-red-200 bg-red-50 px-6 py-8 text-center text-red-600 dark:border-red-900 dark:bg-red-950/40 dark:text-red-400">
+      <div class="mx-auto max-w-md rounded-[8px] bg-[var(--noc-surface)] px-6 py-8 text-center">
         Marka bilgileri yüklenemedi. Lütfen daha sonra tekrar dene.
-        <a routerLink="/" class="mt-2 block w-full text-sm font-semibold text-brand-600 dark:text-brand-400">Ana sayfaya dön</a>
+        <a routerLink="/" class="mt-2 block w-full text-sm font-medium text-[var(--noc-accent)]">Ana sayfaya dön</a>
       </div>
     } @else {
-      <div class="mb-8 text-center">
-        <h1 class="text-3xl font-extrabold tracking-tight text-stone-900 dark:text-stone-100 sm:text-4xl">
-          {{ brandName() }} İndirim Kodu ve Kampanyaları
-        </h1>
-        <p class="mx-auto mt-3 max-w-2xl text-stone-500 dark:text-stone-400">
-          {{ brandName() }} markasının fiyatlarını düzenli olarak takip ediyoruz. Aşağıda güncel kupon kodları
-          (varsa) ve gerçek fiyat geçmişine dayanan doğrulanmış indirimler yer alıyor — markanın beyanına değil,
-          kendi topladığımız veriye dayanıyor.
-        </p>
+      <div class="flex flex-wrap items-start gap-6">
+        <div class="flex h-[76px] w-[76px] shrink-0 items-center justify-center rounded-[14px] border border-[var(--noc-accent)] text-2xl font-medium text-[var(--noc-accent)]">
+          {{ brandName().charAt(0) }}
+        </div>
+        <div class="min-w-0 flex-1">
+          <h1 class="text-[38px] font-medium tracking-[-0.03em] sm:text-[42px]">{{ brandName() }} İndirim Kodu ve Kampanyaları</h1>
+          <p class="mt-2 max-w-2xl text-[15px] text-[var(--noc-neutral-300)]">
+            {{ totalCount() }} ürün, günde 4 kez taranıyor. {{ brandName() }} markasının fiyatlarını düzenli olarak
+            takip ediyoruz — markanın beyanına değil, kendi topladığımız gerçek fiyat geçmişine dayanan indirimler.
+          </p>
+        </div>
       </div>
 
       @if (coupons().length > 0) {
-        <div class="mx-auto mb-10 max-w-2xl">
-          <h2 class="mb-3 text-center text-sm font-bold text-stone-800 dark:text-stone-200">Güncel Kupon Kodları</h2>
-          <div class="flex flex-wrap items-center justify-center gap-2">
+        <div class="mt-6">
+          <h2 class="mb-2 text-[11px] font-medium uppercase tracking-[0.1em] text-[var(--noc-neutral-500)]">Güncel Kupon Kodları</h2>
+          <div class="flex flex-wrap items-center gap-2">
             @for (coupon of coupons(); track coupon.id) {
-              <div class="flex items-center gap-2 rounded-full border border-accent-200 bg-accent-50 py-1.5 pl-3 pr-2 text-xs dark:border-accent-900/50 dark:bg-accent-950/20">
-                <code class="rounded-full bg-white px-2 py-0.5 font-mono font-bold text-accent-700 dark:bg-stone-900 dark:text-accent-400">{{ coupon.code }}</code>
-                <span class="text-stone-500 dark:text-stone-400">{{ coupon.description }}</span>
+              <div class="flex items-center gap-2 rounded-[8px] border border-dashed border-[var(--noc-accent)] px-3 py-1.5 text-xs">
+                <code class="rounded-[6px] px-2 py-0.5 font-mono font-medium text-[var(--noc-accent)]" style="background: var(--noc-accent-800)">{{ coupon.code }}</code>
+                <span class="text-[var(--noc-neutral-500)]">{{ coupon.description }}</span>
               </div>
             }
           </div>
         </div>
       }
 
-      <div class="mb-8 flex flex-wrap justify-center gap-2">
-        <button
-          type="button"
-          class="rounded-full px-5 py-2 text-sm font-semibold transition-colors"
-          [class]="viewMode() === 'deals'
-            ? 'bg-brand-700 text-white shadow-sm shadow-brand-600/30'
-            : 'border border-stone-200 bg-white text-stone-600 hover:border-brand-300 hover:text-brand-700 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300 dark:hover:border-brand-500 dark:hover:text-brand-400'"
-          (click)="setViewMode('deals')"
-        >
-          İndirimdekiler
-        </button>
-        <button
-          type="button"
-          class="rounded-full px-5 py-2 text-sm font-semibold transition-colors"
-          [class]="viewMode() === 'store'
-            ? 'bg-brand-700 text-white shadow-sm shadow-brand-600/30'
-            : 'border border-stone-200 bg-white text-stone-600 hover:border-brand-300 hover:text-brand-700 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300 dark:hover:border-brand-500 dark:hover:text-brand-400'"
-          (click)="setViewMode('store')"
-        >
-          Mağaza Kampanyaları
-        </button>
-        <button
-          type="button"
-          class="rounded-full px-5 py-2 text-sm font-semibold transition-colors"
-          [class]="viewMode() === 'all'
-            ? 'bg-brand-700 text-white shadow-sm shadow-brand-600/30'
-            : 'border border-stone-200 bg-white text-stone-600 hover:border-brand-300 hover:text-brand-700 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300 dark:hover:border-brand-500 dark:hover:text-brand-400'"
-          (click)="setViewMode('all')"
-        >
-          Tüm Ürünler
-        </button>
+      <div class="mt-[22px] flex flex-wrap items-center gap-3">
+        <div class="inline-flex overflow-hidden rounded-[8px] border border-[var(--noc-divider)]">
+          <button type="button" class="border-l border-[var(--noc-divider)] px-3 py-[7px] text-[13px] first:border-l-0" [class]="viewMode() === 'deals' ? 'text-[var(--noc-accent)] shadow-[inset_0_0_0_1px_var(--noc-accent)]' : 'hover:bg-[color-mix(in_srgb,var(--noc-text)_7%,transparent)]'" (click)="setViewMode('deals')">Gerçek indirim</button>
+          <button type="button" class="border-l border-[var(--noc-divider)] px-3 py-[7px] text-[13px]" [class]="viewMode() === 'store' ? 'text-[var(--noc-accent)] shadow-[inset_0_0_0_1px_var(--noc-accent)]' : 'hover:bg-[color-mix(in_srgb,var(--noc-text)_7%,transparent)]'" (click)="setViewMode('store')">Mağaza kampanyası</button>
+          <button type="button" class="border-l border-[var(--noc-divider)] px-3 py-[7px] text-[13px]" [class]="viewMode() === 'all' ? 'text-[var(--noc-accent)] shadow-[inset_0_0_0_1px_var(--noc-accent)]' : 'hover:bg-[color-mix(in_srgb,var(--noc-text)_7%,transparent)]'" (click)="setViewMode('all')">Tümü</button>
+        </div>
+
+        <label class="relative min-w-[220px] flex-1 sm:max-w-[320px]">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--noc-neutral-500)]">
+            <circle cx="11" cy="11" r="7" />
+            <path stroke-linecap="round" d="m20 20-3-3" />
+          </svg>
+          <input
+            type="search"
+            placeholder="Bu markada ara"
+            [ngModel]="searchQuery()"
+            (ngModelChange)="onSearchChange($event)"
+            class="w-full rounded-[8px] border border-[var(--noc-divider)] bg-[var(--noc-surface)] py-[6px] pl-9 pr-3 text-sm text-[var(--noc-text)] placeholder:text-[var(--noc-neutral-500)] focus:border-[var(--noc-accent)] focus:outline-none"
+          />
+        </label>
+
+        <span class="ml-auto flex items-center gap-2 text-xs text-[var(--noc-neutral-500)]">
+          <label for="sortBy">Sırala:</label>
+          <select id="sortBy" [ngModel]="sortBy()" (ngModelChange)="onSortChange($event)" class="rounded-[6px] border border-[var(--noc-divider)] bg-[var(--noc-surface)] px-2 py-1 text-xs text-[var(--noc-text)]">
+            <option value="">Varsayılan (İndirim Oranı)</option>
+            <option value="price_asc">Fiyat: Düşükten Yükseğe</option>
+            <option value="price_desc">Fiyat: Yüksekten Düşüğe</option>
+            <option value="name_asc">İsim: A-Z</option>
+            <option value="name_desc">İsim: Z-A</option>
+          </select>
+        </span>
       </div>
 
-      @if (loading()) {
-        <div class="py-24 text-center text-stone-400 dark:text-stone-400">Yükleniyor...</div>
-      } @else if (itemsError()) {
-        <div class="mx-auto max-w-md rounded-xl border border-red-200 bg-red-50 px-6 py-8 text-center text-red-600 dark:border-red-900 dark:bg-red-950/40 dark:text-red-400">
-          Ürünler yüklenemedi. Lütfen daha sonra tekrar dene.
-        </div>
-      } @else if (items().length === 0) {
-        <div class="mx-auto max-w-md rounded-xl border border-stone-200 bg-stone-50 px-6 py-10 text-center text-stone-500 dark:border-stone-800 dark:bg-stone-900 dark:text-stone-400">
-          Bu görünümde {{ brandName() }} için ürün yok.
-        </div>
-      } @else {
-        <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-          @for (deal of items(); track deal.productId) {
+      @if (availableCategories().length > 0) {
+        <div class="mb-[22px] mt-[13px] flex flex-wrap items-center gap-1.5">
+          @for (category of availableCategories(); track category) {
             <button
               type="button"
-              (click)="goToProduct(deal)"
-              class="group flex flex-col overflow-hidden rounded-2xl border border-stone-200 bg-stone-50 text-left transition-all hover:-translate-y-1 hover:border-brand-300 hover:shadow-xl hover:shadow-brand-100/60 dark:border-stone-800 dark:bg-stone-900 dark:hover:border-brand-600 dark:hover:shadow-brand-950/40"
+              class="rounded-[6px] border px-2.5 py-1 text-xs"
+              [class]="selectedCategories().has(category) ? 'border-[var(--noc-accent)] text-[var(--noc-accent)]' : 'border-[var(--noc-divider)] text-[var(--noc-neutral-500)] hover:text-[var(--noc-text)]'"
+              (click)="toggleCategory(category)"
             >
-              <div class="relative aspect-square bg-stone-50 p-3 dark:bg-stone-800/60">
+              {{ categoryLabel(category) }}
+            </button>
+          }
+          <input
+            type="number"
+            placeholder="Min ₺"
+            [ngModel]="priceMin()"
+            (ngModelChange)="onPriceMinChange($event)"
+            class="w-20 rounded-[6px] border border-[var(--noc-divider)] bg-[var(--noc-surface)] px-2 py-1 text-xs placeholder:text-[var(--noc-neutral-500)]"
+          />
+          <span class="text-xs text-[var(--noc-neutral-500)]">—</span>
+          <input
+            type="number"
+            placeholder="Max ₺"
+            [ngModel]="priceMax()"
+            (ngModelChange)="onPriceMaxChange($event)"
+            class="w-20 rounded-[6px] border border-[var(--noc-divider)] bg-[var(--noc-surface)] px-2 py-1 text-xs placeholder:text-[var(--noc-neutral-500)]"
+          />
+          @if (hasActiveFilters()) {
+            <button type="button" class="text-xs font-medium text-[var(--noc-accent)]" (click)="clearFilters()">Filtreleri Temizle</button>
+          }
+        </div>
+      }
+
+      @if (loading()) {
+        <div class="py-24 text-center text-[var(--noc-neutral-500)]">Yükleniyor...</div>
+      } @else if (itemsError()) {
+        <div class="mx-auto max-w-md rounded-[8px] bg-[var(--noc-surface)] px-6 py-8 text-center">Ürünler yüklenemedi. Lütfen daha sonra tekrar dene.</div>
+      } @else if (items().length === 0) {
+        <div class="mx-auto max-w-md rounded-[8px] bg-[var(--noc-surface)] px-6 py-10 text-center text-[var(--noc-neutral-500)]">
+          @if (hasActiveFilters()) {
+            Aramanla/filtrelerinle eşleşen ürün bulunamadı.
+            <button type="button" class="mt-2 block w-full text-sm font-medium text-[var(--noc-accent)]" (click)="clearFilters()">Filtreleri temizle</button>
+          } @else {
+            Bu görünümde {{ brandName() }} için ürün yok.
+          }
+        </div>
+      } @else {
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          @for (deal of items(); track deal.productId) {
+            <div
+              role="button"
+              tabindex="0"
+              (click)="openDeal(deal)"
+              (keydown.enter)="openDeal(deal)"
+              class="flex cursor-pointer flex-col gap-[8.4px] rounded-[14px] bg-[var(--noc-card)] p-[11.2px] shadow-[var(--noc-shadow-sm)] transition-shadow hover:shadow-[var(--noc-shadow-md)]"
+            >
+              <div class="relative h-[152px] rounded-[8px] bg-[color-mix(in_srgb,var(--noc-text)_5%,transparent)]">
                 @if (deal.imageUrl) {
-                  <img [src]="deal.imageUrl" [alt]="deal.productName" loading="lazy" class="h-full w-full object-contain" />
+                  <img [src]="deal.imageUrl" [alt]="deal.productName" loading="lazy" class="h-full w-full object-contain p-2" />
                 }
                 @if (deal.discountPercent > 0) {
-                  <span class="absolute left-2 top-2 rounded-full bg-accent-500 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
-                    {{ discountBadge(deal) }}
-                  </span>
+                  <span class="absolute left-2 top-2 rounded-[6px] px-2 py-0.5 text-xs font-medium" style="background: var(--noc-accent-800); color: var(--noc-accent-100)">{{ discountBadge(deal) }}</span>
+                } @else if (deal.storeDiscountPercent && deal.storeDiscountPercent > 0) {
+                  <span title="Markanın kendi beyan ettiği indirim, bizim tarafımızdan doğrulanmamıştır" class="absolute left-2 top-2 rounded-[6px] px-2 py-0.5 text-xs font-medium" style="background: var(--noc-neutral-800); color: var(--noc-neutral-100)">{{ storeDiscountBadge(deal) }}</span>
                 }
-                @if (deal.storeDiscountPercent && deal.storeDiscountPercent > 0) {
-                  <span
-                    title="Markanın kendi beyan ettiği indirim, bizim tarafımızdan doğrulanmamıştır"
-                    class="absolute right-2 top-2 rounded-full bg-stone-700/90 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm dark:bg-stone-200/90 dark:text-stone-800"
-                  >
-                    {{ storeDiscountBadge(deal) }}
-                  </span>
+                @if (deal.isAtThirtyDayLow) {
+                  <span class="absolute left-2 top-[34px] rounded-[6px] border border-[var(--noc-accent)] bg-[var(--noc-card)] px-2 py-0.5 text-[10px] text-[var(--noc-accent)]">30 günün en düşüğü</span>
                 }
               </div>
-              <div class="flex flex-1 flex-col gap-0.5 p-2.5">
-                <h3 [title]="deal.productName" class="line-clamp-2 min-h-[2.5rem] text-xs font-semibold leading-tight text-stone-800 dark:text-stone-200">
-                  {{ deal.productName }}
-                </h3>
-                <span class="mt-auto text-sm font-extrabold text-stone-900 dark:text-stone-100">{{ deal.currentPrice | number:'1.2-2' }} TL</span>
+
+              <div class="flex items-center justify-between text-[10px] uppercase tracking-[0.08em] text-[var(--noc-accent)]">
+                <span>{{ deal.brandName }}</span>
+                <span class="text-[var(--noc-neutral-500)] normal-case tracking-normal">{{ lastCheckedText(deal) }}</span>
               </div>
-            </button>
+
+              <h3 [title]="deal.productName" class="line-clamp-2 min-h-[38px] text-[15px] font-medium leading-[1.28]">{{ deal.productName }}</h3>
+
+              @if (deal.size || deal.flavor) {
+                <span class="text-xs text-[var(--noc-neutral-500)]">{{ deal.size }}{{ deal.size && deal.flavor ? ' · ' : '' }}{{ deal.flavor }}</span>
+              }
+
+              <app-product-card-sparkline [points]="sparklineFor(deal.productId)" />
+
+              <div class="mt-auto flex items-end justify-between gap-2 pt-1">
+                <div class="flex items-baseline gap-1.5">
+                  <span class="text-[25px] font-medium tracking-[-0.025em]">{{ deal.currentPrice | number: '1.2-2' }} ₺</span>
+                  @if (deal.discountPercent > 0) {
+                    <span class="text-xs text-[var(--noc-neutral-500)] line-through">{{ deal.referencePrice | number: '1.2-2' }} ₺</span>
+                  } @else if (deal.storeDiscountPercent && deal.storeDiscountPercent > 0) {
+                    <span class="text-xs text-[var(--noc-neutral-500)] line-through">{{ deal.storeOldPrice | number: '1.2-2' }} ₺</span>
+                  }
+                </div>
+                @if (pricePerServing(deal); as perServing) {
+                  <div class="text-right">
+                    <div class="text-[15px] font-medium text-[var(--noc-accent-300)]">{{ perServing | number: '1.2-2' }} ₺</div>
+                    <div class="text-[10px] text-[var(--noc-neutral-500)]">/ servis</div>
+                  </div>
+                }
+              </div>
+
+              <a
+                [href]="goToStoreUrl(deal.productId)"
+                target="_blank"
+                rel="nofollow sponsored noopener"
+                (click)="$event.stopPropagation()"
+                class="mt-1 inline-flex items-center justify-center rounded-[8px] border border-[var(--noc-accent)] py-1.5 text-xs font-medium text-[var(--noc-accent)] hover:bg-[color-mix(in_srgb,var(--noc-accent)_12%,transparent)]"
+              >
+                Mağazaya git
+              </a>
+            </div>
           }
         </div>
 
         @if (totalPages() > 1) {
           <div class="mt-10 flex items-center justify-center gap-2">
-            <button
-              type="button"
-              title="İlk Sayfa"
-              class="flex h-9 w-9 items-center justify-center rounded-full border border-stone-200 text-stone-500 transition-colors enabled:hover:border-brand-300 enabled:hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-stone-700 dark:text-stone-400 dark:enabled:hover:border-brand-500 dark:enabled:hover:text-brand-400"
-              [disabled]="currentPage() === 1"
-              (click)="goToPage(1)"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M18 18l-6-6 6-6M11 18l-6-6 6-6" />
-              </svg>
+            <button type="button" title="İlk Sayfa" class="flex h-9 w-9 items-center justify-center rounded-[8px] border border-[var(--noc-divider)] text-[var(--noc-neutral-500)] enabled:hover:text-[var(--noc-accent)] disabled:cursor-not-allowed disabled:opacity-45" [disabled]="currentPage() === 1" (click)="goToPage(1)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18l-6-6 6-6M11 18l-6-6 6-6" /></svg>
             </button>
-            <button
-              type="button"
-              title="Önceki Sayfa"
-              class="flex h-9 w-9 items-center justify-center rounded-full border border-stone-200 text-stone-500 transition-colors enabled:hover:border-brand-300 enabled:hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-stone-700 dark:text-stone-400 dark:enabled:hover:border-brand-500 dark:enabled:hover:text-brand-400"
-              [disabled]="currentPage() === 1"
-              (click)="goToPage(currentPage() - 1)"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15 18l-6-6 6-6" />
-              </svg>
+            <button type="button" title="Önceki Sayfa" class="flex h-9 w-9 items-center justify-center rounded-[8px] border border-[var(--noc-divider)] text-[var(--noc-neutral-500)] enabled:hover:text-[var(--noc-accent)] disabled:cursor-not-allowed disabled:opacity-45" [disabled]="currentPage() === 1" (click)="goToPage(currentPage() - 1)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" d="M15 18l-6-6 6-6" /></svg>
             </button>
-
-            <span class="px-1 text-sm font-medium text-stone-600 dark:text-stone-300">
-              Sayfa {{ currentPage() }} / {{ totalPages() }}
-              <span class="text-stone-400 dark:text-stone-400">({{ totalCount() }} ürün)</span>
-            </span>
-
-            <button
-              type="button"
-              title="Sonraki Sayfa"
-              class="flex h-9 w-9 items-center justify-center rounded-full border border-stone-200 text-stone-500 transition-colors enabled:hover:border-brand-300 enabled:hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-stone-700 dark:text-stone-400 dark:enabled:hover:border-brand-500 dark:enabled:hover:text-brand-400"
-              [disabled]="currentPage() === totalPages()"
-              (click)="goToPage(currentPage() + 1)"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9 18l6-6-6-6" />
-              </svg>
+            <span class="px-1 text-sm text-[var(--noc-neutral-500)]">Sayfa {{ currentPage() }} / {{ totalPages() }} <span>({{ totalCount() }} ürün)</span></span>
+            <button type="button" title="Sonraki Sayfa" class="flex h-9 w-9 items-center justify-center rounded-[8px] border border-[var(--noc-divider)] text-[var(--noc-neutral-500)] enabled:hover:text-[var(--noc-accent)] disabled:cursor-not-allowed disabled:opacity-45" [disabled]="currentPage() === totalPages()" (click)="goToPage(currentPage() + 1)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" d="M9 18l6-6-6-6" /></svg>
             </button>
-            <button
-              type="button"
-              title="Son Sayfa"
-              class="flex h-9 w-9 items-center justify-center rounded-full border border-stone-200 text-stone-500 transition-colors enabled:hover:border-brand-300 enabled:hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-stone-700 dark:text-stone-400 dark:enabled:hover:border-brand-500 dark:enabled:hover:text-brand-400"
-              [disabled]="currentPage() === totalPages()"
-              (click)="goToPage(totalPages())"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18l6-6-6-6M13 18l6-6-6-6" />
-              </svg>
+            <button type="button" title="Son Sayfa" class="flex h-9 w-9 items-center justify-center rounded-[8px] border border-[var(--noc-divider)] text-[var(--noc-neutral-500)] enabled:hover:text-[var(--noc-accent)] disabled:cursor-not-allowed disabled:opacity-45" [disabled]="currentPage() === totalPages()" (click)="goToPage(totalPages())">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18l6-6-6-6M13 18l6-6-6-6" /></svg>
             </button>
           </div>
         }
       }
 
       @if (otherBrands().length > 0) {
-        <div class="mt-10 text-center">
-          <h2 class="mb-3 text-sm font-bold text-stone-800 dark:text-stone-200">Diğer Markalar</h2>
+        <div class="mt-[45px] text-center">
+          <h2 class="mb-3 text-sm font-medium">Diğer Markalar</h2>
           <div class="flex flex-wrap items-center justify-center gap-2">
             @for (brand of otherBrands(); track brand) {
-              <a
-                [routerLink]="['/marka', brand.toLowerCase(), 'indirim-kodu']"
-                class="rounded-full border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs font-semibold text-stone-600 transition-colors hover:border-brand-300 hover:text-brand-600 dark:border-stone-800 dark:bg-stone-900 dark:text-stone-400 dark:hover:text-brand-400"
-              >
-                {{ brand }} İndirim Kodu
-              </a>
+              <a [routerLink]="['/marka', brand.toLowerCase(), 'indirim-kodu']" class="rounded-[6px] border border-[var(--noc-divider)] px-2.5 py-1 text-xs text-[var(--noc-neutral-500)] hover:text-[var(--noc-accent)]">{{ brand }} İndirim Kodu</a>
             }
           </div>
         </div>
 
         <div class="mt-6 text-center">
-          <h2 class="mb-3 text-sm font-bold text-stone-800 dark:text-stone-200">Fiyat Karşılaştırması</h2>
+          <h2 class="mb-3 text-sm font-medium">Fiyat Karşılaştırması</h2>
           <div class="flex flex-wrap items-center justify-center gap-2">
             @for (brand of otherBrands(); track brand) {
-              <a
-                [routerLink]="['/karsilastir', comparisonPairSlug(brand)]"
-                class="rounded-full border border-brand-200 bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700 transition-colors hover:border-brand-400 dark:border-brand-900/50 dark:bg-brand-950/20 dark:text-brand-400"
-              >
-                {{ brandName() }} vs {{ brand }}
-              </a>
+              <a [routerLink]="['/karsilastir', comparisonPairSlug(brand)]" class="rounded-[6px] border border-[var(--noc-accent)] px-2.5 py-1 text-xs text-[var(--noc-accent)]">{{ brandName() }} vs {{ brand }}</a>
             }
           </div>
         </div>
       }
 
       <div class="mt-6 text-center">
-        <a routerLink="/" class="text-sm font-semibold text-brand-600 hover:underline dark:text-brand-400">
-          Tüm markaların indirimlerini gör →
-        </a>
+        <a routerLink="/" class="text-sm font-medium text-[var(--noc-accent)]">Tüm markaların indirimlerini gör →</a>
       </div>
+    }
+
+    @if (selectedDeal(); as deal) {
+      <app-product-modal [deal]="deal" (closed)="closeDeal()" />
     }
   </main>
 </div>

@@ -1,26 +1,26 @@
 <div
-  class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+  class="noc-shell fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
   (click)="close()"
 >
   <div
-    class="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-stone-50 shadow-xl dark:bg-stone-900"
+    class="max-h-[90vh] w-full max-w-[760px] overflow-y-auto rounded-[14px] bg-[var(--noc-card)] text-[var(--noc-text)] shadow-[var(--noc-shadow-lg)]"
     (click)="$event.stopPropagation()"
   >
-    <div class="flex items-start justify-between gap-4 border-b border-stone-100 p-5 dark:border-stone-800">
+    <div class="flex items-start justify-between gap-4 border-b border-[var(--noc-divider)] p-5">
       <div class="flex items-center gap-3">
         @if (deal().imageUrl) {
-          <img [src]="deal().imageUrl" [alt]="deal().productName" class="h-14 w-14 rounded-lg bg-stone-50 object-contain p-1 dark:bg-stone-800" />
+          <img [src]="deal().imageUrl" [alt]="deal().productName" class="h-14 w-14 rounded-[8px] bg-[color-mix(in_srgb,var(--noc-text)_5%,transparent)] object-contain p-1" />
         }
         <div>
           <a
             [routerLink]="['/marka', deal().brandName.toLowerCase(), 'indirim-kodu']"
             (click)="close()"
-            class="text-[11px] font-semibold uppercase tracking-wide text-brand-600 hover:underline dark:text-brand-400"
+            class="text-[10px] font-medium uppercase tracking-[0.08em] text-[var(--noc-accent)] hover:underline"
           >
             {{ deal().brandName }}
           </a>
-          <h2 class="text-sm font-bold leading-tight text-stone-900 dark:text-stone-100">{{ deal().productName }}</h2>
-          <p class="mt-0.5 text-[11px] text-stone-400 dark:text-stone-400">Fiyat kontrolü: {{ lastCheckedText() }}</p>
+          <h2 class="text-[15px] font-medium leading-tight">{{ deal().productName }}</h2>
+          <p class="mt-0.5 text-[11px] text-[var(--noc-neutral-500)]">Fiyat kontrolü: {{ lastCheckedText() }}</p>
         </div>
       </div>
       <div class="flex shrink-0 items-center gap-1">
@@ -28,7 +28,7 @@
         <button
           type="button"
           title="Kapat"
-          class="flex h-8 w-8 items-center justify-center rounded-full text-stone-400 hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-stone-800 dark:hover:text-stone-300"
+          class="flex h-8 w-8 items-center justify-center rounded-full text-[var(--noc-neutral-500)] hover:bg-[color-mix(in_srgb,var(--noc-text)_7%,transparent)] hover:text-[var(--noc-text)]"
           (click)="close()"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
@@ -39,16 +39,14 @@
     </div>
 
     <div class="p-5">
-      <h3 class="mb-3 text-sm font-bold text-stone-800 dark:text-stone-200">Fiyat Analizi</h3>
+      <h3 class="mb-3 text-sm font-medium">Fiyat Analizi</h3>
 
-      <div class="mb-4 flex gap-1">
+      <div class="mb-4 inline-flex overflow-hidden rounded-[8px] border border-[var(--noc-divider)]">
         @for (range of timeRanges; track range.label) {
           <button
             type="button"
-            class="rounded-full px-3 py-1 text-xs font-semibold transition-colors"
-            [class]="selectedRange().label === range.label
-              ? 'bg-brand-700 text-white'
-              : 'border border-stone-200 text-stone-500 hover:border-stone-300 dark:border-stone-700 dark:text-stone-400'"
+            class="border-l border-[var(--noc-divider)] px-3 py-[7px] text-[13px] first:border-l-0"
+            [class]="selectedRange().label === range.label ? 'text-[var(--noc-accent)] shadow-[inset_0_0_0_1px_var(--noc-accent)]' : 'text-[var(--noc-neutral-500)] hover:bg-[color-mix(in_srgb,var(--noc-text)_7%,transparent)]'"
             (click)="selectRange(range)"
           >
             {{ range.label }}
@@ -57,11 +55,11 @@
       </div>
 
       @if (!hasData() && loading()) {
-        <div class="flex h-[220px] items-center justify-center text-sm text-stone-400 dark:text-stone-400">Yükleniyor...</div>
+        <div class="flex h-[220px] items-center justify-center text-sm text-[var(--noc-neutral-500)]">Yükleniyor...</div>
       } @else if (error()) {
         <div class="flex h-[220px] items-center justify-center text-sm text-red-500 dark:text-red-400">{{ error() }}</div>
       } @else if (points().length === 0) {
-        <div class="flex h-[220px] items-center justify-center px-4 text-center text-sm text-stone-400 dark:text-stone-400">
+        <div class="flex h-[220px] items-center justify-center px-4 text-center text-sm text-[var(--noc-neutral-500)]">
           Bu dönem için henüz fiyat verisi birikmedi.
         </div>
       } @else {
@@ -69,7 +67,7 @@
           <div class="relative">
             <svg
               viewBox="0 0 600 220"
-              class="h-[220px] w-full touch-none cursor-crosshair rounded-lg bg-stone-50 dark:bg-stone-800/40"
+              class="h-[220px] w-full touch-none cursor-crosshair rounded-[8px] bg-[color-mix(in_srgb,var(--noc-text)_4%,transparent)]"
               preserveAspectRatio="none"
               (mousemove)="onChartMouseMove($event)"
               (mouseleave)="onChartMouseLeave()"
@@ -78,36 +76,36 @@
             >
               <defs>
                 <linearGradient id="priceAreaGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stop-color="var(--color-brand-500)" stop-opacity="0.25" />
-                  <stop offset="100%" stop-color="var(--color-brand-500)" stop-opacity="0" />
+                  <stop offset="0%" stop-color="var(--noc-accent)" stop-opacity="0.22" />
+                  <stop offset="100%" stop-color="var(--noc-accent)" stop-opacity="0" />
                 </linearGradient>
               </defs>
               <!-- Izgara çizgileri: veri az/düz olsa bile alanın bir grafik olduğu belli olsun. -->
               @for (gridY of [16, 71, 126, 181, 204]; track gridY) {
-                <line x1="0" [attr.y1]="gridY" x2="600" [attr.y2]="gridY" stroke="currentColor" class="text-stone-200 dark:text-stone-700" stroke-width="1" />
+                <line x1="0" [attr.y1]="gridY" x2="600" [attr.y2]="gridY" stroke="var(--noc-divider)" stroke-width="1" />
               }
               <path [attr.d]="chartAreaPath()" fill="url(#priceAreaGradient)" />
-              <path [attr.d]="chartLinePath()" fill="none" stroke="var(--color-brand-600)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
+              <path [attr.d]="chartLinePath()" fill="none" stroke="var(--noc-accent-400)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
 
               @if (hoverInfo(); as hover) {
-                <line [attr.x1]="hover.x" y1="0" [attr.x2]="hover.x" y2="220" stroke="var(--color-accent-500)" stroke-width="1" stroke-dasharray="4 3" />
-                <circle [attr.cx]="hover.x" [attr.cy]="hover.y" r="5" fill="var(--color-accent-500)" stroke="white" stroke-width="2" />
+                <line [attr.x1]="hover.x" y1="0" [attr.x2]="hover.x" y2="220" stroke="var(--noc-accent)" stroke-width="1" stroke-dasharray="4 3" />
+                <circle [attr.cx]="hover.x" [attr.cy]="hover.y" r="4.5" fill="var(--noc-accent)" />
               }
             </svg>
 
             @if (hoverInfo(); as hover) {
               <div
-                class="pointer-events-none absolute -translate-y-[calc(100%+8px)] whitespace-nowrap rounded-lg border border-stone-200 bg-white px-2 py-1 text-center shadow-md dark:border-stone-700 dark:bg-stone-800"
+                class="pointer-events-none absolute -translate-y-[calc(100%+8px)] whitespace-nowrap rounded-[8px] bg-[var(--noc-card)] px-2 py-1 text-center shadow-[var(--noc-shadow-md)]"
                 [class]="hover.align === 'left' ? 'translate-x-0' : hover.align === 'right' ? '-translate-x-full' : '-translate-x-1/2'"
                 [style.left.%]="(hover.x / 600) * 100"
                 [style.top.%]="(hover.y / 220) * 100"
               >
-                <div class="text-[10px] text-stone-400 dark:text-stone-400">{{ hover.dateLabel }}</div>
-                <div class="text-xs font-bold text-stone-800 dark:text-stone-100">{{ hover.price | number:'1.2-2' }} TL</div>
+                <div class="text-[10px] text-[var(--noc-neutral-500)]">{{ hover.dateLabel }}</div>
+                <div class="text-xs font-medium">{{ hover.price | number:'1.2-2' }} ₺</div>
               </div>
             }
           </div>
-          <div class="relative mt-1 h-4 text-[10px] text-stone-400 dark:text-stone-400">
+          <div class="relative mt-1 h-4 text-[10px] text-[var(--noc-neutral-500)]">
             @for (tick of xAxisLabels(); track tick.label + tick.x) {
               <span class="absolute" [class]="xAxisLabelAlignClass(tick.x)" [style.left.%]="(tick.x / 600) * 100">{{ tick.label }}</span>
             }
@@ -115,28 +113,28 @@
         </div>
 
         <div class="mt-3 grid grid-cols-3 gap-2 text-center">
-          <div class="rounded-lg bg-stone-50 px-2 py-2 dark:bg-stone-800/60">
-            <div class="text-[11px] text-stone-400 dark:text-stone-400">Dönem En Düşük</div>
-            <div class="text-sm font-bold text-stone-800 dark:text-stone-200">{{ minPrice() | number:'1.2-2' }} TL</div>
+          <div class="rounded-[8px] bg-[color-mix(in_srgb,var(--noc-text)_5%,transparent)] px-2 py-2">
+            <div class="text-[11px] text-[var(--noc-neutral-500)]">Dönem En Düşük</div>
+            <div class="text-sm font-medium">{{ minPrice() | number:'1.2-2' }} ₺</div>
           </div>
-          <div class="rounded-lg bg-brand-50 px-2 py-2 dark:bg-brand-950/30">
-            <div class="text-[11px] text-brand-600 dark:text-brand-400">Şu Anki Fiyat</div>
-            <div class="text-sm font-bold text-brand-700 dark:text-brand-400">{{ currentPrice() | number:'1.2-2' }} TL</div>
+          <div class="rounded-[8px] px-2 py-2" style="background: var(--noc-accent-800)">
+            <div class="text-[11px] text-[var(--noc-accent-300)]">Şu Anki Fiyat</div>
+            <div class="text-sm font-medium text-[var(--noc-accent-100)]">{{ currentPrice() | number:'1.2-2' }} ₺</div>
           </div>
-          <div class="rounded-lg bg-stone-50 px-2 py-2 dark:bg-stone-800/60">
-            <div class="text-[11px] text-stone-400 dark:text-stone-400">Dönem En Yüksek</div>
-            <div class="text-sm font-bold text-stone-800 dark:text-stone-200">{{ maxPrice() | number:'1.2-2' }} TL</div>
+          <div class="rounded-[8px] bg-[color-mix(in_srgb,var(--noc-text)_5%,transparent)] px-2 py-2">
+            <div class="text-[11px] text-[var(--noc-neutral-500)]">Dönem En Yüksek</div>
+            <div class="text-sm font-medium">{{ maxPrice() | number:'1.2-2' }} ₺</div>
           </div>
         </div>
 
         @if (savingsText(); as savings) {
-          <p class="mt-3 rounded-lg bg-accent-50 px-3 py-2 text-center text-xs font-medium text-accent-700 dark:bg-accent-950/30 dark:text-accent-400">
-            Şu anki fiyat {{ savings.periodName }} en yüksek fiyatına göre {{ savings.diff | number:'1.2-2' }} TL (%{{ savings.percent }}) daha ucuz.
+          <p class="mt-3 rounded-[8px] border border-[var(--noc-accent)] px-3 py-2 text-center text-xs font-medium text-[var(--noc-accent)]">
+            Şu anki fiyat {{ savings.periodName }} en yüksek fiyatına göre {{ savings.diff | number:'1.2-2' }} ₺ (%{{ savings.percent }}) daha ucuz.
           </p>
         }
 
         @if (discountEventCount(); as count) {
-          <p class="mt-2 rounded-lg bg-brand-50 px-3 py-2 text-center text-xs font-medium text-brand-700 dark:bg-brand-950/30 dark:text-brand-400">
+          <p class="mt-2 rounded-[8px] bg-[color-mix(in_srgb,var(--noc-text)_5%,transparent)] px-3 py-2 text-center text-xs text-[var(--noc-neutral-500)]">
             Bu ürün {{ selectedRange().periodName }} içinde {{ count }} kez indirime girdi.
           </p>
         }
@@ -146,7 +144,7 @@
         [href]="goToStoreUrl()"
         target="_blank"
         rel="noopener nofollow sponsored"
-        class="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-brand-700 px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-brand-800"
+        class="mt-5 flex w-full items-center justify-center gap-2 rounded-[8px] border border-[var(--noc-accent)] px-4 py-3 text-sm font-medium text-[var(--noc-accent)] transition-colors hover:bg-[color-mix(in_srgb,var(--noc-accent)_12%,transparent)]"
       >
         Mağazaya Git
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
@@ -158,10 +156,8 @@
         type="button"
         (click)="toggleFavorite()"
         [disabled]="favoriteSubmitting()"
-        class="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl border px-4 py-2.5 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60"
-        [class]="favorited()
-          ? 'border-brand-300 bg-brand-50 text-brand-700 dark:border-brand-700 dark:bg-brand-950/30 dark:text-brand-400'
-          : 'border-stone-200 text-stone-500 hover:border-brand-300 hover:text-brand-700 dark:border-stone-700 dark:text-stone-400 dark:hover:border-brand-500 dark:hover:text-brand-400'"
+        class="mt-2 flex w-full items-center justify-center gap-1.5 rounded-[8px] border px-4 py-2.5 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+        [class]="favorited() ? 'border-[var(--noc-accent)] text-[var(--noc-accent)]' : 'border-[var(--noc-divider)] text-[var(--noc-neutral-500)] hover:text-[var(--noc-text)]'"
       >
         <svg viewBox="0 0 24 24" [attr.fill]="favorited() ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" class="h-3.5 w-3.5">
           <path stroke-linecap="round" stroke-linejoin="round" d="m12 17.27 6.18 3.73-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
@@ -178,12 +174,12 @@
             placeholder="E-posta adresin"
             [ngModel]="favoriteEmail()"
             (ngModelChange)="favoriteEmail.set($event)"
-            class="min-w-0 flex-1 rounded-full border border-stone-200 bg-white px-3 py-1.5 text-xs text-stone-700 placeholder:text-stone-400 focus:border-brand-400 focus:outline-none dark:border-stone-700 dark:bg-stone-900 dark:text-stone-200 dark:placeholder:text-stone-500"
+            class="min-w-0 flex-1 rounded-[8px] border border-[var(--noc-divider)] bg-[var(--noc-surface)] px-3 py-1.5 text-xs text-[var(--noc-text)] placeholder:text-[var(--noc-neutral-500)] focus:border-[var(--noc-accent)] focus:outline-none"
           />
           <button
             type="submit"
             [disabled]="favoriteSubmitting()"
-            class="shrink-0 rounded-full bg-brand-700 px-4 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-60"
+            class="shrink-0 rounded-[8px] border border-[var(--noc-accent)] px-4 py-1.5 text-xs font-medium text-[var(--noc-accent)] transition-colors hover:bg-[color-mix(in_srgb,var(--noc-accent)_12%,transparent)] disabled:cursor-not-allowed disabled:opacity-60"
           >
             Kaydet
           </button>
@@ -198,7 +194,7 @@
         <button
           type="button"
           (click)="toggleWatchForm()"
-          class="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl border border-stone-200 px-4 py-2.5 text-xs font-semibold text-stone-500 transition-colors hover:border-brand-300 hover:text-brand-700 dark:border-stone-700 dark:text-stone-400 dark:hover:border-brand-500 dark:hover:text-brand-400"
+          class="mt-2 flex w-full items-center justify-center gap-1.5 rounded-[8px] border border-[var(--noc-divider)] px-4 py-2.5 text-xs font-medium text-[var(--noc-neutral-500)] transition-colors hover:text-[var(--noc-text)]"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-3.5 w-3.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
@@ -217,12 +213,12 @@
             placeholder="E-posta adresin"
             [ngModel]="watchEmail()"
             (ngModelChange)="watchEmail.set($event)"
-            class="min-w-0 flex-1 rounded-full border border-stone-200 bg-white px-3 py-1.5 text-xs text-stone-700 placeholder:text-stone-400 focus:border-brand-400 focus:outline-none dark:border-stone-700 dark:bg-stone-900 dark:text-stone-200 dark:placeholder:text-stone-500"
+            class="min-w-0 flex-1 rounded-[8px] border border-[var(--noc-divider)] bg-[var(--noc-surface)] px-3 py-1.5 text-xs text-[var(--noc-text)] placeholder:text-[var(--noc-neutral-500)] focus:border-[var(--noc-accent)] focus:outline-none"
           />
           <button
             type="submit"
             [disabled]="watchSubmitting()"
-            class="shrink-0 rounded-full bg-brand-700 px-4 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-60"
+            class="shrink-0 rounded-[8px] border border-[var(--noc-accent)] px-4 py-1.5 text-xs font-medium text-[var(--noc-accent)] transition-colors hover:bg-[color-mix(in_srgb,var(--noc-accent)_12%,transparent)] disabled:cursor-not-allowed disabled:opacity-60"
           >
             Gönder
           </button>
@@ -230,17 +226,17 @@
       }
 
       @if (watchStatusMessage(); as message) {
-        <p class="mt-2 text-center text-xs text-brand-600 dark:text-brand-400">{{ message }}</p>
+        <p class="mt-2 text-center text-xs text-[var(--noc-accent)]">{{ message }}</p>
       }
 
-      <div class="mt-5 flex items-center justify-center gap-2 border-t border-stone-100 pt-4 dark:border-stone-800">
+      <div class="mt-5 flex items-center justify-center gap-2 border-t border-[var(--noc-divider)] pt-4">
         @if (votedHelpful() === null) {
-          <span class="text-xs text-stone-400 dark:text-stone-400">Bu bilgi faydalı mıydı?</span>
+          <span class="text-xs text-[var(--noc-neutral-500)]">Bu bilgi faydalı mıydı?</span>
           <button
             type="button"
             title="Faydalı"
             (click)="vote(true)"
-            class="flex h-7 w-7 items-center justify-center rounded-full text-stone-400 transition-colors hover:bg-brand-50 hover:text-brand-600 dark:text-stone-400 dark:hover:bg-brand-950/30 dark:hover:text-brand-400"
+            class="flex h-7 w-7 items-center justify-center rounded-full text-[var(--noc-neutral-500)] transition-colors hover:bg-[color-mix(in_srgb,var(--noc-accent)_12%,transparent)] hover:text-[var(--noc-accent)]"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
               <path stroke-linecap="round" stroke-linejoin="round" d="M7 11v10H4a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1h3Zm0 0 4.5-9a2 2 0 0 1 2 2v5h4.76a2 2 0 0 1 1.98 2.29l-1.14 7A2 2 0 0 1 17.14 20H7" />
@@ -250,14 +246,14 @@
             type="button"
             title="Faydalı değil"
             (click)="vote(false)"
-            class="flex h-7 w-7 items-center justify-center rounded-full text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-700 dark:text-stone-400 dark:hover:bg-stone-800 dark:hover:text-stone-300"
+            class="flex h-7 w-7 items-center justify-center rounded-full text-[var(--noc-neutral-500)] transition-colors hover:bg-[color-mix(in_srgb,var(--noc-text)_7%,transparent)] hover:text-[var(--noc-text)]"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
               <path stroke-linecap="round" stroke-linejoin="round" d="M17 13V3h3a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1h-3Zm0 0-4.5 9a2 2 0 0 1-2-2v-5H5.74a2 2 0 0 1-1.98-2.29l1.14-7A2 2 0 0 1 6.86 4H17" />
             </svg>
           </button>
         } @else {
-          <span class="text-xs text-stone-400 dark:text-stone-400">Geri bildirimin için teşekkürler!</span>
+          <span class="text-xs text-[var(--noc-neutral-500)]">Geri bildirimin için teşekkürler!</span>
         }
       </div>
     </div>

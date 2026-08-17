@@ -1,10 +1,12 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable, catchError, shareReplay, throwError } from 'rxjs';
+import { Observable, catchError, of, shareReplay, throwError } from 'rxjs';
 
 import { API_BASE_URL } from './api.config';
 import { Deal } from './deal.model';
+import { HomepageStats } from './homepage-stats.model';
 import { FilterOptions, PagedResult } from './paged-result.model';
+import { ProductSparkline } from './product-sparkline.model';
 
 export interface DealsQuery {
   brands?: string[];
@@ -35,6 +37,20 @@ export class DealsService {
 
   getProductById(id: number): Observable<Deal> {
     return this.http.get<Deal>(`${API_BASE_URL}/api/products/${id}`);
+  }
+
+  // Ana sayfadaki "canlı tarama şeridi" için — her sayfa yüklemesinde bir kez.
+  getStats(): Observable<HomepageStats> {
+    return this.http.get<HomepageStats>(`${API_BASE_URL}/api/stats`);
+  }
+
+  // Ürün kartlarındaki mini sparkline'lar için toplu istek — bir sayfa
+  // (24 kart) için tek çağrı, kart başına ayrı istek (N+1) yerine.
+  getSparklines(ids: number[], days = 30): Observable<ProductSparkline[]> {
+    if (ids.length === 0) return of([]);
+    let params = new HttpParams().set('days', days);
+    for (const id of ids) params = params.append('ids', id);
+    return this.http.get<ProductSparkline[]>(`${API_BASE_URL}/api/products/sparklines`, { params });
   }
 
   // Header, ana sayfa, marka ve kategori sayfaları hepsi kendi başlangıcında

@@ -1,25 +1,41 @@
 import { DOCUMENT, DecimalPipe } from '@angular/common';
-import { Component, DestroyRef, HostListener, OnInit, effect, inject, signal, viewChild } from '@angular/core';
+import { Component, DestroyRef, HostListener, OnInit, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
+import { ArticleSummary } from '../core/article.model';
+import { ArticlesService } from '../core/articles.service';
 import { canonicalOrigin } from '../core/canonical-link';
+import { CATEGORY_LABELS } from '../core/category-labels';
 import { Coupon } from '../core/coupon.model';
 import { CouponsService } from '../core/coupons.service';
 import { Deal } from '../core/deal.model';
 import { DealsQuery, DealsService } from '../core/deals.service';
+import { FavoritesService } from '../core/favorites.service';
+import { HomepageStats } from '../core/homepage-stats.model';
 import { PageMetaService, upsertJsonLdScript } from '../core/page-meta.service';
+import { PricePoint } from '../core/price-history.model';
+import { PriceHistoryService } from '../core/price-history.service';
 import { formatRelativeTime } from '../core/relative-time';
+import { buildAreaPath, buildLinePath, toCoordinates } from '../core/spark-chart';
+import { SubscribeService } from '../core/subscribe.service';
 import { ThemePreference, ThemeService } from '../core/theme.service';
+import { ProductCardSparkline } from '../product-card-sparkline/product-card-sparkline';
 import { ProductModal } from '../product-modal/product-modal';
-import { ShareButton } from '../share-button/share-button';
 
 type ViewMode = 'deals' | 'all' | 'store';
 
 const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
 const PAGE_SIZE = 24;
 const SEARCH_DEBOUNCE_MS = 350;
+
+// Hero kartındaki küçük fiyat grafiği — product-modal'ın tam boyutlu
+// grafiğinden çok daha küçük, kendi ölçüleri (Nocturne referansı: 280×90).
+const HERO_CHART = { width: 280, height: 90, paddingY: 8 };
+
+const SCAN_TIME_FORMATTER = new Intl.DateTimeFormat('tr-TR', { hour: '2-digit', minute: '2-digit' });
+const SCAN_DATE_FORMATTER = new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'long' });
 
 // Title/description'da bilinçli olarak "Protein Avcısı" (boşluklu) kullanılıyor
 // — logodaki bitişik "ProteinAvcısı" yazımı marka kimliği olarak kalıyor, ama
@@ -62,12 +78,16 @@ const FAQ_ITEMS: { question: string; answer: string }[] = [
 
 @Component({
   selector: 'app-deals-list',
-  imports: [DecimalPipe, FormsModule, ProductModal, ShareButton, RouterLink],
+  imports: [DecimalPipe, FormsModule, ProductCardSparkline, ProductModal, RouterLink],
   templateUrl: './deals-list.html',
 })
 export class DealsList implements OnInit {
   private readonly dealsService = inject(DealsService);
   private readonly couponsService = inject(CouponsService);
+  private readonly articlesService = inject(ArticlesService);
+  private readonly favoritesService = inject(FavoritesService);
+  private readonly priceHistoryService = inject(PriceHistoryService);
+  private readonly subscribeService = inject(SubscribeService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
@@ -81,6 +101,10 @@ export class DealsList implements OnInit {
   protected readonly shortcutLabel = isMac ? '⌘K' : 'Ctrl+K';
 
   protected readonly deals = signal<Deal[]>([]);
+  // Ürün kartlarındaki mini sparkline'lar — sayfa her yüklendiğinde tek bir
+  // toplu istekle dolduruluyor (bkz. loadSparklines), kart başına ayrı
+  // istek değil.
+  protected readonly sparklines = signal<Map<number, PricePoint[]>>(new Map());
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
   // Varsayılan sekme bilinçli olarak "store": "İndirimdekiler" (kendi
@@ -105,6 +129,12 @@ export class DealsList implements OnInit {
   protected readonly availableBrands = signal<string[]>([]);
   protected readonly availableCategories = signal<string[]>([]);
 
+  // Nav'daki "Kategoriler" açılır menüsü — kullanıcı geri bildirimi:
+  // footer'dan başka erişimi olmayan kategori sayfaları neredeyse hiç
+  // görünmüyordu. site-header.ts'teki aynı desen (bu sayfa kendi özel
+  // nav'ını koruyor, SiteHeader'ı kullanmıyor, bu yüzden burada ayrıca var).
+  protected readonly categoriesOpen = signal(false);
+
   protected readonly hasActiveFilters = signal(false);
 
   protected readonly coupons = signal<Coupon[]>([]);
@@ -117,6 +147,43 @@ export class DealsList implements OnInit {
   // ayrı). Uydurma bir rakam değil, /api/products'tan gelen gerçek toplam.
   protected readonly siteProductCount = signal(0);
   protected readonly faqItems = FAQ_ITEMS;
+
+  // Canlı tarama şeridi — /api/stats'tan, sayfa yüklenince bir kez.
+  protected readonly stats = signal<HomepageStats | null>(null);
+  protected readonly lastScanLabel = computed(() => {
+    const lastScanAt = this.stats()?.lastScanAt;
+    if (!lastScanAt) return null;
+    const d = new Date(lastScanAt);
+    return `${SCAN_TIME_FORMATTER.format(d)} · ${SCAN_DATE_FORMATTER.format(d)}`;
+  });
+
+  // Nav'daki "Takip listem" rozeti.
+  protected readonly favoritesCount = signal(0);
+
+  // Rehber teaser — ilk 3 yazı.
+  protected readonly articles = signal<ArticleSummary[]>([]);
+
+  // "Fiyat düşünce ilk sen bil" bandı — footer'daki NewsletterSignup
+  // component'iyle AYNI SubscribeService'i kullanıyor, kendi (Nocturne
+  // görünümlü) formu var; footer'daki form Faz 1'de dokunulmadığı için
+  // ikisi birlikte kalıyor (küçük bir tekrar, zararsız).
+  protected readonly alarmEmail = signal('');
+  protected readonly alarmSubmitting = signal(false);
+  protected readonly alarmStatusMessage = signal<string | null>(null);
+
+  // Hero — "Günün en sert düşüşü": view mode/filtrelerden bağımsız, en
+  // yüksek gerçek indirimli ürün (hiç yoksa en yüksek mağaza kampanyasına
+  // düşer — "store sekmesi hep dolu" mantığıyla aynı, hero boş kalmasın diye).
+  protected readonly heroDeal = signal<Deal | null>(null);
+  protected readonly heroPoints = signal<PricePoint[]>([]);
+  protected readonly heroCoordinates = computed(() => {
+    const points = this.heroPoints();
+    if (points.length === 0) return [];
+    const prices = points.map((p) => p.price);
+    return toCoordinates(points, Math.min(...prices), Math.max(...prices), HERO_CHART);
+  });
+  protected readonly heroLinePath = computed(() => buildLinePath(this.heroCoordinates()));
+  protected readonly heroAreaPath = computed(() => buildAreaPath(this.heroCoordinates(), HERO_CHART.height));
 
   constructor() {
     // Ürün modalı açıkken title/description/Open Graph o ürüne özel oluyor
@@ -183,6 +250,10 @@ export class DealsList implements OnInit {
     this.couponsService.getCoupons().subscribe((coupons) => this.coupons.set(coupons));
     // pageSize:1 — sadece toplam sayıyı okumak için, tüm ürünleri çekmeye gerek yok.
     this.dealsService.getAllProducts({ pageSize: 1 }).subscribe((result) => this.siteProductCount.set(result.totalCount));
+    this.dealsService.getStats().subscribe((stats) => this.stats.set(stats));
+    this.favoritesService.list().subscribe((list) => this.favoritesCount.set(list.length));
+    this.articlesService.getArticles().subscribe((articles) => this.articles.set(articles.slice(0, 3)));
+    this.loadHeroDeal();
     this.addFaqStructuredData();
     this.load();
 
@@ -371,12 +442,25 @@ export class DealsList implements OnInit {
         this.totalCount.set(result.totalCount);
         this.totalPages.set(result.totalPages);
         this.loading.set(false);
+        this.loadSparklines(result.items);
       },
       error: () => {
         this.error.set('Veriler yüklenemedi. API çalışıyor mu kontrol et.');
         this.loading.set(false);
       },
     });
+  }
+
+  private loadSparklines(deals: Deal[]): void {
+    this.sparklines.set(new Map());
+    const ids = deals.map((d) => d.productId);
+    this.dealsService.getSparklines(ids).subscribe((result) => {
+      this.sparklines.set(new Map(result.map((s) => [s.productId, s.points])));
+    });
+  }
+
+  protected sparklineFor(productId: number): PricePoint[] {
+    return this.sparklines().get(productId) ?? [];
   }
 
   protected discountBadge(deal: Deal): string {
@@ -387,19 +471,81 @@ export class DealsList implements OnInit {
     return `Mağaza -%${deal.storeDiscountPercent}`;
   }
 
+  // Hero kartı: gerçek indirim varsa onu, yoksa mağaza kampanyasını gösterir.
+  protected heroBadgeText(deal: Deal): string {
+    return deal.discountPercent > 0 ? this.discountBadge(deal) : this.storeDiscountBadge(deal);
+  }
+
+  protected goToStoreUrl(productId: number): string {
+    return this.priceHistoryService.goToStoreUrl(productId);
+  }
+
+  private loadHeroDeal(): void {
+    this.dealsService.getDeals({ pageSize: 1 }).subscribe({
+      next: (result) => {
+        if (result.items.length > 0) {
+          this.setHeroDeal(result.items[0]);
+          return;
+        }
+        // Hiç gerçek indirim yoksa (fiyat geçmişi henüz yeniyken sık
+        // rastlanan bir durum) mağaza kampanyalarının en yükseğine düş.
+        this.dealsService.getStoreDeals({ pageSize: 1 }).subscribe((storeResult) => {
+          if (storeResult.items.length > 0) this.setHeroDeal(storeResult.items[0]);
+        });
+      },
+    });
+  }
+
+  private setHeroDeal(deal: Deal): void {
+    this.heroDeal.set(deal);
+    this.priceHistoryService.get(deal.productId, 30).subscribe((history) => this.heroPoints.set(history.points));
+  }
+
+  protected onAlarmSubmit(): void {
+    const value = this.alarmEmail().trim();
+    if (!value) return;
+
+    this.alarmSubmitting.set(true);
+    this.subscribeService.subscribe(value).subscribe({
+      next: (result) => {
+        this.alarmStatusMessage.set(result.message);
+        this.alarmEmail.set('');
+        this.alarmSubmitting.set(false);
+      },
+      error: () => {
+        this.alarmStatusMessage.set('Bir şeyler ters gitti, birazdan tekrar dener misin?');
+        this.alarmSubmitting.set(false);
+      },
+    });
+  }
+
   protected lastCheckedText(deal: Deal): string {
     return formatRelativeTime(deal.scrapedAt);
   }
 
+  // CATEGORY_LABELS'ta (footer/kategori sayfası ile paylaşılan tek kaynak)
+  // tanımlı doğru Türkçe etiket varsa onu kullan; yoksa (beklenmeyen bir
+  // slug gelirse) eski basit tire→boşluk dönüşümüne düş.
   protected categoryLabel(category: string): string {
-    return category
-      .split('-')
-      .map((word) => word.charAt(0).toLocaleUpperCase('tr') + word.slice(1))
-      .join(' ');
+    return (
+      CATEGORY_LABELS[category] ??
+      category
+        .split('-')
+        .map((word) => word.charAt(0).toLocaleUpperCase('tr') + word.slice(1))
+        .join(' ')
+    );
   }
 
   protected setTheme(preference: ThemePreference): void {
     this.theme.setPreference(preference);
+  }
+
+  protected toggleCategories(): void {
+    this.categoriesOpen.update((open) => !open);
+  }
+
+  protected closeCategories(): void {
+    this.categoriesOpen.set(false);
   }
 
   protected openDeal(deal: Deal): void {

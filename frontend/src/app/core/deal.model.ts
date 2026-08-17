@@ -14,4 +14,5 @@ export interface Deal {
   storeOldPrice: number | null;
   storeDiscountPercent: number | null;
   scrapedAt: string;
+  isAtThirtyDayLow: boolean;
 }

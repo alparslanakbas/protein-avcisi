@@ -1,8 +1,10 @@
 import { provideHttpClient } from '@angular/common/http';
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 
+import { ThemeService } from '../core/theme.service';
 import { BrandPage } from './brand-page';
 
 // comparisonPairSlug marka karşılaştırma sayfalarının kanonik URL'ini
@@ -19,6 +21,14 @@ describe('BrandPage - comparisonPairSlug', () => {
         provideHttpClient(),
         provideRouter([]),
         { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({})) } },
+        // BrandPage kendi başına ThemeService'e bağlı değil ama şablonundaki
+        // <app-site-header> child component'i bağlı — TestBed.createComponent
+        // detectChanges() çağrılmasa bile şablondaki child component'leri view
+        // oluşturma aşamasında instantiate ediyor, bu yüzden SiteHeader'ın
+        // gerçek ThemeService constructor'ı (window.matchMedia çağırıyor,
+        // jsdom'da yok) burada da tetikleniyor. comparisonPairSlug'ın temayla
+        // hiç ilgisi yok, minimal bir sahte ile değiştiriliyor.
+        { provide: ThemeService, useValue: { preference: signal('system') } },
       ],
     });
     component = TestBed.createComponent(BrandPage).componentInstance;

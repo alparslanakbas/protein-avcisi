@@ -4,11 +4,12 @@ import { RouterLink, RouterOutlet } from '@angular/router';
 import { CATEGORY_LABELS } from './core/category-labels';
 import { DealsService } from './core/deals.service';
 import { CookieConsentBanner } from './cookie-consent-banner/cookie-consent-banner';
+import { MobileTabBar } from './mobile-tab-bar/mobile-tab-bar';
 import { NewsletterSignup } from './newsletter-signup/newsletter-signup';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, NewsletterSignup, CookieConsentBanner],
+  imports: [RouterOutlet, RouterLink, NewsletterSignup, CookieConsentBanner, MobileTabBar],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })

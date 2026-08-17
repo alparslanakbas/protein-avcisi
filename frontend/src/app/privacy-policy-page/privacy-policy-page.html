@@ -1,62 +1,53 @@
-<div class="min-h-screen bg-stone-100 dark:bg-stone-950">
-  <header class="border-b border-stone-200 bg-stone-50 dark:border-stone-800 dark:bg-stone-900">
-    <div class="mx-auto flex max-w-6xl items-center gap-3 px-4 py-4 sm:px-6">
-      <a routerLink="/" class="flex items-center gap-2">
-        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-700 text-sm font-extrabold text-white">PA</div>
-        <span class="text-lg font-bold text-stone-900 dark:text-stone-100">
-          Protein<span class="text-brand-600 dark:text-brand-400">Avcısı</span>
-        </span>
-      </a>
-    </div>
-  </header>
+<div class="noc-shell min-h-screen bg-[var(--noc-bg)] text-[var(--noc-text)]">
+  <app-site-header />
 
-  <main class="mx-auto max-w-3xl px-4 py-10 sm:px-6">
-    <h1 class="text-3xl font-extrabold tracking-tight text-stone-900 dark:text-stone-100">Gizlilik Politikası</h1>
-    <p class="mt-2 text-xs text-stone-400 dark:text-stone-400">Son güncelleme: 14 Ağustos 2026</p>
+  <main class="mx-auto max-w-[720px] px-[28px] py-[22px]">
+    <h1 class="text-[32px] font-medium tracking-[-0.03em] sm:text-[36px]">Gizlilik Politikası</h1>
+    <p class="mt-2 text-xs text-[var(--noc-neutral-500)]">Son güncelleme: 14 Ağustos 2026</p>
 
-    <div class="mt-8 space-y-8 text-sm leading-relaxed text-stone-600 dark:text-stone-300">
+    <div class="mt-8 space-y-8 text-sm leading-relaxed text-[var(--noc-neutral-300)]">
       <section>
-        <h2 class="mb-2 text-base font-bold text-stone-900 dark:text-stone-100">Veri Sorumlusu</h2>
+        <h2 class="mb-2 text-base font-medium text-[var(--noc-text)]">Veri Sorumlusu</h2>
         <p>
           ProteinAvcısı (proteinavcisi.com.tr), bu sitede topladığı veriler için 6698 sayılı Kişisel
           Verilerin Korunması Kanunu (KVKK) kapsamında veri sorumlusudur. Sorularınız için
-          <a href="mailto:destek@proteinavcisi.com.tr" class="font-medium text-brand-600 hover:underline dark:text-brand-400">destek&#64;proteinavcisi.com.tr</a>
+          <a href="mailto:destek@proteinavcisi.com.tr" class="font-medium text-[var(--noc-accent)] hover:underline">destek&#64;proteinavcisi.com.tr</a>
           adresinden bize ulaşabilirsiniz.
         </p>
       </section>
 
       <section>
-        <h2 class="mb-2 text-base font-bold text-stone-900 dark:text-stone-100">Hangi Verileri Topluyoruz</h2>
+        <h2 class="mb-2 text-base font-medium text-[var(--noc-text)]">Hangi Verileri Topluyoruz</h2>
         <ul class="list-disc space-y-2 pl-5">
           <li>
-            <strong class="text-stone-800 dark:text-stone-200">E-posta bülteni:</strong> abone olduğunda
+            <strong class="text-[var(--noc-text)]">E-posta bülteni:</strong> abone olduğunda
             e-posta adresini ve abonelik tarihini saklıyoruz. Onay linkine tıklamadan (double opt-in)
             hiçbir e-posta göndermiyoruz.
           </li>
           <li>
-            <strong class="text-stone-800 dark:text-stone-200">"Haber Ver" bildirimi:</strong> bir ürünü
+            <strong class="text-[var(--noc-text)]">"Haber Ver" bildirimi:</strong> bir ürünü
             takibe aldığında e-posta adresini o ürünle ilişkili olarak saklıyoruz; fiyat düşünce tek
             seferlik bir bildirim gönderip kaydı kapatıyoruz.
           </li>
           <li>
-            <strong class="text-stone-800 dark:text-stone-200">Tema tercihi:</strong> açık/koyu mod
+            <strong class="text-[var(--noc-text)]">Tema tercihi:</strong> açık/koyu mod
             seçimin yalnızca tarayıcının yerel depolamasında (localStorage) tutulur, bize hiç
             gönderilmez.
           </li>
           <li>
-            <strong class="text-stone-800 dark:text-stone-200">Tıklama sayacı:</strong> "Mağazaya Git"
+            <strong class="text-[var(--noc-text)]">Tıklama sayacı:</strong> "Mağazaya Git"
             linkine tıklama sayısını ürün başına, kişiye bağlı olmayan bir sayaç olarak tutuyoruz.
           </li>
         </ul>
         <p class="mt-3">
           Şu an sitede reklam veya ziyaretçi analitiği (Google Analytics, AdSense vb.) bulunmuyor.
           İleride eklenirse bu sayfa güncellenecek ve devreye girmeden önce açık onayın istenecek —
-          detaylar için <a routerLink="/cerez-politikasi" class="font-medium text-brand-600 hover:underline dark:text-brand-400">Çerez Politikası</a>.
+          detaylar için <a routerLink="/cerez-politikasi" class="font-medium text-[var(--noc-accent)] hover:underline">Çerez Politikası</a>.
         </p>
       </section>
 
       <section>
-        <h2 class="mb-2 text-base font-bold text-stone-900 dark:text-stone-100">Verileri Nasıl Kullanıyoruz</h2>
+        <h2 class="mb-2 text-base font-medium text-[var(--noc-text)]">Verileri Nasıl Kullanıyoruz</h2>
         <p>
           E-posta adresini yalnızca abone olduğun bülteni ve/veya izlediğin ürünle ilgili fiyat düşüş
           bildirimini göndermek için kullanıyoruz. E-posta gönderimi için Brevo (Sendinblue) adlı bir
@@ -66,7 +57,7 @@
       </section>
 
       <section>
-        <h2 class="mb-2 text-base font-bold text-stone-900 dark:text-stone-100">Veri Saklama ve Silme</h2>
+        <h2 class="mb-2 text-base font-medium text-[var(--noc-text)]">Veri Saklama ve Silme</h2>
         <p>
           Abonelik verilerini, sen abonelikten çıkana veya silinmesini talep edene kadar saklarız.
           Her bülten/bildirim e-postasında bir "abonelikten çık" linki bulunur; tıkladığında kaydın
@@ -76,19 +67,19 @@
       </section>
 
       <section>
-        <h2 class="mb-2 text-base font-bold text-stone-900 dark:text-stone-100">KVKK Kapsamındaki Hakların</h2>
+        <h2 class="mb-2 text-base font-medium text-[var(--noc-text)]">KVKK Kapsamındaki Hakların</h2>
         <p>
           KVKK madde 11 uyarınca; verilerinin işlenip işlenmediğini öğrenme, işlenmişse buna ilişkin
           bilgi talep etme, verilerinin düzeltilmesini veya silinmesini isteme ve bu işlemlerin
           üçüncü kişilere bildirilmesini isteme hakkına sahipsin. Bu talepleri
-          <a href="mailto:destek@proteinavcisi.com.tr" class="font-medium text-brand-600 hover:underline dark:text-brand-400">destek&#64;proteinavcisi.com.tr</a>
+          <a href="mailto:destek@proteinavcisi.com.tr" class="font-medium text-[var(--noc-accent)] hover:underline">destek&#64;proteinavcisi.com.tr</a>
           adresine iletebilirsin.
         </p>
       </section>
     </div>
 
     <div class="mt-10 text-center">
-      <a routerLink="/" class="text-sm font-semibold text-brand-600 hover:underline dark:text-brand-400">← Ana sayfaya dön</a>
+      <a routerLink="/" class="text-sm font-medium text-[var(--noc-accent)]">← Ana sayfaya dön</a>
     </div>
   </main>
 </div>

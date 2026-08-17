@@ -17,4 +17,7 @@ public record DealDto(
     // (bizim gerçek fiyat geçmişimize dayanan) ayrı, UI'da ayrı etiketlenir.
     decimal? StoreOldPrice,
     decimal? StoreDiscountPercent,
-    DateTimeOffset ScrapedAt);
+    DateTimeOffset ScrapedAt,
+    // Güncel fiyat, aynı 30 günlük referans penceresinin en düşüğüne eşit mi
+    // (ReferencePrice'ın Max karşılığı — burada Min).
+    bool IsAtThirtyDayLow);

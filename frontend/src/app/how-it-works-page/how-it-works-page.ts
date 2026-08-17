@@ -2,10 +2,11 @@ import { Component, OnInit, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { PageMetaService } from '../core/page-meta.service';
+import { SiteHeader } from '../site-header/site-header';
 
 @Component({
   selector: 'app-how-it-works-page',
-  imports: [RouterLink],
+  imports: [RouterLink, SiteHeader],
   templateUrl: './how-it-works-page.html',
 })
 export class HowItWorksPage implements OnInit {

@@ -1,71 +1,58 @@
-<div class="min-h-screen bg-stone-100 dark:bg-stone-950">
-  <header class="border-b border-stone-200 bg-stone-50 dark:border-stone-800 dark:bg-stone-900">
-    <div class="mx-auto flex max-w-6xl items-center gap-3 px-4 py-4 sm:px-6">
-      <a routerLink="/" class="flex items-center gap-2">
-        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-700 text-sm font-extrabold text-white">PA</div>
-        <span class="text-lg font-bold text-stone-900 dark:text-stone-100">
-          Protein<span class="text-brand-600 dark:text-brand-400">Avcısı</span>
-        </span>
-      </a>
-    </div>
-  </header>
+<div class="noc-shell min-h-screen bg-[var(--noc-bg)] text-[var(--noc-text)]">
+  <app-site-header />
 
-  <main class="mx-auto max-w-3xl px-4 py-10 sm:px-6">
+  <main class="mx-auto max-w-[760px] px-[28px] py-[22px]">
     @if (loading()) {
-      <div class="py-24 text-center text-stone-400 dark:text-stone-400">Yükleniyor...</div>
+      <div class="py-24 text-center text-[var(--noc-neutral-500)]">Yükleniyor...</div>
     } @else if (comparison(); as c) {
-      <div class="mb-8 text-center">
-        <h1 class="text-3xl font-extrabold tracking-tight text-stone-900 dark:text-stone-100 sm:text-4xl">
-          {{ c.brand1 }} vs {{ c.brand2 }} Fiyat Karşılaştırması
-        </h1>
-        <p class="mx-auto mt-3 max-w-xl text-stone-500 dark:text-stone-400">
+      <div class="text-center">
+        <h1 class="text-[38px] font-medium tracking-[-0.03em] sm:text-[42px]">{{ c.brand1 }}, {{ c.brand2 }}'a karşı</h1>
+        <p class="mx-auto mt-2 max-w-xl text-[15px] text-[var(--noc-neutral-300)]">
           Kategori bazında güncel ortalama fiyatlar — canlı veriden hesaplanır, elle yazılmış bir içerik değildir.
         </p>
       </div>
 
-      <div class="mb-6 grid grid-cols-2 gap-4">
-        <a [routerLink]="['/marka', c.brand1.toLowerCase(), 'indirim-kodu']" class="rounded-xl border border-stone-200 bg-stone-50 p-4 text-center transition-colors hover:border-brand-300 dark:border-stone-800 dark:bg-stone-900">
-          <div class="text-sm font-bold text-stone-900 dark:text-stone-100">{{ c.brand1 }}</div>
-          <div class="mt-1 text-xs text-stone-400 dark:text-stone-400">{{ c.brand1TotalProducts }} ürün takip ediliyor</div>
+      <div class="mb-6 mt-6 grid grid-cols-2 gap-4">
+        <a [routerLink]="['/marka', c.brand1.toLowerCase(), 'indirim-kodu']" class="rounded-[14px] bg-[var(--noc-card)] p-4 text-center shadow-[var(--noc-shadow-sm)] hover:shadow-[var(--noc-shadow-md)]">
+          <div class="text-[15px] font-medium">{{ c.brand1 }}</div>
+          <div class="mt-1 text-xs text-[var(--noc-neutral-500)]">{{ c.brand1TotalProducts }} ürün takip ediliyor</div>
         </a>
-        <a [routerLink]="['/marka', c.brand2.toLowerCase(), 'indirim-kodu']" class="rounded-xl border border-stone-200 bg-stone-50 p-4 text-center transition-colors hover:border-brand-300 dark:border-stone-800 dark:bg-stone-900">
-          <div class="text-sm font-bold text-stone-900 dark:text-stone-100">{{ c.brand2 }}</div>
-          <div class="mt-1 text-xs text-stone-400 dark:text-stone-400">{{ c.brand2TotalProducts }} ürün takip ediliyor</div>
+        <a [routerLink]="['/marka', c.brand2.toLowerCase(), 'indirim-kodu']" class="rounded-[14px] bg-[var(--noc-card)] p-4 text-center shadow-[var(--noc-shadow-sm)] hover:shadow-[var(--noc-shadow-md)]">
+          <div class="text-[15px] font-medium">{{ c.brand2 }}</div>
+          <div class="mt-1 text-xs text-[var(--noc-neutral-500)]">{{ c.brand2TotalProducts }} ürün takip ediliyor</div>
         </a>
       </div>
 
       @if (c.categories.length === 0) {
-        <div class="mx-auto max-w-md rounded-xl border border-stone-200 bg-stone-50 px-6 py-10 text-center text-stone-500 dark:border-stone-800 dark:bg-stone-900 dark:text-stone-400">
-          İki markanın da ortak bir kategoride ürünü yok, karşılaştırma yapılamıyor.
-        </div>
+        <div class="mx-auto max-w-md rounded-[8px] bg-[var(--noc-surface)] px-6 py-10 text-center text-[var(--noc-neutral-500)]">İki markanın da ortak bir kategoride ürünü yok, karşılaştırma yapılamıyor.</div>
       } @else {
-        <div class="overflow-hidden rounded-xl border border-stone-200 dark:border-stone-800">
+        <div class="overflow-hidden rounded-[14px] bg-[var(--noc-card)] shadow-[var(--noc-shadow-sm)]">
           <table class="w-full text-sm">
             <thead>
-              <tr class="bg-stone-50 dark:bg-stone-900">
-                <th class="px-4 py-3 text-left font-semibold text-stone-500 dark:text-stone-400">Kategori</th>
-                <th class="px-4 py-3 text-right font-semibold text-stone-500 dark:text-stone-400">{{ c.brand1 }}</th>
-                <th class="px-4 py-3 text-right font-semibold text-stone-500 dark:text-stone-400">{{ c.brand2 }}</th>
+              <tr class="text-left text-[11px] uppercase tracking-[0.08em] text-[var(--noc-neutral-500)]">
+                <th class="px-4 py-3 font-normal">Kategori</th>
+                <th class="px-4 py-3 text-right font-normal">{{ c.brand1 }}</th>
+                <th class="px-4 py-3 text-right font-normal">{{ c.brand2 }}</th>
               </tr>
             </thead>
             <tbody>
               @for (cat of c.categories; track cat.category) {
-                <tr class="border-t border-stone-100 dark:border-stone-800">
-                  <td class="px-4 py-3 font-medium text-stone-700 dark:text-stone-300">{{ categoryLabel(cat.category) }}</td>
-                  <td class="px-4 py-3 text-right" [class]="cheaperBrand(cat) === 1 ? 'font-bold text-brand-600 dark:text-brand-400' : 'text-stone-600 dark:text-stone-300'">
+                <tr class="border-t border-[var(--noc-divider)]">
+                  <td class="px-4 py-3 font-medium">{{ categoryLabel(cat.category) }}</td>
+                  <td class="px-4 py-3 text-right" [class]="cheaperBrand(cat) === 1 ? 'font-medium text-[var(--noc-accent)]' : 'text-[var(--noc-neutral-500)]'">
                     @if (cat.brand1AvgPrice !== null) {
-                      {{ cat.brand1AvgPrice | number:'1.2-2' }} TL
-                      <span class="block text-[10px] font-normal text-stone-400 dark:text-stone-400">{{ cat.brand1Count }} ürün</span>
+                      {{ cat.brand1AvgPrice | number:'1.2-2' }} ₺
+                      <span class="block text-[10px] font-normal text-[var(--noc-neutral-500)]">{{ cat.brand1Count }} ürün</span>
                     } @else {
-                      <span class="text-stone-300 dark:text-stone-400">—</span>
+                      <span class="text-[var(--noc-neutral-500)]">—</span>
                     }
                   </td>
-                  <td class="px-4 py-3 text-right" [class]="cheaperBrand(cat) === 2 ? 'font-bold text-brand-600 dark:text-brand-400' : 'text-stone-600 dark:text-stone-300'">
+                  <td class="px-4 py-3 text-right" [class]="cheaperBrand(cat) === 2 ? 'font-medium text-[var(--noc-accent)]' : 'text-[var(--noc-neutral-500)]'">
                     @if (cat.brand2AvgPrice !== null) {
-                      {{ cat.brand2AvgPrice | number:'1.2-2' }} TL
-                      <span class="block text-[10px] font-normal text-stone-400 dark:text-stone-400">{{ cat.brand2Count }} ürün</span>
+                      {{ cat.brand2AvgPrice | number:'1.2-2' }} ₺
+                      <span class="block text-[10px] font-normal text-[var(--noc-neutral-500)]">{{ cat.brand2Count }} ürün</span>
                     } @else {
-                      <span class="text-stone-300 dark:text-stone-400">—</span>
+                      <span class="text-[var(--noc-neutral-500)]">—</span>
                     }
                   </td>
                 </tr>
@@ -73,13 +60,13 @@
             </tbody>
           </table>
         </div>
-        <p class="mt-4 text-center text-xs text-stone-400 dark:text-stone-400">
-          Fiyatlar, o kategorideki tüm ürünlerin güncel fiyatlarının ortalamasıdır — kalın yazan taraf o kategoride ortalama olarak daha uygun fiyatlı.
+        <p class="mt-4 text-center text-xs text-[var(--noc-neutral-500)]">
+          Fiyatlar, o kategorideki tüm ürünlerin güncel fiyatlarının ortalamasıdır — vurgulu taraf o kategoride ortalama olarak daha uygun fiyatlı.
         </p>
       }
 
       <div class="mt-6 text-center">
-        <a routerLink="/" class="text-sm font-semibold text-brand-600 hover:underline dark:text-brand-400">← Tüm markaların indirimlerini gör</a>
+        <a routerLink="/" class="text-sm font-medium text-[var(--noc-accent)]">← Tüm markaların indirimlerini gör</a>
       </div>
     }
   </main>

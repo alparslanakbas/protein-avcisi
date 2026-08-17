@@ -1,19 +1,28 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
+import { CATEGORY_LABELS } from '../core/category-labels';
 import { Coupon } from '../core/coupon.model';
 import { CouponsService } from '../core/coupons.service';
 import { Deal } from '../core/deal.model';
 import { DealsService } from '../core/deals.service';
 import { PageMetaService } from '../core/page-meta.service';
+import { PricePoint } from '../core/price-history.model';
+import { PriceHistoryService } from '../core/price-history.service';
+import { formatRelativeTime } from '../core/relative-time';
+import { ProductCardSparkline } from '../product-card-sparkline/product-card-sparkline';
+import { ProductModal } from '../product-modal/product-modal';
+import { SiteHeader } from '../site-header/site-header';
 
 type ViewMode = 'deals' | 'store' | 'all';
 const PAGE_SIZE = 24;
+const SEARCH_DEBOUNCE_MS = 350;
 
 @Component({
   selector: 'app-brand-page',
-  imports: [DecimalPipe, RouterLink],
+  imports: [DecimalPipe, FormsModule, RouterLink, ProductCardSparkline, ProductModal, SiteHeader],
   templateUrl: './brand-page.html',
 })
 export class BrandPage implements OnInit {
@@ -22,6 +31,7 @@ export class BrandPage implements OnInit {
   private readonly dealsService = inject(DealsService);
   private readonly couponsService = inject(CouponsService);
   private readonly pageMeta = inject(PageMetaService);
+  private readonly priceHistoryService = inject(PriceHistoryService);
 
   protected readonly brandName = signal<string>('');
   protected readonly coupons = signal<Coupon[]>([]);
@@ -40,14 +50,55 @@ export class BrandPage implements OnInit {
   // sorun, aynı çözüm: ana sayfadaki sekme + sayfalama deseni).
   protected readonly viewMode = signal<ViewMode>('all');
   protected readonly items = signal<Deal[]>([]);
+  // bkz. deals-list.ts'teki aynı desen — kart mini-sparkline'ları için tek
+  // bir toplu istek, kart başına ayrı istek değil.
+  protected readonly sparklines = signal<Map<number, PricePoint[]>>(new Map());
   protected readonly totalCount = signal(0);
   protected readonly totalPages = signal(0);
   protected readonly currentPage = signal(1);
+  protected readonly sortBy = signal<string>('');
+
+  // Kullanıcı geri bildirimi: kategori sayfasındaki gibi bu sayfada da
+  // arama/filtre yoktu. Marka zaten sabit olduğu için kategori çipleri
+  // (marka çipleri değil) anlamlı bir daraltma sağlıyor.
+  protected readonly searchQuery = signal('');
+  private searchDebounceHandle: ReturnType<typeof setTimeout> | null = null;
+  protected readonly availableCategories = signal<string[]>([]);
+  protected readonly selectedCategories = signal<Set<string>>(new Set());
+  protected readonly priceMin = signal<number | null>(null);
+  protected readonly priceMax = signal<number | null>(null);
+  protected readonly hasActiveFilters = signal(false);
+
+  // bkz. category-page.ts'teki aynı gerekçe: ürün modalı bu sayfanın kendi
+  // ?urun= query param'ına bağlı, önceden /urun/:id'ye (DealsList'in
+  // route'u) navigate ediyordu — modal kapanınca marka sayfasından çıkıp
+  // ana sayfaya düşen bir bug'dı.
+  protected readonly selectedDeal = signal<Deal | null>(null);
 
   ngOnInit(): void {
     this.route.paramMap.subscribe((params) => {
       const slug = params.get('brandSlug') ?? '';
       this.loadBrand(slug);
+    });
+
+    this.route.queryParamMap.subscribe((params) => {
+      const idParam = params.get('urun');
+      if (!idParam) {
+        this.selectedDeal.set(null);
+        return;
+      }
+
+      const id = Number(idParam);
+      const alreadyLoaded = this.items().find((d) => d.productId === id);
+      if (alreadyLoaded) {
+        this.selectedDeal.set(alreadyLoaded);
+        return;
+      }
+
+      this.dealsService.getProductById(id).subscribe({
+        next: (deal) => this.selectedDeal.set(deal),
+        error: () => this.selectedDeal.set(null),
+      });
     });
   }
 
@@ -55,6 +106,11 @@ export class BrandPage implements OnInit {
     this.loading.set(true);
     this.viewMode.set('all');
     this.currentPage.set(1);
+    this.searchQuery.set('');
+    this.selectedCategories.set(new Set());
+    this.priceMin.set(null);
+    this.priceMax.set(null);
+    this.hasActiveFilters.set(false);
 
     this.dealsService.getFilterOptions().subscribe({
       next: (options) => {
@@ -71,6 +127,7 @@ export class BrandPage implements OnInit {
         // Marka sayfaları birbirine link vermiyordu — diğer marka sayfalarına
         // iç linkleme için mevcut marka çıkarılmış listeyi ayrıca tutuyoruz.
         this.otherBrands.set(options.brands.filter((b) => b !== match));
+        this.availableCategories.set(options.categories);
         this.setMeta(match);
 
         this.couponsService.getCoupons().subscribe((coupons) => {
@@ -92,7 +149,19 @@ export class BrandPage implements OnInit {
 
     this.loading.set(true);
     this.itemsError.set(false);
-    const query = { brands: [brand], page: this.currentPage(), pageSize: PAGE_SIZE };
+    this.hasActiveFilters.set(
+      this.selectedCategories().size > 0 || this.priceMin() !== null || this.priceMax() !== null || !!this.searchQuery().trim(),
+    );
+    const query = {
+      brands: [brand],
+      categories: [...this.selectedCategories()],
+      search: this.searchQuery().trim() || undefined,
+      minPrice: this.priceMin(),
+      maxPrice: this.priceMax(),
+      page: this.currentPage(),
+      pageSize: PAGE_SIZE,
+      sortBy: this.sortBy() || undefined,
+    };
     const request$ =
       this.viewMode() === 'deals'
         ? this.dealsService.getDeals(query)
@@ -106,6 +175,7 @@ export class BrandPage implements OnInit {
         this.totalCount.set(result.totalCount);
         this.totalPages.set(result.totalPages);
         this.loading.set(false);
+        this.loadSparklines(result.items);
       },
       error: () => {
         this.itemsError.set(true);
@@ -114,11 +184,71 @@ export class BrandPage implements OnInit {
     });
   }
 
+  private loadSparklines(items: Deal[]): void {
+    this.sparklines.set(new Map());
+    const ids = items.map((d) => d.productId);
+    this.dealsService.getSparklines(ids).subscribe((result) => {
+      this.sparklines.set(new Map(result.map((s) => [s.productId, s.points])));
+    });
+  }
+
+  protected sparklineFor(productId: number): PricePoint[] {
+    return this.sparklines().get(productId) ?? [];
+  }
+
   protected setViewMode(mode: ViewMode): void {
     if (this.viewMode() === mode) return;
     this.viewMode.set(mode);
     this.currentPage.set(1);
     this.loadItems();
+  }
+
+  protected onSortChange(value: string): void {
+    this.sortBy.set(value);
+    this.currentPage.set(1);
+    this.loadItems();
+  }
+
+  protected onSearchChange(value: string): void {
+    this.searchQuery.set(value);
+    if (this.searchDebounceHandle) clearTimeout(this.searchDebounceHandle);
+    this.searchDebounceHandle = setTimeout(() => {
+      this.currentPage.set(1);
+      this.loadItems();
+    }, SEARCH_DEBOUNCE_MS);
+  }
+
+  protected toggleCategory(category: string): void {
+    const current = new Set(this.selectedCategories());
+    current.has(category) ? current.delete(category) : current.add(category);
+    this.selectedCategories.set(current);
+    this.currentPage.set(1);
+    this.loadItems();
+  }
+
+  protected onPriceMinChange(value: number | null): void {
+    this.priceMin.set(value);
+    this.currentPage.set(1);
+    this.loadItems();
+  }
+
+  protected onPriceMaxChange(value: number | null): void {
+    this.priceMax.set(value);
+    this.currentPage.set(1);
+    this.loadItems();
+  }
+
+  protected clearFilters(): void {
+    this.selectedCategories.set(new Set());
+    this.priceMin.set(null);
+    this.priceMax.set(null);
+    this.searchQuery.set('');
+    this.currentPage.set(1);
+    this.loadItems();
+  }
+
+  protected categoryLabel(slug: string): string {
+    return CATEGORY_LABELS[slug] ?? slug;
   }
 
   protected goToPage(page: number): void {
@@ -147,8 +277,33 @@ export class BrandPage implements OnInit {
     return `Mağaza -%${deal.storeDiscountPercent}`;
   }
 
-  protected goToProduct(deal: Deal): void {
-    this.router.navigate(['/urun', deal.productId]);
+  protected openDeal(deal: Deal): void {
+    this.router.navigate([], { relativeTo: this.route, queryParams: { urun: deal.productId }, queryParamsHandling: 'merge' });
+  }
+
+  protected closeDeal(): void {
+    this.router.navigate([], { relativeTo: this.route, queryParams: { urun: null }, queryParamsHandling: 'merge' });
+  }
+
+  protected lastCheckedText(deal: Deal): string {
+    return formatRelativeTime(deal.scrapedAt);
+  }
+
+  protected goToStoreUrl(productId: number): string {
+    return this.priceHistoryService.goToStoreUrl(productId);
+  }
+
+  // deals-list.ts'teki aynı yöntem — sadece gerçek besin değeri verisi
+  // olan ürünlerde gösteriliyor, tahmini rakam uydurulmuyor.
+  protected pricePerServing(deal: Deal): number | null {
+    if (!deal.servingSizeGrams || deal.servingSizeGrams <= 0 || !deal.size) return null;
+    const match = /^(\d+(?:[.,]\d+)?)\s*Gr$/i.exec(deal.size.trim());
+    if (!match) return null;
+    const packageGrams = Number(match[1].replace(',', '.'));
+    if (!packageGrams) return null;
+    const servings = packageGrams / deal.servingSizeGrams;
+    if (!servings) return null;
+    return deal.currentPrice / servings;
   }
 
   // Alfabetik sıralama ile tek bir kanonik URL üretiyoruz (hiq-vs-ssn hep

@@ -6,10 +6,11 @@ import { Article } from '../core/article.model';
 import { ArticlesService } from '../core/articles.service';
 import { canonicalOrigin } from '../core/canonical-link';
 import { PageMetaService, upsertJsonLdScript } from '../core/page-meta.service';
+import { SiteHeader } from '../site-header/site-header';
 
 @Component({
   selector: 'app-article-page',
-  imports: [RouterLink, DatePipe],
+  imports: [RouterLink, DatePipe, SiteHeader],
   templateUrl: './article-page.html',
 })
 export class ArticlePage implements OnInit {

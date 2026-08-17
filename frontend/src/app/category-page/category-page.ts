@@ -1,43 +1,24 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
-import { CATEGORY_LABELS } from '../core/category-labels';
+import { CATEGORY_INTROS, CATEGORY_LABELS } from '../core/category-labels';
 import { Deal } from '../core/deal.model';
 import { DealsService } from '../core/deals.service';
 import { PageMetaService } from '../core/page-meta.service';
+import { PriceHistoryService } from '../core/price-history.service';
+import { formatRelativeTime } from '../core/relative-time';
+import { ProductModal } from '../product-modal/product-modal';
+import { SiteHeader } from '../site-header/site-header';
 
 type ViewMode = 'deals' | 'store' | 'all';
 const PAGE_SIZE = 24;
-
-// Bir geliştiricinin SEO geri bildirimi üzerine eklendi: kategori sayfaları
-// marka sayfalarıyla aynı desende ama şablon metin yerine her kategori için
-// gerçekten farklı, açıklayıcı bir giriş metni taşıyor — "ince içerik"
-// (thin content) riskini azaltmak için bilinçli.
-const CATEGORY_INTROS: Record<string, string> = {
-  'protein-tozu':
-    'Protein tozu, kas gelişimi ve günlük protein ihtiyacını karşılamak için en yaygın kullanılan spor takviyesi. Whey (peynir altı suyu) protein hızlı emilimiyle bilinirken, kazein daha yavaş salınım sağlar.',
-  kreatin:
-    'Kreatin, güç ve patlayıcı performans gerektiren antrenmanlarda en çok araştırılmış takviyelerden biri. Genellikle kreatin monohidrat formunda satılır ve düzenli günlük kullanımla etkisini gösterir.',
-  'amino-asitler':
-    'BCAA, EAA, glutamin ve arginin gibi amino asit takviyeleri, kas onarımı ve antrenman sonrası toparlanma sürecini desteklemek amacıyla tercih ediliyor.',
-  'pre-workout':
-    'Pre-workout ürünleri, antrenman öncesi enerji ve odaklanmayı artırmak amacıyla kafein, beta-alanin ve nitrik oksit destekleyici içerikler barındırır.',
-  'yag-yakici':
-    'Yağ yakıcı takviyeler, termojenik bileşenler içeren ve diyet ile antrenman programını desteklemek amacıyla kullanılan ürünler.',
-  'kilo-hacim':
-    'Kilo/hacim (gainer) ürünleri, yüksek kalori ve karbonhidrat içeriğiyle kilo almakta zorlanan veya hacim antrenmanı yapan kullanıcılar için tasarlandı.',
-  vitamin:
-    'Vitamin ve mineral takviyeleri, günlük beslenmedeki eksiklikleri tamamlamak amacıyla kullanılır — multivitaminden omega-3\'e, magnezyumdan çinkoya kadar geniş bir yelpazeyi kapsar.',
-  'saglikli-atistirmaliklar':
-    'Protein bar, kurabiye ve pirinç pastası gibi sağlıklı atıştırmalıklar, günlük protein/kalori hedefini pratik bir şekilde tamamlamak isteyenler için alternatif sunuyor.',
-  'l-carnitine-cla':
-    'L-Carnitine ve CLA (konjuge linoleik asit), yağ metabolizmasını desteklemek amacıyla kullanılan, genellikle diyet döneminde tercih edilen takviyeler.',
-};
+const SEARCH_DEBOUNCE_MS = 350;
 
 @Component({
   selector: 'app-category-page',
-  imports: [DecimalPipe, RouterLink],
+  imports: [DecimalPipe, RouterLink, FormsModule, ProductModal, SiteHeader],
   templateUrl: './category-page.html',
 })
 export class CategoryPage implements OnInit {
@@ -45,6 +26,7 @@ export class CategoryPage implements OnInit {
   private readonly router = inject(Router);
   private readonly dealsService = inject(DealsService);
   private readonly pageMeta = inject(PageMetaService);
+  private readonly priceHistoryService = inject(PriceHistoryService);
 
   protected readonly categorySlug = signal<string>('');
   protected readonly categoryLabel = signal<string>('');
@@ -67,11 +49,55 @@ export class CategoryPage implements OnInit {
   protected readonly totalCount = signal(0);
   protected readonly totalPages = signal(0);
   protected readonly currentPage = signal(1);
+  protected readonly sortBy = signal<string>('');
+  // Kullanıcı geri bildirimi: kategori sayfasında (ana sayfanın aksine)
+  // arama kutusu hiç yoktu — bir kategori içinde ürün ismine göre daraltmak
+  // mümkün değildi. Backend zaten `search` parametresini destekliyordu
+  // (deals-list.ts'teki aynı sorgu), sadece bu sayfaya hiç bağlanmamıştı.
+  protected readonly searchQuery = signal('');
+  private searchDebounceHandle: ReturnType<typeof setTimeout> | null = null;
+  // Aynı gerekçeyle: marka filtresi ve fiyat aralığı da yoktu. Kategori
+  // zaten bu sayfada sabit olduğu için marka çipleri anlamlı bir daraltma
+  // sağlıyor (ana sayfadaki marka çipleriyle aynı desen).
+  protected readonly availableBrands = signal<string[]>([]);
+  protected readonly selectedBrands = signal<Set<string>>(new Set());
+  protected readonly priceMin = signal<number | null>(null);
+  protected readonly priceMax = signal<number | null>(null);
+  protected readonly hasActiveFilters = signal(false);
+
+  // Ürün modalı — deals-list.ts'teki aynı desen ama path param yerine
+  // ?urun= query param'ı kullanıyor (bu sayfanın kendi kanonik URL'i
+  // /kategori/:slug, /urun/:id ayrı bir SAYFA'ya değil, aynı sayfa
+  // üzerinde bir modal durumuna işaret etmeli). Daha önce goToProduct
+  // doğrudan /urun/:id'ye (DealsList'in route'u) navigate ediyordu — bu
+  // kategori sayfasından TAMAMEN ayrılıp modal kapanınca ana sayfaya
+  // dönmesine yol açan gerçek bir bug'dı (kullanıcı bildirdi).
+  protected readonly selectedDeal = signal<Deal | null>(null);
 
   ngOnInit(): void {
     this.route.paramMap.subscribe((params) => {
       const slug = params.get('categorySlug') ?? '';
       this.loadCategory(slug);
+    });
+
+    this.route.queryParamMap.subscribe((params) => {
+      const idParam = params.get('urun');
+      if (!idParam) {
+        this.selectedDeal.set(null);
+        return;
+      }
+
+      const id = Number(idParam);
+      const alreadyLoaded = this.items().find((d) => d.productId === id);
+      if (alreadyLoaded) {
+        this.selectedDeal.set(alreadyLoaded);
+        return;
+      }
+
+      this.dealsService.getProductById(id).subscribe({
+        next: (deal) => this.selectedDeal.set(deal),
+        error: () => this.selectedDeal.set(null),
+      });
     });
   }
 
@@ -79,6 +105,11 @@ export class CategoryPage implements OnInit {
     this.loading.set(true);
     this.viewMode.set('all');
     this.currentPage.set(1);
+    this.searchQuery.set('');
+    this.selectedBrands.set(new Set());
+    this.priceMin.set(null);
+    this.priceMax.set(null);
+    this.hasActiveFilters.set(false);
 
     this.dealsService.getFilterOptions().subscribe({
       next: (options) => {
@@ -98,6 +129,7 @@ export class CategoryPage implements OnInit {
             .filter((c) => c !== match)
             .map((c) => ({ slug: c, label: CATEGORY_LABELS[c] ?? c })),
         );
+        this.availableBrands.set(options.brands);
         this.setMeta(label, match);
 
         this.loadItems();
@@ -115,7 +147,19 @@ export class CategoryPage implements OnInit {
 
     this.loading.set(true);
     this.itemsError.set(false);
-    const query = { categories: [categorySlug], page: this.currentPage(), pageSize: PAGE_SIZE };
+    this.hasActiveFilters.set(
+      this.selectedBrands().size > 0 || this.priceMin() !== null || this.priceMax() !== null || !!this.searchQuery().trim(),
+    );
+    const query = {
+      categories: [categorySlug],
+      brands: [...this.selectedBrands()],
+      search: this.searchQuery().trim() || undefined,
+      minPrice: this.priceMin(),
+      maxPrice: this.priceMax(),
+      page: this.currentPage(),
+      pageSize: PAGE_SIZE,
+      sortBy: this.sortBy() || undefined,
+    };
     const request$ =
       this.viewMode() === 'deals'
         ? this.dealsService.getDeals(query)
@@ -140,6 +184,50 @@ export class CategoryPage implements OnInit {
   protected setViewMode(mode: ViewMode): void {
     if (this.viewMode() === mode) return;
     this.viewMode.set(mode);
+    this.currentPage.set(1);
+    this.loadItems();
+  }
+
+  protected onSortChange(value: string): void {
+    this.sortBy.set(value);
+    this.currentPage.set(1);
+    this.loadItems();
+  }
+
+  protected onSearchChange(value: string): void {
+    this.searchQuery.set(value);
+    if (this.searchDebounceHandle) clearTimeout(this.searchDebounceHandle);
+    this.searchDebounceHandle = setTimeout(() => {
+      this.currentPage.set(1);
+      this.loadItems();
+    }, SEARCH_DEBOUNCE_MS);
+  }
+
+  protected toggleBrand(brand: string): void {
+    const current = new Set(this.selectedBrands());
+    current.has(brand) ? current.delete(brand) : current.add(brand);
+    this.selectedBrands.set(current);
+    this.currentPage.set(1);
+    this.loadItems();
+  }
+
+  protected onPriceMinChange(value: number | null): void {
+    this.priceMin.set(value);
+    this.currentPage.set(1);
+    this.loadItems();
+  }
+
+  protected onPriceMaxChange(value: number | null): void {
+    this.priceMax.set(value);
+    this.currentPage.set(1);
+    this.loadItems();
+  }
+
+  protected clearFilters(): void {
+    this.selectedBrands.set(new Set());
+    this.priceMin.set(null);
+    this.priceMax.set(null);
+    this.searchQuery.set('');
     this.currentPage.set(1);
     this.loadItems();
   }
@@ -170,7 +258,19 @@ export class CategoryPage implements OnInit {
     return `Mağaza -%${deal.storeDiscountPercent}`;
   }
 
-  protected goToProduct(deal: Deal): void {
-    this.router.navigate(['/urun', deal.productId]);
+  protected openDeal(deal: Deal): void {
+    this.router.navigate([], { relativeTo: this.route, queryParams: { urun: deal.productId }, queryParamsHandling: 'merge' });
+  }
+
+  protected closeDeal(): void {
+    this.router.navigate([], { relativeTo: this.route, queryParams: { urun: null }, queryParamsHandling: 'merge' });
+  }
+
+  protected lastCheckedText(deal: Deal): string {
+    return formatRelativeTime(deal.scrapedAt);
+  }
+
+  protected goToStoreUrl(productId: number): string {
+    return this.priceHistoryService.goToStoreUrl(productId);
   }
 }

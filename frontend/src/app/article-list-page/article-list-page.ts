@@ -4,10 +4,11 @@ import { RouterLink } from '@angular/router';
 import { ArticleSummary } from '../core/article.model';
 import { ArticlesService } from '../core/articles.service';
 import { PageMetaService } from '../core/page-meta.service';
+import { SiteHeader } from '../site-header/site-header';
 
 @Component({
   selector: 'app-article-list-page',
-  imports: [RouterLink],
+  imports: [RouterLink, SiteHeader],
   templateUrl: './article-list-page.html',
 })
 export class ArticleListPage implements OnInit {

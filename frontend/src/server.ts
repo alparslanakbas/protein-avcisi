@@ -69,12 +69,15 @@ app.get('/sitemap.xml', async (req, res) => {
       .join('');
 
     // Kategori sayfaları — "[kategori] fiyatları" gibi aramalar için.
-    const categoryUrls = filters.categories
-      .map(
-        (category) =>
-          `<url><loc>${origin}/kategori/${category}</loc><changefreq>daily</changefreq><priority>0.8</priority></url>`,
-      )
-      .join('');
+    // /kategoriler, tüm kategorileri tek bir yerde listeleyen indeks sayfası.
+    const categoryUrls =
+      `<url><loc>${origin}/kategoriler</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>` +
+      filters.categories
+        .map(
+          (category) =>
+            `<url><loc>${origin}/kategori/${category}</loc><changefreq>daily</changefreq><priority>0.8</priority></url>`,
+        )
+        .join('');
 
     const legalUrls =
       `<url><loc>${origin}/gizlilik-politikasi</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>` +

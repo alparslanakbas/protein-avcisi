@@ -1,56 +1,39 @@
-<div class="min-h-screen bg-stone-100 dark:bg-stone-950">
-  <header class="border-b border-stone-200 bg-stone-50 dark:border-stone-800 dark:bg-stone-900">
-    <div class="mx-auto flex max-w-6xl items-center gap-3 px-4 py-4 sm:px-6">
-      <a routerLink="/" class="flex items-center gap-2">
-        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-700 text-sm font-extrabold text-white">PA</div>
-        <span class="text-lg font-bold text-stone-900 dark:text-stone-100">
-          Protein<span class="text-brand-600 dark:text-brand-400">Avcısı</span>
-        </span>
-      </a>
-    </div>
-  </header>
+<div class="noc-shell min-h-screen bg-[var(--noc-bg)] text-[var(--noc-text)]">
+  <app-site-header />
 
-  <main class="mx-auto max-w-4xl px-4 py-10 sm:px-6">
-    <div class="mb-8 text-center">
-      <h1 class="text-3xl font-extrabold tracking-tight text-stone-900 dark:text-stone-100 sm:text-4xl">Rehber</h1>
-      <p class="mx-auto mt-3 max-w-xl text-stone-500 dark:text-stone-400">
-        Spor takviyesi alırken nelere dikkat etmen gerektiğini anlatan, gerçek/tarafsız bilgi yazıları.
-      </p>
-    </div>
+  <main class="mx-auto max-w-[900px] px-[28px] py-[22px]">
+    <h1 class="text-[38px] font-medium tracking-[-0.03em] sm:text-[42px]">Rehber</h1>
+    <p class="mt-2 max-w-xl text-[15px] text-[var(--noc-neutral-300)]">
+      Spor takviyesi alırken nelere dikkat etmen gerektiğini anlatan, gerçek/tarafsız bilgi yazıları.
+    </p>
 
     @if (loading()) {
-      <div class="py-24 text-center text-stone-400 dark:text-stone-400">Yükleniyor...</div>
+      <div class="py-24 text-center text-[var(--noc-neutral-500)]">Yükleniyor...</div>
     } @else if (loadError()) {
-      <div class="mx-auto max-w-md rounded-xl border border-red-200 bg-red-50 px-6 py-8 text-center text-red-600 dark:border-red-900 dark:bg-red-950/40 dark:text-red-400">
-        Rehber yazıları yüklenemedi. Lütfen daha sonra tekrar dene.
-      </div>
+      <div class="mx-auto mt-8 max-w-md rounded-[8px] bg-[var(--noc-surface)] px-6 py-8 text-center">Rehber yazıları yüklenemedi. Lütfen daha sonra tekrar dene.</div>
     } @else if (articles().length === 0) {
-      <div class="mx-auto max-w-md rounded-xl border border-stone-200 bg-stone-50 px-6 py-10 text-center text-stone-500 dark:border-stone-800 dark:bg-stone-900 dark:text-stone-400">
-        Henüz bir rehber yazısı yok, yakında eklenecek.
-      </div>
+      <div class="mx-auto mt-8 max-w-md rounded-[8px] bg-[var(--noc-surface)] px-6 py-10 text-center text-[var(--noc-neutral-500)]">Henüz bir rehber yazısı yok, yakında eklenecek.</div>
     } @else {
-      <div class="grid gap-4 sm:grid-cols-2">
-        @for (article of articles(); track article.slug) {
-          <a
-            [routerLink]="['/rehber', article.slug]"
-            class="group flex flex-col overflow-hidden rounded-2xl border border-stone-200 bg-stone-50 transition-all hover:-translate-y-1 hover:border-brand-300 hover:shadow-xl hover:shadow-brand-100/60 dark:border-stone-800 dark:bg-stone-900 dark:hover:border-brand-600 dark:hover:shadow-brand-950/40"
-          >
+      <div class="mt-8 divide-y divide-[var(--noc-divider)]">
+        @for (article of articles(); track article.slug; let i = $index) {
+          <a [routerLink]="['/rehber', article.slug]" class="flex items-start gap-4 py-4 hover:bg-[color-mix(in_srgb,var(--noc-text)_4%,transparent)]">
+            <span class="text-lg font-medium text-[var(--noc-neutral-500)]">{{ i + 1 < 10 ? '0' + (i + 1) : i + 1 }}</span>
+            <div class="min-w-0 flex-1">
+              <h2 class="text-[17px] font-medium leading-tight">{{ article.title }}</h2>
+              <p class="mt-1 line-clamp-2 text-[13px] text-[var(--noc-neutral-500)]">{{ article.summary }}</p>
+            </div>
             @if (article.coverImageUrl) {
-              <div class="aspect-[2/1] overflow-hidden bg-stone-100 dark:bg-stone-800">
-                <img [src]="article.coverImageUrl" [alt]="article.title" loading="lazy" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+              <div class="hidden h-16 w-24 shrink-0 overflow-hidden rounded-[8px] bg-[color-mix(in_srgb,var(--noc-text)_5%,transparent)] sm:block">
+                <img [src]="article.coverImageUrl" [alt]="article.title" loading="lazy" class="h-full w-full object-cover" />
               </div>
             }
-            <div class="flex flex-1 flex-col gap-2 p-5">
-              <h2 class="text-lg font-bold leading-tight text-stone-900 dark:text-stone-100">{{ article.title }}</h2>
-              <p class="line-clamp-3 text-sm text-stone-500 dark:text-stone-400">{{ article.summary }}</p>
-            </div>
           </a>
         }
       </div>
     }
 
     <div class="mt-10 text-center">
-      <a routerLink="/" class="text-sm font-semibold text-brand-600 hover:underline dark:text-brand-400">← Ana sayfaya dön</a>
+      <a routerLink="/" class="text-sm font-medium text-[var(--noc-accent)]">← Ana sayfaya dön</a>
     </div>
   </main>
 </div>

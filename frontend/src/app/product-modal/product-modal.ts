@@ -10,6 +10,7 @@ import { PricePoint } from '../core/price-history.model';
 import { PriceHistoryService } from '../core/price-history.service';
 import { ProductFeedbackService } from '../core/product-feedback.service';
 import { formatRelativeTime } from '../core/relative-time';
+import { buildAreaPath, buildLinePath, toCoordinates } from '../core/spark-chart';
 import { WatchService } from '../core/watch.service';
 import { ShareButton } from '../share-button/share-button';
 
@@ -102,9 +103,15 @@ export class ProductModal {
   protected readonly favoriteSubmitting = signal(false);
   protected readonly favoriteErrorMessage = signal<string | null>(null);
 
-  protected readonly coordinates = computed(() => this.toCoordinates(this.points(), this.minPrice(), this.maxPrice()));
-  protected readonly chartAreaPath = computed(() => this.buildAreaPath(this.coordinates()));
-  protected readonly chartLinePath = computed(() => this.buildLinePath(this.coordinates()));
+  protected readonly coordinates = computed(() =>
+    toCoordinates(this.points(), this.minPrice(), this.maxPrice(), {
+      width: CHART_WIDTH,
+      height: CHART_HEIGHT,
+      paddingY: CHART_PADDING_Y,
+    }),
+  );
+  protected readonly chartAreaPath = computed(() => buildAreaPath(this.coordinates(), CHART_HEIGHT));
+  protected readonly chartLinePath = computed(() => buildLinePath(this.coordinates()));
   protected readonly xAxisLabels = computed(() => this.buildXAxisLabels(this.points()));
 
   protected readonly hoverInfo = computed(() => {
@@ -374,23 +381,6 @@ export class ProductModal {
     return result;
   }
 
-  private buildLinePath(coords: [number, number][]): string {
-    if (coords.length === 0) return '';
-    if (coords.length === 1) {
-      const [[x, y]] = coords;
-      return `M ${x - 4} ${y} L ${x + 4} ${y}`;
-    }
-    return coords.map(([x, y], i) => `${i === 0 ? 'M' : 'L'} ${x} ${y}`).join(' ');
-  }
-
-  private buildAreaPath(coords: [number, number][]): string {
-    if (coords.length === 0) return '';
-    const first = coords[0];
-    const last = coords[coords.length - 1];
-    const line = coords.map(([x, y], i) => `${i === 0 ? 'M' : 'L'} ${x} ${y}`).join(' ');
-    return `${line} L ${last[0]} ${CHART_HEIGHT} L ${first[0]} ${CHART_HEIGHT} Z`;
-  }
-
   private buildXAxisLabels(points: PricePoint[]): { x: number; label: string }[] {
     if (points.length === 0) return [];
 
@@ -413,36 +403,5 @@ export class ProductModal {
     // etiketi (ör. "11 Ağu") art arda birden fazla kez gösterebiliyordu —
     // ardışık aynı etiketleri tekilleştiriyoruz.
     return candidates.filter((c, i) => i === 0 || c.label !== candidates[i - 1].label);
-  }
-
-  private toCoordinates(points: PricePoint[], min: number, max: number): [number, number][] {
-    if (points.length === 0) return [];
-
-    const times = points.map((p) => new Date(p.scrapedAt).getTime());
-    const minTime = Math.min(...times);
-    const maxTime = Math.max(...times);
-    const timeSpan = maxTime - minTime || 1;
-
-    // Fiyat hiç değişmemişse (min===max) çizgi grafiğin dibine yapışıp
-    // "boş" görünüyordu — bu durumda görsel aralığı fiyatın etrafında
-    // yapay olarak genişletip çizgiyi dikeyde ortalıyoruz.
-    let effectiveMin = min;
-    let effectiveMax = max;
-    if (max - min < 0.01) {
-      const padding = Math.max(max * 0.05, 1);
-      effectiveMin = min - padding;
-      effectiveMax = max + padding;
-    }
-    const priceSpan = effectiveMax - effectiveMin;
-
-    return points.map((p, i) => {
-      const t = new Date(p.scrapedAt).getTime();
-      const x = points.length === 1 ? CHART_WIDTH / 2 : ((t - minTime) / timeSpan) * CHART_WIDTH;
-      const y =
-        CHART_HEIGHT -
-        CHART_PADDING_Y -
-        ((p.price - effectiveMin) / priceSpan) * (CHART_HEIGHT - CHART_PADDING_Y * 2);
-      return [x, y] as [number, number];
-    });
   }
 }

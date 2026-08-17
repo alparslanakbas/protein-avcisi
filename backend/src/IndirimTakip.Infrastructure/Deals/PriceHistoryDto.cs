@@ -10,3 +10,5 @@ public record PriceHistoryDto(
     decimal CurrentPrice,
     decimal MinPrice,
     decimal MaxPrice);
+
+public record ProductSparklineDto(int ProductId, IReadOnlyList<PricePointDto> Points);

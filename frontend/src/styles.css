@@ -38,3 +38,90 @@ body {
   @apply bg-stone-50 text-stone-800 antialiased transition-colors duration-200 dark:bg-stone-950 dark:text-stone-200;
   font-family: var(--font-sans);
 }
+
+/* Nocturne - yeni tasarim sistemi tokenlari (Faz 1: sadece ana sayfa).
+   Mevcut --color-brand-* ve --color-accent-* tokenlarina (yukaridaki @theme)
+   bilerek dokunulmadi - henuz yeniden tasarlanmayan diger sayfalar hala
+   onlari kullaniyor. Bunlar Tailwind @theme'e degil, ham CSS custom
+   property olarak tanimlaniyor (nocturne-styles.css'in "var(--*) olarak
+   kullan" ilkesiyle birebir) ve yeni markette bg-[var(--noc-surface)]
+   gibi arbitrary-value soz dizimiyle kullanilacak. Degerler Nocturne'nin
+   varsayilani koyu - acik tema override'i ThemeService'in .dark class'ini
+   kaldirdigi durumda devreye giriyor. Bu, siteninkinin tersi bir kural:
+   Nocturne'de koyu varsayilan, site genelinde acik varsayilan. */
+:root {
+  --noc-bg: #161826;
+  --noc-surface: #232532;
+  --noc-card: #232532;
+  --noc-text: #e9e9ed;
+  --noc-accent: #9184d9;
+
+  --noc-accent-100: #f5f4ff;
+  --noc-accent-200: #e7e5fe;
+  --noc-accent-300: #d2cefd;
+  --noc-accent-400: #b5abfc;
+  --noc-accent-500: #968ae0;
+  --noc-accent-600: #796cbf;
+  --noc-accent-700: #5d5294;
+  --noc-accent-800: #423a6a;
+  --noc-accent-900: #2b2741;
+
+  --noc-neutral-100: #f3f5fe;
+  --noc-neutral-200: #e4e7f5;
+  --noc-neutral-300: #cfd3e5;
+  --noc-neutral-400: #b2b6ca;
+  --noc-neutral-500: #9397ab;
+  --noc-neutral-600: #75798c;
+  --noc-neutral-700: #595d6c;
+  --noc-neutral-800: #3f424d;
+  --noc-neutral-900: #292b31;
+
+  --noc-section: #262a60;
+  --noc-section-glow: #353b80;
+
+  --noc-divider: color-mix(in srgb, #e9e9ed 16%, transparent);
+  --noc-shadow-sm: 0 0 0 1px #3f424d;
+  --noc-shadow-md: 0 0 0 1px #595d6c, 0 6px 18px rgba(0, 0, 0, 0.55);
+  --noc-shadow-lg: 0 0 0 1px #9397ab, 0 16px 40px rgba(0, 0, 0, 0.65);
+
+  /* Nocturne'nin 0.7× yoğunluk skalası — Tailwind'in standart p-1/2/3/4/6/8
+     adımlarıyla (4/8/12/16/24/32px) AYNI oranda, sadece 0.7 kat küçük. Bu
+     değişkeni bir kapsayıcıda override etmek o kapsayıcı içindeki TÜM
+     p-, m- ve gap- utility'lerini otomatik 0.7×'e çeker (yeni token icat
+     etmeye gerek yok). Ana sayfa kökünde `.noc-shell` ile uygulanacak.
+     Not: siteye özgü bir gövde padding'i olmadığı için genel Tailwind
+     `--spacing` değeri dışarıda etkilenmiyor. */
+  --noc-spacing: 2.8px;
+}
+
+:root:not(.dark) {
+  --noc-bg: #f3f5fe;
+  --noc-surface: #e4e7f5;
+  --noc-card: #fbfbff;
+  --noc-text: #292b31;
+  /* Aksan açık zeminde küçük punto için yeterli kontrastta değil — README:
+     vurgulu metin/grafik çizgisi accent-600, link/kicker accent-700. */
+  --noc-accent: #796cbf;
+  /* Koyu temada gövde paragrafı için açık bir gri olan neutral-300, açık
+     zeminde neredeyse görünmez kalıyordu (kontrast bug'ı, ekran görüntüsüyle
+     yakalandı) — açık temada koyu bir gri olan neutral-700'e çekildi. */
+  --noc-neutral-300: #595d6c;
+  /* neutral-500 (rozet/"Kontrol: X" gibi ikincil metin) de aynı sebeple
+     açık zeminde çok soluk kalıyordu — bir kademe koyulaştırıldı. */
+  --noc-neutral-500: #75798c;
+  --noc-divider: color-mix(in srgb, #292b31 15%, transparent);
+  --noc-shadow-sm: 0 0 0 1px #cfd3e5;
+  --noc-shadow-md: 0 0 0 1px #cfd3e5, 0 6px 18px rgba(41, 43, 49, 0.1);
+  --noc-shadow-lg: 0 0 0 1px #cfd3e5, 0 16px 40px rgba(41, 43, 49, 0.18);
+}
+
+.noc-shell {
+  --spacing: var(--noc-spacing);
+}
+
+/* Canlı tarama şeridindeki nabız noktası — sadece motion-safe: altında
+   (prefers-reduced-motion: no-preference), Nocturne kuralı gereği. */
+@keyframes noc-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(0.8); }
+}

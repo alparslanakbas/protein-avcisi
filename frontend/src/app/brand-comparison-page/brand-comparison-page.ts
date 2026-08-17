@@ -6,10 +6,11 @@ import { BrandComparison } from '../core/brand-comparison.model';
 import { BrandComparisonService } from '../core/brand-comparison.service';
 import { CATEGORY_LABELS } from '../core/category-labels';
 import { PageMetaService } from '../core/page-meta.service';
+import { SiteHeader } from '../site-header/site-header';
 
 @Component({
   selector: 'app-brand-comparison-page',
-  imports: [DecimalPipe, RouterLink],
+  imports: [DecimalPipe, RouterLink, SiteHeader],
   templateUrl: './brand-comparison-page.html',
 })
 export class BrandComparisonPage implements OnInit {
