@@ -25,3 +25,5 @@ CLAUDE.md
 # IDE
 .idea/
 .vscode/
+testsprite_tests/tmp/
+testsprite_tests/tmp/config.json

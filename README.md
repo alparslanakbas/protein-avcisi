@@ -62,6 +62,12 @@ Kısacası: markanın söylediğine değil, biriktirdiği veriye güveniyor.
 - Google Search Console, Bing Webmaster Tools, Yandex Webmaster
 - Dinamik `sitemap.xml`, schema.org structured data (`Product`/`Offer`/`FAQPage`)
 
+**Kalite / Test**
+- Backend: xUnit (saf mantık — kategori/fiyat ayrıştırma)
+- Frontend: Vitest (Angular'ın kendi unit test runner'ı)
+- [TestSprite](https://www.testsprite.com) — AI destekli otomatik API/uçtan uca test
+  üretimi ve çalıştırma (MCP üzerinden, geliştirme ortamına karşı)
+
 ## Proje Yapısı
 
 ```

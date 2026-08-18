@@ -1,0 +1,52 @@
+[
+  {
+    "id": "TC001",
+    "title": "get api deals with filtering and pagination",
+    "description": "Verify GET /api/deals endpoint returns 200 with correctly filtered discounted deals list when using parameters onlyDiscounted, search, brands[], categories[], minPrice, maxPrice, sortBy, page, and pageSize."
+  },
+  {
+    "id": "TC002",
+    "title": "get api products with filtering and pagination",
+    "description": "Verify GET /api/products endpoint returns 200 with full product list when using parameters onlyDiscounted=false, search, brands[], categories[], minPrice, maxPrice, sortBy, page, and pageSize."
+  },
+  {
+    "id": "TC003",
+    "title": "get api store deals with filtering and pagination",
+    "description": "Verify GET /api/store-deals endpoint returns 200 with store campaign deals list when using parameters search, categories[], sortBy, page, and pageSize."
+  },
+  {
+    "id": "TC004",
+    "title": "get api products by id with valid and invalid ids",
+    "description": "Verify GET /api/products/{id} returns 200 with product detail for valid id and 404 for non-existent product id."
+  },
+  {
+    "id": "TC005",
+    "title": "get api products price history with valid and invalid days",
+    "description": "Verify GET /api/products/{id}/price-history returns 200 with price history data for valid days parameter (7,15,30,180,365) and 400 for invalid days parameter."
+  },
+  {
+    "id": "TC006",
+    "title": "get api products sparklines with valid ids and days",
+    "description": "Verify GET /api/products/sparklines returns 200 with sparkline data for up to 100 valid product ids and valid days parameter."
+  },
+  {
+    "id": "TC007",
+    "title": "get api brand comparison with valid and invalid brands",
+    "description": "Verify GET /api/brand-comparison returns 200 with comparison data for valid brand1 and brand2 parameters, 400 or 404 for invalid or missing brand parameters."
+  },
+  {
+    "id": "TC008",
+    "title": "get api coupons returns active coupon codes",
+    "description": "Verify GET /api/coupons returns 200 with list of active coupon codes or empty list when no coupons are available."
+  },
+  {
+    "id": "TC009",
+    "title": "get api articles list and detail with valid and invalid slugs",
+    "description": "Verify GET /api/articles returns 200 with guide article list or empty list, and GET /api/articles/{slug} returns 200 with article detail for valid slug and 404 or 400 for unknown or malformed slug."
+  },
+  {
+    "id": "TC010",
+    "title": "get go product redirect with click tracking",
+    "description": "Verify GET /go/{productId} returns 302 redirect to merchant store page and tracks the click for valid productId."
+  }
+]

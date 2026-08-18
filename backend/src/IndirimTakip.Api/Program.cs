@@ -127,7 +127,23 @@ app.UseExceptionHandler(errorApp =>
     errorApp.Run(async context =>
     {
         var exceptionFeature = context.Features.Get<IExceptionHandlerFeature>();
-        if (exceptionFeature?.Error is { } ex)
+        var error = exceptionFeature?.Error;
+
+        // BadHttpRequestException, ASP.NET Core'un query/route/body binding
+        // sırasında (ör. ?days=abc gibi int'e çevrilemeyen bir query değeri)
+        // fırlattığı, istemci kaynaklı bir hata — bunu genel 500'e düşürmek
+        // yerine kendi durum kodunu (genelde 400) koruyoruz, sunucu hatası
+        // gibi ERROR seviyesinde de loglamıyoruz. TestSprite'ın otomatik
+        // testinde yakalandı (bkz. CLAUDE.md).
+        if (error is BadHttpRequestException badRequest)
+        {
+            context.Response.ContentType = "application/json";
+            context.Response.StatusCode = badRequest.StatusCode;
+            await context.Response.WriteAsJsonAsync(new { message = "Geçersiz istek." });
+            return;
+        }
+
+        if (error is { } ex)
             app.Logger.LogError(ex, "İşlenmeyen hata: {Method} {Path}", context.Request.Method, context.Request.Path);
 
         context.Response.ContentType = "application/json";
@@ -198,8 +214,17 @@ MapDealsQueryEndpoint("/api/products", onlyDiscounted: false, onlyStoreDiscounte
 MapDealsQueryEndpoint("/api/store-deals", onlyDiscounted: false, onlyStoreDiscounted: true);
 
 // Marka karşılaştırma sayfaları için — kategori bazında ortalama fiyat.
-app.MapGet("/api/brand-comparison", async (string brand1, string brand2, DealsQueryService deals, CancellationToken ct) =>
+// brand1/brand2 nullable — ASP.NET Core minimal API'de non-nullable bir string
+// query parametresi bile eksik gönderilince null olarak bind edilebiliyor
+// (route parametrelerinin aksine query parametreleri otomatik zorunlu değil);
+// kontrol olmadan GetBrandComparisonAsync içindeki .ToLower() çağrısı
+// NullReferenceException'a düşüp 500 dönüyordu — TestSprite'ın otomatik
+// testinde yakalandı (bkz. CLAUDE.md).
+app.MapGet("/api/brand-comparison", async (string? brand1, string? brand2, DealsQueryService deals, CancellationToken ct) =>
 {
+    if (string.IsNullOrWhiteSpace(brand1) || string.IsNullOrWhiteSpace(brand2))
+        return Results.BadRequest(new { message = "brand1 ve brand2 parametreleri gerekli." });
+
     var result = await deals.GetBrandComparisonAsync(brand1, brand2, ct);
     return result is null ? Results.NotFound() : Results.Ok(result);
 });

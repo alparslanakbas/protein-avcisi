@@ -1,0 +1,1100 @@
+[
+  {
+    "id": "TC001",
+    "title": "Ana sayfada canlı keşif ve filtreleme yapar",
+    "description": "Kullanıcı ana sayfada canlı istatistikleri görür, filtreleri yükler ve arama, marka, kategori, fiyat ve sıralama ile indirim listesini daraltır.",
+    "category": "Ana Sayfa Ürün Keşfi",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the live statistics section is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify filter controls are displayed"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the search field with a product name fragment"
+      },
+      {
+        "type": "action",
+        "description": "Select a brand filter"
+      },
+      {
+        "type": "action",
+        "description": "Select a category filter"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the minimum price field with a valid value"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the maximum price field with a valid value"
+      },
+      {
+        "type": "action",
+        "description": "Select a sorting option"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify filtered deals are displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC002",
+    "title": "Ürün detayını açar ve fiyat geçmişini inceler",
+    "description": "Kullanıcı bir ürünü açar, detay bilgisini görür ve kısa dönem fiyat geçmişi ile sparkline verisinin gösterildiğini doğrular.",
+    "category": "Ürün Detayı ve Fiyat Geçmişi",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Open a product detail page from the listing"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify product detail information is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a price history chart is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify sparkline data is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC003",
+    "title": "Ürün detayından mağazaya gider",
+    "description": "Kullanıcı ürün detayında mağazaya git seçeneğini kullanır ve satıcıya yönlendirme akışının başlatıldığını görür.",
+    "category": "Ürün Detayı ve Fiyat Geçmişi",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Open a product detail page from the listing"
+      },
+      {
+        "type": "action",
+        "description": "Click the store visit action"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the store redirection is initiated"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the product detail context is no longer the active view"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC004",
+    "title": "Mobil görünümde alt gezinmeyi ve duyarlı düzeni kullanır",
+    "description": "Mobil kullanıcı alt gezinme çubuğunu ve duyarlı ürün ızgarasını doğru şekilde görür ve site bölümleri arasında geçiş yapabilir.",
+    "category": "Ana Sayfa Ürün Keşfi",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the mobile navigation is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the responsive product grid is displayed"
+      },
+      {
+        "type": "action",
+        "description": "Click a primary navigation destination"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the selected destination content is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC005",
+    "title": "Mobil görünümde alt sekme çubuğunu görüntüleme",
+    "description": "Kullanıcı mobil cihazda siteyi açtığında alt sekme çubuğu ve uyarlanmış düzen doğru biçimde görünür.",
+    "category": "Tema ve Mobil Deneyim",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the mobile navigation is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the responsive grid layout is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC006",
+    "title": "Ana sayfada tüm ürünler görünümüne geçer",
+    "description": "Kullanıcı ana sayfada indirimler yerine tüm ürünler listesini açar ve ürünlerin listelendiğini görür.",
+    "category": "Ana Sayfa Ürün Keşfi",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Click the tab for all products"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the product list is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify discounted-only filtering is not active"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC007",
+    "title": "Kategori sayfasında arama ve filtreleme yapar",
+    "description": "Kullanıcı tekil kategori sayfasında arama, marka ve fiyat filtrelerini uyguladığında sonuçların kategoriyle uyumlu şekilde daraldığını görür.",
+    "category": "Kategori Sayfaları",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /kategoriler"
+      },
+      {
+        "type": "action",
+        "description": "Click the link for a category"
+      },
+      {
+        "type": "action",
+        "description": "Fill in a search term that matches some products"
+      },
+      {
+        "type": "action",
+        "description": "Select one brand filter"
+      },
+      {
+        "type": "action",
+        "description": "Fill a valid minimum price into the minimum price field"
+      },
+      {
+        "type": "action",
+        "description": "Fill a valid maximum price into the maximum price field"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify filtered products are displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the results remain within the selected category"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC008",
+    "title": "Ürün detayında farklı geçmiş aralıklarını değiştirir",
+    "description": "Kullanıcı ürün detayında 7, 15, 30, 180 ve 365 günlük fiyat geçmişi arasında geçiş yapar ve grafiğin güncellendiğini görür.",
+    "category": "Ürün Detayı ve Fiyat Geçmişi",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Open a product detail page from the listing"
+      },
+      {
+        "type": "action",
+        "description": "Select the 30 day history range"
+      },
+      {
+        "type": "action",
+        "description": "Select the 180 day history range"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the price history chart updates for the selected range"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the selected range remains visible"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC009",
+    "title": "Ana sayfada mağaza kampanyalarını görüntüler",
+    "description": "Kullanıcı ana sayfada mağaza kampanyaları görünümüne geçer ve kampanya listelerinin yüklendiğini görür.",
+    "category": "Ana Sayfa Ürün Keşfi",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Click the tab for store deals"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify store campaign listings are displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify pagination controls are displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC010",
+    "title": "Kategori indeksinden kategori ürünlerini açar",
+    "description": "Kullanıcı kategori indeksinden bir kategoriye girip o kategoriye ait ürün listesini ve sayfalama bilgisini görür.",
+    "category": "Kategori Sayfaları",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /kategoriler"
+      },
+      {
+        "type": "action",
+        "description": "Click the link for a category"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify category-specific products are displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify pagination is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC011",
+    "title": "Marka sayfasında ürünleri ve kuponları keşfeder",
+    "description": "Kullanıcı marka sayfasında ilgili ürünleri ve aktif kupon kodlarını görür, ardından marka bağlamında sonuçları daraltır.",
+    "category": "Marka Sayfaları ve Kuponlar",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Open a brand page from the listing"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify brand-specific products are displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify active coupon information is displayed"
+      },
+      {
+        "type": "action",
+        "description": "Select a category filter within the brand page"
+      },
+      {
+        "type": "action",
+        "description": "Select a sorting option within the brand page"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the brand results are refined"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC012",
+    "title": "Açık temadan koyu temaya geçiş yapma",
+    "description": "Kullanıcı tema seçimini açık moddan koyu moda değiştirdiğinde arayüz teması sayfa yenilemesi olmadan güncellenir.",
+    "category": "Tema ve Mobil Deneyim",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Click the theme toggle control"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the dark theme is applied"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC013",
+    "title": "Ana sayfada sayfalama ile daha fazla sonuç açar",
+    "description": "Kullanıcı ana sayfada filtrelenmiş sonuçlar arasında sayfalama yapar ve sonraki sonuç kümesinin yüklendiğini görür.",
+    "category": "Ana Sayfa Ürün Keşfi",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the search field with a broad product name fragment"
+      },
+      {
+        "type": "action",
+        "description": "Click the next page control"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a different set of results is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify pagination remains available"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC014",
+    "title": "Tema görünümünü değiştirir ve tercihin uygulanmasını görür",
+    "description": "Kullanıcı açık, koyu ve sistem tema seçenekleri arasında geçiş yapar ve görünümün güncellendiğini doğrular.",
+    "category": "Ana Sayfa Ürün Keşfi",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Open the theme selector"
+      },
+      {
+        "type": "action",
+        "description": "Select the dark theme"
+      },
+      {
+        "type": "action",
+        "description": "Select the system theme"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the theme appearance updates"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the theme selector reflects the selected mode"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC015",
+    "title": "İki markayı karşılaştırır",
+    "description": "Kullanıcı iki markayı karşılaştırma sayfasında kategori bazlı ortalama fiyatlarla yan yana görür.",
+    "category": "Marka Karşılaştırma",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /karsilastir/hiq-ssn"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify category-based brand comparison data is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify both brands are represented in the comparison"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC016",
+    "title": "Markalar arasında karşılaştırma yapar",
+    "description": "Kullanıcı marka karşılaştırma sayfasında iki markanın kategori bazlı ortalama fiyatlarını yan yana görür.",
+    "category": "Marka Sayfaları ve Kuponlar",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Open a brand comparison page from the site"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify comparison data is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify category-based price comparison is visible"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC017",
+    "title": "Kategori indeksinden kategori detayına gider",
+    "description": "Kullanıcı kategori indeksini açar, bir kategori detayına girer ve o kategoriye ait ürünlerin listelendiğini görür.",
+    "category": "Marka Sayfaları ve Kuponlar",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /kategoriler"
+      },
+      {
+        "type": "action",
+        "description": "Open a category detail page"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify category products are displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify category filter controls are displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC018",
+    "title": "Rehber yazı listesini açar ve bir yazıyı okur",
+    "description": "Kullanıcı rehber listesinde yazıları görür ve seçtiği yazının detay içeriğine ulaşır.",
+    "category": "Rehber İçerikleri",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /rehber"
+      },
+      {
+        "type": "action",
+        "description": "Click the link to open a guide article"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify article detail content is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the guide article content is readable"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC019",
+    "title": "Kategori detayında arama ve filtre ile sonuçları daraltır",
+    "description": "Kullanıcı kategori detayında arama, filtre ve sıralama kullanarak ürün listesini daraltır.",
+    "category": "Marka Sayfaları ve Kuponlar",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /kategoriler"
+      },
+      {
+        "type": "action",
+        "description": "Open a category detail page"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the search field with a product name fragment"
+      },
+      {
+        "type": "action",
+        "description": "Select a filter option"
+      },
+      {
+        "type": "action",
+        "description": "Select a sorting option"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify filtered category results are displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC020",
+    "title": "Temayı sistem moduna alma",
+    "description": "Kullanıcı tema seçimini sistem moduna aldığında arayüz işletim sistemi renk tercihine uyumlu hale gelir.",
+    "category": "Tema ve Mobil Deneyim",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Click the theme toggle control until system mode is selected"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the theme follows the system preference"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC021",
+    "title": "Kategori sayfasında sıralamayı değiştirir",
+    "description": "Kullanıcı kategori içindeki ürünleri farklı bir sıralama ölçütüne göre yeniden düzenleyebilir.",
+    "category": "Kategori Sayfaları",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /kategoriler"
+      },
+      {
+        "type": "action",
+        "description": "Click the link for a category"
+      },
+      {
+        "type": "action",
+        "description": "Select a different sort option"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the product order changes"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify category products are still displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC022",
+    "title": "SEO meta bilgileri sayfa değişiminde güncellenir",
+    "description": "Kullanıcı ana sayfa, ürün detay ve rehber sayfaları arasında geçiş yaptığında sayfa için uygun SEO başlık ve paylaşım bilgileri güncellenir.",
+    "category": "Ana Sayfa Ürün Keşfi",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify SEO metadata is present for the home page"
+      },
+      {
+        "type": "action",
+        "description": "Open a product detail page from the listing"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify SEO metadata updates for the product page"
+      },
+      {
+        "type": "action",
+        "description": "Open an article from the guide list"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify SEO metadata updates for the article page"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC023",
+    "title": "Rehber listesinde içerik bulur ve açar",
+    "description": "Kullanıcı rehber listesinde bir içeriği açar ve makale detayının yüklendiğini görür.",
+    "category": "Marka Sayfaları ve Kuponlar",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /rehber"
+      },
+      {
+        "type": "action",
+        "description": "Open an article from the guide list"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify article content is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify related navigation options are displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC024",
+    "title": "Marka karşılaştırmasında ters sıra aynı karşılaştırmayı gösterir",
+    "description": "Kullanıcı markaları ters sırayla açtığında aynı karşılaştırma içeriğini görür.",
+    "category": "Marka Karşılaştırma",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /karsilastir/ssn-hiq"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify category-based brand comparison data is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify both brands are represented in the comparison"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC025",
+    "title": "Rehber yazısından keşfe geri döner",
+    "description": "Kullanıcı bir rehber yazısını açtıktan sonra ilgili ürün veya marka keşfine yönlendiğinde alışveriş keşfine devam edebilir.",
+    "category": "Rehber İçerikleri",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /rehber"
+      },
+      {
+        "type": "action",
+        "description": "Click the link to open a guide article"
+      },
+      {
+        "type": "action",
+        "description": "Click the link to continue exploring products or brands"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a product or brand discovery page is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the user can continue browsing deals"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC026",
+    "title": "Rehberden ürün veya marka keşfine geri döner",
+    "description": "Kullanıcı rehber yazısından ilgili ürün veya marka keşif alanına geçerek alışveriş araştırmasını sürdürebilir.",
+    "category": "Marka Sayfaları ve Kuponlar",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /rehber"
+      },
+      {
+        "type": "action",
+        "description": "Open an article from the guide list"
+      },
+      {
+        "type": "action",
+        "description": "Click a related product discovery link"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the discovery listing is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify guide content is no longer the active view"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC027",
+    "title": "Kategori filtrelerinde sonuç olmadığında boş durum görür",
+    "description": "Kullanıcı kategori sayfasında sonuç vermeyen bir fiyat aralığı uyguladığında boş durum mesajı görür.",
+    "category": "Kategori Sayfaları",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /kategoriler"
+      },
+      {
+        "type": "action",
+        "description": "Click the link for a category"
+      },
+      {
+        "type": "action",
+        "description": "Fill a very low maximum price into the maximum price field"
+      },
+      {
+        "type": "action",
+        "description": "Fill a very high minimum price into the minimum price field"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an empty state message is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify no products are displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC028",
+    "title": "Marka kuponları yokken boş durum görür",
+    "description": "Kullanıcı kupon bulunmayan bir marka bağlamında boş kupon durumunu görür.",
+    "category": "Marka Sayfaları ve Kuponlar",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Open a brand page for a brand with no active coupons"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a coupon empty state is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify brand products are still displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC029",
+    "title": "Statik bilgilendirme sayfasını görüntüleme",
+    "description": "Kullanıcı site hakkında nasıl çalıştığını açıklayan sayfayı açtığında içerik doğru şekilde görüntülenir.",
+    "category": "Statik Bilgilendirme Sayfaları",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /nasil-calisiyoruz"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify informational page content is displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC030",
+    "title": "Kurumsal bilgi sayfalarını açar",
+    "description": "Kullanıcı site nasıl çalışır, gizlilik politikası ve çerez politikası sayfalarını açarak platform hakkında temel bilgilere ulaşır.",
+    "category": "Marka Sayfaları ve Kuponlar",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /nasil-calisiyoruz"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify informational content is displayed"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /gizlilik-politikasi"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify policy content is displayed"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /cerez-politikasi"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify cookie policy content is displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC031",
+    "title": "Gizlilik politikası sayfasını görüntüleme",
+    "description": "Kullanıcı gizlilik politikası sayfasını açtığında sayfa içeriği doğru şekilde görüntülenir.",
+    "category": "Statik Bilgilendirme Sayfaları",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /gizlilik-politikasi"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify privacy policy content is displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC032",
+    "title": "Kategori detayında sonuç yok boş durumunu görür",
+    "description": "Kullanıcı kategori detayında eşleşmeyen arama ya da filtre uyguladığında boş durum mesajı görür.",
+    "category": "Marka Sayfaları ve Kuponlar",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /kategoriler"
+      },
+      {
+        "type": "action",
+        "description": "Open a category detail page"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the search field with a unique non-matching value"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an empty state message is displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC033",
+    "title": "Çerez politikası sayfasını görüntüleme",
+    "description": "Kullanıcı çerez politikası sayfasını açtığında sayfa içeriği doğru şekilde görüntülenir.",
+    "category": "Statik Bilgilendirme Sayfaları",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /cerez-politikasi"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify cookie policy content is displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC034",
+    "title": "Rehber listesi boşken boş durum gösterir",
+    "description": "Kullanıcı içerik bulunmayan rehber listesinde boş durum mesajı görür.",
+    "category": "Rehber İçerikleri",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /rehber"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an empty state message is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify no guide articles are displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC035",
+    "title": "Favoriler boş durumunu görüntüleme",
+    "description": "Kullanıcı kayıtlı favori verisi olmadan favoriler sayfasını açtığında boş durum ve yönlendirme mesajı görülür.",
+    "category": "Favoriler Görünümü",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /favorilerim"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an empty state message is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify favorites content is not displayed"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC036",
+    "title": "Ana sayfada geçersiz sayfa boyutunu doğrular",
+    "description": "Kullanıcı ana sayfada desteklenmeyen sayfa boyutu girdiğinde doğrulama uyarısı görür ve sonuçlar geçersiz filtreyle ilerlemez.",
+    "category": "Ana Sayfa Ürün Keşfi",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Open the page size control"
+      },
+      {
+        "type": "action",
+        "description": "Select an invalid page size value"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a validation error is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify results remain visible with the previous valid state"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC037",
+    "title": "Karşılaştırma sayfasında eksik marka bilgisi uyarısı görür",
+    "description": "Kullanıcı eksik marka parametresiyle karşılaştırma açtığında geçerli bir karşılaştırma yerine doğrulama mesajı görür.",
+    "category": "Marka Karşılaştırma",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /karsilastir/"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a validation error is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify no brand comparison data is displayed"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC038",
+    "title": "Geçersiz marka karşılaştırma bağlantısını açamaz",
+    "description": "Kullanıcı eksik ya da hatalı karşılaştırma parametresiyle karşılaştırma sayfasına gittiğinde doğrulama veya bulunamadı durumu görür.",
+    "category": "Marka Sayfaları ve Kuponlar",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to an invalid brand comparison route"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a validation or not found state is displayed"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC039",
+    "title": "Geçersiz kategori sayfası boş sonuç gösterir",
+    "description": "Kullanıcı geçersiz bir kategori sayfası açtığında ürün listesi yerine boş sonuç durumu görür.",
+    "category": "Kategori Sayfaları",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /kategoriler"
+      },
+      {
+        "type": "action",
+        "description": "Click the link to open a category detail page"
+      },
+      {
+        "type": "action",
+        "description": "Modify the category selection to an unsupported category through the site navigation"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an empty state message is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify no category products are displayed"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC040",
+    "title": "Geçersiz statik rota için not found sayfası",
+    "description": "Kullanıcı geçersiz bir statik sayfaya gittiğinde bulunamadı sayfası gösterilir.",
+    "category": "Statik Bilgilendirme Sayfaları",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /gecersiz-sayfa-adi"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a not found page is displayed"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC041",
+    "title": "Ürün detayında bulunmayan ürünü açamaz",
+    "description": "Kullanıcı geçersiz bir ürün kaynağına gittiğinde bulunamadı durumu görür.",
+    "category": "Ürün Detayı ve Fiyat Geçmişi",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to a non-existent product detail route"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a not found state is displayed"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC042",
+    "title": "Geçersiz kayıtla favoriler görünümünü kurtarma",
+    "description": "Kullanıcı geçersiz veya süresi geçmiş kayıtla favoriler sayfasını açtığında boş durum ya da kurtarma yönlendirmesi gösterilir.",
+    "category": "Favoriler Görünümü",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /favorilerim"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a recovery or empty state message is displayed"
+      }
+    ],
+    "priority": "Low"
+  }
+]
