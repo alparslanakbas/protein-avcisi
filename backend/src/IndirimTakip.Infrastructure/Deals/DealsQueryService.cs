@@ -68,7 +68,7 @@ public class DealsQueryService(AppDbContext db)
         var referenceSince = DateTimeOffset.UtcNow.AddDays(-referenceWindowDays);
         var staleSince = DateTimeOffset.UtcNow.Subtract(StaleThreshold);
 
-        var query =
+        var query = (
             from p in db.Products
             join b in db.Brands on p.BrandId equals b.Id
             where b.IsActive
@@ -83,7 +83,7 @@ public class DealsQueryService(AppDbContext db)
                 ThirtyDayLowPrice = p.PriceHistories
                     .Where(ph => ph.ScrapedAt >= referenceSince)
                     .Min(ph => (decimal?)ph.Price),
-            };
+            }).AsNoTracking();
 
         // Donmuş/hayalet ürünleri gizle — bkz. StaleThreshold üzerindeki yorum.
         query = query.Where(r => r.Latest != null && r.Latest.ScrapedAt >= staleSince);
@@ -180,7 +180,7 @@ public class DealsQueryService(AppDbContext db)
                 ThirtyDayLowPrice = p.PriceHistories
                     .Where(ph => ph.ScrapedAt >= referenceSince)
                     .Min(ph => (decimal?)ph.Price),
-            }).FirstOrDefaultAsync(cancellationToken);
+            }).AsNoTracking().FirstOrDefaultAsync(cancellationToken);
 
         if (row?.Latest is null || row.ReferencePrice is null || row.ThirtyDayLowPrice is null)
             return null;
@@ -211,7 +211,7 @@ public class DealsQueryService(AppDbContext db)
                 ThirtyDayLowPrice = p.PriceHistories
                     .Where(ph => ph.ScrapedAt >= referenceSince)
                     .Min(ph => (decimal?)ph.Price),
-            }).ToListAsync(cancellationToken);
+            }).AsNoTracking().ToListAsync(cancellationToken);
 
         return rows
             .Where(r => r.Latest != null && r.ReferencePrice != null && r.ThirtyDayLowPrice != null)
@@ -226,8 +226,8 @@ public class DealsQueryService(AppDbContext db)
     // marka/ürün eklendikçe otomatik güncel kalır.
     public async Task<BrandComparisonDto?> GetBrandComparisonAsync(string brand1, string brand2, CancellationToken cancellationToken = default)
     {
-        var b1 = await db.Brands.FirstOrDefaultAsync(b => b.IsActive && b.Name.ToLower() == brand1.ToLower(), cancellationToken);
-        var b2 = await db.Brands.FirstOrDefaultAsync(b => b.IsActive && b.Name.ToLower() == brand2.ToLower(), cancellationToken);
+        var b1 = await db.Brands.AsNoTracking().FirstOrDefaultAsync(b => b.IsActive && b.Name.ToLower() == brand1.ToLower(), cancellationToken);
+        var b2 = await db.Brands.AsNoTracking().FirstOrDefaultAsync(b => b.IsActive && b.Name.ToLower() == brand2.ToLower(), cancellationToken);
         if (b1 is null || b2 is null || b1.Id == b2.Id)
             return null;
 
@@ -262,7 +262,7 @@ public class DealsQueryService(AppDbContext db)
             {
                 Category = p.Category!,
                 Latest = p.PriceHistories.OrderByDescending(ph => ph.ScrapedAt).Select(ph => (decimal?)ph.Price).FirstOrDefault(),
-            }).ToListAsync(cancellationToken);
+            }).AsNoTracking().ToListAsync(cancellationToken);
 
         return rows
             .Where(r => r.Latest is not null)
@@ -287,6 +287,7 @@ public class DealsQueryService(AppDbContext db)
             select new SitemapEntryDto(
                 p.Id,
                 p.PriceHistories.OrderByDescending(ph => ph.ScrapedAt).Select(ph => ph.ScrapedAt).FirstOrDefault()))
+            .AsNoTracking()
             .ToListAsync(cancellationToken);
     }
 
@@ -301,26 +302,34 @@ public class DealsQueryService(AppDbContext db)
         var staleSince = DateTimeOffset.UtcNow.Subtract(StaleThreshold);
 
         // Donmuş/hayalet ürünleri gizle — bkz. StaleThreshold üzerindeki yorum.
-        var activeProducts =
+        var activeProducts = (
             from p in db.Products
             join b in db.Brands on p.BrandId equals b.Id
             where b.IsActive && p.PriceHistories.OrderByDescending(ph => ph.ScrapedAt).Select(ph => ph.ScrapedAt).FirstOrDefault() >= staleSince
-            select p;
+            select p).AsNoTracking();
 
         var totalProducts = await activeProducts.CountAsync(cancellationToken);
 
-        var rows = await activeProducts
-            .Select(p => new
-            {
-                Latest = p.PriceHistories.OrderByDescending(ph => ph.ScrapedAt).Select(ph => (decimal?)ph.Price).FirstOrDefault(),
-                ReferencePrice = p.PriceHistories.Where(ph => ph.ScrapedAt >= referenceSince).Max(ph => (decimal?)ph.Price),
-                ThirtyDayLowPrice = p.PriceHistories.Where(ph => ph.ScrapedAt >= referenceSince).Min(ph => (decimal?)ph.Price),
-            }).ToListAsync(cancellationToken);
+        // Önceden burada tüm aktif ürünlerin Latest/ReferencePrice/ThirtyDayLowPrice'ı
+        // ToListAsync ile .NET tarafına çekilip rows.Count(...) ile bellekte sayılıyordu
+        // — ana sayfa her yüklendiğinde ~600 satır ağdan geçiyordu. Artık statsQuery
+        // sadece bir IQueryable projeksiyonu (henüz SQL'e çevrilmedi), iki CountAsync
+        // çağrısı bunun üzerine kendi WHERE'ini ekleyip sayımı veritabanında yaptırıyor
+        // — ağdan sadece iki tamsayı geçiyor.
+        var statsQuery = activeProducts.Select(p => new
+        {
+            Latest = p.PriceHistories.OrderByDescending(ph => ph.ScrapedAt).Select(ph => (decimal?)ph.Price).FirstOrDefault(),
+            ReferencePrice = p.PriceHistories.Where(ph => ph.ScrapedAt >= referenceSince).Max(ph => (decimal?)ph.Price),
+            ThirtyDayLowPrice = p.PriceHistories.Where(ph => ph.ScrapedAt >= referenceSince).Min(ph => (decimal?)ph.Price),
+        });
 
-        var discountCount = rows.Count(r => r.Latest is not null && r.ReferencePrice is not null && r.Latest < r.ReferencePrice);
-        var thirtyDayLowCount = rows.Count(r =>
-            r.Latest is not null && r.ThirtyDayLowPrice is not null && r.ReferencePrice is not null
-            && r.Latest <= r.ThirtyDayLowPrice && r.ThirtyDayLowPrice < r.ReferencePrice);
+        var discountCount = await statsQuery.CountAsync(
+            r => r.Latest != null && r.ReferencePrice != null && r.Latest < r.ReferencePrice,
+            cancellationToken);
+        var thirtyDayLowCount = await statsQuery.CountAsync(
+            r => r.Latest != null && r.ThirtyDayLowPrice != null && r.ReferencePrice != null
+                 && r.Latest <= r.ThirtyDayLowPrice && r.ThirtyDayLowPrice < r.ReferencePrice,
+            cancellationToken);
         var lastScanAt = await db.PriceHistories.MaxAsync(ph => (DateTimeOffset?)ph.ScrapedAt, cancellationToken);
 
         return new HomepageStatsDto(totalProducts, discountCount, thirtyDayLowCount, lastScanAt);
@@ -329,12 +338,14 @@ public class DealsQueryService(AppDbContext db)
     public async Task<FilterOptionsDto> GetFilterOptionsAsync(CancellationToken cancellationToken = default)
     {
         var brands = await db.Brands
+            .AsNoTracking()
             .Where(b => b.IsActive)
             .Select(b => b.Name)
             .OrderBy(n => n)
             .ToListAsync(cancellationToken);
 
         var categories = await db.Products
+            .AsNoTracking()
             .Where(p => p.Category != null)
             .Select(p => p.Category!)
             .Distinct()
