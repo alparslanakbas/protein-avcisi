@@ -28,13 +28,15 @@ export class SiteHeader implements OnInit {
   // kategori listesiyle).
   protected readonly categories = signal<{ slug: string; label: string }[]>([]);
   protected readonly categoriesOpen = signal(false);
-  protected readonly favoritesCount = signal(0);
+  // Servisteki paylaşılan signal'e doğrudan referans — favori eklenince/
+  // çıkarılınca (bu sayfadan ya da başka bir sayfadan) otomatik güncellenir.
+  protected readonly favoritesCount = this.favoritesService.count;
 
   ngOnInit(): void {
     this.dealsService.getFilterOptions().subscribe((options) => {
       this.categories.set(options.categories.map((slug) => ({ slug, label: CATEGORY_LABELS[slug] ?? slug })));
     });
-    this.favoritesService.list().subscribe((list) => this.favoritesCount.set(list.length));
+    this.favoritesService.list().subscribe();
   }
 
   protected toggleCategories(): void {

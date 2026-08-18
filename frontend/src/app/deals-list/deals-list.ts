@@ -194,8 +194,10 @@ export class DealsList implements OnInit {
     return `${SCAN_TIME_FORMATTER.format(d)} · ${SCAN_DATE_FORMATTER.format(d)}`;
   });
 
-  // Nav'daki "Takip listem" rozeti.
-  protected readonly favoritesCount = signal(0);
+  // Nav'daki "Takip listem" rozeti — servisteki paylaşılan signal'e
+  // doğrudan referans, favori eklenince/çıkarılınca (bu sayfadan ya da
+  // başka bir sayfadan) otomatik güncellenir.
+  protected readonly favoritesCount = this.favoritesService.count;
 
   // Rehber teaser — ilk 3 yazı.
   protected readonly articles = signal<ArticleSummary[]>([]);
@@ -306,7 +308,7 @@ export class DealsList implements OnInit {
     // pageSize:1 — sadece toplam sayıyı okumak için, tüm ürünleri çekmeye gerek yok.
     this.dealsService.getAllProducts({ pageSize: 1 }).subscribe((result) => this.siteProductCount.set(result.totalCount));
     this.dealsService.getStats().subscribe((stats) => this.stats.set(stats));
-    this.favoritesService.list().subscribe((list) => this.favoritesCount.set(list.length));
+    this.favoritesService.list().subscribe();
     this.articlesService.getArticles().subscribe((articles) => this.articles.set(articles.slice(0, 3)));
     this.loadHeroDeal();
     this.load();

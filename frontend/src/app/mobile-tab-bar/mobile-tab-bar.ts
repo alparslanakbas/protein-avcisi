@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 
 import { FavoritesService } from '../core/favorites.service';
@@ -15,9 +15,11 @@ import { FavoritesService } from '../core/favorites.service';
 export class MobileTabBar implements OnInit {
   private readonly favoritesService = inject(FavoritesService);
 
-  protected readonly favoritesCount = signal(0);
+  // Servisteki paylaşılan signal'e doğrudan referans — favori eklenince/
+  // çıkarılınca (bu sayfadan ya da başka bir sayfadan) otomatik güncellenir.
+  protected readonly favoritesCount = this.favoritesService.count;
 
   ngOnInit(): void {
-    this.favoritesService.list().subscribe((list) => this.favoritesCount.set(list.length));
+    this.favoritesService.list().subscribe();
   }
 }
