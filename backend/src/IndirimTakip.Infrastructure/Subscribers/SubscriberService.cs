@@ -1,5 +1,6 @@
 using IndirimTakip.Core.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace IndirimTakip.Infrastructure.Subscribers;
 
@@ -9,7 +10,7 @@ public record SubscribeRequest(string Email);
 // aktifleştirmiyor, onay linkine tıklanana kadar IsConfirmed=false
 // kalıyor. Zaten onaylanmış bir e-posta tekrar abone olmaya çalışırsa
 // sessizce görmezden geliniyor (spam gibi tekrar mail atmasın diye).
-public class SubscriberService(AppDbContext db, IEmailSender emailSender)
+public class SubscriberService(AppDbContext db, IEmailSender emailSender, ILogger<SubscriberService> logger)
 {
     // 2026-08-15: /api/subscribe ve /api/products/{id}/watch, henuz onaylanmamis
     // bir abone icin CAGRILDIGI HER SEFERINDE onay maili gonderiyordu - rate
@@ -21,13 +22,19 @@ public class SubscriberService(AppDbContext db, IEmailSender emailSender)
     private static readonly TimeSpan ConfirmationEmailCooldown = TimeSpan.FromMinutes(5);
 
 
-    public async Task SubscribeAsync(SubscribeRequest request, string confirmBaseUrl, CancellationToken cancellationToken = default)
+    // Dönüş değeri: onay maili gerçekten gönderilebildi mi (zaten onaylıysa
+    // gönderilecek bir şey olmadığı için true sayılır). Çağıran taraf
+    // (Program.cs) false durumunda kullanıcıya "e-postanı kontrol et" gibi
+    // yanıltıcı bir mesaj DEĞİL, dürüst bir "şu anda gönderilemiyor" hatası
+    // dönmeli — aksi halde mail hiç gitmediği halde kullanıcı sonsuza dek
+    // gelmeyecek bir onay linkini bekler.
+    public async Task<bool> SubscribeAsync(SubscribeRequest request, string confirmBaseUrl, CancellationToken cancellationToken = default)
     {
         var subscriber = await GetOrCreateSubscriberAsync(request.Email, cancellationToken);
         if (subscriber.IsConfirmed)
-            return;
+            return true;
 
-        await SendConfirmationEmailAsync(subscriber, confirmBaseUrl, cancellationToken);
+        return await SendConfirmationEmailAsync(subscriber, confirmBaseUrl, cancellationToken);
     }
 
     // "Haber Ver" (ürün fiyat izleme) gibi başka akışların da abone
@@ -53,10 +60,10 @@ public class SubscriberService(AppDbContext db, IEmailSender emailSender)
         return subscriber;
     }
 
-    public async Task SendConfirmationEmailAsync(Subscriber subscriber, string confirmBaseUrl, CancellationToken cancellationToken = default)
+    public async Task<bool> SendConfirmationEmailAsync(Subscriber subscriber, string confirmBaseUrl, CancellationToken cancellationToken = default)
     {
         if (subscriber.LastConfirmationEmailSentAt is { } lastSent && DateTimeOffset.UtcNow - lastSent < ConfirmationEmailCooldown)
-            return;
+            return true;
 
         var confirmUrl = $"{confirmBaseUrl}/api/subscribe/confirm/{subscriber.Token}";
         // E-posta istemcileri (Gmail dahil) flexbox'ı güvenilir desteklemiyor,
@@ -83,10 +90,26 @@ public class SubscriberService(AppDbContext db, IEmailSender emailSender)
             </div>
             """;
 
-        await emailSender.SendAsync(subscriber.Email, "Protein Avcısı bültenine abone ol", html, cancellationToken);
+        // Brevo (üçüncü taraf) geçici olarak kullanılamaz hale gelebilir (API
+        // anahtarı yanlış/süresi geçmiş, network sorunu, Brevo'nun kendi
+        // downtime'ı). Bu durumda kullanıcıya çıplak bir 500 göstermek yerine
+        // hatayı burada yakalayıp çağıran tarafın dürüst bir mesaj vermesine
+        // izin veriyoruz — LastConfirmationEmailSentAt de SADECE gerçekten
+        // gönderilebildiyse güncelleniyor (aksi halde kullanıcı 5 dakika
+        // boşuna bekler, mail hiç gitmediği hâlde tekrar deneyemez).
+        try
+        {
+            await emailSender.SendAsync(subscriber.Email, "Protein Avcısı bültenine abone ol", html, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Onay e-postası gönderilemedi: {Email}", subscriber.Email);
+            return false;
+        }
 
         subscriber.LastConfirmationEmailSentAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(cancellationToken);
+        return true;
     }
 
     public async Task<bool> ConfirmAsync(string token, CancellationToken cancellationToken = default)

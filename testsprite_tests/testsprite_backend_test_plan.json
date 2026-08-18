@@ -1,52 +1,77 @@
 [
   {
     "id": "TC001",
-    "title": "get api deals with filtering and pagination",
-    "description": "Verify GET /api/deals endpoint returns 200 with correctly filtered discounted deals list when using parameters onlyDiscounted, search, brands[], categories[], minPrice, maxPrice, sortBy, page, and pageSize."
+    "title": "get_api_deals_with_various_filters_and_pagination",
+    "description": "Verify GET /api/deals endpoint returns correct discounted product lists with various combinations of search, brand, category, price range, sortBy, page, and pageSize parameters, including validation error handling for invalid inputs."
   },
   {
     "id": "TC002",
-    "title": "get api products with filtering and pagination",
-    "description": "Verify GET /api/products endpoint returns 200 with full product list when using parameters onlyDiscounted=false, search, brands[], categories[], minPrice, maxPrice, sortBy, page, and pageSize."
+    "title": "get_api_products_with_filters_and_sorting",
+    "description": "Verify GET /api/products endpoint returns full product grid data correctly with onlyDiscounted=false and various filter and sort parameters, including handling unknown brand/category filters and restrictive price ranges."
   },
   {
     "id": "TC003",
-    "title": "get api store deals with filtering and pagination",
-    "description": "Verify GET /api/store-deals endpoint returns 200 with store campaign deals list when using parameters search, categories[], sortBy, page, and pageSize."
+    "title": "get_api_products_id_and_price_history_endpoints",
+    "description": "Verify GET /api/products/{id} returns product details correctly for valid IDs and 404 for unknown or missing IDs; verify GET /api/products/{id}/price-history returns correct price history data for valid days parameter and validation errors for invalid days."
   },
   {
     "id": "TC004",
-    "title": "get api products by id with valid and invalid ids",
-    "description": "Verify GET /api/products/{id} returns 200 with product detail for valid id and 404 for non-existent product id."
+    "title": "get_api_products_sparklines_with_id_limit",
+    "description": "Verify GET /api/products/sparklines returns sparkline data for up to 100 product IDs and returns validation error when exceeding the ID limit."
   },
   {
     "id": "TC005",
-    "title": "get api products price history with valid and invalid days",
-    "description": "Verify GET /api/products/{id}/price-history returns 200 with price history data for valid days parameter (7,15,30,180,365) and 400 for invalid days parameter."
+    "title": "get_api_brand_comparison_with_valid_and_invalid_brands",
+    "description": "Verify GET /api/brand-comparison returns category-based average price comparison data for valid brand pairs and returns appropriate error responses for unknown or missing brand parameters."
   },
   {
     "id": "TC006",
-    "title": "get api products sparklines with valid ids and days",
-    "description": "Verify GET /api/products/sparklines returns 200 with sparkline data for up to 100 valid product ids and valid days parameter."
+    "title": "get_api_coupons_active_and_empty_states",
+    "description": "Verify GET /api/coupons returns active coupon codes correctly and returns an empty list when no active coupons exist."
   },
   {
     "id": "TC007",
-    "title": "get api brand comparison with valid and invalid brands",
-    "description": "Verify GET /api/brand-comparison returns 200 with comparison data for valid brand1 and brand2 parameters, 400 or 404 for invalid or missing brand parameters."
+    "title": "get_api_articles_list_and_detail",
+    "description": "Verify GET /api/articles returns the list of guide articles and GET /api/articles/{slug} returns article details for valid slugs and 404 for unknown slugs."
   },
   {
     "id": "TC008",
-    "title": "get api coupons returns active coupon codes",
-    "description": "Verify GET /api/coupons returns 200 with list of active coupon codes or empty list when no coupons are available."
+    "title": "get_api_filters_returns_brands_and_categories",
+    "description": "Verify GET /api/filters returns the current list of available brands and categories, including handling empty lists when no data is available."
   },
   {
     "id": "TC009",
-    "title": "get api articles list and detail with valid and invalid slugs",
-    "description": "Verify GET /api/articles returns 200 with guide article list or empty list, and GET /api/articles/{slug} returns 200 with article detail for valid slug and 404 or 400 for unknown or malformed slug."
+    "title": "get_api_stats_returns_homepage_statistics",
+    "description": "Verify GET /api/stats returns homepage statistics data correctly for initial site experience."
   },
   {
     "id": "TC010",
-    "title": "get go product redirect with click tracking",
-    "description": "Verify GET /go/{productId} returns 302 redirect to merchant store page and tracks the click for valid productId."
+    "title": "get_go_productid_redirects_to_store",
+    "description": "Verify GET /go/{productId} endpoint correctly increments click counter and issues a 302 redirect to the store URL for valid product IDs."
+  },
+  {
+    "id": "TC011",
+    "title": "post_api_subscribe_valid_and_invalid_email",
+    "description": "Verify POST /api/subscribe returns 200 with a generic confirmation message for a valid email format, and 400 for a malformed email (e.g. 'not-an-email'). Do not assert on actual email delivery — no email provider is configured in this environment."
+  },
+  {
+    "id": "TC012",
+    "title": "post_api_products_id_watch_valid_and_invalid",
+    "description": "Verify POST /api/products/{id}/watch returns 200 for a valid product id and email format, and 404 for a non-existent product id."
+  },
+  {
+    "id": "TC013",
+    "title": "post_and_delete_api_products_id_favorite",
+    "description": "Verify POST /api/products/{id}/favorite returns 200 with a token for a new email, and DELETE /api/products/{id}/favorite?token=... removes it. Also verify GET /api/favorites?token=... reflects the change."
+  },
+  {
+    "id": "TC014",
+    "title": "post_api_favorites_recover_unknown_email",
+    "description": "Verify POST /api/favorites/recover returns 200 with a generic message regardless of whether the email is registered (must not leak whether an email exists in the system)."
+  },
+  {
+    "id": "TC015",
+    "title": "post_api_products_id_vote",
+    "description": "Verify POST /api/products/{id}/vote with {\"helpful\": true} and {\"helpful\": false} returns 200 for a valid product id, and 404 for a non-existent product id."
   }
 ]

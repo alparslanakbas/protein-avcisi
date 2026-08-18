@@ -1209,11 +1209,11 @@ body {
         <div class="metadata-container">
         <div class="metadata-row">
           <div class="metadata-label text-body-medium">Project Name</div>
-          <div class="metadata-value text-body">asd (Protein Avcısı — backend)</div>
+          <div class="metadata-value text-body">asd (protein-avcisi backend)</div>
         </div>
         <div class="metadata-row">
           <div class="metadata-label text-body-medium">Date</div>
-          <div class="metadata-value text-body">18.08.2026</div>
+          <div class="metadata-value text-body">19.08.2026</div>
         </div>
         <div class="metadata-row">
           <div class="metadata-label text-body-medium">Prepared by</div>
@@ -1234,16 +1234,15 @@ body {
         
         <div class="coverage-summary">
           <ul class="coverage-list text-body">
-            <li><span class="coverage-highlight">4/9</span> of tests passed</li>
+            <li><span class="coverage-highlight">7/15</span> of tests passed</li>
             <li><span class="coverage-highlight">Key gaps / risks:</span>
             
-              <ol>
-<li><strong>[Gerçek, düşük-orta risk] Global exception handler, istemci hatalarını (400) sunucu hatası (500) olarak maskeliyor.</strong> <code>Program.cs:125-137</code>'deki <code>UseExceptionHandler</code>, ayrım yapmadan HER unhandled exception'ı genel 500'e çeviriyor. Bu, hem <code>days=abc</code> gibi geçersiz query tipi girişlerinde (ASP.NET Core normalde otomatik 400 üretirdi) hem de <code>brand-comparison</code>'daki eksik parametre null-ref'inde ortaya çıkıyor. Etkisi düşük (istemci tarafında zaten UI'lar geçerli değerler gönderiyor, dışarıdan kötü niyetli/hatalı bir istek en kötü ihtimalle yanlış HTTP status kodu görür) ama API sözleşmesi açısından yanıltıcı ve izlenebilirliği zorlaştırıyor (gerçek sunucu hatalarıyla istemci hataları aynı log/alarm seviyesinde görünüyor).</li>
-<li><strong>[Gerçek, düşük risk] <code>/api/brand-comparison</code> eksik <code>brand1</code>/<code>brand2</code> parametresinde <code>NullReferenceException</code> fırlatıyor.</strong> Doğru davranış 400 (Bad Request) olmalı — şu an istemci hatası bir sunucu hatası gibi loglanıyor/dönüyor.</li>
-<li><strong>[Tasarım notu, aksiyon gerektirmiyor]</strong> <code>/api/products/{id}/price-history</code>'de <code>days&lt;=0</code> değerleri sessizce varsayılan 30 güne düşürülüyor — bu kasıtlı bir &quot;nazik davranış&quot; tercihi, sıkı REST doğrulaması değil. Mevcut haliyle sorun çıkarmıyor, sadece not edildi.</li>
-<li><strong>[Test altyapısı notu]</strong> TC001/TC002/TC003'teki 3 başarısızlık backend'de değil, TestSprite'ın otomatik ürettiği test scriptlerinin yanlış şema varsayımında (<code>totalItems</code>, <code>pagination</code> iç içe obje, <code>id</code> alan adı) — gerçek API sözleşmesiyle (<code>totalCount</code>, düz alanlar, <code>productId</code>) karşılaştırılıp doğrulandı. Regresyon riski taşımıyor.</li>
-</ol>
-<p><strong>Önerilen sıradaki adım (kullanıcı onayı bekliyor, bu turda kod değişikliği yapılmadı):</strong> <code>UseExceptionHandler</code>'a <code>BadHttpRequestException</code>/model-binding hatalarını 400'e, <code>brand-comparison</code>'a da açık bir null/boş kontrolü (400 Bad Request) eklemek — küçük, düşük riskli iki düzeltme.</p>
+              <ul>
+<li><strong>Gerçek bug (düzeltildi):</strong> <code>/api/subscribe</code>, üçüncü taraf e-posta sağlayıcısı (Brevo) başarısız yanıt verdiğinde çıplak 500 dönüyordu — artık dürüst bir 502 + kullanıcı dostu mesaj dönüyor, ve bu aynı zamanda production'da Brevo'nun geçici bir kesintisi yaşanırsa siteyi koruyan gerçek bir dayanıklılık iyileştirmesi.</li>
+<li><strong>Test altyapısı riski (TestSprite tarafında, backend'de değil):</strong> TestSprite'ın otomatik ürettiği Python test script'leri, API'nin gerçek response şemasını (<code>productId</code> vs <code>id</code>, düz sayfalama alanları vs iç içe <code>pagination</code> objesi) yanlış varsaymış — bu, önceki backend test turunda da (TC001-003) aynı kalıpta görülmüştü. Gelecekte TestSprite ile yeni bir tur çalıştırılırsa, bu script hatalarının backend regresyonlarından ayırt edilmesi için gerçek API yanıtlarına karşı manuel çapraz doğrulama disiplinine devam edilmeli.</li>
+<li><strong>Kapsam dışı bırakılan:</strong> <code>/api/dev/*</code> admin uçları (admin-key korumalı, anahtar bu ortamda paylaşılmadı) — bilinçli olarak test edilmedi.</li>
+<li><strong>Ortam notu:</strong> Bu test turu izole bir Neon test branch'ine (<code>testbranch</code>, production'ın &quot;head&quot; anındaki tam kopyası) karşı çalıştırıldı, gerçek kullanıcı verisi hiçbir noktada risk altında değildi. Branch 1 gün sonra otomatik silinecek.</li>
+</ul>
 
             </li>
 </ul>
@@ -1268,23 +1267,39 @@ body {
           <div class="table-rows">
             
             <div class="table-row">
-              <div class="table-cell"><span class="text-body">Requirement: Ürün/indirim listeleme uç noktaları (`/api/deals`, `/api/products`, `/api/store-deals`)</span></div>
+              <div class="table-cell"><span class="text-body">Ürün Keşfi & Filtreleme</span></div>
               <div class="table-cell"><span class="text-body">4</span></div>
-              <div class="table-cell"><span class="text-body">1</span></div>
-              <div class="table-cell"><span class="text-body">3</span></div>
+              <div class="table-cell"><span class="text-body">0</span></div>
+              <div class="table-cell"><span class="text-body">4</span></div>
             </div>
         
 
             <div class="table-row">
-              <div class="table-cell"><span class="text-body">Requirement: Fiyat geçmişi ve sparkline uç noktaları</span></div>
-              <div class="table-cell"><span class="text-body">2</span></div>
+              <div class="table-cell"><span class="text-body">Marka Karşılaştırma</span></div>
               <div class="table-cell"><span class="text-body">1</span></div>
               <div class="table-cell"><span class="text-body">1</span></div>
+              <div class="table-cell"><span class="text-body">0</span></div>
             </div>
         
 
             <div class="table-row">
-              <div class="table-cell"><span class="text-body">Requirement: Marka karşılaştırma</span></div>
+              <div class="table-cell"><span class="text-body">İçerik Uçları</span></div>
+              <div class="table-cell"><span class="text-body">4</span></div>
+              <div class="table-cell"><span class="text-body">4</span></div>
+              <div class="table-cell"><span class="text-body">0</span></div>
+            </div>
+        
+
+            <div class="table-row">
+              <div class="table-cell"><span class="text-body">Affiliate Yönlendirme</span></div>
+              <div class="table-cell"><span class="text-body">1</span></div>
+              <div class="table-cell"><span class="text-body">1</span></div>
+              <div class="table-cell"><span class="text-body">0</span></div>
+            </div>
+        
+
+            <div class="table-row">
+              <div class="table-cell"><span class="text-body">Bülten Aboneliği (yazma akışı, test branch'te ilk kez denendi)</span></div>
               <div class="table-cell"><span class="text-body">1</span></div>
               <div class="table-cell"><span class="text-body">0</span></div>
               <div class="table-cell"><span class="text-body">1</span></div>
@@ -1292,10 +1307,34 @@ body {
         
 
             <div class="table-row">
-              <div class="table-cell"><span class="text-body">Requirement: Kupon ve rehber (makale) uç noktaları</span></div>
-              <div class="table-cell"><span class="text-body">2</span></div>
-              <div class="table-cell"><span class="text-body">2</span></div>
+              <div class="table-cell"><span class="text-body">Fiyat Alarmı ("Haber Ver")</span></div>
+              <div class="table-cell"><span class="text-body">1</span></div>
               <div class="table-cell"><span class="text-body">0</span></div>
+              <div class="table-cell"><span class="text-body">1</span></div>
+            </div>
+        
+
+            <div class="table-row">
+              <div class="table-cell"><span class="text-body">Favoriler</span></div>
+              <div class="table-cell"><span class="text-body">1</span></div>
+              <div class="table-cell"><span class="text-body">0</span></div>
+              <div class="table-cell"><span class="text-body">1</span></div>
+            </div>
+        
+
+            <div class="table-row">
+              <div class="table-cell"><span class="text-body">Favori Kurtarma</span></div>
+              <div class="table-cell"><span class="text-body">1</span></div>
+              <div class="table-cell"><span class="text-body">1</span></div>
+              <div class="table-cell"><span class="text-body">0</span></div>
+            </div>
+        
+
+            <div class="table-row">
+              <div class="table-cell"><span class="text-body">Faydalı Oyu</span></div>
+              <div class="table-cell"><span class="text-body">1</span></div>
+              <div class="table-cell"><span class="text-body">0</span></div>
+              <div class="table-cell"><span class="text-body">1</span></div>
             </div>
         
           </div>
@@ -1318,13 +1357,13 @@ body {
           <div class="accordion-header" onclick="toggleAccordion(this)">
             <div class="requirement-content">
                                           <div class="requirement-title-row">
-              <h3 class="title-requirement">Requirement: Ürün/indirim listeleme uç noktaları (`/api/deals`, `/api/products`, `/api/store-deals`)</h3>
+              <h3 class="title-requirement">Ürün Keşfi & Filtreleme</h3>
                 <div class="requirement-status-tag status-error">
               <svg width="18" height="18" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <circle cx="7.99961" cy="7.99998" r="6.4" fill="#C23539" fill-opacity="0.2"/>
                 <path d="M8 5.59998V7.99698" stroke="#EF4146" stroke-width="1.38478" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 10.394V10.3995" stroke="#EF4146" stroke-width="1.38478" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
-              <span>1/4</span>
+              <span>0/4</span>
             </div>
               </div>
               <p class="text-body-medium requirement-description">Proper error handling for API calls and invalid data scenarios.</p>
@@ -1340,18 +1379,18 @@ body {
             <div class="test-wrapper">
 <div class="test-card">
                 <div class="test-header">
-                  <h4 class="text-body-medium">TC001 — GET /api/deals filtreleme ve sayfalama</h4>
+                  <h4 class="text-body-medium">TC001 get_api_deals_with_various_filters_and_pagination</h4>
                 </div>
                 <div class="test-content">
                   <div class="test-field">
                     <div class="test-field-label text-body-medium">Test Code</div>
                     <div class="test-field-value text-body">
-                      <a href="./TC001_get_api_deals_with_filtering_and_pagination.py" class="text-link">TC001_get_api_deals_with_filtering_and_pagination.py</a>
+                      <a href="./TC001_get_api_deals_with_various_filters_and_pagination.py" class="text-link">TC001_get_api_deals_with_various_filters_and_pagination.py</a>
                     </div>
                   </div>
                   <div class="test-field">
                     <div class="test-field-label text-body-medium">Test Error</div>
-                    <div class="test-field-value text-body">`AssertionError: 'totalItems' key missing in response`</div>
+                    <div class="test-field-value text-body">`AssertionError: 'pagination' key missing in response for params {}`</div>
                   </div>
                   <div class="test-field">
                     <div class="test-field-label text-body-medium">Test Visualization and Result</div>
@@ -1382,24 +1421,24 @@ body {
                   </div>
                   <div class="test-field">
                     <div class="test-field-label text-body-medium">Analysis / Findings</div>
-                    <div class="test-field-value text-body">Yanlış pozitif. Test scripti sayfalama alanının adının `totalItems` (ve/veya `pagination` adında iç içe bir obje) olduğunu varsaymış. Gerçek API sözleşmesi (CLAUDE.md'de belgeli, `PagedResult`) düz/top-level `totalCount`/`page`/`pageSize`/`totalPages` kullanıyor — `curl "http://localhost:5156/api/deals?page=1&pageSize=2"` ile doğrulandı, yanıt `{"items":[...],"totalCount":14,"page":1,"pageSize":2,"totalPages":7}` şeklinde geliyor. Endpoint'in kendisi doğru çalışıyor, testin beklediği şema yanlış.</div>
+                    <div class="test-field-value text-body">Yanlış alarm. `/api/deals` sayfalama bilgisini (`totalCount`/`page`/`pageSize`/`totalPages`) iç içe bir `pagination` objesinde değil, `items` ile aynı seviyede düz alanlar olarak dönüyor — bu, projenin `PagedResult<T>` DTO'sunun bilinen/dokümante edilmiş şekli. TestSprite'ın kendi script'i yanlış bir şema varsaydı. Backend'de düzeltilecek bir şey yok.</div>
                   </div>
                 </div>
               </div>
 <div class="test-card">
                 <div class="test-header">
-                  <h4 class="text-body-medium">TC002 — GET /api/products filtreleme ve sayfalama</h4>
+                  <h4 class="text-body-medium">TC002 get_api_products_with_filters_and_sorting</h4>
                 </div>
                 <div class="test-content">
                   <div class="test-field">
                     <div class="test-field-label text-body-medium">Test Code</div>
                     <div class="test-field-value text-body">
-                      <a href="./TC002_get_api_products_with_filtering_and_pagination.py" class="text-link">TC002_get_api_products_with_filtering_and_pagination.py</a>
+                      <a href="./TC002_get_api_products_with_filters_and_sorting.py" class="text-link">TC002_get_api_products_with_filters_and_sorting.py</a>
                     </div>
                   </div>
                   <div class="test-field">
                     <div class="test-field-label text-body-medium">Test Error</div>
-                    <div class="test-field-value text-body">`AssertionError: Product missing required identifier field 'id' or 'key'`</div>
+                    <div class="test-field-value text-body">`AssertionError` (satır 46)</div>
                   </div>
                   <div class="test-field">
                     <div class="test-field-label text-body-medium">Test Visualization and Result</div>
@@ -1430,24 +1469,24 @@ body {
                   </div>
                   <div class="test-field">
                     <div class="test-field-label text-body-medium">Analysis / Findings</div>
-                    <div class="test-field-value text-body">Yanlış pozitif. Ürün nesnesindeki kimlik alanı `id` değil `productId` — DealDto'nun tasarımı bu şekilde (CLAUDE.md'de belgeli). `curl` ile doğrulandı: her üründe `"productId":603` gibi bir alan var, test scripti sadece `id`/`key` adlarını arıyordu.</div>
+                    <div class="test-field-value text-body">Aynı kök sebep — TC001 ile aynı yanlış şema varsayımı zincirleniyor. Gerçek API çağrısı (`curl "/api/products?pageSize=2"`) manuel doğrulandı, doğru veri dönüyor.</div>
                   </div>
                 </div>
               </div>
 <div class="test-card">
                 <div class="test-header">
-                  <h4 class="text-body-medium">TC003 — GET /api/store-deals filtreleme ve sayfalama</h4>
+                  <h4 class="text-body-medium">TC003 get_api_products_id_and_price_history_endpoints</h4>
                 </div>
                 <div class="test-content">
                   <div class="test-field">
                     <div class="test-field-label text-body-medium">Test Code</div>
                     <div class="test-field-value text-body">
-                      <a href="./TC003_get_api_store_deals_with_filtering_and_pagination.py" class="text-link">TC003_get_api_store_deals_with_filtering_and_pagination.py</a>
+                      <a href="./TC003_get_api_products_id_and_price_history_endpoints.py" class="text-link">TC003_get_api_products_id_and_price_history_endpoints.py</a>
                     </div>
                   </div>
                   <div class="test-field">
                     <div class="test-field-label text-body-medium">Test Error</div>
-                    <div class="test-field-value text-body">`AssertionError: Response should contain 'pagination' key`</div>
+                    <div class="test-field-value text-body">`AssertionError: First product in list has no 'id' field`</div>
                   </div>
                   <div class="test-field">
                     <div class="test-field-label text-body-medium">Test Visualization and Result</div>
@@ -1478,19 +1517,95 @@ body {
                   </div>
                   <div class="test-field">
                     <div class="test-field-label text-body-medium">Analysis / Findings</div>
-                    <div class="test-field-value text-body">TC001 ile aynı kök sebep — test sayfalama bilgisinin `pagination` adlı iç içe bir obje altında olacağını varsaymış, gerçek API düz/top-level alanlar kullanıyor. `curl "http://localhost:5156/api/store-deals?page=1&pageSize=1"` ile `totalCount`/`page`/`pageSize`/`totalPages`'ın top-level geldiği doğrulandı.</div>
+                    <div class="test-field-value text-body">Yanlış alarm — üründeki gerçek alan adı `id` değil `productId` (`curl` ile doğrulandı: `{"productId":603,...}`). Script yanlış alan adı arıyor, bu yüzden `/api/products/{id}` ve `/api/products/{id}/price-history`'yi hiç gerçekten test edemedi.</div>
                   </div>
                 </div>
               </div>
 <div class="test-card">
                 <div class="test-header">
-                  <h4 class="text-body-medium">TC004 — GET /api/products/{id} geçerli ve geçersiz ID</h4>
+                  <h4 class="text-body-medium">TC004 get_api_products_sparklines_with_id_limit</h4>
                 </div>
                 <div class="test-content">
                   <div class="test-field">
                     <div class="test-field-label text-body-medium">Test Code</div>
                     <div class="test-field-value text-body">
-                      <a href="./TC004_get_api_products_by_id_with_valid_and_invalid_ids.py" class="text-link">TC004_get_api_products_by_id_with_valid_and_invalid_ids.py</a>
+                      <a href="./TC004_get_api_products_sparklines_with_id_limit.py" class="text-link">TC004_get_api_products_sparklines_with_id_limit.py</a>
+                    </div>
+                  </div>
+                  <div class="test-field">
+                    <div class="test-field-label text-body-medium">Test Error</div>
+                    <div class="test-field-value text-body">`AssertionError: No product IDs available to run sparklines test`</div>
+                  </div>
+                  <div class="test-field">
+                    <div class="test-field-label text-body-medium">Test Visualization and Result</div>
+                    <div class="test-field-value text-body">
+                      <a href="null" class="text-link">View Results</a>
+                    </div>
+                  </div>
+                  <div class="test-field">
+                    <div class="test-field-label text-body-medium">Status</div>
+                    <div class="test-field-value">
+                      
+            <div class="status-wrapper">
+                <div class="status-icon">
+                    <svg width="18" height="18" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+<circle cx="7.99961" cy="7.99998" r="6.4" fill="#C23539" fill-opacity="0.2"/>
+<path d="M8 5.59998V7.99698" stroke="#EF4146" stroke-width="1.38478" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M8 10.394V10.3995" stroke="#EF4146" stroke-width="1.38478" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+                </div>
+                <span class="text-body status-fail">Failed</span>
+            </div>
+            
+                    </div>
+                  </div>
+                  <div class="test-field">
+                    <div class="test-field-label text-body-medium">Severity</div>
+                    <div class="test-field-value text-body">N/A</div>
+                  </div>
+                  <div class="test-field">
+                    <div class="test-field-label text-body-medium">Analysis / Findings</div>
+                    <div class="test-field-value text-body">TC003 ile aynı `id` vs `productId` sorunundan kaynaklanan zincirleme hata — script ürün ID'lerini toplayamadığı için sparkline testine hiç girmedi.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+                <div class="requirement-wrapper accordion-item active">
+          <div class="accordion-header" onclick="toggleAccordion(this)">
+            <div class="requirement-content">
+                                          <div class="requirement-title-row">
+              <h3 class="title-requirement">Marka Karşılaştırma</h3>
+                <div class="requirement-status-tag status-success">
+              <svg width="18" height="18" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="7.99961" cy="7.99998" r="6.4" fill="#10A363" fill-opacity="0.2"/>
+                <path d="M5.59961 8.00002L7.19961 9.60002L10.3996 6.40002" stroke="#19C379" stroke-width="1.28" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span>1/1</span>
+            </div>
+              </div>
+              <p class="text-body-medium requirement-description">Proper error handling for API calls and invalid data scenarios.</p>
+            </div>
+            <div class="accordion-icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M11.4276 6C11.9145 6 12.1687 6.61626 11.875 7.01439L11.8316 7.06689L8.40295 10.817C8.30455 10.9246 8.17364 10.9892 8.03476 10.9988C7.89589 11.0083 7.7586 10.9621 7.64865 10.8688L7.59493 10.817L4.16629 7.06689L4.11886 7.00814L4.088 6.96002L4.05714 6.90002L4.04743 6.87752L4.032 6.83564L4.01371 6.76814L4.008 6.73501L4.00229 6.69751L4 6.66189V6.58814L4.00286 6.55188L4.008 6.51438L4.01371 6.48188L4.032 6.41438L4.04743 6.37251L4.08743 6.29L4.12457 6.23375L4.16629 6.18313L4.22 6.13125L4.26401 6.0975L4.31886 6.06375L4.33944 6.05313L4.37772 6.03625L4.43944 6.01625L4.46972 6.01L4.50401 6.00375L4.53658 6.00125L11.4276 6Z" fill="var(--fg-secondary)"/>
+              </svg>
+            </div>
+          </div>
+
+            <div class="accordion-content">
+            <div class="test-wrapper">
+<div class="test-card">
+                <div class="test-header">
+                  <h4 class="text-body-medium">TC005 get_api_brand_comparison_with_valid_and_invalid_brands</h4>
+                </div>
+                <div class="test-content">
+                  <div class="test-field">
+                    <div class="test-field-label text-body-medium">Test Code</div>
+                    <div class="test-field-value text-body">
+                      <a href="./null" class="text-link">null</a>
                     </div>
                   </div>
                   <div class="test-field">
@@ -1523,7 +1638,7 @@ body {
                   </div>
                   <div class="test-field">
                     <div class="test-field-label text-body-medium">Analysis / Findings</div>
-                    <div class="test-field-value text-body">Geçerli bir ürün ID'si 200 + doğru veri döndürüyor. Geçersiz/var olmayan bir ID (bir GUID string'i, `{id:int}` route kısıtına uymadığı için) beklenen 404'ü doğru şekilde veriyor. Sorun yok.</div>
+                    <div class="test-field-value text-body">N/A</div>
                   </div>
                 </div>
               </div>
@@ -1535,13 +1650,13 @@ body {
           <div class="accordion-header" onclick="toggleAccordion(this)">
             <div class="requirement-content">
                                           <div class="requirement-title-row">
-              <h3 class="title-requirement">Requirement: Fiyat geçmişi ve sparkline uç noktaları</h3>
-                <div class="requirement-status-tag status-error">
+              <h3 class="title-requirement">İçerik Uçları</h3>
+                <div class="requirement-status-tag status-success">
               <svg width="18" height="18" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="7.99961" cy="7.99998" r="6.4" fill="#C23539" fill-opacity="0.2"/>
-                <path d="M8 5.59998V7.99698" stroke="#EF4146" stroke-width="1.38478" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 10.394V10.3995" stroke="#EF4146" stroke-width="1.38478" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="7.99961" cy="7.99998" r="6.4" fill="#10A363" fill-opacity="0.2"/>
+                <path d="M5.59961 8.00002L7.19961 9.60002L10.3996 6.40002" stroke="#19C379" stroke-width="1.28" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
-              <span>1/2</span>
+              <span>4/4</span>
             </div>
               </div>
               <p class="text-body-medium requirement-description">Proper error handling for API calls and invalid data scenarios.</p>
@@ -1557,61 +1672,13 @@ body {
             <div class="test-wrapper">
 <div class="test-card">
                 <div class="test-header">
-                  <h4 class="text-body-medium">TC005 — GET /api/products/{id}/price-history geçerli/geçersiz `days`</h4>
+                  <h4 class="text-body-medium">TC006 get_api_coupons_active_and_empty_states</h4>
                 </div>
                 <div class="test-content">
                   <div class="test-field">
                     <div class="test-field-label text-body-medium">Test Code</div>
                     <div class="test-field-value text-body">
-                      <a href="./TC005_get_api_products_price_history_with_valid_and_invalid_days.py" class="text-link">TC005_get_api_products_price_history_with_valid_and_invalid_days.py</a>
-                    </div>
-                  </div>
-                  <div class="test-field">
-                    <div class="test-field-label text-body-medium">Test Error</div>
-                    <div class="test-field-value text-body">`AssertionError: Expected 400 for invalid days=0 but got 200`</div>
-                  </div>
-                  <div class="test-field">
-                    <div class="test-field-label text-body-medium">Test Visualization and Result</div>
-                    <div class="test-field-value text-body">
-                      <a href="null" class="text-link">View Results</a>
-                    </div>
-                  </div>
-                  <div class="test-field">
-                    <div class="test-field-label text-body-medium">Status</div>
-                    <div class="test-field-value">
-                      
-            <div class="status-wrapper">
-                <div class="status-icon">
-                    <svg width="18" height="18" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-<circle cx="7.99961" cy="7.99998" r="6.4" fill="#C23539" fill-opacity="0.2"/>
-<path d="M8 5.59998V7.99698" stroke="#EF4146" stroke-width="1.38478" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M8 10.394V10.3995" stroke="#EF4146" stroke-width="1.38478" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>
-                </div>
-                <span class="text-body status-fail">Failed</span>
-            </div>
-            
-                    </div>
-                  </div>
-                  <div class="test-field">
-                    <div class="test-field-label text-body-medium">Severity</div>
-                    <div class="test-field-value text-body">N/A</div>
-                  </div>
-                  <div class="test-field">
-                    <div class="test-field-label text-body-medium">Analysis / Findings</div>
-                    <div class="test-field-value text-body">İki ayrı davranış karışmış durumda, ikisi de gerçek kodda doğrulandı:</div>
-                  </div>
-                </div>
-              </div>
-<div class="test-card">
-                <div class="test-header">
-                  <h4 class="text-body-medium">TC006 — GET /api/products/sparklines geçerli ID'ler ve `days`</h4>
-                </div>
-                <div class="test-content">
-                  <div class="test-field">
-                    <div class="test-field-label text-body-medium">Test Code</div>
-                    <div class="test-field-value text-body">
-                      <a href="./TC006_get_api_products_sparklines_with_valid_ids_and_days.py" class="text-link">TC006_get_api_products_sparklines_with_valid_ids_and_days.py</a>
+                      <a href="./null" class="text-link">null</a>
                     </div>
                   </div>
                   <div class="test-field">
@@ -1644,7 +1711,142 @@ body {
                   </div>
                   <div class="test-field">
                     <div class="test-field-label text-body-medium">Analysis / Findings</div>
-                    <div class="test-field-value text-body">Toplu sparkline uç noktası beklendiği gibi çalışıyor, sorun yok.</div>
+                    <div class="test-field-value text-body">N/A</div>
+                  </div>
+                </div>
+              </div>
+<div class="test-card">
+                <div class="test-header">
+                  <h4 class="text-body-medium">TC007 get_api_articles_list_and_detail</h4>
+                </div>
+                <div class="test-content">
+                  <div class="test-field">
+                    <div class="test-field-label text-body-medium">Test Code</div>
+                    <div class="test-field-value text-body">
+                      <a href="./null" class="text-link">null</a>
+                    </div>
+                  </div>
+                  <div class="test-field">
+                    <div class="test-field-label text-body-medium">Test Error</div>
+                    <div class="test-field-value text-body">N/A</div>
+                  </div>
+                  <div class="test-field">
+                    <div class="test-field-label text-body-medium">Test Visualization and Result</div>
+                    <div class="test-field-value text-body">
+                      <a href="null" class="text-link">View Results</a>
+                    </div>
+                  </div>
+                  <div class="test-field">
+                    <div class="test-field-label text-body-medium">Status</div>
+                    <div class="test-field-value">
+                      <div class="status-wrapper">
+                <div class="status-icon">
+                    <svg width="18" height="18" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="7.99961" cy="7.99998" r="6.4" fill="#10A363" fill-opacity="0.2"/>
+                        <path d="M5.59961 8.00002L7.19961 9.60002L10.3996 6.40002" stroke="#19C379" stroke-width="1.28" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <span class="text-body status-pass">Pass</span>
+            </div>
+                    </div>
+                  </div>
+                  <div class="test-field">
+                    <div class="test-field-label text-body-medium">Severity</div>
+                    <div class="test-field-value text-body">N/A</div>
+                  </div>
+                  <div class="test-field">
+                    <div class="test-field-label text-body-medium">Analysis / Findings</div>
+                    <div class="test-field-value text-body">N/A</div>
+                  </div>
+                </div>
+              </div>
+<div class="test-card">
+                <div class="test-header">
+                  <h4 class="text-body-medium">TC008 get_api_filters_returns_brands_and_categories</h4>
+                </div>
+                <div class="test-content">
+                  <div class="test-field">
+                    <div class="test-field-label text-body-medium">Test Code</div>
+                    <div class="test-field-value text-body">
+                      <a href="./null" class="text-link">null</a>
+                    </div>
+                  </div>
+                  <div class="test-field">
+                    <div class="test-field-label text-body-medium">Test Error</div>
+                    <div class="test-field-value text-body">N/A</div>
+                  </div>
+                  <div class="test-field">
+                    <div class="test-field-label text-body-medium">Test Visualization and Result</div>
+                    <div class="test-field-value text-body">
+                      <a href="null" class="text-link">View Results</a>
+                    </div>
+                  </div>
+                  <div class="test-field">
+                    <div class="test-field-label text-body-medium">Status</div>
+                    <div class="test-field-value">
+                      <div class="status-wrapper">
+                <div class="status-icon">
+                    <svg width="18" height="18" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="7.99961" cy="7.99998" r="6.4" fill="#10A363" fill-opacity="0.2"/>
+                        <path d="M5.59961 8.00002L7.19961 9.60002L10.3996 6.40002" stroke="#19C379" stroke-width="1.28" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <span class="text-body status-pass">Pass</span>
+            </div>
+                    </div>
+                  </div>
+                  <div class="test-field">
+                    <div class="test-field-label text-body-medium">Severity</div>
+                    <div class="test-field-value text-body">N/A</div>
+                  </div>
+                  <div class="test-field">
+                    <div class="test-field-label text-body-medium">Analysis / Findings</div>
+                    <div class="test-field-value text-body">N/A</div>
+                  </div>
+                </div>
+              </div>
+<div class="test-card">
+                <div class="test-header">
+                  <h4 class="text-body-medium">TC009 get_api_stats_returns_homepage_statistics</h4>
+                </div>
+                <div class="test-content">
+                  <div class="test-field">
+                    <div class="test-field-label text-body-medium">Test Code</div>
+                    <div class="test-field-value text-body">
+                      <a href="./null" class="text-link">null</a>
+                    </div>
+                  </div>
+                  <div class="test-field">
+                    <div class="test-field-label text-body-medium">Test Error</div>
+                    <div class="test-field-value text-body">N/A</div>
+                  </div>
+                  <div class="test-field">
+                    <div class="test-field-label text-body-medium">Test Visualization and Result</div>
+                    <div class="test-field-value text-body">
+                      <a href="null" class="text-link">View Results</a>
+                    </div>
+                  </div>
+                  <div class="test-field">
+                    <div class="test-field-label text-body-medium">Status</div>
+                    <div class="test-field-value">
+                      <div class="status-wrapper">
+                <div class="status-icon">
+                    <svg width="18" height="18" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="7.99961" cy="7.99998" r="6.4" fill="#10A363" fill-opacity="0.2"/>
+                        <path d="M5.59961 8.00002L7.19961 9.60002L10.3996 6.40002" stroke="#19C379" stroke-width="1.28" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <span class="text-body status-pass">Pass</span>
+            </div>
+                    </div>
+                  </div>
+                  <div class="test-field">
+                    <div class="test-field-label text-body-medium">Severity</div>
+                    <div class="test-field-value text-body">N/A</div>
+                  </div>
+                  <div class="test-field">
+                    <div class="test-field-label text-body-medium">Analysis / Findings</div>
+                    <div class="test-field-value text-body">N/A</div>
                   </div>
                 </div>
               </div>
@@ -1656,7 +1858,80 @@ body {
           <div class="accordion-header" onclick="toggleAccordion(this)">
             <div class="requirement-content">
                                           <div class="requirement-title-row">
-              <h3 class="title-requirement">Requirement: Marka karşılaştırma</h3>
+              <h3 class="title-requirement">Affiliate Yönlendirme</h3>
+                <div class="requirement-status-tag status-success">
+              <svg width="18" height="18" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="7.99961" cy="7.99998" r="6.4" fill="#10A363" fill-opacity="0.2"/>
+                <path d="M5.59961 8.00002L7.19961 9.60002L10.3996 6.40002" stroke="#19C379" stroke-width="1.28" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span>1/1</span>
+            </div>
+              </div>
+              <p class="text-body-medium requirement-description">Proper error handling for API calls and invalid data scenarios.</p>
+            </div>
+            <div class="accordion-icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M11.4276 6C11.9145 6 12.1687 6.61626 11.875 7.01439L11.8316 7.06689L8.40295 10.817C8.30455 10.9246 8.17364 10.9892 8.03476 10.9988C7.89589 11.0083 7.7586 10.9621 7.64865 10.8688L7.59493 10.817L4.16629 7.06689L4.11886 7.00814L4.088 6.96002L4.05714 6.90002L4.04743 6.87752L4.032 6.83564L4.01371 6.76814L4.008 6.73501L4.00229 6.69751L4 6.66189V6.58814L4.00286 6.55188L4.008 6.51438L4.01371 6.48188L4.032 6.41438L4.04743 6.37251L4.08743 6.29L4.12457 6.23375L4.16629 6.18313L4.22 6.13125L4.26401 6.0975L4.31886 6.06375L4.33944 6.05313L4.37772 6.03625L4.43944 6.01625L4.46972 6.01L4.50401 6.00375L4.53658 6.00125L11.4276 6Z" fill="var(--fg-secondary)"/>
+              </svg>
+            </div>
+          </div>
+
+            <div class="accordion-content">
+            <div class="test-wrapper">
+<div class="test-card">
+                <div class="test-header">
+                  <h4 class="text-body-medium">TC010 get_go_productid_redirects_to_store</h4>
+                </div>
+                <div class="test-content">
+                  <div class="test-field">
+                    <div class="test-field-label text-body-medium">Test Code</div>
+                    <div class="test-field-value text-body">
+                      <a href="./null" class="text-link">null</a>
+                    </div>
+                  </div>
+                  <div class="test-field">
+                    <div class="test-field-label text-body-medium">Test Error</div>
+                    <div class="test-field-value text-body">N/A</div>
+                  </div>
+                  <div class="test-field">
+                    <div class="test-field-label text-body-medium">Test Visualization and Result</div>
+                    <div class="test-field-value text-body">
+                      <a href="null" class="text-link">View Results</a>
+                    </div>
+                  </div>
+                  <div class="test-field">
+                    <div class="test-field-label text-body-medium">Status</div>
+                    <div class="test-field-value">
+                      <div class="status-wrapper">
+                <div class="status-icon">
+                    <svg width="18" height="18" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="7.99961" cy="7.99998" r="6.4" fill="#10A363" fill-opacity="0.2"/>
+                        <path d="M5.59961 8.00002L7.19961 9.60002L10.3996 6.40002" stroke="#19C379" stroke-width="1.28" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <span class="text-body status-pass">Pass</span>
+            </div>
+                    </div>
+                  </div>
+                  <div class="test-field">
+                    <div class="test-field-label text-body-medium">Severity</div>
+                    <div class="test-field-value text-body">N/A</div>
+                  </div>
+                  <div class="test-field">
+                    <div class="test-field-label text-body-medium">Analysis / Findings</div>
+                    <div class="test-field-value text-body">N/A</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+                <div class="requirement-wrapper accordion-item active">
+          <div class="accordion-header" onclick="toggleAccordion(this)">
+            <div class="requirement-content">
+                                          <div class="requirement-title-row">
+              <h3 class="title-requirement">Bülten Aboneliği (yazma akışı, test branch'te ilk kez denendi)</h3>
                 <div class="requirement-status-tag status-error">
               <svg width="18" height="18" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <circle cx="7.99961" cy="7.99998" r="6.4" fill="#C23539" fill-opacity="0.2"/>
@@ -1678,18 +1953,18 @@ body {
             <div class="test-wrapper">
 <div class="test-card">
                 <div class="test-header">
-                  <h4 class="text-body-medium">TC007 — GET /api/brand-comparison geçerli/geçersiz marka parametreleri</h4>
+                  <h4 class="text-body-medium">TC011 post_api_subscribe_valid_and_invalid_email</h4>
                 </div>
                 <div class="test-content">
                   <div class="test-field">
                     <div class="test-field-label text-body-medium">Test Code</div>
                     <div class="test-field-value text-body">
-                      <a href="./TC007_get_api_brand_comparison_with_valid_and_invalid_brands.py" class="text-link">TC007_get_api_brand_comparison_with_valid_and_invalid_brands.py</a>
+                      <a href="./TC011_post_api_subscribe_valid_and_invalid_email.py" class="text-link">TC011_post_api_subscribe_valid_and_invalid_email.py</a>
                     </div>
                   </div>
                   <div class="test-field">
                     <div class="test-field-label text-body-medium">Test Error</div>
-                    <div class="test-field-value text-body">`AssertionError: Expected 400 or 404 for invalid params {'brand1': 'hiq'}, got 500`</div>
+                    <div class="test-field-value text-body">`AssertionError: Expected status 200 for valid email, got 500`</div>
                   </div>
                   <div class="test-field">
                     <div class="test-field-label text-body-medium">Test Visualization and Result</div>
@@ -1720,7 +1995,7 @@ body {
                   </div>
                   <div class="test-field">
                     <div class="test-field-label text-body-medium">Analysis / Findings</div>
-                    <div class="test-field-value text-body">Doğrulandı. `brand2` (veya her iki parametre) hiç gönderilmeden `/api/brand-comparison`'a istek atılınca 500 dönüyor:</div>
+                    <div class="test-field-value text-body">Bu bulgu bağımsız `curl` testiyle doğrulandı ve gerçek çıktı. Kök sebep: `SubscriberService.SendConfirmationEmailAsync`, Brevo'ya (transactional e-posta sağlayıcısı) giden isteği hiç `try/catch` ile sarmıyordu — bu test ortamında Brevo API anahtarı tanımlı olmadığı için istek 401 dönüyor, `HttpClient.EnsureSuccessStatusCode()` bunu bir `HttpRequestException` olarak fırlatıyor, hiçbir yerde yakalanmadığı için global exception handler'a düşüp jenerik "Beklenmeyen bir hata oluştu" 500'üne dönüşüyordu.</div>
                   </div>
                 </div>
               </div>
@@ -1732,13 +2007,13 @@ body {
           <div class="accordion-header" onclick="toggleAccordion(this)">
             <div class="requirement-content">
                                           <div class="requirement-title-row">
-              <h3 class="title-requirement">Requirement: Kupon ve rehber (makale) uç noktaları</h3>
-                <div class="requirement-status-tag status-success">
+              <h3 class="title-requirement">Fiyat Alarmı ("Haber Ver")</h3>
+                <div class="requirement-status-tag status-error">
               <svg width="18" height="18" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="7.99961" cy="7.99998" r="6.4" fill="#10A363" fill-opacity="0.2"/>
-                <path d="M5.59961 8.00002L7.19961 9.60002L10.3996 6.40002" stroke="#19C379" stroke-width="1.28" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="7.99961" cy="7.99998" r="6.4" fill="#C23539" fill-opacity="0.2"/>
+                <path d="M8 5.59998V7.99698" stroke="#EF4146" stroke-width="1.38478" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 10.394V10.3995" stroke="#EF4146" stroke-width="1.38478" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
-              <span>2/2</span>
+              <span>0/1</span>
             </div>
               </div>
               <p class="text-body-medium requirement-description">Proper error handling for API calls and invalid data scenarios.</p>
@@ -1754,18 +2029,18 @@ body {
             <div class="test-wrapper">
 <div class="test-card">
                 <div class="test-header">
-                  <h4 class="text-body-medium">TC008 — GET /api/coupons</h4>
+                  <h4 class="text-body-medium">TC012 post_api_products_id_watch_valid_and_invalid</h4>
                 </div>
                 <div class="test-content">
                   <div class="test-field">
                     <div class="test-field-label text-body-medium">Test Code</div>
                     <div class="test-field-value text-body">
-                      <a href="./TC008_get_api_coupons_returns_active_coupon_codes.py" class="text-link">TC008_get_api_coupons_returns_active_coupon_codes.py</a>
+                      <a href="./TC012_post_api_products_id_watch_valid_and_invalid.py" class="text-link">TC012_post_api_products_id_watch_valid_and_invalid.py</a>
                     </div>
                   </div>
                   <div class="test-field">
                     <div class="test-field-label text-body-medium">Test Error</div>
-                    <div class="test-field-value text-body">N/A</div>
+                    <div class="test-field-value text-body">`AssertionError: No valid product ID found in /api/products response`</div>
                   </div>
                   <div class="test-field">
                     <div class="test-field-label text-body-medium">Test Visualization and Result</div>
@@ -1776,15 +2051,18 @@ body {
                   <div class="test-field">
                     <div class="test-field-label text-body-medium">Status</div>
                     <div class="test-field-value">
-                      <div class="status-wrapper">
+                      
+            <div class="status-wrapper">
                 <div class="status-icon">
                     <svg width="18" height="18" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="7.99961" cy="7.99998" r="6.4" fill="#10A363" fill-opacity="0.2"/>
-                        <path d="M5.59961 8.00002L7.19961 9.60002L10.3996 6.40002" stroke="#19C379" stroke-width="1.28" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
+<circle cx="7.99961" cy="7.99998" r="6.4" fill="#C23539" fill-opacity="0.2"/>
+<path d="M8 5.59998V7.99698" stroke="#EF4146" stroke-width="1.38478" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M8 10.394V10.3995" stroke="#EF4146" stroke-width="1.38478" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
                 </div>
-                <span class="text-body status-pass">Pass</span>
+                <span class="text-body status-fail">Failed</span>
             </div>
+            
                     </div>
                   </div>
                   <div class="test-field">
@@ -1793,19 +2071,123 @@ body {
                   </div>
                   <div class="test-field">
                     <div class="test-field-label text-body-medium">Analysis / Findings</div>
-                    <div class="test-field-value text-body">Aktif kupon listesi doğru şema ile dönüyor, sorun yok.</div>
+                    <div class="test-field-value text-body">Script'in kendi hatası `id`/`productId` sorunundan kaynaklanıyor (TC003/TC004 ile aynı kök sebep). Ancak bu uç, TC011'deki AYNI `SendConfirmationEmailAsync` çağrısını kullandığı için manuel `curl` ile ayrıca test edildi: `POST /api/products/29/watch` → `HTTP 200`, izleme kaydı doğru oluşuyor. Burada TC011'den FARKLI olarak mail gönderim hatası kullanıcıya hiç yansımıyor — çünkü izleme kaydı (asıl işlev) e-postadan bağımsız zaten oluşuyor, `FavoriteService`'teki aynı "e-posta ikincil, sessizce logla" deseni burada da (artık `SendConfirmationEmailAsync`'in `bool` sonucunu kullanan güncellenmiş kodla) tutarlı çalışıyor. Backend loglarında hata doğru şekilde kayıtlı (`Onay e-postası gönderilemedi: ...`), kullanıcı deneyimi bozulmuyor.</div>
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+
+                <div class="requirement-wrapper accordion-item active">
+          <div class="accordion-header" onclick="toggleAccordion(this)">
+            <div class="requirement-content">
+                                          <div class="requirement-title-row">
+              <h3 class="title-requirement">Favoriler</h3>
+                <div class="requirement-status-tag status-error">
+              <svg width="18" height="18" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="7.99961" cy="7.99998" r="6.4" fill="#C23539" fill-opacity="0.2"/>
+                <path d="M8 5.59998V7.99698" stroke="#EF4146" stroke-width="1.38478" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 10.394V10.3995" stroke="#EF4146" stroke-width="1.38478" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span>0/1</span>
+            </div>
+              </div>
+              <p class="text-body-medium requirement-description">Proper error handling for API calls and invalid data scenarios.</p>
+            </div>
+            <div class="accordion-icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M11.4276 6C11.9145 6 12.1687 6.61626 11.875 7.01439L11.8316 7.06689L8.40295 10.817C8.30455 10.9246 8.17364 10.9892 8.03476 10.9988C7.89589 11.0083 7.7586 10.9621 7.64865 10.8688L7.59493 10.817L4.16629 7.06689L4.11886 7.00814L4.088 6.96002L4.05714 6.90002L4.04743 6.87752L4.032 6.83564L4.01371 6.76814L4.008 6.73501L4.00229 6.69751L4 6.66189V6.58814L4.00286 6.55188L4.008 6.51438L4.01371 6.48188L4.032 6.41438L4.04743 6.37251L4.08743 6.29L4.12457 6.23375L4.16629 6.18313L4.22 6.13125L4.26401 6.0975L4.31886 6.06375L4.33944 6.05313L4.37772 6.03625L4.43944 6.01625L4.46972 6.01L4.50401 6.00375L4.53658 6.00125L11.4276 6Z" fill="var(--fg-secondary)"/>
+              </svg>
+            </div>
+          </div>
+
+            <div class="accordion-content">
+            <div class="test-wrapper">
 <div class="test-card">
                 <div class="test-header">
-                  <h4 class="text-body-medium">TC009 — GET /api/articles liste ve detay, geçerli/geçersiz slug</h4>
+                  <h4 class="text-body-medium">TC013 post_and_delete_api_products_id_favorite</h4>
                 </div>
                 <div class="test-content">
                   <div class="test-field">
                     <div class="test-field-label text-body-medium">Test Code</div>
                     <div class="test-field-value text-body">
-                      <a href="./TC009_get_api_articles_list_and_detail_with_valid_and_invalid_slugs.py" class="text-link">TC009_get_api_articles_list_and_detail_with_valid_and_invalid_slugs.py</a>
+                      <a href="./TC013_post_and_delete_api_products_id_favorite.py" class="text-link">TC013_post_and_delete_api_products_id_favorite.py</a>
+                    </div>
+                  </div>
+                  <div class="test-field">
+                    <div class="test-field-label text-body-medium">Test Error</div>
+                    <div class="test-field-value text-body">`AssertionError: No products found to test.`</div>
+                  </div>
+                  <div class="test-field">
+                    <div class="test-field-label text-body-medium">Test Visualization and Result</div>
+                    <div class="test-field-value text-body">
+                      <a href="null" class="text-link">View Results</a>
+                    </div>
+                  </div>
+                  <div class="test-field">
+                    <div class="test-field-label text-body-medium">Status</div>
+                    <div class="test-field-value">
+                      
+            <div class="status-wrapper">
+                <div class="status-icon">
+                    <svg width="18" height="18" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+<circle cx="7.99961" cy="7.99998" r="6.4" fill="#C23539" fill-opacity="0.2"/>
+<path d="M8 5.59998V7.99698" stroke="#EF4146" stroke-width="1.38478" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M8 10.394V10.3995" stroke="#EF4146" stroke-width="1.38478" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+                </div>
+                <span class="text-body status-fail">Failed</span>
+            </div>
+            
+                    </div>
+                  </div>
+                  <div class="test-field">
+                    <div class="test-field-label text-body-medium">Severity</div>
+                    <div class="test-field-value text-body">N/A</div>
+                  </div>
+                  <div class="test-field">
+                    <div class="test-field-label text-body-medium">Analysis / Findings</div>
+                    <div class="test-field-value text-body">Yanlış alarm — TC003/TC004 ile aynı `id`/`productId` zinciri. Manuel `curl` ile bağımsız doğrulandı: `POST /api/products/29/favorite` → `{"token":"...","recoverySent":false}` (200), `DELETE /api/products/30/favorite?token=...` → `HTTP 200`. Uç uçtan doğru çalışıyor.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+                <div class="requirement-wrapper accordion-item active">
+          <div class="accordion-header" onclick="toggleAccordion(this)">
+            <div class="requirement-content">
+                                          <div class="requirement-title-row">
+              <h3 class="title-requirement">Favori Kurtarma</h3>
+                <div class="requirement-status-tag status-success">
+              <svg width="18" height="18" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="7.99961" cy="7.99998" r="6.4" fill="#10A363" fill-opacity="0.2"/>
+                <path d="M5.59961 8.00002L7.19961 9.60002L10.3996 6.40002" stroke="#19C379" stroke-width="1.28" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span>1/1</span>
+            </div>
+              </div>
+              <p class="text-body-medium requirement-description">Proper error handling for API calls and invalid data scenarios.</p>
+            </div>
+            <div class="accordion-icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M11.4276 6C11.9145 6 12.1687 6.61626 11.875 7.01439L11.8316 7.06689L8.40295 10.817C8.30455 10.9246 8.17364 10.9892 8.03476 10.9988C7.89589 11.0083 7.7586 10.9621 7.64865 10.8688L7.59493 10.817L4.16629 7.06689L4.11886 7.00814L4.088 6.96002L4.05714 6.90002L4.04743 6.87752L4.032 6.83564L4.01371 6.76814L4.008 6.73501L4.00229 6.69751L4 6.66189V6.58814L4.00286 6.55188L4.008 6.51438L4.01371 6.48188L4.032 6.41438L4.04743 6.37251L4.08743 6.29L4.12457 6.23375L4.16629 6.18313L4.22 6.13125L4.26401 6.0975L4.31886 6.06375L4.33944 6.05313L4.37772 6.03625L4.43944 6.01625L4.46972 6.01L4.50401 6.00375L4.53658 6.00125L11.4276 6Z" fill="var(--fg-secondary)"/>
+              </svg>
+            </div>
+          </div>
+
+            <div class="accordion-content">
+            <div class="test-wrapper">
+<div class="test-card">
+                <div class="test-header">
+                  <h4 class="text-body-medium">TC014 post_api_favorites_recover_unknown_email</h4>
+                </div>
+                <div class="test-content">
+                  <div class="test-field">
+                    <div class="test-field-label text-body-medium">Test Code</div>
+                    <div class="test-field-value text-body">
+                      <a href="./null" class="text-link">null</a>
                     </div>
                   </div>
                   <div class="test-field">
@@ -1838,7 +2220,83 @@ body {
                   </div>
                   <div class="test-field">
                     <div class="test-field-label text-body-medium">Analysis / Findings</div>
-                    <div class="test-field-value text-body">Liste, geçerli slug detayı ve bilinmeyen/bozuk slug'larda 404 davranışı hepsi doğru, sorun yok.</div>
+                    <div class="test-field-value text-body">N/A</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+                <div class="requirement-wrapper accordion-item active">
+          <div class="accordion-header" onclick="toggleAccordion(this)">
+            <div class="requirement-content">
+                                          <div class="requirement-title-row">
+              <h3 class="title-requirement">Faydalı Oyu</h3>
+                <div class="requirement-status-tag status-error">
+              <svg width="18" height="18" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="7.99961" cy="7.99998" r="6.4" fill="#C23539" fill-opacity="0.2"/>
+                <path d="M8 5.59998V7.99698" stroke="#EF4146" stroke-width="1.38478" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 10.394V10.3995" stroke="#EF4146" stroke-width="1.38478" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span>0/1</span>
+            </div>
+              </div>
+              <p class="text-body-medium requirement-description">Proper error handling for API calls and invalid data scenarios.</p>
+            </div>
+            <div class="accordion-icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M11.4276 6C11.9145 6 12.1687 6.61626 11.875 7.01439L11.8316 7.06689L8.40295 10.817C8.30455 10.9246 8.17364 10.9892 8.03476 10.9988C7.89589 11.0083 7.7586 10.9621 7.64865 10.8688L7.59493 10.817L4.16629 7.06689L4.11886 7.00814L4.088 6.96002L4.05714 6.90002L4.04743 6.87752L4.032 6.83564L4.01371 6.76814L4.008 6.73501L4.00229 6.69751L4 6.66189V6.58814L4.00286 6.55188L4.008 6.51438L4.01371 6.48188L4.032 6.41438L4.04743 6.37251L4.08743 6.29L4.12457 6.23375L4.16629 6.18313L4.22 6.13125L4.26401 6.0975L4.31886 6.06375L4.33944 6.05313L4.37772 6.03625L4.43944 6.01625L4.46972 6.01L4.50401 6.00375L4.53658 6.00125L11.4276 6Z" fill="var(--fg-secondary)"/>
+              </svg>
+            </div>
+          </div>
+
+            <div class="accordion-content">
+            <div class="test-wrapper">
+<div class="test-card">
+                <div class="test-header">
+                  <h4 class="text-body-medium">TC015 post_api_products_id_vote</h4>
+                </div>
+                <div class="test-content">
+                  <div class="test-field">
+                    <div class="test-field-label text-body-medium">Test Code</div>
+                    <div class="test-field-value text-body">
+                      <a href="./TC015_post_api_products_id_vote.py" class="text-link">TC015_post_api_products_id_vote.py</a>
+                    </div>
+                  </div>
+                  <div class="test-field">
+                    <div class="test-field-label text-body-medium">Test Error</div>
+                    <div class="test-field-value text-body">`AssertionError: Product ID missing or null in product item`</div>
+                  </div>
+                  <div class="test-field">
+                    <div class="test-field-label text-body-medium">Test Visualization and Result</div>
+                    <div class="test-field-value text-body">
+                      <a href="null" class="text-link">View Results</a>
+                    </div>
+                  </div>
+                  <div class="test-field">
+                    <div class="test-field-label text-body-medium">Status</div>
+                    <div class="test-field-value">
+                      
+            <div class="status-wrapper">
+                <div class="status-icon">
+                    <svg width="18" height="18" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+<circle cx="7.99961" cy="7.99998" r="6.4" fill="#C23539" fill-opacity="0.2"/>
+<path d="M8 5.59998V7.99698" stroke="#EF4146" stroke-width="1.38478" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M8 10.394V10.3995" stroke="#EF4146" stroke-width="1.38478" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+                </div>
+                <span class="text-body status-fail">Failed</span>
+            </div>
+            
+                    </div>
+                  </div>
+                  <div class="test-field">
+                    <div class="test-field-label text-body-medium">Severity</div>
+                    <div class="test-field-value text-body">N/A</div>
+                  </div>
+                  <div class="test-field">
+                    <div class="test-field-label text-body-medium">Analysis / Findings</div>
+                    <div class="test-field-value text-body">Yanlış alarm — aynı `id`/`productId` zinciri. Manuel doğrulandı: `POST /api/products/29/vote` `{"helpful":true}` → `HTTP 200` (boş body, beklenen). Uç doğru çalışıyor.</div>
                   </div>
                 </div>
               </div>
@@ -1862,7 +2320,7 @@ body {
         </div>
         <div class="metadata-row">
           <div class="metadata-label text-body-medium">Code Repo</div>
-          <div class="metadata-value text-body">asd (Protein Avcısı — backend)</div>
+          <div class="metadata-value text-body">asd (protein-avcisi backend)</div>
         </div>
         <div class="metadata-row">
           <div class="metadata-label text-body-medium">Test Results</div>

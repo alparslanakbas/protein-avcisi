@@ -47,8 +47,11 @@ public class ProductWatchService(AppDbContext db, SubscriberService subscribers)
         // Genel bülten onayı aynı zamanda "Haber Ver" bildirimleri için de
         // izin niteliğinde — ayrı bir onay akışı kurmak bu hafif özellik
         // için gereksiz olurdu. Zaten onaylıysa yeni bir mail gitmiyor.
+        // İzleme kaydı yukarıda zaten oluşturuldu (asıl işlev) — onay maili
+        // gönderilemese bile (SendConfirmationEmailAsync kendi içinde loglar)
+        // bu isteği başarısız saymıyoruz, favoriler ile aynı desen.
         if (!subscriber.IsConfirmed)
-            await subscribers.SendConfirmationEmailAsync(subscriber, confirmBaseUrl, cancellationToken);
+            _ = await subscribers.SendConfirmationEmailAsync(subscriber, confirmBaseUrl, cancellationToken);
 
         return true;
     }

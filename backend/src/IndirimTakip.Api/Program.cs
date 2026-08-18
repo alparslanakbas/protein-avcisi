@@ -424,7 +424,9 @@ app.MapPost("/api/subscribe", async (SubscribeRequest request, SubscriberService
         return Results.BadRequest(new { message = "Geçerli bir e-posta adresi girin." });
 
     var confirmBaseUrl = $"{http.Request.Scheme}://{http.Request.Host}";
-    await subscribers.SubscribeAsync(request, confirmBaseUrl, ct);
+    var sent = await subscribers.SubscribeAsync(request, confirmBaseUrl, ct);
+    if (!sent)
+        return Results.Json(new { message = "Onay e-postası şu anda gönderilemiyor, lütfen birazdan tekrar dene." }, statusCode: StatusCodes.Status502BadGateway);
     return Results.Ok(new { message = "E-postanı kontrol et, onay bağlantısı gönderdik." });
 }).RequireRateLimiting("EmailSensitive").LogSensitiveRequest(app.Logger);
 
