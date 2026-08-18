@@ -1,5 +1,5 @@
-import { DecimalPipe } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { DecimalPipe, isPlatformBrowser } from '@angular/common';
+import { Component, OnInit, PLATFORM_ID, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Meta } from '@angular/platform-browser';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -27,6 +27,7 @@ export class FavoritesPage implements OnInit {
   private readonly metaService = inject(Meta);
   private readonly priceHistoryService = inject(PriceHistoryService);
   private readonly dealsService = inject(DealsService);
+  private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   protected readonly favorites = signal<Deal[]>([]);
   protected readonly loading = signal(true);
@@ -59,8 +60,15 @@ export class FavoritesPage implements OnInit {
     // token açıkta kalmasın diye). Sadece ilk yüklemede kontrol etmek
     // yeterli, bu yüzden snapshot kullanılıyor (queryParamMap aboneliği
     // aşağıda ayrıca ?urun= için sürüyor).
+    // KRİTİK: sadece tarayıcıda çalıştırılmalı. router.navigate() SSR
+    // sırasında da çağrılırsa Angular Universal bunu gerçek bir HTTP 302
+    // yönlendirmesine çeviriyor — tarayıcı hiç HTML/JS almadan doğrudan
+    // /favorilerim'e (recover parametresi silinmiş halde) yönlendiriliyor,
+    // saveToken() ise sunucuda no-op olduğu için token hiçbir yere
+    // kaydolmadan kayboluyor. Gerçek bir kullanıcı testinde bulundu —
+    // yerel ng serve (SSR'sız) testinde bu hiç ortaya çıkmamıştı.
     const recoverToken = this.route.snapshot.queryParamMap.get('recover');
-    if (recoverToken) {
+    if (recoverToken && this.isBrowser) {
       this.favoritesService.saveToken(recoverToken);
       this.router.navigate([], { relativeTo: this.route, queryParams: { recover: null }, queryParamsHandling: 'merge', replaceUrl: true });
     }
