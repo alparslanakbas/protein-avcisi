@@ -552,16 +552,34 @@
       </div>
     }
 
-    <!-- Sponsorlu şerit -->
-    <div class="mt-[22px] flex items-center gap-3 rounded-[8px] border border-dashed border-[var(--noc-divider)] px-4 py-3">
-      <span class="rounded-[6px] px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.1em] text-[var(--noc-neutral-500)]" style="background: var(--noc-neutral-800)">
-        Sponsorlu
-      </span>
-      <span class="flex h-9 w-16 shrink-0 items-center justify-center rounded-[6px] border border-dashed border-[var(--noc-divider)] text-[10px] text-[var(--noc-neutral-500)]">
-        Logo
-      </span>
-      <span class="flex-1 text-sm text-[var(--noc-neutral-500)]">Bu alan henüz kimseye ait değil — markanız burada görünmek isterse iletişime geçebilir.</span>
-    </div>
+    <!-- PWA yükleme ipucu — sadece beforeinstallprompt event'i ateşlendiyse
+         (pratikte Android Chrome ve benzeri Chromium tabanlı tarayıcılar)
+         görünür, iOS Safari'de bu event hiç ateşlenmediği için otomatik
+         olarak hiç çıkmaz. -->
+    @if (pwaInstall.canInstall()) {
+      <div class="mt-[22px] flex items-center gap-3 rounded-[8px] border border-[var(--noc-divider)] bg-[var(--noc-surface)] px-4 py-3">
+        <span class="flex-1 text-sm text-[var(--noc-neutral-300)]">
+          Bu siteyi telefonuna uygulama gibi ekleyip ana ekrandan hızlıca açabilirsin.
+        </span>
+        <button
+          type="button"
+          (click)="pwaInstall.promptInstall()"
+          class="shrink-0 rounded-[8px] border border-[var(--noc-accent)] px-3 py-1.5 text-xs font-medium text-[var(--noc-accent)] hover:bg-[color-mix(in_srgb,var(--noc-accent)_12%,transparent)]"
+        >
+          Yükle
+        </button>
+        <button
+          type="button"
+          title="Kapat"
+          (click)="pwaInstall.dismiss()"
+          class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[var(--noc-neutral-500)] hover:bg-[color-mix(in_srgb,var(--noc-text)_7%,transparent)] hover:text-[var(--noc-text)]"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-3.5 w-3.5">
+            <path stroke-linecap="round" d="M6 6l12 12M18 6L6 18" />
+          </svg>
+        </button>
+      </div>
+    }
 
     <!-- Alarm bandı -->
     <div id="alarm" class="mt-[22px] rounded-[14px] p-[38px]" style="background: linear-gradient(120deg, var(--noc-section), var(--noc-section-glow))">

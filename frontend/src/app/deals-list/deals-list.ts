@@ -18,6 +18,7 @@ import { HomepageStats } from '../core/homepage-stats.model';
 import { PageMetaService, upsertJsonLdScript } from '../core/page-meta.service';
 import { PricePoint } from '../core/price-history.model';
 import { PriceHistoryService } from '../core/price-history.service';
+import { PwaInstallService } from '../core/pwa-install.service';
 import { formatRelativeTime } from '../core/relative-time';
 import { buildAreaPath, buildLinePath, toCoordinates } from '../core/spark-chart';
 import { SubscribeService } from '../core/subscribe.service';
@@ -92,6 +93,7 @@ export class DealsList implements OnInit {
   private readonly favoritesService = inject(FavoritesService);
   private readonly priceHistoryService = inject(PriceHistoryService);
   private readonly subscribeService = inject(SubscribeService);
+  protected readonly pwaInstall = inject(PwaInstallService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);

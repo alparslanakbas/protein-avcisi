@@ -2,11 +2,15 @@
 
 🔗 **Canlı site:** [proteinavcisi.com.tr](https://proteinavcisi.com.tr)
 
-Türkiye'deki spor takviyesi / protein tozu markalarının indirimlerini otomatik olarak
-takip edip tek bir sayfada listeleyen bir web sitesi.
+## Amaç
 
-Markaların kendi beyan ettiği "eski fiyat / yeni fiyat" bilgisine değil, düzenli olarak
-toplanan **gerçek fiyat geçmişine** dayanan bir indirim tespiti yapıyor.
+Türkiye'deki spor takviyesi / protein tozu markaları sitelerinde sürekli "indirim"
+etiketleri gösteriyor — ama bu "eski fiyat" genellikle markanın kendi beyanı,
+bağımsız doğrulanmış bir şey değil. ProteinAvcısı, günde birkaç kez otomatik
+topladığı gerçek fiyat geçmişine bakıp bir indirimin gerçekten indirim mi yoksa
+sadece etiket mi olduğunu gösteriyor.
+
+Kısacası: markanın söylediğine değil, biriktirdiği veriye güveniyor.
 
 ## Özellikler
 
@@ -21,25 +25,42 @@ toplanan **gerçek fiyat geçmişine** dayanan bir indirim tespiti yapıyor.
   serbest metin arama; fiyata veya isme göre sıralama.
 - **Ürün detay + fiyat grafiği** — zaman aralığı seçilebilir (7 gün / 15 gün / 1 ay /
   6 ay / 1 yıl), hover tooltip'li elle çizilmiş SVG grafik.
+- **Favoriler + fiyat alarmı** — hesap gerektirmeden, sadece e-posta ile ürün takibi ve
+  fiyat düşünce bildirim.
+- **E-posta bülteni** — haftalık öne çıkan indirimler özeti (double opt-in).
 - **Paylaşım** — site veya tekil ürün linkini WhatsApp/X/Facebook üzerinden veya
   doğrudan linki kopyalayarak paylaşma (mobilde native paylaşım penceresi).
 - **SSR (Angular Universal) + SEO** — her ürün kendi URL'ine sahip (`/urun/:id`),
   dinamik title/meta/Open Graph, schema.org `Product`/`Offer` structured data,
   dinamik `sitemap.xml` ve `robots.txt`.
+- **PWA desteği** — ana ekrana eklenebilir, yüklenebilir uygulama.
 - **Açık/koyu/sistem tema desteği.**
 
-## Tech Stack
+## Kullanılan Teknolojiler ve Servisler
 
 **Backend**
 - .NET 10, ASP.NET Core minimal API
 - PostgreSQL + EF Core
-- HtmlAgilityPack (HTML parse), doğrudan `HttpClient` tabanlı scraper'lar (JSON/GraphQL
-  API'ler dahil — hiçbiri tarayıcı otomasyonu gerektirmiyor)
+- HtmlAgilityPack (HTML parse) + doğrudan `HttpClient` tabanlı scraper'lar (bazı
+  markalarda JSON/GraphQL API'leri) — hiçbiri tarayıcı otomasyonu gerektirmiyor
+- [Brevo](https://brevo.com) — transactional e-posta (bülten, fiyat düşüş bildirimi,
+  favori listesi kurtarma linki)
 
 **Frontend**
 - Angular 22 (standalone components, Signals)
 - Angular SSR (Universal) + hydration
 - Tailwind CSS v4
+- PWA (manifest + service worker)
+
+**Altyapı**
+- [Render](https://render.com) — backend (Docker) + frontend (Node/SSR) hosting
+- [Neon](https://neon.tech) — serverless PostgreSQL
+- [Cloudflare](https://cloudflare.com) — DNS, CDN, edge güvenlik kuralları
+- [UptimeRobot](https://uptimerobot.com) — periyodik uptime izleme
+
+**SEO / Görünürlük**
+- Google Search Console, Bing Webmaster Tools, Yandex Webmaster
+- Dinamik `sitemap.xml`, schema.org structured data (`Product`/`Offer`/`FAQPage`)
 
 ## Proje Yapısı
 
@@ -57,30 +78,3 @@ frontend/
       product-modal/             Ürün detay modalı + fiyat grafiği
       share-button/              Paylaşım butonu (WhatsApp/X/Facebook/link kopyala)
 ```
-
-## Deployment
-
-- **Backend:** [Render](https://render.com) (Docker, ücretsiz katman)
-- **Frontend:** [Render](https://render.com) (Node/SSR, ücretsiz katman)
-- **Veritabanı:** [Neon](https://neon.tech) (serverless PostgreSQL, ücretsiz katman)
-- **Uptime:** [UptimeRobot](https://uptimerobot.com) ile periyodik ping (ücretsiz katmanın
-  uykuya geçmesini önlemek için)
-
-## Yerel Çalıştırma
-
-**Backend**
-```bash
-cd backend/src/IndirimTakip.Api
-dotnet user-secrets set "ConnectionStrings:Default" "<postgres-bağlantı-dizeniz>"
-dotnet run
-```
-
-**Frontend**
-```bash
-cd frontend
-npm install
-npm start
-```
-
-Varsayılan olarak backend `http://localhost:5156`, frontend `http://localhost:4200`
-üzerinde çalışır.
