@@ -20,6 +20,7 @@ import { PricePoint } from '../core/price-history.model';
 import { PriceHistoryService } from '../core/price-history.service';
 import { PwaInstallService } from '../core/pwa-install.service';
 import { formatRelativeTime } from '../core/relative-time';
+import { slugify } from '../core/slugify';
 import { buildAreaPath, buildLinePath, toCoordinates } from '../core/spark-chart';
 import { SubscribeService } from '../core/subscribe.service';
 import { ThemePreference, ThemeService } from '../core/theme.service';
@@ -269,10 +270,12 @@ export class DealsList implements OnInit {
           ? `${deal.productName} şu an ${priceText} — ${deal.brandName} markasında %${deal.discountPercent} doğrulanmış indirim. Fiyat geçmişini ProteinAvcısı'nda takip et.`
           : `${deal.productName} güncel fiyatı ${priceText}. ${deal.brandName} markasının fiyat geçmişini ProteinAvcısı'nda takip et.`;
 
+      const canonicalProductPath = `/urun/${deal.productId}/${slugify(deal.productName)}`;
+
       this.pageMeta.set({
         title,
         description,
-        canonicalPath: `/urun/${deal.productId}`,
+        canonicalPath: canonicalProductPath,
         ogType: 'product',
         ogImage: deal.imageUrl ?? undefined,
       });
@@ -291,7 +294,7 @@ export class DealsList implements OnInit {
         brand: { '@type': 'Brand', name: deal.brandName },
         offers: {
           '@type': 'Offer',
-          url: `${canonicalOrigin(this.document)}/urun/${deal.productId}`,
+          url: `${canonicalOrigin(this.document)}${canonicalProductPath}`,
           priceCurrency: 'TRY',
           price: deal.currentPrice.toFixed(2),
         },
@@ -340,15 +343,21 @@ export class DealsList implements OnInit {
       }
 
       const id = Number(idParam);
+      const slugParam = params.get('slug');
+
       const alreadyLoaded = this.deals().find((d) => d.productId === id);
       if (alreadyLoaded) {
         this.selectedDeal.set(alreadyLoaded);
+        this.ensureCanonicalSlug(alreadyLoaded, slugParam);
         return;
       }
 
       this.productLoadError.set(false);
       this.dealsService.getProductById(id).subscribe({
-        next: (deal) => this.selectedDeal.set(deal),
+        next: (deal) => {
+          this.selectedDeal.set(deal);
+          this.ensureCanonicalSlug(deal, slugParam);
+        },
         error: (err: HttpErrorResponse) => {
           if (err.status === 404) {
             this.router.navigate(['/']);
@@ -361,6 +370,23 @@ export class DealsList implements OnInit {
           if (this.responseInit) this.responseInit.status = 503;
         },
       });
+    });
+  }
+
+  // URL'deki slug segmenti eksikse (eski /urun/:id linkleri, elle yazılan
+  // adresler) ya da ürün adı değiştiği için eskiyse, kanonik slug'a
+  // replaceUrl ile yönlendiriyor. SSR'da bu, /urun/:id ↔ / arası geçersiz-ID
+  // yönlendirmesiyle AYNI mekanizmayla (Angular Universal'ın render sırasında
+  // yakalanan navigate() çağrısını gerçek bir HTTP 302'ye çevirmesi) gerçek
+  // bir yönlendirmeye dönüşüyor — Google'ın zaten indexlediği çıplak /urun/:id
+  // linklerinin ranking sinyalini kanonik (slug'lı) URL'e taşıması için.
+  // Slug zaten doğruysa hiçbir şey yapmıyor (sonsuz döngü riski yok).
+  private ensureCanonicalSlug(deal: Deal, slugParam: string | null): void {
+    const canonicalSlug = slugify(deal.productName);
+    if (slugParam === canonicalSlug) return;
+    this.router.navigate(['/urun', deal.productId, canonicalSlug], {
+      replaceUrl: true,
+      queryParamsHandling: 'preserve',
     });
   }
 
@@ -598,7 +624,7 @@ export class DealsList implements OnInit {
   }
 
   protected openDeal(deal: Deal): void {
-    this.router.navigate(['/urun', deal.productId], { queryParamsHandling: 'preserve' });
+    this.router.navigate(['/urun', deal.productId, slugify(deal.productName)], { queryParamsHandling: 'preserve' });
   }
 
   protected closeDeal(): void {

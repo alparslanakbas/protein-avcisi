@@ -11,6 +11,7 @@ import { PricePoint } from '../core/price-history.model';
 import { PriceHistoryService } from '../core/price-history.service';
 import { ProductFeedbackService } from '../core/product-feedback.service';
 import { formatRelativeTime } from '../core/relative-time';
+import { slugify } from '../core/slugify';
 import { buildAreaPath, buildLinePath, toCoordinates } from '../core/spark-chart';
 import { WatchService } from '../core/watch.service';
 import { ShareButton } from '../share-button/share-button';
@@ -72,7 +73,9 @@ export class ProductModal {
   readonly deal = input.required<Deal>();
   readonly closed = output<void>();
 
-  protected readonly shareUrl = computed(() => `${canonicalOrigin(this.document)}/urun/${this.deal().productId}`);
+  protected readonly shareUrl = computed(
+    () => `${canonicalOrigin(this.document)}/urun/${this.deal().productId}/${slugify(this.deal().productName)}`,
+  );
 
   protected readonly timeRanges = TIME_RANGES;
   protected readonly selectedRange = signal<TimeRangeOption>(TIME_RANGES[2]);

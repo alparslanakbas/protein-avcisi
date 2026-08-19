@@ -8,6 +8,7 @@ import express from 'express';
 import { join } from 'node:path';
 
 import { API_BASE_URL } from './app/core/api.config';
+import { slugify } from './app/core/slugify';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
@@ -22,6 +23,7 @@ const angularApp = new AngularNodeAppEngine();
 
 interface SitemapEntry {
   id: number;
+  name: string;
   lastScrapedAt: string;
 }
 
@@ -55,7 +57,7 @@ app.get('/sitemap.xml', async (req, res) => {
     const productUrls = products
       .map(
         (p) =>
-          `<url><loc>${origin}/urun/${p.id}</loc><lastmod>${new Date(p.lastScrapedAt).toISOString()}</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>`,
+          `<url><loc>${origin}/urun/${p.id}/${slugify(p.name)}</loc><lastmod>${new Date(p.lastScrapedAt).toISOString()}</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>`,
       )
       .join('');
 

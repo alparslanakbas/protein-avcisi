@@ -15,6 +15,7 @@ import { PrivacyPolicyPage } from './privacy-policy-page/privacy-policy-page';
 export const routes: Routes = [
   { path: '', component: DealsList },
   { path: 'urun/:id', component: DealsList },
+  { path: 'urun/:id/:slug', component: DealsList },
   { path: 'marka/:brandSlug/indirim-kodu', component: BrandPage },
   { path: 'kategoriler', component: CategoryListPage },
   { path: 'kategori/:categorySlug', component: CategoryPage },
