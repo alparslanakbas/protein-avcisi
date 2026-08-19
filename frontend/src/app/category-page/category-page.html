@@ -11,7 +11,11 @@
       <nav class="mb-2 text-xs text-[var(--noc-neutral-500)]">
         <a routerLink="/" class="hover:text-[var(--noc-accent)]">Ana Sayfa</a> / {{ categoryLabel() }}
       </nav>
-      <h1 class="text-[38px] font-medium tracking-[-0.03em] sm:text-[42px]">{{ categoryLabel() }}</h1>
+      <!-- H1 bilinçli olarak title ile aynı ana ifadeyi ("... Fiyatları")
+           taşıyor — eskiden sadece kategori adıydı ("Kreatin"), title ise
+           "Kreatin Fiyatları ve İndirimleri"ydi; ikisinin uyuşmaması
+           Google'a zayıf/karışık bir konu sinyali veriyordu. -->
+      <h1 class="text-[38px] font-medium tracking-[-0.03em] sm:text-[42px]">{{ categoryLabel() }} Fiyatları</h1>
       <p class="mt-2 max-w-2xl text-[15px] text-[var(--noc-neutral-300)]">
         {{ totalCount() }} ürün takipte. {{ categoryIntro() }}
       </p>

@@ -34,7 +34,9 @@ export class CategoryListPage implements OnInit {
 
   ngOnInit(): void {
     this.pageMeta.set({
-      title: 'Tüm Kategoriler | ProteinAvcısı',
+      // "Tüm Kategoriler" hiçbir arama niyetiyle eşleşmiyordu — konuyu
+      // taşıyan bir başlık (aynısı H1'de de kullanılıyor).
+      title: 'Spor Takviyesi Kategorileri ve Fiyatları | ProteinAvcısı',
       description: 'Protein tozu, kreatin, amino asitler, pre-workout ve daha fazlası — takip ettiğimiz tüm spor takviyesi kategorilerini gerçek ürün sayılarıyla keşfet.',
       canonicalPath: '/kategoriler',
     });

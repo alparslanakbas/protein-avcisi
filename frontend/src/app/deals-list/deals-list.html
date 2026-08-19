@@ -181,7 +181,13 @@
             @if (selectedDeal(); as deal) {
               {{ deal.productName }} Fiyatı ve Fiyat Geçmişi
             } @else {
-              Etiket oyununa gelme.
+              <!-- Ana sayfada H1, sayfanın konusunu taşıyan kısa bir satırla
+                   açılıyor; marka sloganı hemen altında AYNI H1 içinde ama
+                   büyük puntoyla duruyor — görsel hiyerarşi korunurken
+                   Google'ın gördüğü tek H1 artık anahtar kelime de içeriyor
+                   (eskiden sadece "Etiket oyununa gelme." vardı). -->
+              <span class="block text-[15px] font-normal tracking-normal text-[var(--noc-neutral-300)] sm:text-[17px]">Spor Takviyesi Fiyat Takibi</span>
+              <span class="mt-1 block">Etiket oyununa gelme.</span>
             }
           </h1>
           @if (showFullHomepageContent()) {

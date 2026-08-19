@@ -6,7 +6,10 @@
       <div class="py-24 text-center text-[var(--noc-neutral-500)]">Yükleniyor...</div>
     } @else if (comparison(); as c) {
       <div class="text-center">
-        <h1 class="text-[38px] font-medium tracking-[-0.03em] sm:text-[42px]">{{ c.brand1 }}, {{ c.brand2 }}'a karşı</h1>
+        <!-- H1, title ile aynı ifadeyi taşıyor ("X vs Y Fiyat Karşılaştırması")
+             — eski "X, Y'a karşı" yazımı title'la uyuşmuyordu ve "vs"
+             kalıbını hiç içermiyordu, oysa insanlar tam öyle arıyor. -->
+        <h1 class="text-[38px] font-medium tracking-[-0.03em] sm:text-[42px]">{{ c.brand1 }} vs {{ c.brand2 }} Fiyat Karşılaştırması</h1>
         <p class="mx-auto mt-2 max-w-xl text-[15px] text-[var(--noc-neutral-300)]">
           Kategori bazında güncel ortalama fiyatlar — canlı veriden hesaplanır, elle yazılmış bir içerik değildir.
         </p>

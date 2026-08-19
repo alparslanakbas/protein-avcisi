@@ -21,7 +21,9 @@ export class ArticleListPage implements OnInit {
 
   ngOnInit(): void {
     this.pageMeta.set({
-      title: 'Rehber | ProteinAvcısı',
+      // "Rehber" tek başına hiçbir arama niyetiyle eşleşmiyordu — konuyu
+      // (spor takviyesi) taşıyan bir başlık hem title hem H1'de kullanılıyor.
+      title: 'Spor Takviyesi Rehberi | ProteinAvcısı',
       description: 'Protein tozu, kreatin, pre-workout ve diğer spor takviyeleri hakkında bilgi amaçlı rehberler — hangi ürünü nasıl seçeceğine dair gerçek, tarafsız içerik.',
       canonicalPath: '/rehber',
     });
