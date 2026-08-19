@@ -287,6 +287,7 @@ public class DealsQueryService(AppDbContext db)
             where b.IsActive && p.PriceHistories.OrderByDescending(ph => ph.ScrapedAt).Select(ph => ph.ScrapedAt).FirstOrDefault() >= staleSince
             select new SitemapEntryDto(
                 p.Id,
+                p.Name,
                 p.PriceHistories.OrderByDescending(ph => ph.ScrapedAt).Select(ph => ph.ScrapedAt).FirstOrDefault()))
             .AsNoTracking()
             .ToListAsync(cancellationToken);
