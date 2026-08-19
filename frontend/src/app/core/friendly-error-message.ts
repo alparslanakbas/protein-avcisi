@@ -8,5 +8,14 @@ import { HttpErrorResponse } from '@angular/common/http';
 const RATE_LIMIT_MESSAGE = 'Kısa sürede çok fazla istek gönderdin, birkaç dakika sonra tekrar dener misin?';
 
 export function friendlyErrorMessage(error: unknown, genericMessage = 'Bir şeyler ters gitti, tekrar dener misin?'): string {
-  return error instanceof HttpErrorResponse && error.status === 429 ? RATE_LIMIT_MESSAGE : genericMessage;
+  if (!(error instanceof HttpErrorResponse)) return genericMessage;
+  if (error.status === 429) return RATE_LIMIT_MESSAGE;
+
+  // Backend zaten Türkçe, kullanıcı dostu bir { message: "..." } gövdesi
+  // döndürüyorsa (ör. 400 doğrulama hatası, 502 "e-posta şu anda
+  // gönderilemiyor") onu göstermek jenerik mesajdan her zaman daha
+  // faydalı — backend'e yeni bir anlamlı hata eklendiğinde frontend'in
+  // ayrıca güncellenmesi gerekmiyor.
+  const backendMessage = (error.error as { message?: unknown } | null)?.message;
+  return typeof backendMessage === 'string' && backendMessage.trim().length > 0 ? backendMessage : genericMessage;
 }

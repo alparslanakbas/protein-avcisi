@@ -1096,5 +1096,77 @@
       }
     ],
     "priority": "Low"
+  },
+  {
+    "id": "TC043",
+    "title": "Bülten aboneliği formu — e-posta sağlayıcısı hatasında dürüst bir mesaj gösterir",
+    "description": "Kullanıcı footer'daki bülten aboneliği formuna geçerli bir e-posta girip gönderir. Bu ortamda e-posta sağlayıcısı yapılandırılı olmadığı için backend 502 dönecektir — arayüzün jenerik/teknik bir hata yerine kullanıcı dostu bir mesaj (örn. 'Onay e-postası şu anda gönderilemiyor, lütfen birazdan tekrar dene.') gösterdiğini doğrula. Sayfa çökmemeli, form tekrar denemeye açık kalmalı.",
+    "category": "Yazma Akışları (Test Branch)",
+    "steps": [
+      { "type": "action", "description": "Navigate to /" },
+      { "type": "action", "description": "Scroll to the newsletter subscription form in the footer" },
+      { "type": "action", "description": "Fill in a valid, unique email address" },
+      { "type": "action", "description": "Submit the subscription form" },
+      { "type": "assertion", "description": "Verify a user-friendly error message is shown, not a raw server error or crash" }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC044",
+    "title": "Ürün modalından favoriye ekleme",
+    "description": "Kullanıcı bir ürün detay modalını açar, 'Favorilere Ekle'ye tıklar, e-posta ile bir kayıt girer ve favori olarak işaretlendiğini görür.",
+    "category": "Yazma Akışları (Test Branch)",
+    "steps": [
+      { "type": "action", "description": "Navigate to /" },
+      { "type": "action", "description": "Open a product detail page from the listing" },
+      { "type": "action", "description": "Click the add-to-favorites action" },
+      { "type": "action", "description": "Fill in a valid, unique email address if prompted" },
+      { "type": "action", "description": "Submit the favorite form" },
+      { "type": "assertion", "description": "Verify a success confirmation is shown and the favorite state updates" }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC045",
+    "title": "Ürün modalından 'Haber Ver' fiyat alarmı formu",
+    "description": "Kullanıcı bir ürün detay modalında 'Fiyat Düşünce Haber Ver' formunu açar, e-posta girer ve gönderir, başarı mesajı görür.",
+    "category": "Yazma Akışları (Test Branch)",
+    "steps": [
+      { "type": "action", "description": "Navigate to /" },
+      { "type": "action", "description": "Open a product detail page from the listing" },
+      { "type": "action", "description": "Click the price-drop notification action" },
+      { "type": "action", "description": "Fill in a valid, unique email address" },
+      { "type": "action", "description": "Submit the watch form" },
+      { "type": "assertion", "description": "Verify a success confirmation is shown" }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC046",
+    "title": "Ürün modalında 'faydalı mıydı' oyu verme",
+    "description": "Kullanıcı bir ürün detay modalında faydalı/faydasız oy butonlarından birine tıklar ve teşekkür mesajı görür, tekrar oy vermeye çalıştığında engellendiğini görür.",
+    "category": "Yazma Akışları (Test Branch)",
+    "steps": [
+      { "type": "action", "description": "Navigate to /" },
+      { "type": "action", "description": "Open a product detail page from the listing" },
+      { "type": "action", "description": "Click the helpful-yes vote button" },
+      { "type": "assertion", "description": "Verify a thank-you message is shown" },
+      { "type": "action", "description": "Attempt to vote again" },
+      { "type": "assertion", "description": "Verify repeated voting is silently prevented" }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC047",
+    "title": "Favoriler sayfasından kurtarma linki isteme",
+    "description": "Kullanıcı /favorilerim sayfasında (localStorage'da token yokken) e-posta ile kurtarma linki ister ve genel bir onay mesajı görür (e-postanın kayıtlı olup olmadığından bağımsız aynı mesaj).",
+    "category": "Yazma Akışları (Test Branch)",
+    "steps": [
+      { "type": "action", "description": "Navigate to /favorilerim" },
+      { "type": "action", "description": "Fill in an email address in the recovery form" },
+      { "type": "action", "description": "Submit the recovery request" },
+      { "type": "assertion", "description": "Verify a generic confirmation message is displayed regardless of whether the email is registered" }
+    ],
+    "priority": "Medium"
   }
 ]
