@@ -9,6 +9,9 @@ public record DealDto(
     string? Size,
     string? Flavor,
     decimal? ServingSizeGrams,
+    // Markanın kendi sitesinden gelen gerçek ürün açıklaması — sadece marka
+    // bunu sağlıyorsa dolu (şimdilik HIQ), yoksa null (uydurma yok).
+    string? Description,
     string BrandName,
     decimal CurrentPrice,
     decimal ReferencePrice,

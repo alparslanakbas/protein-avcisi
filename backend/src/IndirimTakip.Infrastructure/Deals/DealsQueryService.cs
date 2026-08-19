@@ -41,6 +41,7 @@ public class DealsQueryService(AppDbContext db)
         return new DealDto(
             row.Product.Id, row.Product.Name, row.Product.Url, row.Product.ImageUrl,
             row.Product.Category, row.Product.Size, row.Product.Flavor, row.Product.ServingSizeGrams,
+            row.Product.Description,
             row.BrandName, latest.Price, referencePrice,
             Math.Round((referencePrice - latest.Price) / referencePrice * 100, 1),
             latest.StoreOldPrice,

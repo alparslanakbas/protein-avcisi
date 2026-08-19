@@ -42,7 +42,8 @@ public partial class HiqScraper(HttpClient httpClient) : IBrandScraper
                     Category: string.IsNullOrWhiteSpace(product.ProductType) ? null : product.ProductType,
                     Price: variant.Price,
                     ServingSizeGrams: ExtractServingSizeGrams(product.BodyHtml),
-                    StoreOldPrice: variant.CompareAtPrice > variant.Price ? variant.CompareAtPrice : null));
+                    StoreOldPrice: variant.CompareAtPrice > variant.Price ? variant.CompareAtPrice : null,
+                    Description: ExtractDescription(product.BodyHtml)));
             }
 
             if (response.Products.Count < 250)
@@ -92,4 +93,32 @@ public partial class HiqScraper(HttpClient httpClient) : IBrandScraper
 
     [GeneratedRegex(@"^(\d+(?:[.,]\d+)?)\s*g$", RegexOptions.IgnoreCase)]
     private static partial Regex ServingGramsRegex();
+
+    // Aynı besin değeri kutusunda "Açıklama"/"İçindekiler"/"Kullanım Talimatı"
+    // bölümleri hep <div class="nutrition-title">BAŞLIK</div><div
+    // class="nutrition-text">METİN</div> çifti şeklinde geliyor — "Besin Değeri"
+    // (nutrition-note + table kullanıyor) ve "Uyarı" (nutrition-warning-*
+    // class'ları) bu desenle hiç eşleşmediği için doğal olarak dışarıda kalıyor,
+    // ayrıca filtrelemeye gerek yok.
+    private static string? ExtractDescription(string? bodyHtml)
+    {
+        if (string.IsNullOrEmpty(bodyHtml))
+            return null;
+
+        var sections = DescriptionSectionRegex().Matches(bodyHtml)
+            .Select(m => $"{StripHtml(m.Groups[1].Value)}: {StripHtml(m.Groups[2].Value)}")
+            .Where(s => s.Length > 2)
+            .ToList();
+
+        return sections.Count == 0 ? null : string.Join("\n\n", sections);
+    }
+
+    private static string StripHtml(string html) =>
+        System.Net.WebUtility.HtmlDecode(TagRegex().Replace(html, " ")).Trim().Replace("  ", " ");
+
+    [GeneratedRegex(@"<div class=""nutrition-title"">(.*?)</div>\s*<div class=""nutrition-text"">(.*?)</div>", RegexOptions.Singleline)]
+    private static partial Regex DescriptionSectionRegex();
+
+    [GeneratedRegex(@"<[^>]+>")]
+    private static partial Regex TagRegex();
 }

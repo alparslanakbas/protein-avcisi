@@ -53,11 +53,13 @@ public static class DependencyInjection
         services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<ProteinOceanScraper>());
 
         services.AddScoped<ScrapeIngestionService>();
+        services.AddScoped<DescriptionBackfillService>();
         services.AddScoped<DealsQueryService>();
         services.AddScoped<PriceHistoryQueryService>();
         services.AddScoped<CouponService>();
         services.AddScoped<ArticleService>();
         services.AddHostedService<ScrapingBackgroundService>();
+        services.AddHostedService<DescriptionBackfillBackgroundService>();
 
         services.AddHttpClient<IEmailSender, BrevoEmailSender>(client =>
         {

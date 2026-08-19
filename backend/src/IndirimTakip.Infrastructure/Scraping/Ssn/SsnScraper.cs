@@ -3,7 +3,7 @@ using IndirimTakip.Core.Scraping;
 
 namespace IndirimTakip.Infrastructure.Scraping.Ssn;
 
-public class SsnScraper(HttpClient httpClient) : IBrandScraper
+public class SsnScraper(HttpClient httpClient) : IBrandScraper, IProductDescriptionFetcher
 {
     // Aksesuar/ekipman değil, sadece takviye kategorileri (projenin kapsamı).
     private static readonly string[] CategorySlugs =
@@ -75,5 +75,35 @@ public class SsnScraper(HttpClient httpClient) : IBrandScraper
         }
 
         return products.Values.ToList();
+    }
+
+    // Ürün açıklaması kategori/liste sayfalarında hiç yok, sadece ürün DETAY
+    // sayfasında — OpenCart temasının "Ürün Açıklaması" tab'ının içeriği,
+    // sayfadaki "block-content" class'lı ilk div (diğer tab'lar — Ürün
+    // Yorumları/Bilgilendirme — farklı yapıda, bu class'ı kullanmıyor).
+    public async Task<string?> FetchDescriptionAsync(string productUrl, CancellationToken cancellationToken = default)
+    {
+        var html = await httpClient.GetStringAsync(productUrl, cancellationToken);
+
+        var doc = new HtmlDocument();
+        doc.LoadHtml(html);
+
+        var contentNode = doc.DocumentNode.SelectSingleNode("//div[contains(concat(' ', normalize-space(@class), ' '), ' block-content ')]");
+        if (contentNode is null)
+            return null;
+
+        var paragraphs = contentNode.SelectNodes(".//p");
+        if (paragraphs is null || paragraphs.Count == 0)
+        {
+            var fallback = HtmlEntity.DeEntitize(contentNode.InnerText).Trim();
+            return fallback.Length == 0 ? null : fallback;
+        }
+
+        var sections = paragraphs
+            .Select(p => HtmlEntity.DeEntitize(p.InnerText).Trim())
+            .Where(t => t.Length > 0)
+            .ToList();
+
+        return sections.Count == 0 ? null : string.Join("\n\n", sections);
     }
 }

@@ -45,6 +45,7 @@ public class ScrapeIngestionService(AppDbContext db, ProductWatchNotifier watchN
                     Size = size,
                     Flavor = flavor,
                     ServingSizeGrams = scraped.ServingSizeGrams,
+                    Description = scraped.Description,
                 };
                 db.Products.Add(product);
             }
@@ -56,6 +57,11 @@ public class ScrapeIngestionService(AppDbContext db, ProductWatchNotifier watchN
                 product.Size = size;
                 product.Flavor = flavor;
                 product.ServingSizeGrams = scraped.ServingSizeGrams;
+                // Açıklamayı henüz çekmeyen scraper'lar (SSN/Hardline) scraped.Description
+                // hiç göndermiyor — bu durumda var olan değeri SIFIRLAMIYORUZ. Açıklama
+                // çeken markalarda (HIQ) ise her taramada güncel tutuluyor.
+                if (scraped.Description is not null)
+                    product.Description = scraped.Description;
             }
 
             product.PriceHistories.Add(new PriceHistory

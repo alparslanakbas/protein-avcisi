@@ -23,5 +23,12 @@ public class Product
     // Sadece markanın verisi güvenilir şekilde sağladığı ürünlerde dolu.
     public decimal? ServingSizeGrams { get; set; }
 
+    // Markanın kendi sitesinden gelen gerçek ürün açıklaması (düz metin,
+    // HTML temizlenmiş) — uydurma değil, sadece marka bunu sağlıyorsa dolu.
+    // Bir kez doldurulduktan sonra sonraki taramalarda korunur (bkz.
+    // ScrapeIngestionService) — markanın açıklamayı çekmeyen scraper'ları
+    // (henüz SSN/Hardline) mevcut değeri sıfırlamaz.
+    public string? Description { get; set; }
+
     public ICollection<PriceHistory> PriceHistories { get; set; } = new List<PriceHistory>();
 }

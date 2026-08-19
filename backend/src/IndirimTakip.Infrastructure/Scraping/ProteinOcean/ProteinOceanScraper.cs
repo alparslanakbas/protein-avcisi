@@ -1,4 +1,6 @@
 using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 using IndirimTakip.Core.Scraping;
 
 namespace IndirimTakip.Infrastructure.Scraping.ProteinOcean;
@@ -7,7 +9,7 @@ namespace IndirimTakip.Infrastructure.Scraping.ProteinOcean;
 // doğrudan çağırıyoruz — sitenin kendi frontend'i de tarayıcıda bunu kullanıyor,
 // Playwright/JS render gerektirmiyor. İstek şekli, sayfa gerçek tarayıcıda
 // açılıp "Daha fazla göster" tıklanarak ağ trafiği izlenerek keşfedildi.
-public class ProteinOceanScraper(HttpClient httpClient) : IBrandScraper
+public partial class ProteinOceanScraper(HttpClient httpClient) : IBrandScraper, IProductDescriptionFetcher
 {
     public string BrandName => "ProteinOcean";
     public string BaseUrl => "https://proteinocean.com";
@@ -127,4 +129,93 @@ public class ProteinOceanScraper(HttpClient httpClient) : IBrandScraper
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<SearchProductsGraphQlResponse>(cancellationToken: cancellationToken);
     }
+
+    // Ürün açıklaması GraphQL searchProducts'ta yok (description alanı sadece
+    // 24-89 karakterlik bir slogan) — gerçek/uzun açıklama sayfanın kendi
+    // sunucu-render HTML'inde (__NEXT_DATA__ script'i) geliyor. GraphQL API
+    // BaseAddress'i api.myikas.com olsa da, HttpClient'a MUTLAK bir URL
+    // verildiğinde BaseAddress göz ardı edilir — o yüzden aynı HttpClient
+    // doğrudan proteinocean.com'a istek atabiliyor.
+    public async Task<string?> FetchDescriptionAsync(string productUrl, CancellationToken cancellationToken = default)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, productUrl);
+        request.Headers.UserAgent.ParseAdd(
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36");
+
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+            return null;
+
+        var html = await response.Content.ReadAsStringAsync(cancellationToken);
+        return ExtractDescription(html);
+    }
+
+    // __NEXT_DATA__ içindeki props.pageProps.pageSpecificData.attributes dizisi
+    // — her eleman productAttribute.type ile HTML/TABLE tipini belirtiyor.
+    // Sadece HTML olanları (Açıklama/Özellikler/Kullanım Şekli gibi) alıyoruz;
+    // TABLE olanları (amino asit/besin tabloları) düz metne dönüştürülmeye
+    // uygun değil, atlanıyor.
+    private static string? ExtractDescription(string html)
+    {
+        var match = NextDataRegex().Match(html);
+        if (!match.Success)
+            return null;
+
+        try
+        {
+            using var doc = JsonDocument.Parse(match.Groups[1].Value);
+            if (!doc.RootElement.TryGetProperty("props", out var props) ||
+                !props.TryGetProperty("pageProps", out var pageProps) ||
+                !pageProps.TryGetProperty("pageSpecificData", out var pageSpecificData) ||
+                !pageSpecificData.TryGetProperty("attributes", out var attributes) ||
+                attributes.ValueKind != JsonValueKind.Array)
+            {
+                return null;
+            }
+
+            var sections = new List<string>();
+            foreach (var attribute in attributes.EnumerateArray())
+            {
+                if (!attribute.TryGetProperty("productAttribute", out var productAttribute) ||
+                    !productAttribute.TryGetProperty("type", out var typeProp) ||
+                    typeProp.GetString() != "HTML")
+                {
+                    continue;
+                }
+
+                var name = productAttribute.TryGetProperty("name", out var nameProp) ? nameProp.GetString() : null;
+                var value = attribute.TryGetProperty("value", out var valueProp) ? valueProp.GetString() : null;
+                var text = StripHtml(value);
+                if (text.Length == 0)
+                    continue;
+
+                var title = CleanTitle(name);
+                sections.Add(string.IsNullOrEmpty(title) ? text : $"{title}: {text}");
+            }
+
+            return sections.Count == 0 ? null : string.Join("\n\n", sections);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    // "2- ÜRÜN SAYFA - ÖZELLİKLER" gibi dahili/numaralı başlıkları "ÖZELLİKLER"e sadeleştiriyor.
+    private static string CleanTitle(string? name) =>
+        string.IsNullOrEmpty(name) ? "" : TitlePrefixRegex().Replace(name, "").Trim();
+
+    private static string StripHtml(string? html) =>
+        string.IsNullOrEmpty(html)
+            ? ""
+            : System.Net.WebUtility.HtmlDecode(TagRegex().Replace(html, " ")).Trim().Replace("  ", " ");
+
+    [GeneratedRegex(@"<script id=""__NEXT_DATA__""[^>]*>(.*?)</script>", RegexOptions.Singleline)]
+    private static partial Regex NextDataRegex();
+
+    [GeneratedRegex(@"^\d+-\s*ÜRÜN SAYFA\s*-\s*", RegexOptions.IgnoreCase)]
+    private static partial Regex TitlePrefixRegex();
+
+    [GeneratedRegex(@"<[^>]+>")]
+    private static partial Regex TagRegex();
 }

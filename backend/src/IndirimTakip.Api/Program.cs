@@ -462,6 +462,15 @@ app.MapPost("/api/dev/send-digest", async (DigestService digest, HttpContext htt
     return Results.Ok(result);
 }).RequireAdminKey(adminApiKey);
 
+// Asıl tamamlama artık DescriptionBackfillBackgroundService ile haftada bir
+// otomatik tetikleniyor — bu endpoint elle/anlık test tetiklemesi için
+// (aynı /api/dev/* desende).
+app.MapPost("/api/dev/backfill-descriptions", async (DescriptionBackfillService backfill, CancellationToken ct) =>
+{
+    var updated = await backfill.BackfillAsync(ct);
+    return Results.Ok(new { updatedCount = updated });
+}).RequireAdminKey(adminApiKey);
+
 // Markalara "bu hafta size şu kadar tıklama gönderdik" raporu hazırlamak
 // için — ClickCount tarihsiz/kümülatif bir sayaç olduğundan (tek tek
 // tıklama zaman damgası tutulmuyor) burada dönen sayılar site açılışından
