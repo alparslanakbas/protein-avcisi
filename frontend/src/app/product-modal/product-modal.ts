@@ -171,6 +171,14 @@ export class ProductModal {
     return count;
   });
 
+  // Backend'de "\n\n" ile ayrılmış bölümler (Açıklama/İçindekiler/Kullanım
+  // Talimatı gibi) geliyor — her birini ayrı paragraf olarak basıyoruz.
+  // Sadece marka gerçekten açıklama sağladıysa dolu (şimdilik HIQ).
+  protected readonly descriptionParagraphs = computed(() => {
+    const description = this.deal().description;
+    return description ? description.split('\n\n').filter(Boolean) : [];
+  });
+
   constructor() {
     effect(() => {
       // deal() veya selectedRange() değişince yeniden çek.

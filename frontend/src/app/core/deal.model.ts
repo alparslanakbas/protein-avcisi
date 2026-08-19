@@ -7,6 +7,9 @@ export interface Deal {
   size: string | null;
   flavor: string | null;
   servingSizeGrams: number | null;
+  // Markanın kendi sitesinden gelen gerçek ürün açıklaması — sadece marka
+  // bunu sağlıyorsa dolu (şimdilik HIQ), yoksa null.
+  description: string | null;
   brandName: string;
   currentPrice: number;
   referencePrice: number;
