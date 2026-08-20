@@ -121,9 +121,11 @@
             </div>
 
             <div class="mt-4 flex flex-wrap gap-2">
-              <a [routerLink]="['/kategori', cfg.category]" class="rounded-[6px] border border-[var(--noc-accent)] px-3 py-1.5 text-xs text-[var(--noc-accent)]">
-                Tüm {{ cfg.name }} fiyatları
-              </a>
+              @if (cfg.category) {
+                <a [routerLink]="['/kategori', cfg.category]" class="rounded-[6px] border border-[var(--noc-accent)] px-3 py-1.5 text-xs text-[var(--noc-accent)]">
+                  Tüm {{ cfg.name }} fiyatları
+                </a>
+              }
               @if (cfg.guideSlug) {
                 <a [routerLink]="['/rehber', cfg.guideSlug]" class="rounded-[6px] border border-[var(--noc-divider)] px-3 py-1.5 text-xs text-[var(--noc-neutral-300)] hover:text-[var(--noc-accent)]">
                   {{ cfg.guideLabel }}

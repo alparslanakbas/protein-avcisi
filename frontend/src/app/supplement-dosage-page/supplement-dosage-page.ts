@@ -17,7 +17,10 @@ interface DosageProduct {
   costPerDay: number;
 }
 
-const PRODUCT_LIMIT = 8;
+// Kreatin gibi geniş kategorilerde 8 satır marka çeşitliliğini gizliyordu
+// (tablo en ucuz ürünlere göre sıralı; tek bir marka ilk sıraları
+// doldurabiliyor).
+const PRODUCT_LIMIT = 12;
 
 // Kreatin/beta-alanine/sitrülin/betain/EAA için TEK bileşen, konfigürasyonla
 // (supplement-dosages.ts) beş ayrı sayfa üretiyor. Her birine ayrı bileşen
@@ -57,7 +60,7 @@ export class SupplementDosagePage implements OnInit {
 
     return this.products()
       .map((deal) => {
-        const totalGrams = this.parsePackageGrams(deal.size);
+        const totalGrams = this.packageGrams(deal);
         if (!totalGrams) return null;
 
         const daysSupply = totalGrams / grams;
@@ -72,6 +75,24 @@ export class SupplementDosagePage implements OnInit {
 
   protected productLink(deal: Deal): string[] {
     return ['/urun', String(deal.productId), slugify(deal.productName)];
+  }
+
+  // Paketteki toplam gram. İki kaynak var:
+  // (1) Size alanı ("300 Gr" / "2 Kg") — üç markada bu geliyor;
+  // (2) paket servis sayısı × servis gramajı — ProteinOcean'da Size hiç
+  //     gelmiyor ama ikisi de markanın kendi verisinden geldiği için bu
+  //     çarpım türetilmiş bir tahmin değil.
+  // Bu ikinci yol olmadan ProteinOcean ürünleri tabloya hiç giremiyordu —
+  // protein tozu tablosunda çözülen aynı sorun (bkz. CalculateServings).
+  private packageGrams(deal: Deal): number | null {
+    const fromSize = this.parsePackageGrams(deal.size);
+    if (fromSize) return fromSize;
+
+    if (deal.servingsPerPackage && deal.servingsPerPackage > 0 && deal.servingSizeGrams && deal.servingSizeGrams > 0) {
+      return deal.servingsPerPackage * deal.servingSizeGrams;
+    }
+
+    return null;
   }
 
   private parsePackageGrams(size: string | null): number | null {
@@ -129,7 +150,12 @@ export class SupplementDosagePage implements OnInit {
       // kategorisinin anahtar kelimelerinden biri olduğu için kategorinin
       // TAMAMINI getiriyordu (arginin ürünleri beta-alanine sayfasında
       // listeleniyordu). Burada tam da o tek bileşeni arıyoruz.
-      .getAllProducts({ categories: [config.category], search: config.searchTerm, pageSize: 50, expandSynonyms: false })
+      .getAllProducts({
+        categories: config.category ? [config.category] : [],
+        search: config.searchTerm ?? undefined,
+        pageSize: 100,
+        expandSynonyms: false,
+      })
       .subscribe({
         next: (result) => {
           this.products.set(result.items);

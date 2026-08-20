@@ -18,8 +18,14 @@ export interface SupplementDosage {
   // Ürünleri çekmek için kullanılacak kategori + arama terimi. Kategori
   // tek başına yetmiyor (ör. beta-alanine "amino-asitler" içinde ama
   // kategorinin tamamı beta-alanine değil).
-  category: string;
-  searchTerm: string;
+  // NULL olabilir: bazı ürünlerin (ör. betain) kategorisi hiç
+  // atanmamış — orada yalnızca arama terimiyle filtreleniyor.
+  category: string | null;
+  // NULL olabilir: kategori zaten tam olarak istenen ürün grubuysa (kreatin
+  // gibi) arama terimi eklemek işe yaramıyor, TERSİNE daraltıyor —
+  // "creatine" araması Hardline'ın "Kreatin Mikronize" ürünlerini
+  // yakalamıyordu ve tablo iki markaya düşüyordu.
+  searchTerm: string | null;
   // İlgili rehber yazısı (varsa) — iç linkleme.
   guideSlug?: string;
   guideLabel?: string;
@@ -41,7 +47,9 @@ export const SUPPLEMENT_DOSAGES: SupplementDosage[] = [
     dosageNote:
       'Günde 3-5 gram, kreatin için en yaygın kullanılan aralıktır ve ürünlerin çoğu 5 gramlık ölçekle gelir. Daha fazlası doygunluğu hızlandırmaz, fazlası vücuttan atılır. Belirleyici olan miktardan çok her gün düzenli kullanmaktır.',
     category: 'kreatin',
-    searchTerm: 'creatine',
+    // Kategori zaten tam olarak kreatin ürünleri — arama terimi eklemek
+    // Türkçe yazımlı ("Kreatin Mikronize") ürünleri dışarıda bırakıyordu.
+    searchTerm: null,
     guideSlug: 'kreatin-nasil-kullanilir',
     guideLabel: 'Kreatin Nasıl Kullanılır?',
   },
@@ -79,12 +87,23 @@ export const SUPPLEMENT_DOSAGES: SupplementDosage[] = [
     category: 'amino-asitler',
     searchTerm: 'citrulline',
   },
-  // BETAİN BİLİNÇLİ OLARAK YOK: takip ettiğimiz 4 markada yalnızca 2 betain
-  // ürünü var, ikisinin de paket gramajı gelmiyor (kategori bile boş) ve
-  // biri farklı amaçlı (Betain HCL + Pepsin, sindirim enzimi). Bu veriyle
-  // "kaç gün yeter / günlük maliyet" tablosu kurulamıyor — içi boş bir
-  // sayfa açmak tam da kaçındığımız "ince içerik" olurdu. Markalarda
-  // gerçek betain ürünü çoğalırsa buraya eklenebilir.
+  {
+    slug: 'betain-dozu',
+    name: 'Betain',
+    title: 'Betain (Betaine) Dozu Hesaplama | ProteinAvcısı',
+    description:
+      'Günlük betain dozunu ve paketinin kaç gün yeteceğini hesapla. Güncel fiyatlarla günlük maliyetini gör.',
+    h1: 'Betain Dozu Hesaplama',
+    intro:
+      'Betain dozu sabit bir aralıkta kullanılır, kiloya göre hesaplanmaz. Günlük dozunu seç, paketinin kaç gün yeteceğini ve günlük maliyetini gör.',
+    minDailyGrams: 1.25,
+    maxDailyGrams: 2.5,
+    defaultDailyGrams: 2.5,
+    dosageNote:
+      'Günde 1,25-2,5 gram (betain anhidrat) çalışmalarda en sık kullanılan aralıktır. Pancar gibi gıdalarda doğal olarak da bulunur. Kreatinde olduğu gibi etkisi düzenli kullanıma dayanır. Not: "Betain HCL" farklı bir üründür (sindirim desteği amaçlı), performans için kullanılan form betain anhidrattır.',
+    category: null,
+    searchTerm: 'betain',
+  },
   {
     slug: 'eaa-dozu',
     name: 'EAA',
