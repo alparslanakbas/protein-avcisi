@@ -1,4 +1,5 @@
 import { DOCUMENT, DecimalPipe, isPlatformServer } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, PLATFORM_ID, RESPONSE_INIT, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
@@ -154,12 +155,20 @@ export class ProductComparisonPage implements OnInit {
         this.setMeta(dealA, dealB);
         this.loading.set(false);
       },
-      error: () => {
-        // Ürünlerden biri gerçekten yoksa ana sayfaya; geçici bir hata ise
-        // (backend erişilemez) 503 ile "sonra tekrar dene" diyoruz —
-        // deals-list.ts'teki aynı ayrım.
-        this.loadError.set(true);
+      error: (err: HttpErrorResponse) => {
         this.loading.set(false);
+
+        // Ürünlerden biri gerçekten yoksa (404) bu çift hiçbir zaman geçerli
+        // olmayacak — ana sayfaya yönlendiriyoruz. Geçici bir hataysa (ağ
+        // hatası, backend 5xx) 503 ile "sonra tekrar dene" diyoruz; kalıcı
+        // olmayan bir sorun için "artık yok" sinyali vermiyoruz.
+        // deals-list.ts'teki aynı ayrım.
+        if (err.status === 404) {
+          this.router.navigate(['/']);
+          return;
+        }
+
+        this.loadError.set(true);
         if (this.responseInit) this.responseInit.status = 503;
       },
     });
