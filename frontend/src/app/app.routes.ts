@@ -11,7 +11,9 @@ import { DealsList } from './deals-list/deals-list';
 import { FavoritesPage } from './favorites-page/favorites-page';
 import { HowItWorksPage } from './how-it-works-page/how-it-works-page';
 import { PrivacyPolicyPage } from './privacy-policy-page/privacy-policy-page';
+import { CalculatorListPage } from './calculator-list-page/calculator-list-page';
 import { ProteinCalculatorPage } from './protein-calculator-page/protein-calculator-page';
+import { SupplementDosagePage } from './supplement-dosage-page/supplement-dosage-page';
 
 export const routes: Routes = [
   { path: '', component: DealsList },
@@ -29,7 +31,13 @@ export const routes: Routes = [
   { path: 'rehber', component: ArticleListPage },
   { path: 'rehber/:slug', component: ArticlePage },
   { path: 'nasil-calisiyoruz', component: HowItWorksPage },
+  { path: 'hesaplama', component: CalculatorListPage },
+  // SIRA ÖNEMLİ: spesifik hesaplayıcı route'ları, aşağıdaki generic
+  // 'hesaplama/:slug'dan ÖNCE gelmeli.
   { path: 'hesaplama/protein-ihtiyaci', component: ProteinCalculatorPage },
+  // Takviye doz + maliyet hesaplayıcıları (kreatin, beta-alanine,
+  // sitrülin, betain, EAA) — hepsi tek bileşen, konfigürasyonla ayrışıyor.
+  { path: 'hesaplama/:slug', component: SupplementDosagePage },
   { path: 'favorilerim', component: FavoritesPage },
   { path: 'karsilastir/:pair', component: BrandComparisonPage },
 ];

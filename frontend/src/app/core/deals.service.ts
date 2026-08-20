@@ -24,6 +24,10 @@ export interface DealsQuery {
   sortBy?: string;
   page?: number;
   pageSize?: number;
+  // Belirli bir bileşeni arayan sayfalar için false gönderilir — eşanlamlı
+  // genişletme orada kategorinin tamamını getiriyor (bkz. backend'deki
+  // expandSearchSynonyms açıklaması).
+  expandSynonyms?: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -129,6 +133,8 @@ export class DealsService {
     if (query.sortBy) params = params.set('sortBy', query.sortBy);
     if (query.page) params = params.set('page', query.page);
     if (query.pageSize) params = params.set('pageSize', query.pageSize);
+    // Yalnızca açıkça false verilince gönderiliyor — backend varsayılanı true.
+    if (query.expandSynonyms === false) params = params.set('expandSynonyms', 'false');
 
     return params;
   }

@@ -4,6 +4,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 import { CATEGORY_LABELS } from '../core/category-labels';
 import { DealsService } from '../core/deals.service';
 import { FavoritesService } from '../core/favorites.service';
+import { SUPPLEMENT_DOSAGES } from '../core/supplement-dosages';
 import { ThemePreference, ThemeService } from '../core/theme.service';
 
 // Ana sayfa (deals-list) dışındaki tüm sayfalarda (kategori, marka, takip
@@ -28,6 +29,14 @@ export class SiteHeader implements OnInit {
   // kategori listesiyle).
   protected readonly categories = signal<{ slug: string; label: string }[]>([]);
   protected readonly categoriesOpen = signal(false);
+
+  // Araç sayısı birden fazlaya çıkınca "Hesaplama" da düz link olmaktan
+  // çıkıp Kategoriler'le aynı dropdown desenine geçti.
+  protected readonly calculatorsOpen = signal(false);
+  protected readonly calculators = [
+    { path: '/hesaplama/protein-ihtiyaci', label: 'Günlük Protein İhtiyacı' },
+    ...SUPPLEMENT_DOSAGES.map((s) => ({ path: `/hesaplama/${s.slug}`, label: `${s.name} Dozu` })),
+  ];
   // Servisteki paylaşılan signal'e doğrudan referans — favori eklenince/
   // çıkarılınca (bu sayfadan ya da başka bir sayfadan) otomatik güncellenir.
   protected readonly favoritesCount = this.favoritesService.count;
@@ -45,6 +54,14 @@ export class SiteHeader implements OnInit {
 
   protected closeCategories(): void {
     this.categoriesOpen.set(false);
+  }
+
+  protected toggleCalculators(): void {
+    this.calculatorsOpen.update((open) => !open);
+  }
+
+  protected closeCalculators(): void {
+    this.calculatorsOpen.set(false);
   }
 
   protected setTheme(preference: ThemePreference): void {

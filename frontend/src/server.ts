@@ -9,6 +9,7 @@ import { join } from 'node:path';
 
 import { API_BASE_URL } from './app/core/api.config';
 import { slugify } from './app/core/slugify';
+import { SUPPLEMENT_DOSAGES } from './app/core/supplement-dosages';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
@@ -110,9 +111,13 @@ app.get('/sitemap.xml', async (req, res) => {
       `<url><loc>${origin}/gizlilik-politikasi</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>` +
       `<url><loc>${origin}/cerez-politikasi</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>` +
       `<url><loc>${origin}/nasil-calisiyoruz</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>` +
-      // Hesaplama aracı — "günlük protein ihtiyacı hesaplama" araması için
-      // hedeflenen, kendi başına ayakta duran bir sayfa.
-      `<url><loc>${origin}/hesaplama/protein-ihtiyaci</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>`;
+      // Hesaplama araçları — her biri kendi aramasını hedefliyor
+      // ("kreatin dozu hesaplama" gibi), index sayfası da dahil.
+      `<url><loc>${origin}/hesaplama</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>` +
+      `<url><loc>${origin}/hesaplama/protein-ihtiyaci</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>` +
+      SUPPLEMENT_DOSAGES.map(
+        (s) => `<url><loc>${origin}/hesaplama/${s.slug}</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>`,
+      ).join('');
 
     // Marka karşılaştırma sayfaları — tüm marka ikilileri, alfabetik
     // sırayla (brand-comparison-page.ts'teki canonical URL mantığıyla

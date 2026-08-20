@@ -1,0 +1,26 @@
+<div class="noc-shell min-h-screen bg-[var(--noc-bg)] text-[var(--noc-text)]">
+  <app-site-header />
+
+  <main class="mx-auto max-w-[1280px] px-[28px] py-[22px]">
+    <nav class="mb-2 text-xs text-[var(--noc-neutral-500)]">
+      <a routerLink="/" class="hover:text-[var(--noc-accent)]">Ana Sayfa</a> / Hesaplama
+    </nav>
+    <h1 class="text-[38px] font-medium tracking-[-0.03em] sm:text-[42px]">Hesaplama Araçları</h1>
+    <p class="mt-2 max-w-2xl text-[15px] text-[var(--noc-neutral-300)]">
+      Doz ve ihtiyaç hesaplarını, güncel ürün fiyatlarıyla birleştiren araçlar. Sonuçlar bilgilendirme amaçlıdır,
+      kişiye özel tıbbi tavsiye değildir.
+    </p>
+
+    <div class="mt-[22px] grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      @for (calc of calculators; track calc.path) {
+        <a
+          [routerLink]="calc.path"
+          class="rounded-[14px] bg-[var(--noc-card)] p-5 shadow-[var(--noc-shadow-sm)] transition-shadow hover:shadow-[var(--noc-shadow-md)]"
+        >
+          <h2 class="text-[16px] font-medium">{{ calc.title }}</h2>
+          <p class="mt-2 text-sm leading-relaxed text-[var(--noc-neutral-500)]">{{ calc.description }}</p>
+        </a>
+      }
+    </div>
+  </main>
+</div>

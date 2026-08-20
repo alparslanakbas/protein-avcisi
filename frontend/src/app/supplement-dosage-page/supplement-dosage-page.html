@@ -1,0 +1,141 @@
+@if (config(); as cfg) {
+  <div class="noc-shell min-h-screen bg-[var(--noc-bg)] text-[var(--noc-text)]">
+    <app-site-header />
+
+    <main class="mx-auto max-w-[1280px] px-[28px] py-[22px]">
+      <nav class="mb-2 text-xs text-[var(--noc-neutral-500)]">
+        <a routerLink="/" class="hover:text-[var(--noc-accent)]">Ana Sayfa</a> /
+        <a routerLink="/hesaplama" class="hover:text-[var(--noc-accent)]">Hesaplama</a> /
+        {{ cfg.name }}
+      </nav>
+      <h1 class="text-[38px] font-medium tracking-[-0.03em] sm:text-[42px]">{{ cfg.h1 }}</h1>
+      <p class="mt-2 max-w-2xl text-[15px] text-[var(--noc-neutral-300)]">{{ cfg.intro }}</p>
+
+      <div class="mt-[22px] grid gap-4 lg:grid-cols-[380px_1fr]">
+        <!-- Doz seçimi -->
+        <section class="rounded-[14px] bg-[var(--noc-card)] p-5 shadow-[var(--noc-shadow-sm)]">
+          <label class="block">
+            <span class="text-sm font-medium">Günlük doz</span>
+            <div class="mt-2 flex items-center gap-2">
+              <input
+                type="number"
+                inputmode="decimal"
+                step="0.5"
+                min="0.5"
+                [ngModel]="dailyGrams()"
+                (ngModelChange)="dailyGrams.set($event)"
+                class="w-full rounded-[8px] border border-[var(--noc-divider)] bg-[var(--noc-surface)] px-3 py-2 text-[15px] text-[var(--noc-text)] focus:border-[var(--noc-accent)] focus:outline-none"
+              />
+              <span class="text-sm text-[var(--noc-neutral-500)]">gram</span>
+            </div>
+          </label>
+
+          <div class="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              class="rounded-[6px] border px-2.5 py-1 text-xs"
+              [class]="dailyGrams() === cfg.minDailyGrams ? 'border-[var(--noc-accent)] text-[var(--noc-accent)]' : 'border-[var(--noc-divider)] text-[var(--noc-neutral-300)] hover:text-[var(--noc-accent)]'"
+              (click)="dailyGrams.set(cfg.minDailyGrams)"
+            >
+              Alt sınır: {{ cfg.minDailyGrams }} g
+            </button>
+            <button
+              type="button"
+              class="rounded-[6px] border px-2.5 py-1 text-xs"
+              [class]="dailyGrams() === cfg.maxDailyGrams ? 'border-[var(--noc-accent)] text-[var(--noc-accent)]' : 'border-[var(--noc-divider)] text-[var(--noc-neutral-300)] hover:text-[var(--noc-accent)]'"
+              (click)="dailyGrams.set(cfg.maxDailyGrams)"
+            >
+              Üst sınır: {{ cfg.maxDailyGrams }} g
+            </button>
+          </div>
+
+          <div class="mt-4 rounded-[10px] border border-[var(--noc-accent)] bg-[color-mix(in_srgb,var(--noc-accent)_8%,transparent)] p-4">
+            <div class="text-xs text-[var(--noc-neutral-300)]">Yaygın kullanılan aralık</div>
+            <div class="mt-1 text-[24px] font-medium leading-none">
+              {{ cfg.minDailyGrams }}–{{ cfg.maxDailyGrams }} <span class="text-[15px] text-[var(--noc-neutral-300)]">gram / gün</span>
+            </div>
+            <p class="mt-2 text-xs leading-relaxed text-[var(--noc-neutral-300)]">{{ cfg.dosageNote }}</p>
+          </div>
+
+          <p class="mt-4 border-t border-[var(--noc-divider)] pt-3 text-xs leading-relaxed text-[var(--noc-neutral-500)]">
+            Bu sayfadaki aralık, yaygın kullanım ve genel kaynaklara dayanan bilgilendirme amaçlı bir referanstır;
+            kişiye özel tıbbi tavsiye değildir. Mevcut bir sağlık sorunun varsa, ilaç kullanıyorsan ya da gebelik/
+            emzirme dönemindeysen bir hekime danışman gerekir.
+          </p>
+        </section>
+
+        <!-- Ürün maliyeti -->
+        <section>
+          @if (loadError()) {
+            <div class="rounded-[14px] bg-[var(--noc-card)] px-6 py-8 text-center text-sm">
+              Ürün fiyatları şu anda yüklenemedi. Lütfen biraz sonra tekrar dene.
+            </div>
+          } @else if (loading()) {
+            <div class="rounded-[14px] bg-[var(--noc-card)] px-6 py-8 text-center text-sm text-[var(--noc-neutral-500)]">
+              Güncel fiyatlar yükleniyor…
+            </div>
+          } @else if (dosageProducts().length === 0) {
+            <div class="rounded-[14px] bg-[var(--noc-card)] px-6 py-8 text-center text-sm text-[var(--noc-neutral-500)]">
+              Bu doz için paket büyüklüğü bilinen bir {{ cfg.name }} ürünü bulunamadı.
+            </div>
+          } @else {
+            <h2 class="text-[20px] font-medium">Günde {{ dailyGrams() }} g için maliyet</h2>
+            <p class="mt-1 text-sm text-[var(--noc-neutral-300)]">
+              Günlük maliyete göre sıralı. Yalnızca paket büyüklüğünü bildiğimiz ürünler listeleniyor — bilinmeyen
+              için tahmin yürütmüyoruz.
+            </p>
+
+            <div class="mt-3 overflow-x-auto rounded-[14px] bg-[var(--noc-card)] shadow-[var(--noc-shadow-sm)]">
+              <table class="w-full min-w-[560px] text-sm">
+                <thead class="border-b border-[var(--noc-divider)] text-left text-xs text-[var(--noc-neutral-500)]">
+                  <tr>
+                    <th class="px-4 py-3 font-normal">Ürün</th>
+                    <th class="px-4 py-3 font-normal">Günlük maliyet</th>
+                    <th class="px-4 py-3 font-normal">Kaç gün yeter</th>
+                    <th class="px-4 py-3 font-normal">Paket</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (item of dosageProducts(); track item.deal.productId) {
+                    <tr class="border-b border-[var(--noc-divider)] last:border-b-0">
+                      <td class="px-4 py-3">
+                        <a [routerLink]="productLink(item.deal)" class="font-medium hover:text-[var(--noc-accent)]">
+                          {{ item.deal.productName }}
+                        </a>
+                        <span class="block text-xs text-[var(--noc-neutral-500)]">{{ item.deal.brandName }}</span>
+                      </td>
+                      <td class="px-4 py-3 whitespace-nowrap font-medium text-[var(--noc-accent)]">
+                        {{ item.costPerDay | number: '1.2-2' }} ₺
+                      </td>
+                      <td class="px-4 py-3 whitespace-nowrap text-[var(--noc-neutral-300)]">
+                        {{ item.daysSupply | number: '1.0-0' }} gün
+                      </td>
+                      <td class="px-4 py-3 whitespace-nowrap text-[var(--noc-neutral-300)]">
+                        {{ item.deal.currentPrice | number: '1.2-2' }} ₺
+                        <span class="block text-xs text-[var(--noc-neutral-500)]">{{ item.deal.size }}</span>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            <div class="mt-4 flex flex-wrap gap-2">
+              <a [routerLink]="['/kategori', cfg.category]" class="rounded-[6px] border border-[var(--noc-accent)] px-3 py-1.5 text-xs text-[var(--noc-accent)]">
+                Tüm {{ cfg.name }} fiyatları
+              </a>
+              @if (cfg.guideSlug) {
+                <a [routerLink]="['/rehber', cfg.guideSlug]" class="rounded-[6px] border border-[var(--noc-divider)] px-3 py-1.5 text-xs text-[var(--noc-neutral-300)] hover:text-[var(--noc-accent)]">
+                  {{ cfg.guideLabel }}
+                </a>
+              }
+              <a routerLink="/hesaplama" class="rounded-[6px] border border-[var(--noc-divider)] px-3 py-1.5 text-xs text-[var(--noc-neutral-300)] hover:text-[var(--noc-accent)]">
+                Diğer hesaplama araçları
+              </a>
+            </div>
+          }
+        </section>
+      </div>
+    </main>
+  </div>
+}

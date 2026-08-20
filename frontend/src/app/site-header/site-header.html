@@ -50,11 +50,45 @@
         }
       </div>
 
-      <!-- Hesaplama araçları — şimdilik tek araç var (protein ihtiyacı), bu
-           yüzden düz link; araç sayısı artarsa Kategoriler'deki gibi bir
-           dropdown'a çevrilecek (bkz. kullanıcı notu: "oraya farklı araçlar
+      <!-- Hesaplama araçları — araç sayısı artınca Kategoriler'le aynı
+           dropdown desenine geçti (kullanıcı notu: "oraya farklı araçlar
            ekleyebiliriz"). -->
-      <a routerLink="/hesaplama/protein-ihtiyaci" routerLinkActive="text-[var(--noc-accent)]" class="hover:text-[var(--noc-accent)]">Hesaplama</a>
+      <div class="relative">
+        <button
+          type="button"
+          class="flex items-center gap-1"
+          [class]="calculatorsOpen() ? 'text-[var(--noc-accent)]' : 'hover:text-[var(--noc-accent)]'"
+          (click)="toggleCalculators()"
+        >
+          Hesaplama
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-3.5 w-3.5 transition-transform" [class.rotate-180]="calculatorsOpen()">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6" />
+          </svg>
+        </button>
+
+        @if (calculatorsOpen()) {
+          <div class="fixed inset-0 z-40" (click)="closeCalculators()"></div>
+          <div class="absolute left-0 top-full z-50 mt-2 w-60 rounded-[8px] bg-[var(--noc-card)] p-1.5 shadow-[var(--noc-shadow-md)]">
+            @for (calc of calculators; track calc.path) {
+              <a
+                [routerLink]="calc.path"
+                (click)="closeCalculators()"
+                class="block rounded-[6px] px-3 py-2 text-sm hover:bg-[color-mix(in_srgb,var(--noc-text)_7%,transparent)] hover:text-[var(--noc-accent)]"
+              >
+                {{ calc.label }}
+              </a>
+            }
+            <div class="my-1 border-t border-[var(--noc-divider)]"></div>
+            <a
+              routerLink="/hesaplama"
+              (click)="closeCalculators()"
+              class="block rounded-[6px] px-3 py-2 text-sm font-medium text-[var(--noc-accent)] hover:bg-[color-mix(in_srgb,var(--noc-text)_7%,transparent)]"
+            >
+              Tüm Araçlar →
+            </a>
+          </div>
+        }
+      </div>
       <a routerLink="/rehber" routerLinkActive="text-[var(--noc-accent)]" class="hover:text-[var(--noc-accent)]">Rehber</a>
     </div>
 
