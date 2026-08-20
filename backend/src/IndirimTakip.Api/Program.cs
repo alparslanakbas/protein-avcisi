@@ -197,13 +197,21 @@ void MapDealsQueryEndpoint(string route, bool onlyDiscounted, bool onlyStoreDisc
 {
     app.MapGet(route, async (
         DealsQueryService deals, string[]? brands, string[]? categories, string? search,
-        decimal? minPrice, decimal? maxPrice, int? days, string? sortBy, int? page, int? pageSize, CancellationToken ct) =>
+        decimal? minPrice, decimal? maxPrice, int? days, string? sortBy, int? page, int? pageSize,
+        // Belirli bir bileşeni arayan sayfalar (ör. "Beta-Alanine Dozu"
+        // hesaplayıcısı) eşanlamlı genişletmeyi KAPATABİLİR: "alanine"
+        // araması, o kelime amino-asitler kategorisinin anahtar
+        // kelimelerinden biri olduğu için kategorinin TAMAMINI döndürüyordu
+        // (arginin ürünleri beta-alanine sayfasında listeleniyordu).
+        bool? expandSynonyms,
+        CancellationToken ct) =>
     {
         var windowDays = days is null or <= 0 ? 30 : days.Value;
         var result = await deals.GetDealsAsync(
             windowDays, brands, categories, search, minPrice, maxPrice,
             onlyDiscounted, onlyStoreDiscounted, sortBy,
-            page is null or <= 0 ? 1 : page.Value, NormalizePageSize(pageSize), ct);
+            page is null or <= 0 ? 1 : page.Value, NormalizePageSize(pageSize), ct,
+            expandSearchSynonyms: expandSynonyms ?? true);
         return Results.Ok(result);
     });
 }
