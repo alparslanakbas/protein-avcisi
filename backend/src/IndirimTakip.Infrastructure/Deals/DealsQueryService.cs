@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text.RegularExpressions;
 using IndirimTakip.Core.Entities;
 using IndirimTakip.Infrastructure.Scraping;
 using Microsoft.EntityFrameworkCore;
@@ -18,7 +20,7 @@ namespace IndirimTakip.Infrastructure.Deals;
 // dönüştükten sonra yapılıyor.
 internal sealed record DealRow(Product Product, string BrandName, PriceHistory Latest, decimal ReferencePrice, decimal ThirtyDayLowPrice);
 
-public class DealsQueryService(AppDbContext db)
+public partial class DealsQueryService(AppDbContext db)
 {
     // Markalar kendi sitelerinde bir ürünün SKU/URL'sini değiştirdiğinde
     // scraper eski kaydı bir daha bulamıyor, PriceHistory eklenmesi duruyor
@@ -270,6 +272,83 @@ public class DealsQueryService(AppDbContext db)
             .GroupBy(r => r.Category)
             .ToDictionary(g => g.Key, g => (g.Average(r => r.Latest!.Value), g.Count()));
     }
+
+    // Protein ihtiyacı hesaplayıcısının "servis başı en uygun ürünler"
+    // tablosu için. Hesap (paket gramajı ÷ porsiyon = servis sayısı, sonra
+    // fiyat ÷ servis) Size alanının metin olarak ayrıştırılmasını
+    // gerektirdiği için SQL'e çevrilemiyor — bu yüzden kategoriye ait
+    // ürünler belleğe alınıp orada hesaplanıyor. Sonuç SADECE ilk N ürün
+    // olarak dönüyor: sayfa ilk denemede 100 ürünü SSR'a gömüp 451 KB'a
+    // çıkmıştı, bu endpoint onu birkaç KB'a indiriyor.
+    // Yalnızca porsiyon büyüklüğü GERÇEKTEN bilinen ürünler listeleniyor —
+    // "30 gr = 1 servis" gibi bir varsayım bu projede hiç yapılmadı.
+    public async Task<IReadOnlyList<DealDto>> GetBestValuePerServingAsync(
+        string category,
+        int count,
+        CancellationToken cancellationToken = default)
+    {
+        var page = await GetDealsAsync(
+            referenceWindowDays: 30,
+            brands: null,
+            categories: [category],
+            search: null,
+            minPrice: null,
+            maxPrice: null,
+            onlyDiscounted: false,
+            onlyStoreDiscounted: false,
+            sortBy: null,
+            page: 1,
+            pageSize: 200,
+            cancellationToken);
+
+        return page.Items
+            .Select(deal => new
+            {
+                Deal = deal,
+                PackageGrams = ParsePackageGrams(deal.Size),
+            })
+            .Where(x => x.PackageGrams is > 0 && x.Deal.ServingSizeGrams is > 0)
+            .Select(x => new
+            {
+                x.Deal,
+                Servings = x.PackageGrams!.Value / x.Deal.ServingSizeGrams!.Value,
+            })
+            // Bir paketten tek servis bile çıkmıyorsa veri tutarsız demektir.
+            .Where(x => x.Servings >= 1)
+            .OrderBy(x => x.Deal.CurrentPrice / x.Servings)
+            .Take(count)
+            .Select(x => x.Deal)
+            .ToList();
+    }
+
+    // "900 Gr" / "2 Kg" gibi metinleri grama çevirir. Kapsül/adet/ml gibi
+    // birimlerde servis başı gram hesabı anlamsız olurdu — null dönüp o
+    // ürünler listeye hiç girmiyor.
+    private static decimal? ParsePackageGrams(string? size)
+    {
+        if (string.IsNullOrWhiteSpace(size))
+            return null;
+
+        var match = PackageSizeRegex().Match(size.Trim());
+        if (!match.Success)
+            return null;
+
+        if (!decimal.TryParse(
+                match.Groups["value"].Value.Replace(',', '.'),
+                NumberStyles.Number,
+                CultureInfo.InvariantCulture,
+                out var value) || value <= 0)
+        {
+            return null;
+        }
+
+        return match.Groups["unit"].Value.Equals("kg", StringComparison.OrdinalIgnoreCase)
+            ? value * 1000
+            : value;
+    }
+
+    [GeneratedRegex(@"^(?<value>\d+(?:[.,]\d+)?)\s*(?<unit>gr|kg)$", RegexOptions.IgnoreCase)]
+    private static partial Regex PackageSizeRegex();
 
     // sitemap.xml üretimi için hafif bir liste — DealDto'daki fiyat
     // hesaplarına gerek yok, sadece URL kurmak için Id ve son tarama

@@ -229,6 +229,20 @@ app.MapGet("/api/brand-comparison", async (string? brand1, string? brand2, Deals
     return result is null ? Results.NotFound() : Results.Ok(result);
 });
 
+// Protein ihtiyacı hesaplayıcısının "servis başı en uygun ürünler" tablosu —
+// hesap Size metnini ayrıştırmayı gerektirdiği için SQL'e çevrilemiyor,
+// serviste bellek içinde yapılıyor; buradan yalnızca ilk N ürün dönüyor
+// (sayfanın tüm kategoriyi çekmesi SSR çıktısını 451 KB'a çıkarıyordu).
+app.MapGet("/api/best-value-per-serving", async (string? category, int? count, DealsQueryService deals, CancellationToken ct) =>
+{
+    if (string.IsNullOrWhiteSpace(category))
+        return Results.BadRequest(new { message = "category parametresi gerekli." });
+
+    var take = count is null or <= 0 ? 6 : Math.Min(count.Value, 20);
+    var result = await deals.GetBestValuePerServingAsync(category, take, ct);
+    return Results.Ok(result);
+});
+
 app.MapGet("/api/filters", async (DealsQueryService deals, CancellationToken ct) =>
 {
     var result = await deals.GetFilterOptionsAsync(ct);
