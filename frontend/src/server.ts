@@ -84,7 +84,10 @@ app.get('/sitemap.xml', async (req, res) => {
     const legalUrls =
       `<url><loc>${origin}/gizlilik-politikasi</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>` +
       `<url><loc>${origin}/cerez-politikasi</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>` +
-      `<url><loc>${origin}/nasil-calisiyoruz</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>`;
+      `<url><loc>${origin}/nasil-calisiyoruz</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>` +
+      // Hesaplama aracı — "günlük protein ihtiyacı hesaplama" araması için
+      // hedeflenen, kendi başına ayakta duran bir sayfa.
+      `<url><loc>${origin}/hesaplama/protein-ihtiyaci</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>`;
 
     // Marka karşılaştırma sayfaları — tüm marka ikilileri, alfabetik
     // sırayla (brand-comparison-page.ts'teki canonical URL mantığıyla

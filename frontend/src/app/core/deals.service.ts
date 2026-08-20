@@ -44,6 +44,14 @@ export class DealsService {
     return this.http.get<HomepageStats>(`${API_BASE_URL}/api/stats`);
   }
 
+  // Protein hesaplayıcısının "servis başı en uygun ürünler" tablosu için.
+  // Hesap backend'de yapılıyor ve yalnızca ilk N ürün dönüyor — sayfanın
+  // tüm kategoriyi (100 ürün) çekmesi SSR çıktısını 451 KB'a çıkarıyordu.
+  getBestValuePerServing(category: string, count = 6): Observable<Deal[]> {
+    const params = new HttpParams().set('category', category).set('count', count);
+    return this.http.get<Deal[]>(`${API_BASE_URL}/api/best-value-per-serving`, { params });
+  }
+
   // Ürün kartlarındaki mini sparkline'lar için toplu istek — bir sayfa
   // (24 kart) için tek çağrı, kart başına ayrı istek (N+1) yerine.
   getSparklines(ids: number[], days = 30): Observable<ProductSparkline[]> {

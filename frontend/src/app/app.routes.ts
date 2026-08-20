@@ -11,6 +11,7 @@ import { DealsList } from './deals-list/deals-list';
 import { FavoritesPage } from './favorites-page/favorites-page';
 import { HowItWorksPage } from './how-it-works-page/how-it-works-page';
 import { PrivacyPolicyPage } from './privacy-policy-page/privacy-policy-page';
+import { ProteinCalculatorPage } from './protein-calculator-page/protein-calculator-page';
 
 export const routes: Routes = [
   { path: '', component: DealsList },
@@ -24,6 +25,7 @@ export const routes: Routes = [
   { path: 'rehber', component: ArticleListPage },
   { path: 'rehber/:slug', component: ArticlePage },
   { path: 'nasil-calisiyoruz', component: HowItWorksPage },
+  { path: 'hesaplama/protein-ihtiyaci', component: ProteinCalculatorPage },
   { path: 'favorilerim', component: FavoritesPage },
   { path: 'karsilastir/:pair', component: BrandComparisonPage },
 ];

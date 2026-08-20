@@ -1,0 +1,165 @@
+<div class="noc-shell min-h-screen bg-[var(--noc-bg)] text-[var(--noc-text)]">
+  <app-site-header />
+
+  <main class="mx-auto max-w-[1280px] px-[28px] py-[22px]">
+    <nav class="mb-2 text-xs text-[var(--noc-neutral-500)]">
+      <a routerLink="/" class="hover:text-[var(--noc-accent)]">Ana Sayfa</a> / Protein İhtiyacı Hesaplama
+    </nav>
+    <h1 class="text-[38px] font-medium tracking-[-0.03em] sm:text-[42px]">Günlük Protein İhtiyacı Hesaplama</h1>
+    <p class="mt-2 max-w-2xl text-[15px] text-[var(--noc-neutral-300)]">
+      Kilonu ve antrenman yoğunluğunu gir, günlük protein hedefini gör. Sonucu doğrudan güncel fiyatlarla
+      karşılaştırıyoruz — servis başı maliyeti en uygun ürünleri aşağıda listeliyoruz.
+    </p>
+
+    <div class="mt-[22px] grid gap-4 lg:grid-cols-[380px_1fr]">
+      <!-- Hesaplama formu -->
+      <section class="rounded-[14px] bg-[var(--noc-card)] p-5 shadow-[var(--noc-shadow-sm)]">
+        <label class="block">
+          <span class="text-sm font-medium">Kilon</span>
+          <div class="mt-2 flex items-center gap-2">
+            <input
+              type="number"
+              inputmode="numeric"
+              min="30"
+              max="250"
+              placeholder="örn. 75"
+              [ngModel]="weight()"
+              (ngModelChange)="weight.set($event)"
+              class="w-full rounded-[8px] border border-[var(--noc-divider)] bg-[var(--noc-surface)] px-3 py-2 text-[15px] text-[var(--noc-text)] placeholder:text-[var(--noc-neutral-500)] focus:border-[var(--noc-accent)] focus:outline-none"
+            />
+            <span class="text-sm text-[var(--noc-neutral-500)]">kg</span>
+          </div>
+        </label>
+
+        <fieldset class="mt-5">
+          <legend class="text-sm font-medium">Antrenman yoğunluğun</legend>
+          <div class="mt-2 space-y-2">
+            @for (level of activityLevels; track level.id) {
+              <label
+                class="flex cursor-pointer items-start gap-3 rounded-[8px] border px-3 py-2.5 transition-colors"
+                [class]="activityId() === level.id
+                  ? 'border-[var(--noc-accent)] bg-[color-mix(in_srgb,var(--noc-accent)_10%,transparent)]'
+                  : 'border-[var(--noc-divider)] hover:bg-[color-mix(in_srgb,var(--noc-text)_5%,transparent)]'"
+              >
+                <input
+                  type="radio"
+                  name="activity"
+                  [value]="level.id"
+                  [ngModel]="activityId()"
+                  (ngModelChange)="activityId.set($event)"
+                  class="mt-1 accent-[var(--noc-accent)]"
+                />
+                <span>
+                  <span class="block text-sm font-medium">{{ level.label }}</span>
+                  <span class="block text-xs text-[var(--noc-neutral-500)]">{{ level.description }}</span>
+                </span>
+              </label>
+            }
+          </div>
+        </fieldset>
+
+        @if (dailyProtein(); as result) {
+          <div class="mt-5 rounded-[10px] border border-[var(--noc-accent)] bg-[color-mix(in_srgb,var(--noc-accent)_8%,transparent)] p-4">
+            <div class="text-xs text-[var(--noc-neutral-300)]">Günlük protein hedefin</div>
+            <div class="mt-1 text-[28px] font-medium leading-none">
+              {{ result.min }}–{{ result.max }} <span class="text-[16px] text-[var(--noc-neutral-300)]">gram</span>
+            </div>
+            <p class="mt-2 text-xs leading-relaxed text-[var(--noc-neutral-300)]">
+              Bu aralık, kilo başına {{ selectedActivity().minPerKg }}–{{ selectedActivity().maxPerKg }} gram
+              üzerinden hesaplandı. Hedefin büyük kısmını normal öğünlerden karşılamak esas — takviye, kalan
+              açığı kapatmak için.
+            </p>
+          </div>
+        } @else {
+          <p class="mt-5 text-sm text-[var(--noc-neutral-500)]">Hesaplamak için kilonu gir.</p>
+        }
+
+        <p class="mt-4 border-t border-[var(--noc-divider)] pt-3 text-xs leading-relaxed text-[var(--noc-neutral-500)]">
+          Bu hesaplama genel beslenme kaynaklarında yaygın kullanılan aralıklara dayanan bilgilendirme amaçlı bir
+          tahmindir, kişiye özel tıbbi tavsiye değildir. Böbrek rahatsızlığı, gebelik gibi özel durumlarda ya da
+          kesin bir plan için bir diyetisyen/hekime danışmak gerekir.
+        </p>
+      </section>
+
+      <!-- Ürün önerisi -->
+      <section>
+        @if (loadError()) {
+          <div class="rounded-[14px] bg-[var(--noc-card)] px-6 py-8 text-center text-sm">
+            Ürün fiyatları şu anda yüklenemedi. Lütfen biraz sonra tekrar dene.
+          </div>
+        } @else if (loading()) {
+          <div class="rounded-[14px] bg-[var(--noc-card)] px-6 py-8 text-center text-sm text-[var(--noc-neutral-500)]">
+            Güncel fiyatlar yükleniyor…
+          </div>
+        } @else if (bestValueProducts().length === 0) {
+          <div class="rounded-[14px] bg-[var(--noc-card)] px-6 py-8 text-center text-sm text-[var(--noc-neutral-500)]">
+            Şu anda servis başı maliyeti hesaplanabilen bir protein tozu ürünü bulunamadı.
+          </div>
+        } @else {
+          <h2 class="text-[20px] font-medium">Servis başı en uygun protein tozları</h2>
+          <p class="mt-1 text-sm text-[var(--noc-neutral-300)]">
+            Paket fiyatına değil, <strong>bir servisin gerçek maliyetine</strong> göre sıralı. Yalnızca porsiyon
+            büyüklüğünü markanın kendi verisinden bildiğimiz ürünler listeleniyor — tahmini hesap yapmıyoruz.
+          </p>
+
+          <div class="mt-3 overflow-x-auto rounded-[14px] bg-[var(--noc-card)] shadow-[var(--noc-shadow-sm)]">
+            <table class="w-full min-w-[560px] text-sm">
+              <thead class="border-b border-[var(--noc-divider)] text-left text-xs text-[var(--noc-neutral-500)]">
+                <tr>
+                  <th class="px-4 py-3 font-normal">Ürün</th>
+                  <th class="px-4 py-3 font-normal">Servis başı</th>
+                  <th class="px-4 py-3 font-normal">Paket</th>
+                  @if (dailyProtein()) {
+                    <th class="px-4 py-3 font-normal">Kaç servis</th>
+                  }
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of bestValueProducts(); track item.deal.productId) {
+                  <tr class="border-b border-[var(--noc-divider)] last:border-b-0">
+                    <td class="px-4 py-3">
+                      <a [routerLink]="productLink(item.deal)" class="font-medium hover:text-[var(--noc-accent)]">
+                        {{ item.deal.productName }}
+                      </a>
+                      <span class="block text-xs text-[var(--noc-neutral-500)]">{{ item.deal.brandName }}</span>
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap font-medium text-[var(--noc-accent)]">
+                      {{ item.pricePerServing | number: '1.2-2' }} ₺
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap text-[var(--noc-neutral-300)]">
+                      {{ item.deal.currentPrice | number: '1.2-2' }} ₺
+                      <span class="block text-xs text-[var(--noc-neutral-500)]">{{ item.deal.size }}</span>
+                    </td>
+                    @if (dailyProtein()) {
+                      <td class="px-4 py-3 whitespace-nowrap text-[var(--noc-neutral-300)]">
+                        {{ item.proteinServings | number: '1.0-0' }} servis
+                      </td>
+                    }
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <p class="mt-3 text-xs leading-relaxed text-[var(--noc-neutral-500)]">
+            Servis başı maliyet, paket fiyatının paketteki toplam servis sayısına bölünmesiyle hesaplanıyor.
+            Bir servisin içerdiği protein miktarı ürüne göre değişir — bu tablo maliyeti karşılaştırır,
+            protein oranını değil.
+          </p>
+
+          <div class="mt-4 flex flex-wrap gap-2">
+            <a routerLink="/kategori/protein-tozu" class="rounded-[6px] border border-[var(--noc-accent)] px-3 py-1.5 text-xs text-[var(--noc-accent)]">
+              Tüm protein tozu fiyatları
+            </a>
+            <a routerLink="/rehber/whey-protein-nasil-secilir" class="rounded-[6px] border border-[var(--noc-divider)] px-3 py-1.5 text-xs text-[var(--noc-neutral-300)] hover:text-[var(--noc-accent)]">
+              Whey protein nasıl seçilir?
+            </a>
+            <a routerLink="/rehber/protein-tozu-nasil-kullanilir" class="rounded-[6px] border border-[var(--noc-divider)] px-3 py-1.5 text-xs text-[var(--noc-neutral-300)] hover:text-[var(--noc-accent)]">
+              Protein tozu nasıl kullanılır?
+            </a>
+          </div>
+        }
+      </section>
+    </div>
+  </main>
+</div>
