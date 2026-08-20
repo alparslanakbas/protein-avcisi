@@ -1,6 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
+import { BODY_CALCULATORS } from '../core/body-calculators';
 import { PageMetaService } from '../core/page-meta.service';
 import { SUPPLEMENT_DOSAGES } from '../core/supplement-dosages';
 import { SiteHeader } from '../site-header/site-header';
@@ -32,6 +33,11 @@ export class CalculatorListPage implements OnInit {
       path: `/hesaplama/${s.slug}`,
       title: `${s.name} Dozu`,
       description: `Günde ${s.minDailyGrams}-${s.maxDailyGrams} g yaygın aralık. Seçtiğin paketin kaç gün yeteceğini ve günlük maliyetini hesapla.`,
+    })),
+    ...BODY_CALCULATORS.map((c) => ({
+      path: `/hesaplama/${c.slug}`,
+      title: c.name,
+      description: c.description,
     })),
   ];
 

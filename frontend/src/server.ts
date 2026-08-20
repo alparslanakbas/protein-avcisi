@@ -9,6 +9,7 @@ import { join } from 'node:path';
 
 import { API_BASE_URL } from './app/core/api.config';
 import { slugify } from './app/core/slugify';
+import { BODY_CALCULATORS } from './app/core/body-calculators';
 import { SUPPLEMENT_DOSAGES } from './app/core/supplement-dosages';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
@@ -117,6 +118,9 @@ app.get('/sitemap.xml', async (req, res) => {
       `<url><loc>${origin}/hesaplama/protein-ihtiyaci</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>` +
       SUPPLEMENT_DOSAGES.map(
         (s) => `<url><loc>${origin}/hesaplama/${s.slug}</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>`,
+      ).join('') +
+      BODY_CALCULATORS.map(
+        (c) => `<url><loc>${origin}/hesaplama/${c.slug}</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>`,
       ).join('');
 
     // Marka karşılaştırma sayfaları — tüm marka ikilileri, alfabetik

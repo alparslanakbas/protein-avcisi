@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 
+import { BODY_CALCULATORS } from '../core/body-calculators';
 import { CATEGORY_LABELS } from '../core/category-labels';
 import { DealsService } from '../core/deals.service';
 import { FavoritesService } from '../core/favorites.service';
@@ -35,6 +36,7 @@ export class SiteHeader implements OnInit {
   protected readonly calculatorsOpen = signal(false);
   protected readonly calculators = [
     { path: '/hesaplama/protein-ihtiyaci', label: 'Günlük Protein İhtiyacı' },
+    ...BODY_CALCULATORS.map((c) => ({ path: `/hesaplama/${c.slug}`, label: c.name })),
     ...SUPPLEMENT_DOSAGES.map((s) => ({ path: `/hesaplama/${s.slug}`, label: `${s.name} Dozu` })),
   ];
   // Servisteki paylaşılan signal'e doğrudan referans — favori eklenince/
