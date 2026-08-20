@@ -434,6 +434,31 @@
                   30 günün en düşüğü
                 </span>
               }
+
+              <!-- Karşılaştırma seçimi. stopPropagation ŞART: kartın kendisi
+                   tıklanınca ürün modalı açılıyor, buton onu tetiklememeli.
+                   İki slot doluyken ve bu ürün seçili değilken pasif. -->
+              <button
+                type="button"
+                class="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-[6px] border transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+                [class]="comparison.isSelected(deal.productId)
+                  ? 'border-[var(--noc-accent)] bg-[var(--noc-card)] text-[var(--noc-accent)]'
+                  : 'border-[var(--noc-divider)] bg-[var(--noc-card)] text-[var(--noc-neutral-500)] hover:text-[var(--noc-accent)]'"
+                [disabled]="comparison.isFull() && !comparison.isSelected(deal.productId)"
+                [title]="comparison.isSelected(deal.productId) ? 'Karşılaştırmadan çıkar' : 'Karşılaştırmaya ekle'"
+                [attr.aria-label]="deal.productName + (comparison.isSelected(deal.productId) ? ' ürününü karşılaştırmadan çıkar' : ' ürününü karşılaştırmaya ekle')"
+                (click)="$event.stopPropagation(); comparison.toggle(deal)"
+              >
+                @if (comparison.isSelected(deal.productId)) {
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="h-4 w-4">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                } @else {
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M7 16V4m0 0L4 7m3-3l3 3M17 8v12m0 0l3-3m-3 3l-3-3" />
+                  </svg>
+                }
+              </button>
             </div>
 
             <div class="flex items-center justify-between text-[10px] uppercase tracking-[0.08em] text-[var(--noc-accent)]">

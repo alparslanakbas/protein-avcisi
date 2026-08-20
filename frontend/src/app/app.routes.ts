@@ -11,6 +11,7 @@ import { DealsList } from './deals-list/deals-list';
 import { FavoritesPage } from './favorites-page/favorites-page';
 import { HowItWorksPage } from './how-it-works-page/how-it-works-page';
 import { PrivacyPolicyPage } from './privacy-policy-page/privacy-policy-page';
+import { ProductComparisonPage } from './product-comparison-page/product-comparison-page';
 import { BodyCalculatorPage } from './body-calculator-page/body-calculator-page';
 import { CalculatorListPage } from './calculator-list-page/calculator-list-page';
 import { BODY_CALCULATORS } from './core/body-calculators';
@@ -56,4 +57,7 @@ export const routes: Routes = [
   { path: 'hesaplama/:slug', component: SupplementDosagePage },
   { path: 'favorilerim', component: FavoritesPage },
   { path: 'karsilastir/:pair', component: BrandComparisonPage },
+  // Ürün karşılaştırma — marka karşılaştırmasından ('karsilastir/:pair')
+  // ayrı bir adres, ikisi karışmasın diye.
+  { path: 'karsilastir-urun/:pair', component: ProductComparisonPage },
 ];

@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { CATEGORY_LABELS } from '../core/category-labels';
+import { ComparisonService } from '../core/comparison.service';
 import { Coupon } from '../core/coupon.model';
 import { CouponsService } from '../core/coupons.service';
 import { Deal } from '../core/deal.model';
@@ -32,6 +33,7 @@ export class BrandPage implements OnInit {
   private readonly couponsService = inject(CouponsService);
   private readonly pageMeta = inject(PageMetaService);
   private readonly priceHistoryService = inject(PriceHistoryService);
+  protected readonly comparison = inject(ComparisonService);
 
   protected readonly brandName = signal<string>('');
   protected readonly coupons = signal<Coupon[]>([]);

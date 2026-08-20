@@ -9,6 +9,7 @@ import { ArticleSummary } from '../core/article.model';
 import { ArticlesService } from '../core/articles.service';
 import { canonicalOrigin } from '../core/canonical-link';
 import { CATEGORY_LABELS } from '../core/category-labels';
+import { ComparisonService } from '../core/comparison.service';
 import { Coupon } from '../core/coupon.model';
 import { CouponsService } from '../core/coupons.service';
 import { Deal } from '../core/deal.model';
@@ -92,6 +93,9 @@ export class DealsList implements OnInit {
   private readonly couponsService = inject(CouponsService);
   private readonly articlesService = inject(ArticlesService);
   private readonly favoritesService = inject(FavoritesService);
+  // Kart üzerindeki karşılaştırma butonu için — seçim servis seviyesinde
+  // paylaşılıyor, alt çubuk ve diğer sayfalar aynı signal'i okuyor.
+  protected readonly comparison = inject(ComparisonService);
   private readonly priceHistoryService = inject(PriceHistoryService);
   private readonly subscribeService = inject(SubscribeService);
   protected readonly pwaInstall = inject(PwaInstallService);

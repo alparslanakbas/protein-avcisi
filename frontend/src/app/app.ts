@@ -5,6 +5,7 @@ import { filter } from 'rxjs';
 
 import { CATEGORY_LABELS } from './core/category-labels';
 import { DealsService } from './core/deals.service';
+import { ComparisonBar } from './comparison-bar/comparison-bar';
 import { CookieConsentBanner } from './cookie-consent-banner/cookie-consent-banner';
 import { MobileTabBar } from './mobile-tab-bar/mobile-tab-bar';
 import { NewsletterSignup } from './newsletter-signup/newsletter-signup';
@@ -19,7 +20,7 @@ function leafComponent(snapshot: ActivatedRouteSnapshot): unknown {
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, NewsletterSignup, CookieConsentBanner, MobileTabBar],
+  imports: [RouterOutlet, RouterLink, NewsletterSignup, CookieConsentBanner, MobileTabBar, ComparisonBar],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
