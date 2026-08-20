@@ -471,6 +471,33 @@ app.MapPost("/api/dev/backfill-descriptions", async (DescriptionBackfillService 
     return Results.Ok(new { updatedCount = updated });
 }).RequireAdminKey(adminApiKey);
 
+// Porsiyon (servis) büyüklüğü çıkarımı, açıklamalar DB'ye yazıldıktan SONRA
+// eklendi — bu endpoint, zaten kayıtlı açıklamaları yeniden okuyup eksik
+// ServingSizeGrams'ları tek seferde dolduruyor. Markalara hiç istek atmıyor
+// (tamamen DB içi bir işlem), bu yüzden yeniden tarama gerekmiyor. Sonraki
+// taramalarda/backfill'lerde aynı çıkarım otomatik yapılıyor, bu endpoint
+// yalnızca geçmişi tamamlamak için.
+app.MapPost("/api/dev/backfill-serving-sizes", async (AppDbContext db, CancellationToken ct) =>
+{
+    var candidates = await db.Products
+        .Where(p => p.ServingSizeGrams == null && p.Description != null)
+        .ToListAsync(ct);
+
+    var updated = 0;
+    foreach (var product in candidates)
+    {
+        var grams = ProductAttributeParser.ExtractServingSizeGrams(product.Description);
+        if (grams is null)
+            continue;
+
+        product.ServingSizeGrams = grams;
+        updated++;
+    }
+
+    await db.SaveChangesAsync(ct);
+    return Results.Ok(new { candidateCount = candidates.Count, updatedCount = updated });
+}).RequireAdminKey(adminApiKey);
+
 // Markalara "bu hafta size şu kadar tıklama gönderdik" raporu hazırlamak
 // için — ClickCount tarihsiz/kümülatif bir sayaç olduğundan (tek tek
 // tıklama zaman damgası tutulmuyor) burada dönen sayılar site açılışından

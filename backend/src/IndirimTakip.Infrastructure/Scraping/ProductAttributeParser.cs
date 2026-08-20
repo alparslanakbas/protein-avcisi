@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.RegularExpressions;
 
 namespace IndirimTakip.Infrastructure.Scraping;
@@ -140,6 +141,68 @@ public static partial class ProductAttributeParser
 
         return [];
     }
+
+    // Markanın kendi ürün açıklamasından porsiyon (servis) büyüklüğünü
+    // çıkarır. HIQ'da bu bilgi zaten yapısal olarak (Shopify'ın besin değeri
+    // tablosundan) geliyordu ama diğer 3 markada hiç yoktu — açıklamalar
+    // çekilmeye başlandıktan sonra bu bilginin metnin içinde ("1 ölçek (30 g)",
+    // "Porsiyon Büyüklüğü: 25 g", "Servis başına 23 g" gibi) serbest formda
+    // durduğu görüldü. Dört farklı yazım kalıbı deneniyor; hiçbiri tutmazsa
+    // null dönüyor (tahmin/varsayım YOK — "30 gr = 1 servis" gibi bir kabul
+    // bu projede bilinçli olarak hiç yapılmadı).
+    public static decimal? ExtractServingSizeGrams(string? description)
+    {
+        if (string.IsNullOrWhiteSpace(description))
+            return null;
+
+        foreach (var regex in ServingSizeRegexes)
+        {
+            var match = regex().Match(description);
+            if (!match.Success)
+                continue;
+
+            if (!decimal.TryParse(
+                    match.Groups["value"].Value.Replace(',', '.'),
+                    NumberStyles.Number,
+                    CultureInfo.InvariantCulture,
+                    out var grams))
+            {
+                continue;
+            }
+
+            // Makul olmayan eşleşmeleri ele: gerçek veride en küçük porsiyonlar
+            // tekil amino asitlerde 1 g (Citrulline/Glycine), en büyükleri
+            // gainer'larda 200 g civarı. Bunun dışına taşan bir sayı, metinde
+            // porsiyonla ilgisiz bir yerden yakalanmış demektir (ör. bir sos
+            // ürününde 0,22 g).
+            if (grams is >= 1m and <= 500m)
+                return grams;
+        }
+
+        return null;
+    }
+
+    // Sıra önemli: en açık/az yanılabilir kalıptan başlıyor ("Porsiyon
+    // Büyüklüğü: 30 g"), en sonda daha gevşek olan geliyor.
+    private static readonly Func<Regex>[] ServingSizeRegexes =
+    [
+        ServingPortionRegex,
+        ServingScoopParenRegex,
+        ServingScoopReversedRegex,
+        ServingServisRegex,
+    ];
+
+    [GeneratedRegex(@"porsiyon[^0-9]{0,25}(?<value>\d+(?:[.,]\d+)?)\s*(?:gr|gram|g)\b", RegexOptions.IgnoreCase)]
+    private static partial Regex ServingPortionRegex();
+
+    [GeneratedRegex(@"ölçek[^0-9]{0,15}(?<value>\d+(?:[.,]\d+)?)\s*(?:gr|gram|g)\b", RegexOptions.IgnoreCase)]
+    private static partial Regex ServingScoopParenRegex();
+
+    [GeneratedRegex(@"(?<value>\d+(?:[.,]\d+)?)\s*(?:gr|gram|g)\b[^a-zçğışöü]{0,10}ölçek", RegexOptions.IgnoreCase)]
+    private static partial Regex ServingScoopReversedRegex();
+
+    [GeneratedRegex(@"servis[^0-9]{0,20}(?<value>\d+(?:[.,]\d+)?)\s*(?:gr|gram|g)\b", RegexOptions.IgnoreCase)]
+    private static partial Regex ServingServisRegex();
 
     [GeneratedRegex(@"(?<value>\d+(?:[.,]\d+)?)\s*(?<unit>gr|g|kg|mg|ml|lt|l|adet|tablet|kaps[uü]l|kaps|caps|softjel|[şs]ase)\b", RegexOptions.IgnoreCase)]
     private static partial Regex SizeRegex();

@@ -44,7 +44,11 @@ public class ScrapeIngestionService(AppDbContext db, ProductWatchNotifier watchN
                     Category = category,
                     Size = size,
                     Flavor = flavor,
-                    ServingSizeGrams = scraped.ServingSizeGrams,
+                    // Porsiyon: önce scraper'ın yapısal olarak verdiği değer
+                    // (HIQ'nun besin tablosu — en güvenilir kaynak), o yoksa
+                    // markanın açıklama metninden çıkarım.
+                    ServingSizeGrams = scraped.ServingSizeGrams
+                        ?? ProductAttributeParser.ExtractServingSizeGrams(scraped.Description),
                     Description = scraped.Description,
                 };
                 db.Products.Add(product);
@@ -56,12 +60,17 @@ public class ScrapeIngestionService(AppDbContext db, ProductWatchNotifier watchN
                 product.Category = category;
                 product.Size = size;
                 product.Flavor = flavor;
-                product.ServingSizeGrams = scraped.ServingSizeGrams;
                 // Açıklamayı henüz çekmeyen scraper'lar (SSN/Hardline) scraped.Description
                 // hiç göndermiyor — bu durumda var olan değeri SIFIRLAMIYORUZ. Açıklama
                 // çeken markalarda (HIQ) ise her taramada güncel tutuluyor.
                 if (scraped.Description is not null)
                     product.Description = scraped.Description;
+
+                // Porsiyon, Description atamasından SONRA hesaplanıyor — güncel
+                // açıklamayı kullanabilmek için. Scraper yapısal bir değer
+                // veriyorsa (HIQ) o kazanır, yoksa açıklamadan çıkarılır.
+                product.ServingSizeGrams = scraped.ServingSizeGrams
+                    ?? ProductAttributeParser.ExtractServingSizeGrams(product.Description);
             }
 
             product.PriceHistories.Add(new PriceHistory

@@ -57,6 +57,11 @@ public class DescriptionBackfillService(
                     if (description is not null)
                     {
                         product.Description = description;
+                        // Açıklama metninde porsiyon büyüklüğü de geçiyor olabilir
+                        // ("1 ölçek (30 g)" gibi) — scraper yapısal bir değer
+                        // vermediyse (HIQ dışındaki 3 marka) buradan çıkarıyoruz.
+                        // ??= bilinçli: var olan (daha güvenilir) değeri ezmiyor.
+                        product.ServingSizeGrams ??= ProductAttributeParser.ExtractServingSizeGrams(description);
                         totalUpdated++;
                     }
                 }

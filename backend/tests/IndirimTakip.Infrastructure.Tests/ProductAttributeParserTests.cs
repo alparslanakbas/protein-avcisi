@@ -109,4 +109,46 @@ public class ProductAttributeParserTests
 
         Assert.Empty(synonyms);
     }
+
+    // Porsiyon büyüklüğü, markaların açıklama metninde serbest formda geçiyor —
+    // aşağıdaki kalıpların hepsi canlı veriden alınmış gerçek yazım biçimleri.
+    [Theory]
+    [InlineData("Porsiyon Büyüklüğü: 30 gr olarak tüketilmesi önerilir.", 30)]
+    [InlineData("Her porsiyonunda (30 g) 22,1 g protein içerir.", 30)]
+    // Hardline'ın kreatin açıklamasından birebir: parantez içindeki gerçek
+    // gramaj (5g) alınmalı, cümlenin başındaki "1 porsiyon"daki 1 değil.
+    [InlineData("1 porsiyon (1 ölçek, 5g), bir bardak su ile karıştırılır.", 5)]
+    [InlineData("Günde 1 ölçek (25 g) tüketilebilir.", 25)]
+    [InlineData("Servis başına 23 g protein sağlar.", 23)]
+    [InlineData("Porsiyon büyüklüğü 12,5 gram", 12.5)]
+    public void ExtractServingSizeGrams_gercek_aciklama_kaliplarini_cozuyor(string description, double expected)
+    {
+        var result = ProductAttributeParser.ExtractServingSizeGrams(description);
+
+        Assert.Equal((decimal)expected, result);
+    }
+
+    // Makul aralığın (1-500 g) dışındaki eşleşmeler, metinde porsiyonla
+    // ilgisiz bir yerden yakalanmış demektir — canlı veride bir sos ürününde
+    // 0,22 g gibi bir değer bu şekilde çıkmıştı.
+    [Theory]
+    [InlineData("Porsiyon başına 0,22 g tuz içerir.")]
+    [InlineData("Toplam porsiyon miktarı 900 g paket içindir.")]
+    public void ExtractServingSizeGrams_makul_olmayan_degerleri_eliyor(string description)
+    {
+        var result = ProductAttributeParser.ExtractServingSizeGrams(description);
+
+        Assert.Null(result);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("Bu üründe porsiyon bilgisi hiç geçmiyor.")]
+    public void ExtractServingSizeGrams_bulamayinca_null_donuyor(string? description)
+    {
+        var result = ProductAttributeParser.ExtractServingSizeGrams(description);
+
+        Assert.Null(result);
+    }
 }
