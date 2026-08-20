@@ -18,6 +18,10 @@ export const routes: Routes = [
   { path: 'urun/:id', component: DealsList },
   { path: 'urun/:id/:slug', component: DealsList },
   { path: 'marka/:brandSlug/indirim-kodu', component: BrandPage },
+  // Marka × kategori kesişimi ("hardline protein tozu fiyatları" gibi
+  // aramalar için). SIRA ÖNEMLİ: 'indirim-kodu' bu satırdan ÖNCE tanımlı
+  // olmalı, yoksa o da bir kategori slug'ı sanılır.
+  { path: 'marka/:brandSlug/:categorySlug', component: BrandPage },
   { path: 'kategoriler', component: CategoryListPage },
   { path: 'kategori/:categorySlug', component: CategoryPage },
   { path: 'gizlilik-politikasi', component: PrivacyPolicyPage },

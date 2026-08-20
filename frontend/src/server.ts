@@ -37,6 +37,18 @@ interface ArticleSitemapEntry {
   publishedAt: string;
 }
 
+interface BrandCategoryPair {
+  brandName: string;
+  category: string;
+  productCount: number;
+}
+
+// Marka × kategori kesişim sayfası, ancak yeterince ürün varsa sitemap'e
+// giriyor. 1-2 ürünlük bir sayfa Google için "ince içerik" — tam da
+// kaçınmaya çalıştığımız şey (bkz. GSC "Tarandı ama dizine eklenmedi").
+// Sayfanın kendisi yine erişilebilir, sadece taranmaya sunulmuyor.
+const MIN_PRODUCTS_FOR_SITEMAP = 3;
+
 // sitemap.xml ürün sayısına göre büyüyor, statik dosya olamaz — ham veriyi
 // backend'den (/api/products/sitemap) çekip burada XML'e çeviriyoruz. Bu
 // sunucu zaten kendi public origin'ini (req üzerinden) bildiği için domain'i
@@ -45,14 +57,16 @@ app.get('/sitemap.xml', async (req, res) => {
   const origin = `${req.protocol}://${req.get('host')}`;
 
   try {
-    const [productsResponse, filtersResponse, articlesResponse] = await Promise.all([
+    const [productsResponse, filtersResponse, articlesResponse, pairsResponse] = await Promise.all([
       fetch(`${API_BASE_URL}/api/products/sitemap`),
       fetch(`${API_BASE_URL}/api/filters`),
       fetch(`${API_BASE_URL}/api/articles`),
+      fetch(`${API_BASE_URL}/api/brand-category-pairs`),
     ]);
     const products = (await productsResponse.json()) as SitemapEntry[];
     const filters = (await filtersResponse.json()) as FilterOptions;
     const articles = (await articlesResponse.json()) as ArticleSitemapEntry[];
+    const brandCategoryPairs = (await pairsResponse.json()) as BrandCategoryPair[];
 
     const productUrls = products
       .map(
@@ -67,6 +81,17 @@ app.get('/sitemap.xml', async (req, res) => {
       .map(
         (brand) =>
           `<url><loc>${origin}/marka/${brand.toLowerCase()}/indirim-kodu</loc><changefreq>daily</changefreq><priority>0.9</priority></url>`,
+      )
+      .join('');
+
+    // Marka × kategori kesişimleri — "hardline protein tozu fiyatları"
+    // tarzı aramalar için. Yalnızca ürünü olan (ve yeterince ürünü olan)
+    // çiftler; liste backend'den geliyor, elle bakım gerektirmiyor.
+    const brandCategoryUrls = brandCategoryPairs
+      .filter((pair) => pair.productCount >= MIN_PRODUCTS_FOR_SITEMAP)
+      .map(
+        (pair) =>
+          `<url><loc>${origin}/marka/${pair.brandName.toLowerCase()}/${pair.category}</loc><changefreq>daily</changefreq><priority>0.7</priority></url>`,
       )
       .join('');
 
@@ -119,6 +144,7 @@ app.get('/sitemap.xml', async (req, res) => {
       `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">` +
       `<url><loc>${origin}/</loc><changefreq>hourly</changefreq><priority>1.0</priority></url>` +
       brandUrls +
+      brandCategoryUrls +
       categoryUrls +
       productUrls +
       legalUrls +

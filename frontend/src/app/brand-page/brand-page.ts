@@ -36,6 +36,17 @@ export class BrandPage implements OnInit {
   protected readonly brandName = signal<string>('');
   protected readonly coupons = signal<Coupon[]>([]);
   protected readonly otherBrands = signal<string[]>([]);
+
+  // Marka × kategori kesişim sayfası (/marka/:brandSlug/:categorySlug).
+  // Doluysa kategori SABİT: çip listesi gizleniyor, başlık/meta/canonical
+  // o kategoriye özel oluyor. Boşsa sayfa eski haliyle (tüm kategoriler,
+  // çiplerle filtrelenebilir) çalışıyor — tek bileşen, iki mod
+  // (DealsList'in '/' ve '/urun/:id'yi paylaşmasıyla aynı desen).
+  protected readonly fixedCategory = signal<string | null>(null);
+  protected readonly fixedCategoryLabel = signal<string>('');
+  // Bu markanın gerçekten ürünü olan kategorileri — sayfa altındaki iç
+  // linkler için (boş kombinasyona link vermemek adına).
+  protected readonly brandCategories = signal<{ slug: string; label: string; count: number }[]>([]);
   protected readonly loading = signal(true);
   // Adı "notFound" değil "loadError" — bu yalnızca /api/filters isteği
   // BAŞARISIZ olunca set ediliyor (network/API hatası). Geçersiz bir marka
@@ -78,7 +89,7 @@ export class BrandPage implements OnInit {
   ngOnInit(): void {
     this.route.paramMap.subscribe((params) => {
       const slug = params.get('brandSlug') ?? '';
-      this.loadBrand(slug);
+      this.loadBrand(slug, params.get('categorySlug'));
     });
 
     this.route.queryParamMap.subscribe((params) => {
@@ -102,7 +113,7 @@ export class BrandPage implements OnInit {
     });
   }
 
-  private loadBrand(slug: string): void {
+  private loadBrand(slug: string, categorySlug: string | null): void {
     this.loading.set(true);
     this.viewMode.set('all');
     this.currentPage.set(1);
@@ -111,6 +122,8 @@ export class BrandPage implements OnInit {
     this.priceMin.set(null);
     this.priceMax.set(null);
     this.hasActiveFilters.set(false);
+    this.fixedCategory.set(null);
+    this.fixedCategoryLabel.set('');
 
     this.dealsService.getFilterOptions().subscribe({
       next: (options) => {
@@ -123,12 +136,38 @@ export class BrandPage implements OnInit {
           return;
         }
 
+        // Kesişim sayfasıysa kategori de geçerli olmalı — uydurma bir slug
+        // için 200 döndürmek yerine markanın kendi sayfasına yönlendiriyoruz
+        // (yukarıdaki geçersiz-marka mantığının aynısı).
+        if (categorySlug) {
+          if (!options.categories.includes(categorySlug)) {
+            this.router.navigate(['/marka', slug.toLowerCase(), 'indirim-kodu']);
+            return;
+          }
+          this.fixedCategory.set(categorySlug);
+          this.fixedCategoryLabel.set(CATEGORY_LABELS[categorySlug] ?? categorySlug);
+          this.selectedCategories.set(new Set([categorySlug]));
+        }
+
         this.brandName.set(match);
         // Marka sayfaları birbirine link vermiyordu — diğer marka sayfalarına
         // iç linkleme için mevcut marka çıkarılmış listeyi ayrıca tutuyoruz.
         this.otherBrands.set(options.brands.filter((b) => b !== match));
         this.availableCategories.set(options.categories);
         this.setMeta(match);
+
+        // Bu markanın gerçekten ürünü olan kategoriler — kesişim sayfalarına
+        // iç linkler buradan kuruluyor, boş kombinasyona link verilmiyor.
+        this.dealsService.getBrandCategoryPairs().subscribe({
+          next: (pairs) => {
+            this.brandCategories.set(
+              pairs
+                .filter((p) => p.brandName === match && p.category !== this.fixedCategory())
+                .map((p) => ({ slug: p.category, label: CATEGORY_LABELS[p.category] ?? p.category, count: p.productCount })),
+            );
+          },
+          error: () => this.brandCategories.set([]),
+        });
 
         this.couponsService.getCoupons().subscribe((coupons) => {
           this.coupons.set(coupons.filter((c) => c.brandName === match));
@@ -259,6 +298,21 @@ export class BrandPage implements OnInit {
   }
 
   private setMeta(brand: string): void {
+    const category = this.fixedCategory();
+
+    // Kesişim sayfası ("Hardline Protein Tozu Fiyatları") ile marka indirim
+    // kodu sayfası tamamen farklı arama niyetlerini hedefliyor — başlık,
+    // açıklama ve canonical ayrı.
+    if (category) {
+      const label = this.fixedCategoryLabel();
+      this.pageMeta.set({
+        title: `${brand} ${label} Fiyatları ve İndirimleri | ProteinAvcısı`,
+        description: `${brand} markasının ${label.toLocaleLowerCase('tr')} ürünleri, güncel fiyatları ve gerçek fiyat geçmişine dayanan doğrulanmış indirimleri tek sayfada.`,
+        canonicalPath: `/marka/${brand.toLowerCase()}/${category}`,
+      });
+      return;
+    }
+
     const title = `${brand} İndirim Kodu ve Kampanyaları 2026 | ProteinAvcısı`;
     const description = `${brand} için güncel kupon kodları ve gerçek fiyat geçmişine dayanan doğrulanmış indirimler. ProteinAvcısı, ${brand} markasının fiyatlarını düzenli olarak takip ediyor.`;
 

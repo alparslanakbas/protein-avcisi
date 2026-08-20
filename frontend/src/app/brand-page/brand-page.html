@@ -13,11 +13,27 @@
           {{ brandName().charAt(0) }}
         </div>
         <div class="min-w-0 flex-1">
-          <h1 class="text-[38px] font-medium tracking-[-0.03em] sm:text-[42px]">{{ brandName() }} İndirim Kodu ve Kampanyaları</h1>
-          <p class="mt-2 max-w-2xl text-[15px] text-[var(--noc-neutral-300)]">
-            {{ totalCount() }} ürün, günde 4 kez taranıyor. {{ brandName() }} markasının fiyatlarını düzenli olarak
-            takip ediyoruz — markanın beyanına değil, kendi topladığımız gerçek fiyat geçmişine dayanan indirimler.
-          </p>
+          @if (fixedCategory()) {
+            <!-- Marka × kategori kesişim sayfası: hem başlık hem giriş metni
+                 title/canonical ile aynı ifadeyi taşıyor. -->
+            <nav class="mb-2 text-xs text-[var(--noc-neutral-500)]">
+              <a routerLink="/" class="hover:text-[var(--noc-accent)]">Ana Sayfa</a> /
+              <a [routerLink]="['/marka', brandName().toLowerCase(), 'indirim-kodu']" class="hover:text-[var(--noc-accent)]">{{ brandName() }}</a> /
+              {{ fixedCategoryLabel() }}
+            </nav>
+            <h1 class="text-[38px] font-medium tracking-[-0.03em] sm:text-[42px]">{{ brandName() }} {{ fixedCategoryLabel() }} Fiyatları</h1>
+            <p class="mt-2 max-w-2xl text-[15px] text-[var(--noc-neutral-300)]">
+              {{ brandName() }} markasının {{ totalCount() }} {{ fixedCategoryLabel().toLowerCase() }} ürünü, günde 4 kez
+              taranan güncel fiyatlarıyla. İndirim etiketleri markanın beyanına değil, kendi topladığımız gerçek fiyat
+              geçmişine dayanıyor.
+            </p>
+          } @else {
+            <h1 class="text-[38px] font-medium tracking-[-0.03em] sm:text-[42px]">{{ brandName() }} İndirim Kodu ve Kampanyaları</h1>
+            <p class="mt-2 max-w-2xl text-[15px] text-[var(--noc-neutral-300)]">
+              {{ totalCount() }} ürün, günde 4 kez taranıyor. {{ brandName() }} markasının fiyatlarını düzenli olarak
+              takip ediyoruz — markanın beyanına değil, kendi topladığımız gerçek fiyat geçmişine dayanan indirimler.
+            </p>
+          }
         </div>
       </div>
 
@@ -68,9 +84,13 @@
         </span>
       </div>
 
+      <!-- Kesişim sayfasında kategori SABİT (URL'in bir parçası) — çiplerle
+           değiştirilebilir olsaydı sayfanın kendi kanonik konusundan
+           sapılırdı. Fiyat aralığı filtresi orada da anlamlı olduğu için
+           blok tamamen gizlenmiyor, sadece çipler çıkarılıyor. -->
       @if (availableCategories().length > 0) {
         <div class="mb-[22px] mt-[13px] flex flex-wrap items-center gap-1.5">
-          @for (category of availableCategories(); track category) {
+          @for (category of fixedCategory() ? [] : availableCategories(); track category) {
             <button
               type="button"
               class="rounded-[6px] border px-2.5 py-1 text-xs"
@@ -198,6 +218,26 @@
             </button>
           </div>
         }
+      }
+
+      <!-- Marka × kategori kesişim sayfalarına iç linkler. Yalnızca bu
+           markanın GERÇEKTEN ürünü olan kategoriler listeleniyor (boş
+           kombinasyona link vermemek için) ve o anki kategori listede yok. -->
+      @if (brandCategories().length > 0) {
+        <div class="mt-[45px] text-center">
+          <h2 class="mb-3 text-sm font-medium">{{ brandName() }} Kategorileri</h2>
+          <div class="flex flex-wrap items-center justify-center gap-2">
+            @for (item of brandCategories(); track item.slug) {
+              <a
+                [routerLink]="['/marka', brandName().toLowerCase(), item.slug]"
+                class="rounded-[6px] border border-[var(--noc-divider)] px-2.5 py-1 text-xs text-[var(--noc-neutral-500)] hover:text-[var(--noc-accent)]"
+              >
+                {{ brandName() }} {{ item.label }}
+                <span class="text-[var(--noc-neutral-600)]">({{ item.count }})</span>
+              </a>
+            }
+          </div>
+        </div>
       }
 
       @if (otherBrands().length > 0) {

@@ -8,6 +8,13 @@ import { HomepageStats } from './homepage-stats.model';
 import { FilterOptions, PagedResult } from './paged-result.model';
 import { ProductSparkline } from './product-sparkline.model';
 
+// Marka × kategori kesişimi — hangi markanın hangi kategoride kaç ürünü var.
+export interface BrandCategoryPair {
+  brandName: string;
+  category: string;
+  productCount: number;
+}
+
 export interface DealsQuery {
   brands?: string[];
   categories?: string[];
@@ -68,6 +75,13 @@ export class DealsService {
   getBestValueBrands(category: string): Observable<string[]> {
     const params = new HttpParams().set('category', category);
     return this.http.get<string[]>(`${API_BASE_URL}/api/best-value-brands`, { params });
+  }
+
+  // Marka × kategori kesişim sayfaları — yalnızca gerçekten ürünü olan
+  // çiftler. Hem sitemap hem sayfa içi linkler bunu kullanıyor, boş bir
+  // kombinasyona sayfa/link üretilmiyor.
+  getBrandCategoryPairs(): Observable<BrandCategoryPair[]> {
+    return this.http.get<BrandCategoryPair[]>(`${API_BASE_URL}/api/brand-category-pairs`);
   }
 
   // Ürün kartlarındaki mini sparkline'lar için toplu istek — bir sayfa
