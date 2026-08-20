@@ -192,6 +192,29 @@
         }
       }
 
+      <!-- Kategoriye ÖZEL SSS — ana sayfadakiyle aynı accordion deseni
+           (native details/summary, JS state gerekmiyor, SSR-güvenli), ama
+           sorular bu kategorinin kendisiyle ilgili. Aynı içerik FAQPage
+           structured data olarak da enjekte ediliyor (category-page.ts). -->
+      @if (faqItems().length > 0) {
+        <section class="mx-auto mt-[45px] max-w-2xl">
+          <h2 class="mb-4 text-center text-sm font-medium">{{ categoryLabel() }} Hakkında Sık Sorulan Sorular</h2>
+          <div class="space-y-2">
+            @for (item of faqItems(); track item.question) {
+              <details class="group rounded-[8px] border border-[var(--noc-divider)] px-4 py-3">
+                <summary class="flex cursor-pointer list-none items-center justify-between gap-2 text-sm font-medium">
+                  {{ item.question }}
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4 shrink-0 text-[var(--noc-neutral-500)] transition-transform group-open:rotate-180">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6" />
+                  </svg>
+                </summary>
+                <p class="mt-2 text-sm leading-relaxed text-[var(--noc-neutral-500)]">{{ item.answer }}</p>
+              </details>
+            }
+          </div>
+        </section>
+      }
+
       @if (otherCategories().length > 0) {
         <div class="mt-[45px] text-center">
           <h2 class="mb-3 text-sm font-medium">Diğer Kategoriler</h2>

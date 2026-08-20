@@ -1,12 +1,13 @@
-import { DecimalPipe } from '@angular/common';
+import { DOCUMENT, DecimalPipe } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
+import { CATEGORY_FAQS, FaqItem } from '../core/category-faqs';
 import { CATEGORY_INTROS, CATEGORY_LABELS } from '../core/category-labels';
 import { Deal } from '../core/deal.model';
 import { DealsService } from '../core/deals.service';
-import { PageMetaService } from '../core/page-meta.service';
+import { PageMetaService, upsertJsonLdScript } from '../core/page-meta.service';
 import { PriceHistoryService } from '../core/price-history.service';
 import { formatRelativeTime } from '../core/relative-time';
 import { ProductModal } from '../product-modal/product-modal';
@@ -26,11 +27,19 @@ export class CategoryPage implements OnInit {
   private readonly router = inject(Router);
   private readonly dealsService = inject(DealsService);
   private readonly pageMeta = inject(PageMetaService);
+  private readonly document = inject(DOCUMENT);
   private readonly priceHistoryService = inject(PriceHistoryService);
 
   protected readonly categorySlug = signal<string>('');
   protected readonly categoryLabel = signal<string>('');
   protected readonly categoryIntro = signal<string>('');
+
+  // Kategoriye ÖZEL sorular — ana sayfadaki SSS platformu anlatıyor,
+  // buradakiler ürünün kendisiyle ilgili ve gerçek arama ifadelerini
+  // hedefliyor (bkz. category-faqs.ts). Sayfa "sadece ürün listesi"
+  // olmaktan çıkıyor.
+  protected readonly faqItems = signal<FaqItem[]>([]);
+  private faqStructuredDataEl: HTMLScriptElement | null = null;
   protected readonly otherCategories = signal<{ slug: string; label: string }[]>([]);
   protected readonly loading = signal(true);
   // bkz. brand-page.ts'teki aynı isim/gerekçe: bu yalnızca /api/filters
@@ -124,6 +133,7 @@ export class CategoryPage implements OnInit {
         this.categorySlug.set(match);
         this.categoryLabel.set(label);
         this.categoryIntro.set(CATEGORY_INTROS[match]);
+        this.setFaq(match);
         this.otherCategories.set(
           options.categories
             .filter((c) => c !== match)
@@ -237,6 +247,30 @@ export class CategoryPage implements OnInit {
     this.currentPage.set(page);
     this.loadItems();
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // Görünür SSS + aynı içerikten üretilen FAQPage structured data.
+  // Google bu işaretlemeyi arama sonucunda açılır soru-cevap olarak
+  // gösterebiliyor (ana sayfadaki aynı desen, deals-list.ts).
+  private setFaq(slug: string): void {
+    const items = CATEGORY_FAQS[slug] ?? [];
+    this.faqItems.set(items);
+
+    if (items.length === 0) {
+      this.faqStructuredDataEl?.remove();
+      this.faqStructuredDataEl = null;
+      return;
+    }
+
+    this.faqStructuredDataEl = upsertJsonLdScript(this.document, this.faqStructuredDataEl, {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: items.map((item) => ({
+        '@type': 'Question',
+        name: item.question,
+        acceptedAnswer: { '@type': 'Answer', text: item.answer },
+      })),
+    });
   }
 
   private setMeta(label: string, slug: string): void {
