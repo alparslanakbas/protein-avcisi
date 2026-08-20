@@ -233,13 +233,37 @@ app.MapGet("/api/brand-comparison", async (string? brand1, string? brand2, Deals
 // hesap Size metnini ayrıştırmayı gerektirdiği için SQL'e çevrilemiyor,
 // serviste bellek içinde yapılıyor; buradan yalnızca ilk N ürün dönüyor
 // (sayfanın tüm kategoriyi çekmesi SSR çıktısını 451 KB'a çıkarıyordu).
-app.MapGet("/api/best-value-per-serving", async (string? category, int? count, DealsQueryService deals, CancellationToken ct) =>
+app.MapGet("/api/best-value-per-serving", async (
+    string? category,
+    string[]? brands,
+    string? search,
+    int? page,
+    int? pageSize,
+    DealsQueryService deals,
+    CancellationToken ct) =>
 {
     if (string.IsNullOrWhiteSpace(category))
         return Results.BadRequest(new { message = "category parametresi gerekli." });
 
-    var take = count is null or <= 0 ? 6 : Math.Min(count.Value, 20);
-    var result = await deals.GetBestValuePerServingAsync(category, take, ct);
+    var result = await deals.GetBestValuePerServingAsync(
+        category,
+        brands is { Length: > 0 } ? brands : null,
+        string.IsNullOrWhiteSpace(search) ? null : search,
+        page is null or <= 0 ? 1 : page.Value,
+        NormalizePageSize(pageSize),
+        ct);
+
+    return Results.Ok(result);
+});
+
+// Hesaplayıcı tablosundaki marka çipleri — yalnızca o kategoride servis
+// başı fiyatı hesaplanabilen ürünü olan markalar.
+app.MapGet("/api/best-value-brands", async (string? category, DealsQueryService deals, CancellationToken ct) =>
+{
+    if (string.IsNullOrWhiteSpace(category))
+        return Results.BadRequest(new { message = "category parametresi gerekli." });
+
+    var result = await deals.GetBestValueBrandsAsync(category, ct);
     return Results.Ok(result);
 });
 

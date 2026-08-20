@@ -43,6 +43,7 @@ public partial class DealsQueryService(AppDbContext db)
         return new DealDto(
             row.Product.Id, row.Product.Name, row.Product.Url, row.Product.ImageUrl,
             row.Product.Category, row.Product.Size, row.Product.Flavor, row.Product.ServingSizeGrams,
+            row.Product.ServingsPerPackage,
             row.Product.Description,
             row.BrandName, latest.Price, referencePrice,
             Math.Round((referencePrice - latest.Price) / referencePrice * 100, 1),
@@ -66,7 +67,14 @@ public partial class DealsQueryService(AppDbContext db)
         string? sortBy,
         int page,
         int pageSize,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        // Arama terimini eşanlamlılarıyla genişletmek, kategori SERBEST
+        // olduğunda faydalı ("kreatin" yazan "creatine" ürünlerini de
+        // bulsun). Ama kategori zaten sabitlenmişse tam tersi etki yapıyor:
+        // hesaplayıcı tablosunda "collagen" araması, "collagen" protein-tozu
+        // kategorisinin anahtar kelimelerinden biri olduğu için TÜM protein
+        // tozlarını döndürüyordu. O yüzden orada kapatılabiliyor.
+        bool expandSearchSynonyms = true)
     {
         var referenceSince = DateTimeOffset.UtcNow.AddDays(-referenceWindowDays);
         var staleSince = DateTimeOffset.UtcNow.Subtract(StaleThreshold);
@@ -101,8 +109,12 @@ public partial class DealsQueryService(AppDbContext db)
         if (!string.IsNullOrEmpty(searchTerm))
         {
             // "kreatin" yazınca "creatine" geçen ürünleri de bulsun diye
-            // (ve tersi) eşanlamlı terimlerle arama terimini genişletiyoruz.
-            var synonyms = ProductAttributeParser.GetSearchSynonyms(searchTerm);
+            // (ve tersi) eşanlamlı terimlerle arama terimini genişletiyoruz
+            // — kategori sabitlenmiş çağrılarda bu kapatılıyor, bkz.
+            // expandSearchSynonyms üzerindeki açıklama.
+            var synonyms = expandSearchSynonyms
+                ? ProductAttributeParser.GetSearchSynonyms(searchTerm)
+                : [];
             var searchTerms = synonyms.Count > 0
                 ? synonyms.Append(searchTerm).Distinct().ToArray()
                 : [searchTerm];
@@ -277,48 +289,88 @@ public partial class DealsQueryService(AppDbContext db)
     // tablosu için. Hesap (paket gramajı ÷ porsiyon = servis sayısı, sonra
     // fiyat ÷ servis) Size alanının metin olarak ayrıştırılmasını
     // gerektirdiği için SQL'e çevrilemiyor — bu yüzden kategoriye ait
-    // ürünler belleğe alınıp orada hesaplanıyor. Sonuç SADECE ilk N ürün
-    // olarak dönüyor: sayfa ilk denemede 100 ürünü SSR'a gömüp 451 KB'a
-    // çıkmıştı, bu endpoint onu birkaç KB'a indiriyor.
+    // ürünler belleğe alınıp orada hesaplanıyor, sıralama ve sayfalama da
+    // bellekte yapılıyor. İSTEMCİYE SAYFA SAYFA dönüyor: sayfa ilk
+    // denemede tüm kategoriyi (100 ürün) SSR'a gömüp 451 KB'a çıkmıştı.
     // Yalnızca porsiyon büyüklüğü GERÇEKTEN bilinen ürünler listeleniyor —
     // "30 gr = 1 servis" gibi bir varsayım bu projede hiç yapılmadı.
-    public async Task<IReadOnlyList<DealDto>> GetBestValuePerServingAsync(
+    public async Task<PagedResult<DealDto>> GetBestValuePerServingAsync(
         string category,
-        int count,
+        string[]? brands,
+        string? search,
+        int page,
+        int pageSize,
         CancellationToken cancellationToken = default)
     {
-        var page = await GetDealsAsync(
+        // Filtreleme (marka/arama) DB tarafında yapılıyor — burada sadece
+        // servis başı hesap ve ona göre sıralama kalıyor.
+        var all = await GetDealsAsync(
             referenceWindowDays: 30,
-            brands: null,
+            brands: brands,
             categories: [category],
-            search: null,
+            search: search,
             minPrice: null,
             maxPrice: null,
             onlyDiscounted: false,
             onlyStoreDiscounted: false,
             sortBy: null,
             page: 1,
-            pageSize: 200,
-            cancellationToken);
+            pageSize: 500,
+            cancellationToken,
+            // Kategori zaten sabit — eşanlamlı genişletme burada aramayı
+            // işlevsiz kılıyordu (bkz. parametrenin kendi açıklaması).
+            expandSearchSynonyms: false);
 
-        return page.Items
-            .Select(deal => new
-            {
-                Deal = deal,
-                PackageGrams = ParsePackageGrams(deal.Size),
-            })
-            .Where(x => x.PackageGrams is > 0 && x.Deal.ServingSizeGrams is > 0)
-            .Select(x => new
-            {
-                x.Deal,
-                Servings = x.PackageGrams!.Value / x.Deal.ServingSizeGrams!.Value,
-            })
+        var ranked = all.Items
+            .Select(deal => new { Deal = deal, Servings = CalculateServings(deal) })
             // Bir paketten tek servis bile çıkmıyorsa veri tutarsız demektir.
-            .Where(x => x.Servings >= 1)
-            .OrderBy(x => x.Deal.CurrentPrice / x.Servings)
-            .Take(count)
+            .Where(x => x.Servings is >= 1)
+            .OrderBy(x => x.Deal.CurrentPrice / x.Servings!.Value)
             .Select(x => x.Deal)
             .ToList();
+
+        var totalCount = ranked.Count;
+        var items = ranked
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+
+        // TotalPages, PagedResult'ın kendi hesapladığı bir özellik.
+        return new PagedResult<DealDto>(items, totalCount, page, pageSize);
+    }
+
+    // Hesaplayıcı sayfasındaki marka çipleri için — o kategoride servis
+    // başı fiyatı GERÇEKTEN hesaplanabilen ürünü olan markalar. Genel
+    // /api/filters listesini kullanmak yanıltıcı olurdu: bir markanın o
+    // kategoride ürünü olsa bile porsiyon verisi yoksa çipi tıklandığında
+    // tablo boş gelirdi.
+    public async Task<IReadOnlyList<string>> GetBestValueBrandsAsync(
+        string category,
+        CancellationToken cancellationToken = default)
+    {
+        var all = await GetBestValuePerServingAsync(category, null, null, 1, 500, cancellationToken);
+        return all.Items
+            .Select(d => d.BrandName)
+            .Distinct()
+            .OrderBy(b => b)
+            .ToList();
+    }
+
+    // Bir paketten kaç servis çıktığı. İki kaynak var, öncelik sırasıyla:
+    // (1) markanın DOĞRUDAN beyan ettiği servis sayısı (ProteinOcean'ın
+    // variant "Servis" özelliği) — türetilmiş değil, en güvenilir kaynak;
+    // (2) paket gramajı ÷ porsiyon büyüklüğü (diğer üç marka). İkisi de
+    // yoksa null döner ve ürün servis başı fiyat listesine hiç girmez.
+    public static decimal? CalculateServings(DealDto deal)
+    {
+        if (deal.ServingsPerPackage is > 0)
+            return deal.ServingsPerPackage.Value;
+
+        var packageGrams = ParsePackageGrams(deal.Size);
+        if (packageGrams is > 0 && deal.ServingSizeGrams is > 0)
+            return packageGrams.Value / deal.ServingSizeGrams.Value;
+
+        return null;
     }
 
     // "900 Gr" / "2 Kg" gibi metinleri grama çevirir. Kapsül/adet/ml gibi

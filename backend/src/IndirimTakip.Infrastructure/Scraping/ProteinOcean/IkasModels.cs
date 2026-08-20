@@ -51,6 +51,31 @@ internal sealed class IkasVariant
 
     [JsonPropertyName("stocks")]
     public List<IkasStock> Stocks { get; set; } = [];
+
+    // Variant başına ürün özellikleri — bizi ilgilendiren tek alan
+    // "Servis" (paketten kaç servis çıktığı). ProteinOcean'da paket
+    // gramajı (Size) hiç gelmediği için servis başı fiyat ancak buradan
+    // hesaplanabiliyor.
+    // NULLABLE olmalı: API bazı variant'larda bu alanı açıkça `null`
+    // gönderiyor, bu da `= []` başlangıç değerini eziyor (deserializer
+    // explicit null'ı yazar) — null kontrolü olmadan LINQ patlıyordu.
+    [JsonPropertyName("attributes")]
+    public List<IkasAttributeValue>? Attributes { get; set; }
+}
+
+internal sealed class IkasAttributeValue
+{
+    [JsonPropertyName("productAttribute")]
+    public IkasProductAttribute? ProductAttribute { get; set; }
+
+    [JsonPropertyName("value")]
+    public string? Value { get; set; }
+}
+
+internal sealed class IkasProductAttribute
+{
+    [JsonPropertyName("name")]
+    public string? Name { get; set; }
 }
 
 internal sealed class IkasPrice

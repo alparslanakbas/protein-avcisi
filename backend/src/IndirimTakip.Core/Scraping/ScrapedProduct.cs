@@ -18,4 +18,7 @@ public record ScrapedProduct(
     // Markanın kendi sitesinden gelen gerçek ürün açıklaması (düz metin).
     // Sadece marka bunu güvenilir şekilde sağlıyorsa doldurulur (şimdilik HIQ)
     // — yoksa uydurmak yerine null bırakılır.
-    string? Description = null);
+    string? Description = null,
+    // Paketten kaç servis çıktığı — markanın doğrudan beyan ettiği sayı
+    // (şimdilik yalnızca ProteinOcean, variant "Servis" attribute'u).
+    int? ServingsPerPackage = null);

@@ -23,6 +23,14 @@ public class Product
     // Sadece markanın verisi güvenilir şekilde sağladığı ürünlerde dolu.
     public decimal? ServingSizeGrams { get; set; }
 
+    // Paketten kaç servis çıktığı — markanın DOĞRUDAN beyan ettiği sayı.
+    // ProteinOcean bunu variant verisinde ("Servis" attribute'u) veriyor;
+    // o markada paket gramajı (Size) hiç gelmediği için servis başı fiyat
+    // başka türlü hesaplanamıyordu. Diğer markalarda null — orada hesap
+    // Size ÷ ServingSizeGrams üzerinden yapılıyor. İkisi de varsa bu alan
+    // önceliklidir (türetilmiş değil, markanın kendi beyanı).
+    public int? ServingsPerPackage { get; set; }
+
     // Markanın kendi sitesinden gelen gerçek ürün açıklaması (düz metin,
     // HTML temizlenmiş) — uydurma değil, sadece marka bunu sağlıyorsa dolu.
     // Bir kez doldurulduktan sonra sonraki taramalarda korunur (bkz.

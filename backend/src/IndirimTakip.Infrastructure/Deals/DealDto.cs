@@ -9,6 +9,10 @@ public record DealDto(
     string? Size,
     string? Flavor,
     decimal? ServingSizeGrams,
+    // Paketten kaç servis çıktığı — markanın doğrudan beyanı (şimdilik
+    // yalnızca ProteinOcean; o markada paket gramajı hiç gelmediği için
+    // servis başı fiyat ancak buradan hesaplanabiliyor).
+    int? ServingsPerPackage,
     // Markanın kendi sitesinden gelen gerçek ürün açıklaması — sadece marka
     // bunu sağlıyorsa dolu (şimdilik HIQ), yoksa null (uydurma yok).
     string? Description,

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -43,6 +44,7 @@ public partial class ProteinOceanScraper(HttpClient httpClient) : IBrandScraper,
                 prices { sellPrice }
                 images { id fileName isMain }
                 stocks { stockCount }
+                attributes { productAttribute { name } value }
               }
             }
           }
@@ -82,7 +84,8 @@ public partial class ProteinOceanScraper(HttpClient httpClient) : IBrandScraper,
                         ? null
                         : $"https://cdn.myikas.com/images/{MerchantId}/{image.Id}/1080/{image.FileName}.webp",
                     Category: null,
-                    Price: variant.Prices[0].SellPrice));
+                    Price: variant.Prices[0].SellPrice,
+                    ServingsPerPackage: ExtractServingsPerPackage(variant)));
             }
 
             receivedCount += results.Count;
@@ -93,6 +96,24 @@ public partial class ProteinOceanScraper(HttpClient httpClient) : IBrandScraper,
         }
 
         return products;
+    }
+
+    // ProteinOcean'da paket gramajı (Size) hiçbir yerde gelmiyor — ne ürün
+    // adında ne de API'de. Ama variant'ın "Servis" özelliği paketten kaç
+    // servis çıktığını DOĞRUDAN veriyor (16/64/128 gibi), yani servis başı
+    // fiyat için gramaja hiç ihtiyaç kalmıyor. Markanın kendi beyanı,
+    // türetilmiş bir sayı değil.
+    private static int? ExtractServingsPerPackage(IkasVariant variant)
+    {
+        var value = variant.Attributes
+            ?.FirstOrDefault(a => string.Equals(a.ProductAttribute?.Name, "Servis", StringComparison.OrdinalIgnoreCase))
+            ?.Value;
+
+        if (!int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var servings))
+            return null;
+
+        // Makul olmayan değerleri ele (0/negatif ya da absürt büyük).
+        return servings is > 0 and <= 1000 ? servings : null;
     }
 
     private async Task<SearchProductsGraphQlResponse?> SearchProductsPageAsync(int page, CancellationToken cancellationToken)
