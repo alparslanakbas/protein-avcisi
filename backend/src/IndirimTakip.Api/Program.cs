@@ -256,6 +256,14 @@ app.MapGet("/api/best-value-per-serving", async (
     return Results.Ok(result);
 });
 
+// Marka × kategori kesişim sayfaları (/marka/:brand/:category) — sitemap ve
+// iç linkler yalnızca gerçekten ürünü olan çiftleri kullanıyor.
+app.MapGet("/api/brand-category-pairs", async (DealsQueryService deals, CancellationToken ct) =>
+{
+    var result = await deals.GetBrandCategoryPairsAsync(ct);
+    return Results.Ok(result);
+});
+
 // Hesaplayıcı tablosundaki marka çipleri — yalnızca o kategoride servis
 // başı fiyatı hesaplanabilen ürünü olan markalar.
 app.MapGet("/api/best-value-brands", async (string? category, DealsQueryService deals, CancellationToken ct) =>

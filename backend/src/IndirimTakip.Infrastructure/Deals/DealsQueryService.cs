@@ -339,6 +339,33 @@ public partial class DealsQueryService(AppDbContext db)
         return new PagedResult<DealDto>(items, totalCount, page, pageSize);
     }
 
+    // Marka × kategori kesişim sayfaları (/marka/:brand/:category) için —
+    // yalnızca GERÇEKTEN ürünü olan çiftler. Boş bir kombinasyon için sayfa
+    // üretmek (ör. bir markanın hiç satmadığı kategori) tam da Google'ın
+    // "ince içerik" sayarak indekslemediği şey olurdu; sitemap ve iç
+    // linkler bu listeye göre kuruluyor.
+    public async Task<IReadOnlyList<BrandCategoryPairDto>> GetBrandCategoryPairsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var staleSince = DateTimeOffset.UtcNow.Subtract(StaleThreshold);
+
+        var rows = await (
+            from p in db.Products
+            join b in db.Brands on p.BrandId equals b.Id
+            where b.IsActive
+                  && p.Category != null
+                  && p.PriceHistories.OrderByDescending(ph => ph.ScrapedAt).Select(ph => ph.ScrapedAt).FirstOrDefault() >= staleSince
+            group p by new { BrandName = b.Name, Category = p.Category! } into g
+            select new BrandCategoryPairDto(g.Key.BrandName, g.Key.Category, g.Count()))
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+        return rows
+            .OrderBy(r => r.BrandName)
+            .ThenByDescending(r => r.ProductCount)
+            .ToList();
+    }
+
     // Hesaplayıcı sayfasındaki marka çipleri için — o kategoride servis
     // başı fiyatı GERÇEKTEN hesaplanabilen ürünü olan markalar. Genel
     // /api/filters listesini kullanmak yanıltıcı olurdu: bir markanın o
