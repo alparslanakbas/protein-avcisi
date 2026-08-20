@@ -51,6 +51,12 @@ interface ProductValue {
   proteinServings: number;
 }
 
+// Tablo, ürün grid'lerinden (24) daha küçük bir sayfa boyutu kullanıyor —
+// hem satır listesi olduğu için hem de SSR çıktısını hafif tutmak adına
+// (sayfanın ilk hali tüm kategoriyi gömüp 451 KB'a çıkmıştı).
+const PAGE_SIZE = 12;
+const SEARCH_DEBOUNCE_MS = 350;
+
 // Bu sayfanın fikri: "günlük protein ihtiyacı hesaplama" araması yüksek
 // hacimli ve rakiplerin çoğunda bir hesaplayıcı var — ama hiçbirinde CANLI
 // fiyat verisi yok. Bizde ikisi de olduğu için hesaplama sonucunu doğrudan
@@ -77,6 +83,22 @@ export class ProteinCalculatorPage implements OnInit {
 
   private readonly products = signal<Deal[]>([]);
 
+  // Tablo filtreleri — ana sayfadaki aynı desen (arama debounce'lu,
+  // marka çipleri, sayfalama). İlk hali yalnızca 6 ürün gösteriyordu ve
+  // o 6'sının hepsi tek markadan çıkıyordu; kullanıcı bunu fark edip
+  // "protein tozlarının tamamını, arama kutusuyla birlikte" istedi.
+  protected readonly searchQuery = signal('');
+  protected readonly selectedBrands = signal<Set<string>>(new Set());
+  protected readonly availableBrands = signal<string[]>([]);
+  protected readonly currentPage = signal(1);
+  protected readonly totalCount = signal(0);
+  protected readonly totalPages = signal(0);
+  private searchDebounceHandle: ReturnType<typeof setTimeout> | null = null;
+
+  protected readonly hasActiveFilters = computed(
+    () => this.searchQuery().trim().length > 0 || this.selectedBrands().size > 0,
+  );
+
   protected readonly selectedActivity = computed(
     () => ACTIVITY_LEVELS.find((level) => level.id === this.activityId()) ?? ACTIVITY_LEVELS[1],
   );
@@ -100,10 +122,7 @@ export class ProteinCalculatorPage implements OnInit {
   protected readonly bestValueProducts = computed<ProductValue[]>(() =>
     this.products()
       .map((deal) => {
-        const packageGrams = this.parsePackageGrams(deal.size);
-        if (!packageGrams || !deal.servingSizeGrams || deal.servingSizeGrams <= 0) return null;
-
-        const servings = packageGrams / deal.servingSizeGrams;
+        const servings = this.calculateServings(deal);
         if (!servings || servings < 1) return null;
 
         return {
@@ -119,6 +138,20 @@ export class ProteinCalculatorPage implements OnInit {
     return ['/urun', String(deal.productId), slugify(deal.productName)];
   }
 
+  // Backend'deki DealsQueryService.CalculateServings ile aynı öncelik:
+  // markanın doğrudan beyan ettiği servis sayısı (ProteinOcean) varsa o,
+  // yoksa paket gramajı ÷ porsiyon büyüklüğü.
+  private calculateServings(deal: Deal): number | null {
+    if (deal.servingsPerPackage && deal.servingsPerPackage > 0) return deal.servingsPerPackage;
+
+    const packageGrams = this.parsePackageGrams(deal.size);
+    if (packageGrams && deal.servingSizeGrams && deal.servingSizeGrams > 0) {
+      return packageGrams / deal.servingSizeGrams;
+    }
+
+    return null;
+  }
+
   private parsePackageGrams(size: string | null): number | null {
     if (!size) return null;
     const match = /^(\d+(?:[.,]\d+)?)\s*(Gr|Kg)$/i.exec(size.trim());
@@ -128,6 +161,62 @@ export class ProteinCalculatorPage implements OnInit {
     if (!value) return null;
 
     return match[2].toLowerCase() === 'kg' ? value * 1000 : value;
+  }
+
+  protected onSearchChange(value: string): void {
+    this.searchQuery.set(value);
+    if (this.searchDebounceHandle) clearTimeout(this.searchDebounceHandle);
+    this.searchDebounceHandle = setTimeout(() => {
+      this.currentPage.set(1);
+      this.loadProducts();
+    }, SEARCH_DEBOUNCE_MS);
+  }
+
+  protected toggleBrand(brand: string): void {
+    const current = new Set(this.selectedBrands());
+    current.has(brand) ? current.delete(brand) : current.add(brand);
+    this.selectedBrands.set(current);
+    this.currentPage.set(1);
+    this.loadProducts();
+  }
+
+  protected clearFilters(): void {
+    this.searchQuery.set('');
+    this.selectedBrands.set(new Set());
+    this.currentPage.set(1);
+    this.loadProducts();
+  }
+
+  protected goToPage(page: number): void {
+    if (page < 1 || page > this.totalPages() || page === this.currentPage()) return;
+    this.currentPage.set(page);
+    this.loadProducts();
+  }
+
+  private loadProducts(): void {
+    this.loading.set(true);
+    this.loadError.set(false);
+
+    this.dealsService
+      .getBestValuePerServing({
+        category: 'protein-tozu',
+        brands: [...this.selectedBrands()],
+        search: this.searchQuery().trim() || undefined,
+        page: this.currentPage(),
+        pageSize: PAGE_SIZE,
+      })
+      .subscribe({
+        next: (result) => {
+          this.products.set(result.items);
+          this.totalCount.set(result.totalCount);
+          this.totalPages.set(result.totalPages);
+          this.loading.set(false);
+        },
+        error: () => {
+          this.loadError.set(true);
+          this.loading.set(false);
+        },
+      });
   }
 
   ngOnInit(): void {
@@ -148,16 +237,13 @@ export class ProteinCalculatorPage implements OnInit {
       offers: { '@type': 'Offer', price: '0', priceCurrency: 'TRY' },
     });
 
-    // Backend hesaplayıp sıralıyor, yalnızca gösterilecek 6 ürün geliyor.
-    this.dealsService.getBestValuePerServing('protein-tozu', 6).subscribe({
-      next: (items) => {
-        this.products.set(items);
-        this.loading.set(false);
-      },
-      error: () => {
-        this.loadError.set(true);
-        this.loading.set(false);
-      },
+    // Marka çipleri: yalnızca bu kategoride servis başı fiyatı gerçekten
+    // hesaplanabilen markalar (boş sonuç veren çip göstermemek için).
+    this.dealsService.getBestValueBrands('protein-tozu').subscribe({
+      next: (brands) => this.availableBrands.set(brands),
+      error: () => this.availableBrands.set([]),
     });
+
+    this.loadProducts();
   }
 }

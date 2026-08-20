@@ -47,9 +47,27 @@ export class DealsService {
   // Protein hesaplayıcısının "servis başı en uygun ürünler" tablosu için.
   // Hesap backend'de yapılıyor ve yalnızca ilk N ürün dönüyor — sayfanın
   // tüm kategoriyi (100 ürün) çekmesi SSR çıktısını 451 KB'a çıkarıyordu.
-  getBestValuePerServing(category: string, count = 6): Observable<Deal[]> {
-    const params = new HttpParams().set('category', category).set('count', count);
-    return this.http.get<Deal[]>(`${API_BASE_URL}/api/best-value-per-serving`, { params });
+  getBestValuePerServing(query: {
+    category: string;
+    brands?: string[];
+    search?: string;
+    page?: number;
+    pageSize?: number;
+  }): Observable<PagedResult<Deal>> {
+    let params = new HttpParams().set('category', query.category);
+    for (const brand of query.brands ?? []) params = params.append('brands', brand);
+    if (query.search) params = params.set('search', query.search);
+    if (query.page) params = params.set('page', query.page);
+    if (query.pageSize) params = params.set('pageSize', query.pageSize);
+    return this.http.get<PagedResult<Deal>>(`${API_BASE_URL}/api/best-value-per-serving`, { params });
+  }
+
+  // Hesaplayıcı tablosunun marka çipleri — genel /api/filters listesi
+  // yanıltıcı olurdu: bir markanın o kategoride ürünü olsa bile porsiyon
+  // verisi yoksa çipe tıklandığında tablo boş gelirdi.
+  getBestValueBrands(category: string): Observable<string[]> {
+    const params = new HttpParams().set('category', category);
+    return this.http.get<string[]>(`${API_BASE_URL}/api/best-value-brands`, { params });
   }
 
   // Ürün kartlarındaki mini sparkline'lar için toplu istek — bir sayfa

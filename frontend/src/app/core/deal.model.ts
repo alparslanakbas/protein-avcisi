@@ -7,6 +7,9 @@ export interface Deal {
   size: string | null;
   flavor: string | null;
   servingSizeGrams: number | null;
+  // Paketten kaç servis çıktığı — markanın doğrudan beyanı (şimdilik
+  // yalnızca ProteinOcean; o markada paket gramajı hiç gelmiyor).
+  servingsPerPackage: number | null;
   // Markanın kendi sitesinden gelen gerçek ürün açıklaması — sadece marka
   // bunu sağlıyorsa dolu (şimdilik HIQ), yoksa null.
   description: string | null;
