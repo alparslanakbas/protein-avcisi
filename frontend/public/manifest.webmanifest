@@ -1,6 +1,6 @@
 {
   "name": "Protein Avcısı",
-  "short_name": "Prot.Avcısı",
+  "short_name": "ProteinAvcısı",
   "description": "Spor takviyesi fiyatlarını gerçek fiyat geçmişine dayalı takip et.",
   "display": "standalone",
   "scope": "./",
