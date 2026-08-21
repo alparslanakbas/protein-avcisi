@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
+using HtmlAgilityPack;
 using IndirimTakip.Core.Scraping;
 
 namespace IndirimTakip.Infrastructure.Scraping.Hiq;
@@ -35,6 +36,8 @@ public partial class HiqScraper(HttpClient httpClient) : IBrandScraper
                 if (variant is null)
                     continue;
 
+                var nutritionJson = ExtractNutritionJson(product.BodyHtml);
+
                 result.Add(new ScrapedProduct(
                     Name: product.Title,
                     Url: $"https://takehiq.com/products/{product.Handle}",
@@ -43,7 +46,9 @@ public partial class HiqScraper(HttpClient httpClient) : IBrandScraper
                     Price: variant.Price,
                     ServingSizeGrams: ExtractServingSizeGrams(product.BodyHtml),
                     StoreOldPrice: variant.CompareAtPrice > variant.Price ? variant.CompareAtPrice : null,
-                    Description: ExtractDescription(product.BodyHtml)));
+                    Description: ExtractDescription(product.BodyHtml),
+                    NutritionJson: nutritionJson,
+                    ProteinPerServingGrams: NutritionParser.ExtractProteinGrams(nutritionJson)));
             }
 
             if (response.Products.Count < 250)
@@ -93,6 +98,24 @@ public partial class HiqScraper(HttpClient httpClient) : IBrandScraper
 
     [GeneratedRegex(@"^(\d+(?:[.,]\d+)?)\s*g$", RegexOptions.IgnoreCase)]
     private static partial Regex ServingGramsRegex();
+
+    // Aynı nutrition-table'ı (yukarıdaki porsiyon büyüklüğü çıkarımıyla aynı
+    // kaynak) tam besin değeri olarak da yakalıyoruz — tablo "Bileşen | 100 g
+    // | porsiyon" şeklinde 3 sütunlu, SON sütun gerçek porsiyon başına değer
+    // (gerçek bir üründe doğrulandı). Tabloyu SADECE nutrition-table class'ına
+    // scope'layıp sayfadaki başka tabloları (varsa) karıştırmıyoruz.
+    private static string? ExtractNutritionJson(string? bodyHtml)
+    {
+        if (string.IsNullOrEmpty(bodyHtml))
+            return null;
+
+        var doc = new HtmlDocument();
+        doc.LoadHtml(bodyHtml);
+
+        var table = doc.DocumentNode.SelectSingleNode(
+            "//table[contains(concat(' ', normalize-space(@class), ' '), ' nutrition-table ')]");
+        return table is null ? null : NutritionParser.BuildNutritionJson(HtmlNutritionExtractor.FromTables(table));
+    }
 
     // Aynı besin değeri kutusunda "Açıklama"/"İçindekiler"/"Kullanım Talimatı"
     // bölümleri hep <div class="nutrition-title">BAŞLIK</div><div

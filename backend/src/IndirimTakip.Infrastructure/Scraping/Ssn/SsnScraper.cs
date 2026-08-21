@@ -92,9 +92,10 @@ public class SsnScraper(HttpClient httpClient) : IBrandScraper, IProductDetailFe
         if (contentNode is null)
             return new ProductDetails(null, null, null);
 
-        // Besin tablosu aynı açıklama bloğunun içinde bir <table> olarak
-        // geliyor — ayrı bir istek gerekmiyor.
-        var nutritionJson = NutritionParser.BuildNutritionJson(HtmlNutritionExtractor.FromTables(contentNode));
+        // SSN besin değerini <table> olarak DEĞİL, aynı açıklama bloğunun
+        // içinde "<strong>Etiket</strong> — değer<br>" satırları şeklinde
+        // veriyor (gerçek bir ürün sayfasında doğrulandı, hiç tablo yok).
+        var nutritionJson = NutritionParser.BuildNutritionJson(HtmlNutritionExtractor.FromLabelDashValuePattern(contentNode));
         var description = ExtractDescription(contentNode);
 
         return new ProductDetails(description, nutritionJson, NutritionParser.ExtractProteinGrams(nutritionJson));

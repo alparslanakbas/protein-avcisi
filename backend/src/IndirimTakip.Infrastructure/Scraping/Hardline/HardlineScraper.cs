@@ -80,36 +80,28 @@ public class HardlineScraper(HttpClient httpClient) : IBrandScraper, IProductDet
         return new ProductDetails(description, nutritionJson, NutritionParser.ExtractProteinGrams(nutritionJson));
     }
 
-    // Hardline besin tablosunu "satirlar" div'i içinde, satır başına bir alt
-    // eleman olarak veriyor ("Protein / Protein" + "22 g" gibi). Satırın iç
-    // yapısı ürüne göre değişebildiği için iki yol da deneniyor: önce alt
-    // elemanlar (ilk = etiket, son = değer), yoksa düz metni ayıracın son
-    // görüldüğü yerden bölmek.
+    // Hardline besin tablosunda HER SATIR kendi ayrı <div class="satirlar">'ı —
+    // tek bir kapsayıcı içinde alt satırlar değil (gerçek bir üründe doğrulandı:
+    // <div class="satirlar"><span class="baslik">Protein/Protein</span>
+    // <span class="deger">22 g</span></div> art arda tekrarlanıyor).
     private static IEnumerable<(string Label, string Value)> ExtractNutritionRows(HtmlDocument doc)
     {
-        var container = doc.DocumentNode.SelectSingleNode(
+        var rows = doc.DocumentNode.SelectNodes(
             "//div[contains(concat(' ', normalize-space(@class), ' '), ' satirlar ')]");
-        if (container is null)
+        if (rows is null)
             yield break;
 
-        foreach (var row in container.SelectNodes(".//div|.//li|.//tr") ?? Enumerable.Empty<HtmlNode>())
+        foreach (var row in rows)
         {
-            var cells = row.ChildNodes
-                .Where(n => n.NodeType == HtmlNodeType.Element)
-                .Select(n => HtmlEntity.DeEntitize(n.InnerText).Trim())
-                .Where(t => t.Length > 0)
-                .ToList();
-
-            if (cells.Count >= 2)
-            {
-                yield return (cells[0], cells[^1]);
+            var label = row.SelectSingleNode(".//span[contains(concat(' ', normalize-space(@class), ' '), ' baslik ')]");
+            var value = row.SelectSingleNode(".//span[contains(concat(' ', normalize-space(@class), ' '), ' deger ')]");
+            if (label is null || value is null)
                 continue;
-            }
 
-            var text = HtmlEntity.DeEntitize(row.InnerText).Trim();
-            var separator = text.LastIndexOfAny([':', '=']);
-            if (separator > 0 && separator < text.Length - 1)
-                yield return (text[..separator], text[(separator + 1)..]);
+            var labelText = HtmlEntity.DeEntitize(label.InnerText).Trim();
+            var valueText = HtmlEntity.DeEntitize(value.InnerText).Trim();
+            if (labelText.Length > 0 && valueText.Length > 0)
+                yield return (labelText, valueText);
         }
     }
 

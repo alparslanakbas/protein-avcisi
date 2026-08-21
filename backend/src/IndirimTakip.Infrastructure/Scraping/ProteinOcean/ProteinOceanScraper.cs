@@ -168,64 +168,17 @@ public partial class ProteinOceanScraper(HttpClient httpClient) : IBrandScraper,
             return new ProductDetails(null, null, null);
 
         var html = await response.Content.ReadAsStringAsync(cancellationToken);
-        var nutritionJson = ExtractNutritionJson(html);
 
-        return new ProductDetails(
-            ExtractDescription(html),
-            nutritionJson,
-            NutritionParser.ExtractProteinGrams(nutritionJson));
-    }
-
-    // Besin tablosu, açıklamayla AYNI attributes dizisinde ama ayrı bir
-    // eleman olarak duruyor: ya type == "TABLE" ya da adı "BESİN İÇERİĞİ"
-    // olan bir HTML attribute'u (marka ikisini de kullanabiliyor). Değeri
-    // gömülü bir <table> HTML'i, bu yüzden ortak tablo çıkarıcıya veriliyor.
-    private static string? ExtractNutritionJson(string html)
-    {
-        var match = NextDataRegex().Match(html);
-        if (!match.Success)
-            return null;
-
-        try
-        {
-            using var doc = JsonDocument.Parse(match.Groups[1].Value);
-            if (!doc.RootElement.TryGetProperty("props", out var props) ||
-                !props.TryGetProperty("pageProps", out var pageProps) ||
-                !pageProps.TryGetProperty("pageSpecificData", out var pageSpecificData) ||
-                !pageSpecificData.TryGetProperty("attributes", out var attributes) ||
-                attributes.ValueKind != JsonValueKind.Array)
-            {
-                return null;
-            }
-
-            var rows = new List<(string Label, string Value)>();
-            foreach (var attribute in attributes.EnumerateArray())
-            {
-                if (!attribute.TryGetProperty("productAttribute", out var productAttribute))
-                    continue;
-
-                var type = productAttribute.TryGetProperty("type", out var typeProp) ? typeProp.GetString() : null;
-                var name = productAttribute.TryGetProperty("name", out var nameProp) ? nameProp.GetString() : null;
-                var normalizedName = (name ?? string.Empty).Replace('İ', 'i').ToLowerInvariant();
-
-                var looksLikeNutrition = type == "TABLE"
-                    || normalizedName.Contains("besin")
-                    || normalizedName.Contains("içerik")
-                    || normalizedName.Contains("icerik");
-                if (!looksLikeNutrition)
-                    continue;
-
-                var value = attribute.TryGetProperty("value", out var valueProp) ? valueProp.GetString() : null;
-                if (!string.IsNullOrWhiteSpace(value))
-                    rows.AddRange(HtmlNutritionExtractor.FromHtmlFragment(value));
-            }
-
-            return NutritionParser.BuildNutritionJson(rows);
-        }
-        catch (JsonException)
-        {
-            return null;
-        }
+        // Besin değeri BİLİNÇLİ OLARAK çekilmiyor — gerçek bir ürün sayfası
+        // incelendi: "BESİN İÇERİĞİ (İÇİNDEKİLER)" adlı HTML attribute'u
+        // aslında içindekiler/alerjen listesi (aroma başına ham madde), gram
+        // cinsinden makro değer içermiyor. Gerçek `type: "TABLE"` attribute'u
+        // ise ({colId, rowId, value} formatında) opak GUID anahtarlı bir
+        // grid — etiket/sütun eşlemesi bu veride hiç yok, çözmeye çalışmak
+        // yanlış eşleştirme riski taşırdı. "Yanlış veri göstermektense hiç
+        // gösterme" kararına göre atlandı (mağaza indirimi alanında
+        // ProteinOcean için daha önce verilen aynı karar, bkz. CLAUDE.md).
+        return new ProductDetails(ExtractDescription(html), null, null);
     }
 
     // __NEXT_DATA__ içindeki props.pageProps.pageSpecificData.attributes dizisi

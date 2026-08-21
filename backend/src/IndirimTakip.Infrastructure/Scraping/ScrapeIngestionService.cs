@@ -51,6 +51,8 @@ public class ScrapeIngestionService(AppDbContext db, ProductWatchNotifier watchN
                         ?? ProductAttributeParser.ExtractServingSizeGrams(scraped.Description),
                     ServingsPerPackage = scraped.ServingsPerPackage,
                     Description = scraped.Description,
+                    NutritionJson = scraped.NutritionJson,
+                    ProteinPerServingGrams = scraped.ProteinPerServingGrams,
                 };
                 db.Products.Add(product);
             }
@@ -77,6 +79,15 @@ public class ScrapeIngestionService(AppDbContext db, ProductWatchNotifier watchN
                 // markalarda (SSN/Hardline/HIQ) mevcut değer sıfırlanmasın.
                 if (scraped.ServingsPerPackage is not null)
                     product.ServingsPerPackage = scraped.ServingsPerPackage;
+
+                // Besin değeri normal taramada sadece HIQ'dan geliyor; diğer
+                // 3 marka için ayrı bir backfill servisi var (Description ile
+                // aynı desen — göndermeyen markada mevcut değer korunuyor).
+                if (scraped.NutritionJson is not null)
+                {
+                    product.NutritionJson = scraped.NutritionJson;
+                    product.ProteinPerServingGrams = scraped.ProteinPerServingGrams;
+                }
             }
 
             product.PriceHistories.Add(new PriceHistory

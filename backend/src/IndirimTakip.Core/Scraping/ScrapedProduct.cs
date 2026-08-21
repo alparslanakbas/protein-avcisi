@@ -21,4 +21,10 @@ public record ScrapedProduct(
     string? Description = null,
     // Paketten kaç servis çıktığı — markanın doğrudan beyan ettiği sayı
     // (şimdilik yalnızca ProteinOcean, variant "Servis" attribute'u).
-    int? ServingsPerPackage = null);
+    int? ServingsPerPackage = null,
+    // Gerçek besin değeri tablosu, normalize edilmiş JSON (şimdilik yalnızca
+    // HIQ — normal taramada, body_html içinde geliyor). Diğer 3 marka için
+    // ayrı bir arayüzle (IProductDetailFetcher) haftalık backfill'de doldurulur.
+    string? NutritionJson = null,
+    // Yukarıdaki tablodan ayrıştırılmış porsiyon başı protein (gram).
+    decimal? ProteinPerServingGrams = null);
