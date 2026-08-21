@@ -9,6 +9,7 @@ import { ComparisonBar } from './comparison-bar/comparison-bar';
 import { CookieConsentBanner } from './cookie-consent-banner/cookie-consent-banner';
 import { MobileTabBar } from './mobile-tab-bar/mobile-tab-bar';
 import { NewsletterSignup } from './newsletter-signup/newsletter-signup';
+import { UpdateBanner } from './update-banner/update-banner';
 
 // Route ağacının en derinindeki component referansını buluyor —
 // DealsRouteReuseStrategy'nin "aynı component mi" kontrolüyle aynı mantık.
@@ -20,7 +21,7 @@ function leafComponent(snapshot: ActivatedRouteSnapshot): unknown {
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, NewsletterSignup, CookieConsentBanner, MobileTabBar, ComparisonBar],
+  imports: [RouterOutlet, RouterLink, NewsletterSignup, CookieConsentBanner, MobileTabBar, ComparisonBar, UpdateBanner],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })

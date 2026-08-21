@@ -1,0 +1,26 @@
+@if (updates.updateAvailable() && !dismissed()) {
+  <div class="noc-shell border-b border-[var(--noc-divider)] bg-[var(--noc-accent)] px-4 py-2.5 text-white">
+    <div class="mx-auto flex max-w-[1280px] flex-col items-center justify-center gap-2 text-center sm:flex-row sm:justify-between sm:text-left">
+      <p class="text-xs font-medium sm:text-[13px]">
+        Sitede yeni bir sürüm yayınlandı. Güncel kalman için sayfayı yenilemeni öneririz.
+      </p>
+      <div class="flex shrink-0 items-center gap-2">
+        <button
+          type="button"
+          (click)="updates.reload()"
+          class="rounded-[8px] bg-white px-3 py-1 text-xs font-semibold text-[var(--noc-accent)] transition-opacity hover:opacity-90"
+        >
+          Sayfayı Yenile
+        </button>
+        <button
+          type="button"
+          (click)="dismissed.set(true)"
+          aria-label="Kapat"
+          class="rounded-[8px] px-2 py-1 text-xs text-white/80 transition-colors hover:text-white"
+        >
+          ✕
+        </button>
+      </div>
+    </div>
+  </div>
+}
