@@ -10,7 +10,7 @@ namespace IndirimTakip.Infrastructure.Scraping.ProteinOcean;
 // doğrudan çağırıyoruz — sitenin kendi frontend'i de tarayıcıda bunu kullanıyor,
 // Playwright/JS render gerektirmiyor. İstek şekli, sayfa gerçek tarayıcıda
 // açılıp "Daha fazla göster" tıklanarak ağ trafiği izlenerek keşfedildi.
-public partial class ProteinOceanScraper(HttpClient httpClient) : IBrandScraper, IProductDescriptionFetcher
+public partial class ProteinOceanScraper(HttpClient httpClient) : IBrandScraper, IProductDetailFetcher
 {
     public string BrandName => "ProteinOcean";
     public string BaseUrl => "https://proteinocean.com";
@@ -157,7 +157,7 @@ public partial class ProteinOceanScraper(HttpClient httpClient) : IBrandScraper,
     // BaseAddress'i api.myikas.com olsa da, HttpClient'a MUTLAK bir URL
     // verildiğinde BaseAddress göz ardı edilir — o yüzden aynı HttpClient
     // doğrudan proteinocean.com'a istek atabiliyor.
-    public async Task<string?> FetchDescriptionAsync(string productUrl, CancellationToken cancellationToken = default)
+    public async Task<ProductDetails> FetchDetailsAsync(string productUrl, CancellationToken cancellationToken = default)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, productUrl);
         request.Headers.UserAgent.ParseAdd(
@@ -165,10 +165,67 @@ public partial class ProteinOceanScraper(HttpClient httpClient) : IBrandScraper,
 
         using var response = await httpClient.SendAsync(request, cancellationToken);
         if (!response.IsSuccessStatusCode)
-            return null;
+            return new ProductDetails(null, null, null);
 
         var html = await response.Content.ReadAsStringAsync(cancellationToken);
-        return ExtractDescription(html);
+        var nutritionJson = ExtractNutritionJson(html);
+
+        return new ProductDetails(
+            ExtractDescription(html),
+            nutritionJson,
+            NutritionParser.ExtractProteinGrams(nutritionJson));
+    }
+
+    // Besin tablosu, açıklamayla AYNI attributes dizisinde ama ayrı bir
+    // eleman olarak duruyor: ya type == "TABLE" ya da adı "BESİN İÇERİĞİ"
+    // olan bir HTML attribute'u (marka ikisini de kullanabiliyor). Değeri
+    // gömülü bir <table> HTML'i, bu yüzden ortak tablo çıkarıcıya veriliyor.
+    private static string? ExtractNutritionJson(string html)
+    {
+        var match = NextDataRegex().Match(html);
+        if (!match.Success)
+            return null;
+
+        try
+        {
+            using var doc = JsonDocument.Parse(match.Groups[1].Value);
+            if (!doc.RootElement.TryGetProperty("props", out var props) ||
+                !props.TryGetProperty("pageProps", out var pageProps) ||
+                !pageProps.TryGetProperty("pageSpecificData", out var pageSpecificData) ||
+                !pageSpecificData.TryGetProperty("attributes", out var attributes) ||
+                attributes.ValueKind != JsonValueKind.Array)
+            {
+                return null;
+            }
+
+            var rows = new List<(string Label, string Value)>();
+            foreach (var attribute in attributes.EnumerateArray())
+            {
+                if (!attribute.TryGetProperty("productAttribute", out var productAttribute))
+                    continue;
+
+                var type = productAttribute.TryGetProperty("type", out var typeProp) ? typeProp.GetString() : null;
+                var name = productAttribute.TryGetProperty("name", out var nameProp) ? nameProp.GetString() : null;
+                var normalizedName = (name ?? string.Empty).Replace('İ', 'i').ToLowerInvariant();
+
+                var looksLikeNutrition = type == "TABLE"
+                    || normalizedName.Contains("besin")
+                    || normalizedName.Contains("içerik")
+                    || normalizedName.Contains("icerik");
+                if (!looksLikeNutrition)
+                    continue;
+
+                var value = attribute.TryGetProperty("value", out var valueProp) ? valueProp.GetString() : null;
+                if (!string.IsNullOrWhiteSpace(value))
+                    rows.AddRange(HtmlNutritionExtractor.FromHtmlFragment(value));
+            }
+
+            return NutritionParser.BuildNutritionJson(rows);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 
     // __NEXT_DATA__ içindeki props.pageProps.pageSpecificData.attributes dizisi

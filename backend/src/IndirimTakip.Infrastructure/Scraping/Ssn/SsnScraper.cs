@@ -3,7 +3,7 @@ using IndirimTakip.Core.Scraping;
 
 namespace IndirimTakip.Infrastructure.Scraping.Ssn;
 
-public class SsnScraper(HttpClient httpClient) : IBrandScraper, IProductDescriptionFetcher
+public class SsnScraper(HttpClient httpClient) : IBrandScraper, IProductDetailFetcher
 {
     // Aksesuar/ekipman değil, sadece takviye kategorileri (projenin kapsamı).
     private static readonly string[] CategorySlugs =
@@ -81,7 +81,7 @@ public class SsnScraper(HttpClient httpClient) : IBrandScraper, IProductDescript
     // sayfasında — OpenCart temasının "Ürün Açıklaması" tab'ının içeriği,
     // sayfadaki "block-content" class'lı ilk div (diğer tab'lar — Ürün
     // Yorumları/Bilgilendirme — farklı yapıda, bu class'ı kullanmıyor).
-    public async Task<string?> FetchDescriptionAsync(string productUrl, CancellationToken cancellationToken = default)
+    public async Task<ProductDetails> FetchDetailsAsync(string productUrl, CancellationToken cancellationToken = default)
     {
         var html = await httpClient.GetStringAsync(productUrl, cancellationToken);
 
@@ -90,8 +90,18 @@ public class SsnScraper(HttpClient httpClient) : IBrandScraper, IProductDescript
 
         var contentNode = doc.DocumentNode.SelectSingleNode("//div[contains(concat(' ', normalize-space(@class), ' '), ' block-content ')]");
         if (contentNode is null)
-            return null;
+            return new ProductDetails(null, null, null);
 
+        // Besin tablosu aynı açıklama bloğunun içinde bir <table> olarak
+        // geliyor — ayrı bir istek gerekmiyor.
+        var nutritionJson = NutritionParser.BuildNutritionJson(HtmlNutritionExtractor.FromTables(contentNode));
+        var description = ExtractDescription(contentNode);
+
+        return new ProductDetails(description, nutritionJson, NutritionParser.ExtractProteinGrams(nutritionJson));
+    }
+
+    private static string? ExtractDescription(HtmlNode contentNode)
+    {
         var paragraphs = contentNode.SelectNodes(".//p");
         if (paragraphs is null || paragraphs.Count == 0)
         {

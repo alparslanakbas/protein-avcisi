@@ -38,5 +38,23 @@ public class Product
     // (henüz SSN/Hardline) mevcut değeri sıfırlamaz.
     public string? Description { get; set; }
 
+    // Markanın kendi besin değeri tablosu, normalize edilmiş anahtar/değer
+    // JSON'u olarak ("Protein": "24 g" gibi). Marka tablo vermiyorsa null —
+    // tahmin üretilmiyor. Karşılaştırma sayfasında "içindekiler" tablosu
+    // olarak gösteriliyor.
+    public string? NutritionJson { get; set; }
+
+    // Yukarıdaki tablodan ayrıştırılmış porsiyon başı protein (gram).
+    // Ayrı bir kolon çünkü "servis başı protein maliyeti" hesabı ve buna
+    // göre sıralama/filtreleme JSON içinden yapılamaz. Tabloda protein
+    // satırı yoksa null.
+    public decimal? ProteinPerServingGrams { get; set; }
+
+    // Besin değeri için ürün sayfasına en son ne zaman BAKILDIĞI — tablo
+    // bulunmuş olsun olmasın set ediliyor. Çoğu üründe (aksesuar, bar,
+    // atıştırmalık) gerçekten tablo yok; bu alan olmadan backfill her hafta
+    // aynı ürünleri sonsuza kadar tekrar denerdi.
+    public DateTimeOffset? NutritionCheckedAt { get; set; }
+
     public ICollection<PriceHistory> PriceHistories { get; set; } = new List<PriceHistory>();
 }

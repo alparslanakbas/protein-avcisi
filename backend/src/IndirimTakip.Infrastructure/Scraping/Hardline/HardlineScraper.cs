@@ -3,7 +3,7 @@ using IndirimTakip.Core.Scraping;
 
 namespace IndirimTakip.Infrastructure.Scraping.Hardline;
 
-public class HardlineScraper(HttpClient httpClient) : IBrandScraper, IProductDescriptionFetcher
+public class HardlineScraper(HttpClient httpClient) : IBrandScraper, IProductDetailFetcher
 {
     public string BrandName => "Hardline";
     public string BaseUrl => "https://www.hardlinenutrition.com";
@@ -55,7 +55,7 @@ public class HardlineScraper(HttpClient httpClient) : IBrandScraper, IProductDes
     // AÇIKLAMA"/"... NASIL KULLANILIR?" gibi h2 başlıklı bölümler). Paket/
     // kombinasyon ürünlerinde ikisi de boş/yok olabiliyor — bu durumda null
     // dönüyoruz (uydurma yok).
-    public async Task<string?> FetchDescriptionAsync(string productUrl, CancellationToken cancellationToken = default)
+    public async Task<ProductDetails> FetchDetailsAsync(string productUrl, CancellationToken cancellationToken = default)
     {
         var html = await httpClient.GetStringAsync(productUrl, cancellationToken);
 
@@ -74,7 +74,43 @@ public class HardlineScraper(HttpClient httpClient) : IBrandScraper, IProductDes
         if (detailNode is not null)
             sections.AddRange(ExtractH2Sections(detailNode));
 
-        return sections.Count == 0 ? null : string.Join("\n\n", sections);
+        var description = sections.Count == 0 ? null : string.Join("\n\n", sections);
+        var nutritionJson = NutritionParser.BuildNutritionJson(ExtractNutritionRows(doc));
+
+        return new ProductDetails(description, nutritionJson, NutritionParser.ExtractProteinGrams(nutritionJson));
+    }
+
+    // Hardline besin tablosunu "satirlar" div'i içinde, satır başına bir alt
+    // eleman olarak veriyor ("Protein / Protein" + "22 g" gibi). Satırın iç
+    // yapısı ürüne göre değişebildiği için iki yol da deneniyor: önce alt
+    // elemanlar (ilk = etiket, son = değer), yoksa düz metni ayıracın son
+    // görüldüğü yerden bölmek.
+    private static IEnumerable<(string Label, string Value)> ExtractNutritionRows(HtmlDocument doc)
+    {
+        var container = doc.DocumentNode.SelectSingleNode(
+            "//div[contains(concat(' ', normalize-space(@class), ' '), ' satirlar ')]");
+        if (container is null)
+            yield break;
+
+        foreach (var row in container.SelectNodes(".//div|.//li|.//tr") ?? Enumerable.Empty<HtmlNode>())
+        {
+            var cells = row.ChildNodes
+                .Where(n => n.NodeType == HtmlNodeType.Element)
+                .Select(n => HtmlEntity.DeEntitize(n.InnerText).Trim())
+                .Where(t => t.Length > 0)
+                .ToList();
+
+            if (cells.Count >= 2)
+            {
+                yield return (cells[0], cells[^1]);
+                continue;
+            }
+
+            var text = HtmlEntity.DeEntitize(row.InnerText).Trim();
+            var separator = text.LastIndexOfAny([':', '=']);
+            if (separator > 0 && separator < text.Length - 1)
+                yield return (text[..separator], text[(separator + 1)..]);
+        }
     }
 
     // Konteynerin doğrudan çocukları arasında h2 başlık + ardından gelen p'leri

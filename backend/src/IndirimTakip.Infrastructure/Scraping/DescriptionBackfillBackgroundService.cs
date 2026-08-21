@@ -27,7 +27,7 @@ public class DescriptionBackfillBackgroundService(
         while (await timer.WaitForNextTickAsync(stoppingToken))
         {
             using var scope = scopeFactory.CreateScope();
-            var backfill = scope.ServiceProvider.GetRequiredService<DescriptionBackfillService>();
+            var backfill = scope.ServiceProvider.GetRequiredService<ProductDetailBackfillService>();
 
             try
             {

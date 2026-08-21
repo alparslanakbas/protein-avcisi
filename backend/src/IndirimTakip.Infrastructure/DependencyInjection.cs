@@ -53,7 +53,7 @@ public static class DependencyInjection
         services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<ProteinOceanScraper>());
 
         services.AddScoped<ScrapeIngestionService>();
-        services.AddScoped<DescriptionBackfillService>();
+        services.AddScoped<ProductDetailBackfillService>();
         services.AddScoped<DealsQueryService>();
         services.AddScoped<PriceHistoryQueryService>();
         services.AddScoped<CouponService>();

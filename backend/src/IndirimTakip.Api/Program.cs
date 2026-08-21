@@ -519,7 +519,7 @@ app.MapPost("/api/dev/send-digest", async (DigestService digest, HttpContext htt
 // Asıl tamamlama artık DescriptionBackfillBackgroundService ile haftada bir
 // otomatik tetikleniyor — bu endpoint elle/anlık test tetiklemesi için
 // (aynı /api/dev/* desende).
-app.MapPost("/api/dev/backfill-descriptions", async (DescriptionBackfillService backfill, CancellationToken ct) =>
+app.MapPost("/api/dev/backfill-descriptions", async (ProductDetailBackfillService backfill, CancellationToken ct) =>
 {
     var updated = await backfill.BackfillAsync(ct);
     return Results.Ok(new { updatedCount = updated });
