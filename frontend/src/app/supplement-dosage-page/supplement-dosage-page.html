@@ -11,7 +11,7 @@
       <h1 class="text-[38px] font-medium tracking-[-0.03em] sm:text-[42px]">{{ cfg.h1 }}</h1>
       <p class="mt-2 max-w-2xl text-[15px] text-[var(--noc-neutral-300)]">{{ cfg.intro }}</p>
 
-      <div class="mt-[22px] grid gap-4 lg:grid-cols-[380px_1fr]">
+      <div class="mt-[22px] grid grid-cols-1 gap-4 lg:grid-cols-[380px_1fr]">
         <!-- Doz seçimi -->
         <section class="rounded-[14px] bg-[var(--noc-card)] p-5 shadow-[var(--noc-shadow-sm)]">
           <label class="block">
@@ -218,7 +218,7 @@
             @for (pair of examplePairs(); track pair.slug) {
               <a
                 [routerLink]="['/karsilastir-urun', pair.slug]"
-                class="block rounded-[14px] bg-[var(--noc-card)] p-4 shadow-[var(--noc-shadow-sm)] transition-colors hover:shadow-[var(--noc-shadow-md)]"
+                class="block min-w-0 rounded-[14px] bg-[var(--noc-card)] p-4 shadow-[var(--noc-shadow-sm)] transition-colors hover:shadow-[var(--noc-shadow-md)]"
               >
                 @for (item of [pair.a, pair.b]; track item.productId; let isFirst = $first) {
                   @if (!isFirst) {
