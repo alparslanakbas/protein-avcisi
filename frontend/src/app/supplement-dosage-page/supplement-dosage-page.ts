@@ -3,6 +3,7 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
+import { ComparisonService } from '../core/comparison.service';
 import { Deal } from '../core/deal.model';
 import { DealsService } from '../core/deals.service';
 import { PageMetaService, upsertJsonLdScript } from '../core/page-meta.service';
@@ -17,10 +18,16 @@ interface DosageProduct {
   costPerDay: number;
 }
 
-// Kreatin gibi geniş kategorilerde 8 satır marka çeşitliliğini gizliyordu
-// (tablo en ucuz ürünlere göre sıralı; tek bir marka ilk sıraları
-// doldurabiliyor).
-const PRODUCT_LIMIT = 12;
+interface ExamplePair {
+  a: Deal;
+  b: Deal;
+  slug: string;
+}
+
+// Ana sayfa/protein hesaplayıcısındaki aynı desen — tablo satır listesi
+// olduğu için 12 makul bir sayfa boyutu.
+const PAGE_SIZE = 12;
+const SEARCH_DEBOUNCE_MS = 350;
 
 // Kreatin/beta-alanine/sitrülin/betain/EAA için TEK bileşen, konfigürasyonla
 // (supplement-dosages.ts) beş ayrı sayfa üretiyor. Her birine ayrı bileşen
@@ -51,14 +58,43 @@ export class SupplementDosagePage implements OnInit {
   protected readonly loadError = signal(false);
   private readonly products = signal<Deal[]>([]);
 
+  // Protein hesaplayıcısındaki aynı desen — kategori zaten tek bir istekte
+  // (≤100 ürün) tamamen çekildiği için arama/marka filtresi CLIENT-SIDE
+  // yapılıyor, ekstra bir ağ isteği gerekmiyor. Sayfalama da öyle (dailyGrams
+  // değişince maliyet/sıralama anında yeniden hesaplanıyor, sunucuya gitmeden).
+  protected readonly searchQuery = signal('');
+  protected readonly selectedBrands = signal<Set<string>>(new Set());
+  protected readonly currentPage = signal(1);
+  private searchDebounceHandle: ReturnType<typeof setTimeout> | null = null;
+
+  protected readonly availableBrands = computed(() =>
+    [...new Set(this.products().map((p) => p.brandName))].sort(),
+  );
+
+  protected readonly hasActiveFilters = computed(
+    () => this.searchQuery().trim().length > 0 || this.selectedBrands().size > 0,
+  );
+
+  // Örnek karşılaştırma çiftleri — aynı kategoriden, sayfa yüklenince BİR
+  // KEZ rastgele seçiliyor (loadProducts'ta), sonraki her render'da aynı
+  // kalıyor. "Alakalı" şartı zaten sağlanıyor çünkü products() bu sayfanın
+  // kategorisine scope'lu.
+  protected readonly examplePairs = signal<ExamplePair[]>([]);
+
   // Seçilen günlük doza göre: her ürün kaç gün yeter, günlük maliyeti ne.
   // Yalnızca paket gramajı BİLİNEN ürünler listeleniyor — bilinmeyen için
-  // tahmin yürütmüyoruz.
+  // tahmin yürütmüyoruz. Arama/marka filtresi burada, sıralamadan ÖNCE
+  // uygulanıyor.
   protected readonly dosageProducts = computed<DosageProduct[]>(() => {
     const grams = this.dailyGrams();
     if (!grams || grams <= 0) return [];
 
+    const query = this.searchQuery().trim().toLowerCase();
+    const brands = this.selectedBrands();
+
     return this.products()
+      .filter((deal) => !query || deal.productName.toLowerCase().includes(query))
+      .filter((deal) => brands.size === 0 || brands.has(deal.brandName))
       .map((deal) => {
         const totalGrams = this.packageGrams(deal);
         if (!totalGrams) return null;
@@ -69,9 +105,46 @@ export class SupplementDosagePage implements OnInit {
         return { deal, totalGrams, daysSupply, costPerDay: deal.currentPrice / daysSupply };
       })
       .filter((x): x is DosageProduct => x !== null)
-      .sort((a, b) => a.costPerDay - b.costPerDay)
-      .slice(0, PRODUCT_LIMIT);
+      .sort((a, b) => a.costPerDay - b.costPerDay);
   });
+
+  protected readonly totalPages = computed(() => Math.max(1, Math.ceil(this.dosageProducts().length / PAGE_SIZE)));
+
+  protected readonly pagedDosageProducts = computed(() => {
+    const all = this.dosageProducts();
+    const page = Math.min(this.currentPage(), this.totalPages());
+    const start = (page - 1) * PAGE_SIZE;
+    return all.slice(start, start + PAGE_SIZE);
+  });
+
+  protected onDailyGramsChange(value: number): void {
+    this.dailyGrams.set(value);
+    this.currentPage.set(1);
+  }
+
+  protected onSearchChange(value: string): void {
+    this.searchQuery.set(value);
+    if (this.searchDebounceHandle) clearTimeout(this.searchDebounceHandle);
+    this.searchDebounceHandle = setTimeout(() => this.currentPage.set(1), SEARCH_DEBOUNCE_MS);
+  }
+
+  protected toggleBrand(brand: string): void {
+    const current = new Set(this.selectedBrands());
+    current.has(brand) ? current.delete(brand) : current.add(brand);
+    this.selectedBrands.set(current);
+    this.currentPage.set(1);
+  }
+
+  protected clearFilters(): void {
+    this.searchQuery.set('');
+    this.selectedBrands.set(new Set());
+    this.currentPage.set(1);
+  }
+
+  protected goToPage(page: number): void {
+    if (page < 1 || page > this.totalPages() || page === this.currentPage()) return;
+    this.currentPage.set(page);
+  }
 
   protected productLink(deal: Deal): string[] {
     return ['/urun', String(deal.productId), slugify(deal.productName)];
@@ -119,6 +192,12 @@ export class SupplementDosagePage implements OnInit {
 
       this.config.set(config);
       this.dailyGrams.set(config.defaultDailyGrams);
+      // Bileşen aynı örnek üzerinden bir doz sayfasından diğerine (ör.
+      // kreatin-dozu → beta-alanine-dozu) yeniden kullanılıyor — eski
+      // sayfanın filtre/sayfa durumu yeni sayfaya sızmasın.
+      this.searchQuery.set('');
+      this.selectedBrands.set(new Set());
+      this.currentPage.set(1);
       this.setMeta(config);
       this.loadProducts(config);
     });
@@ -159,6 +238,7 @@ export class SupplementDosagePage implements OnInit {
       .subscribe({
         next: (result) => {
           this.products.set(result.items);
+          this.examplePairs.set(this.pickExamplePairs(result.items));
           this.loading.set(false);
         },
         error: () => {
@@ -166,5 +246,20 @@ export class SupplementDosagePage implements OnInit {
           this.loading.set(false);
         },
       });
+  }
+
+  // 3 rastgele, birbirinden farklı ürün çifti — hepsi aynı kategoriden
+  // olduğu için zaten "alakalı". Fisher-Yates'e gerek yok, sadece birkaç
+  // çift seçtiğimiz için basit bir rastgele karıştırma yeterli.
+  private pickExamplePairs(list: Deal[]): ExamplePair[] {
+    if (list.length < 2) return [];
+
+    const shuffled = [...list].sort(() => Math.random() - 0.5);
+    const pairs: ExamplePair[] = [];
+    for (let i = 0; i + 1 < shuffled.length && pairs.length < 3; i += 2) {
+      const [a, b] = [shuffled[i], shuffled[i + 1]];
+      pairs.push({ a, b, slug: ComparisonService.pairSlug(a.productId, b.productId) });
+    }
+    return pairs;
   }
 }
