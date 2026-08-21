@@ -67,6 +67,34 @@ export class ProductComparisonPage implements OnInit {
   );
   protected readonly biggerPackageIndex = computed(() => this.betterIndex((p) => p.servings, 'max'));
 
+  // Her iki ürünün besin değeri tablosunu (varsa) tek bir satır listesine
+  // birleştiriyor — sıra, A ürününün kendi tablosundaki sırayı korur, B'de
+  // olup A'da olmayan satırlar sona ekleniyor. Bir markanın vermediği satır
+  // (JSON'da hiç yoksa) "—" gösteriyor, uydurma yok.
+  protected readonly nutritionRows = computed(() => {
+    const list = this.products();
+    if (list.length < 2) return [];
+
+    const tableA = this.parseNutrition(list[0].deal.nutritionJson);
+    const tableB = this.parseNutrition(list[1].deal.nutritionJson);
+    if (!tableA && !tableB) return [];
+
+    const labels = [...Object.keys(tableA ?? {}), ...Object.keys(tableB ?? {})];
+    const seen = new Set<string>();
+    return labels
+      .filter((label) => (seen.has(label) ? false : (seen.add(label), true)))
+      .map((label) => ({ label, values: [tableA?.[label] ?? null, tableB?.[label] ?? null] as [string | null, string | null] }));
+  });
+
+  private parseNutrition(json: string | null): Record<string, string> | null {
+    if (!json) return null;
+    try {
+      return JSON.parse(json) as Record<string, string>;
+    } catch {
+      return null;
+    }
+  }
+
   private betterIndex(pick: (p: ComparedProduct) => number | null, mode: 'min' | 'max'): number | null {
     const list = this.products();
     if (list.length < 2) return null;

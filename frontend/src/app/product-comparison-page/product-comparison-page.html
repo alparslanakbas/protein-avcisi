@@ -204,6 +204,31 @@
         </div>
       }
 
+      <!-- Besin değerleri (varsa) -->
+      @if (nutritionRows().length > 0) {
+        <h2 class="mt-[45px] text-[20px] font-medium">Besin Değerleri</h2>
+        <p class="mt-1 text-sm text-[var(--noc-neutral-300)]">
+          Markanın kendi besin değeri tablosundan, porsiyon başına. Bir markanın vermediği satır "—" gösteriliyor,
+          tahmini bir değer değil.
+        </p>
+        <div class="mt-3 overflow-hidden rounded-[14px] bg-[var(--noc-card)] shadow-[var(--noc-shadow-sm)]">
+          <table class="w-full text-sm">
+            <tbody>
+              @for (row of nutritionRows(); track row.label; let isLast = $last) {
+                <tr [class.border-b]="!isLast" class="border-[var(--noc-divider)]">
+                  <th class="w-[110px] px-3 py-3 text-left text-xs font-normal text-[var(--noc-neutral-500)] sm:w-[160px] sm:px-4">
+                    {{ row.label }}
+                  </th>
+                  @for (value of row.values; track $index) {
+                    <td class="px-3 py-3 text-[var(--noc-neutral-300)] sm:px-4">{{ value || '—' }}</td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+
       <!-- Mağazaya git -->
       <div class="mt-[45px] grid grid-cols-2 gap-3">
         @for (item of products(); track item.deal.productId) {
