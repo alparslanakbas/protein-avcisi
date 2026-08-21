@@ -13,6 +13,11 @@ export interface Deal {
   // Markanın kendi sitesinden gelen gerçek ürün açıklaması — sadece marka
   // bunu sağlıyorsa dolu (şimdilik HIQ), yoksa null.
   description: string | null;
+  // Gerçek besin değeri tablosu, normalize edilmiş JSON string ({"Protein":
+  // "24 g", ...} gibi) — sadece marka güvenilir sağlıyorsa dolu (HIQ + SSN/
+  // Hardline'da haftalık backfill; ProteinOcean bilinçli olarak dışarıda).
+  nutritionJson: string | null;
+  proteinPerServingGrams: number | null;
   brandName: string;
   currentPrice: number;
   referencePrice: number;

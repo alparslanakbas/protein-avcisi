@@ -45,6 +45,8 @@ public partial class DealsQueryService(AppDbContext db)
             row.Product.Category, row.Product.Size, row.Product.Flavor, row.Product.ServingSizeGrams,
             row.Product.ServingsPerPackage,
             row.Product.Description,
+            row.Product.NutritionJson,
+            row.Product.ProteinPerServingGrams,
             row.BrandName, latest.Price, referencePrice,
             Math.Round((referencePrice - latest.Price) / referencePrice * 100, 1),
             latest.StoreOldPrice,

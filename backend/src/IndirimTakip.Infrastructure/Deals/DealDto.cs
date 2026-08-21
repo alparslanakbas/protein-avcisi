@@ -16,6 +16,12 @@ public record DealDto(
     // Markanın kendi sitesinden gelen gerçek ürün açıklaması — sadece marka
     // bunu sağlıyorsa dolu (şimdilik HIQ), yoksa null (uydurma yok).
     string? Description,
+    // Gerçek besin değeri tablosu, normalize edilmiş JSON — sadece marka bunu
+    // güvenilir şekilde sağlıyorsa dolu (HIQ + haftalık backfill ile SSN/
+    // Hardline; ProteinOcean bilinçli olarak dışarıda, veri yapısı güvenilir
+    // ayrıştırılamıyor). Karşılaştırma sayfasında "İçindekiler" tablosu için.
+    string? NutritionJson,
+    decimal? ProteinPerServingGrams,
     string BrandName,
     decimal CurrentPrice,
     decimal ReferencePrice,
