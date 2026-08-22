@@ -10,6 +10,7 @@ import { ArticlesService } from '../core/articles.service';
 import { canonicalOrigin } from '../core/canonical-link';
 import { buildBreadcrumbJsonLd } from '../core/breadcrumb';
 import { CATEGORY_LABELS } from '../core/category-labels';
+import { CATEGORY_ICON_PATHS, DEFAULT_CATEGORY_ICON } from '../core/nav-icons';
 import { ComparisonService } from '../core/comparison.service';
 import { Coupon } from '../core/coupon.model';
 import { CouponsService } from '../core/coupons.service';
@@ -628,6 +629,12 @@ export class DealsList implements OnInit {
         .map((word) => word.charAt(0).toLocaleUpperCase('tr') + word.slice(1))
         .join(' ')
     );
+  }
+
+  // Kategoriler dropdown'ındaki ikon — kullanıcı geri bildirimi: liste
+  // sadece düz metindi (bkz. site-header.ts'teki aynı desen).
+  protected categoryIconPath(category: string): string {
+    return CATEGORY_ICON_PATHS[category] ?? DEFAULT_CATEGORY_ICON;
   }
 
   protected setTheme(preference: ThemePreference): void {

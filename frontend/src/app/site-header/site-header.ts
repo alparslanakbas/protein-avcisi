@@ -5,6 +5,7 @@ import { BODY_CALCULATORS } from '../core/body-calculators';
 import { CATEGORY_LABELS } from '../core/category-labels';
 import { DealsService } from '../core/deals.service';
 import { FavoritesService } from '../core/favorites.service';
+import { CALCULATOR_ICON_PATHS, CATEGORY_ICON_PATHS, DEFAULT_CATEGORY_ICON, calculatorIconPath } from '../core/nav-icons';
 import { SUPPLEMENT_DOSAGES } from '../core/supplement-dosages';
 import { ThemePreference, ThemeService } from '../core/theme.service';
 
@@ -28,16 +29,21 @@ export class SiteHeader implements OnInit {
   // gerçek bir "Kategoriler" açılır menüsü eklendi (ayrı bir index
   // sayfası kurmaya gerek kalmadan, /api/filters'tan gelen gerçek
   // kategori listesiyle).
-  protected readonly categories = signal<{ slug: string; label: string }[]>([]);
+  protected readonly categories = signal<{ slug: string; label: string; iconPath: string }[]>([]);
   protected readonly categoriesOpen = signal(false);
 
   // Araç sayısı birden fazlaya çıkınca "Hesaplama" da düz link olmaktan
-  // çıkıp Kategoriler'le aynı dropdown desenine geçti.
+  // çıkıp Kategoriler'le aynı dropdown desenine geçti. İkonlar kullanıcı
+  // geri bildirimiyle eklendi: dropdown'lar sadece düz metindi.
   protected readonly calculatorsOpen = signal(false);
   protected readonly calculators = [
-    { path: '/hesaplama/protein-ihtiyaci', label: 'Günlük Protein İhtiyacı' },
-    ...BODY_CALCULATORS.map((c) => ({ path: `/hesaplama/${c.slug}`, label: c.name })),
-    ...SUPPLEMENT_DOSAGES.map((s) => ({ path: `/hesaplama/${s.slug}`, label: `${s.name} Dozu` })),
+    { path: '/hesaplama/protein-ihtiyaci', label: 'Günlük Protein İhtiyacı', iconPath: CALCULATOR_ICON_PATHS.plate },
+    ...BODY_CALCULATORS.map((c) => ({ path: `/hesaplama/${c.slug}`, label: c.name, iconPath: calculatorIconPath(c.slug) })),
+    ...SUPPLEMENT_DOSAGES.map((s) => ({
+      path: `/hesaplama/${s.slug}`,
+      label: `${s.name} Dozu`,
+      iconPath: CALCULATOR_ICON_PATHS.capsule,
+    })),
   ];
   // Servisteki paylaşılan signal'e doğrudan referans — favori eklenince/
   // çıkarılınca (bu sayfadan ya da başka bir sayfadan) otomatik güncellenir.
@@ -45,7 +51,13 @@ export class SiteHeader implements OnInit {
 
   ngOnInit(): void {
     this.dealsService.getFilterOptions().subscribe((options) => {
-      this.categories.set(options.categories.map((slug) => ({ slug, label: CATEGORY_LABELS[slug] ?? slug })));
+      this.categories.set(
+        options.categories.map((slug) => ({
+          slug,
+          label: CATEGORY_LABELS[slug] ?? slug,
+          iconPath: CATEGORY_ICON_PATHS[slug] ?? DEFAULT_CATEGORY_ICON,
+        })),
+      );
     });
     this.favoritesService.list().subscribe();
   }

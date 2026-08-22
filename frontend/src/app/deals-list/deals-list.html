@@ -52,8 +52,11 @@
                 <a
                   [routerLink]="['/kategori', category]"
                   (click)="closeCategories()"
-                  class="block rounded-[6px] px-3 py-2 text-sm hover:bg-[color-mix(in_srgb,var(--noc-text)_7%,transparent)] hover:text-[var(--noc-accent)]"
+                  class="flex items-center gap-2.5 rounded-[6px] px-3 py-2 text-sm hover:bg-[color-mix(in_srgb,var(--noc-text)_7%,transparent)] hover:text-[var(--noc-accent)]"
                 >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4 w-4 shrink-0 text-[var(--noc-neutral-500)]">
+                    <path stroke-linecap="round" stroke-linejoin="round" [attr.d]="categoryIconPath(category)" />
+                  </svg>
                   {{ categoryLabel(category) }}
                 </a>
               }

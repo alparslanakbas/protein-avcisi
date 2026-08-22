@@ -57,9 +57,7 @@
           Bu ürün, {{ categoryLabel(d.category) }} kategorisinde takip ettiğimiz {{ categoryStats()?.productCount }}
           üründen biri. Kategori ortalama fiyatı {{ categoryStats()?.averagePrice | number: '1.2-2' }} ₺ — bu ürün
           ortalamaya göre
-          <span class="font-medium text-[var(--noc-text)]">
-            %{{ pos.isCheaper ? -pos.diffPercent : pos.diffPercent }} {{ pos.isCheaper ? 'daha ucuz' : 'daha pahalı' }}
-          </span>.
+          <span class="font-medium text-[var(--noc-text)]">%{{ pos.isCheaper ? -pos.diffPercent : pos.diffPercent }} {{ pos.isCheaper ? 'daha ucuz' : 'daha pahalı' }}</span>.
         </div>
       }
 

@@ -11,13 +11,57 @@
       kişiye özel tıbbi tavsiye değildir.
     </p>
 
-    <div class="mt-[22px] grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      @for (calc of calculators; track calc.path) {
+    <h2 class="mb-3 mt-[32px] text-[11px] font-medium uppercase tracking-[0.1em] text-[var(--noc-neutral-500)]">
+      Beslenme ve Vücut Hesaplayıcıları
+    </h2>
+    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      @for (calc of bodyGroupCalculators; track calc.path) {
         <a
           [routerLink]="calc.path"
-          class="rounded-[14px] bg-[var(--noc-card)] p-5 shadow-[var(--noc-shadow-sm)] transition-shadow hover:shadow-[var(--noc-shadow-md)]"
+          class="group flex flex-col rounded-[14px] border border-transparent bg-[var(--noc-card)] p-5 shadow-[var(--noc-shadow-sm)] transition-all hover:-translate-y-0.5 hover:border-[var(--noc-accent)] hover:shadow-[var(--noc-shadow-md)]"
         >
-          <h2 class="text-[16px] font-medium">{{ calc.title }}</h2>
+          <div class="flex items-start justify-between gap-3">
+            <span
+              class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[var(--noc-accent)]"
+              style="background: color-mix(in srgb, var(--noc-accent) 16%, transparent)"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-5 w-5">
+                <path stroke-linecap="round" stroke-linejoin="round" [attr.d]="calc.iconPath" />
+              </svg>
+            </span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mt-1 h-4 w-4 shrink-0 text-[var(--noc-neutral-500)] transition-transform group-hover:translate-x-0.5 group-hover:text-[var(--noc-accent)]">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 18l6-6-6-6" />
+            </svg>
+          </div>
+          <h3 class="mt-4 text-[16px] font-medium">{{ calc.title }}</h3>
+          <p class="mt-2 text-sm leading-relaxed text-[var(--noc-neutral-500)]">{{ calc.description }}</p>
+        </a>
+      }
+    </div>
+
+    <h2 class="mb-3 mt-[32px] text-[11px] font-medium uppercase tracking-[0.1em] text-[var(--noc-neutral-500)]">
+      Takviye Dozu Hesaplayıcıları
+    </h2>
+    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      @for (calc of dosageGroupCalculators; track calc.path) {
+        <a
+          [routerLink]="calc.path"
+          class="group flex flex-col rounded-[14px] border border-transparent bg-[var(--noc-card)] p-5 shadow-[var(--noc-shadow-sm)] transition-all hover:-translate-y-0.5 hover:border-[var(--noc-accent)] hover:shadow-[var(--noc-shadow-md)]"
+        >
+          <div class="flex items-start justify-between gap-3">
+            <span
+              class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[var(--noc-accent)]"
+              style="background: color-mix(in srgb, var(--noc-accent) 16%, transparent)"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-5 w-5">
+                <path stroke-linecap="round" stroke-linejoin="round" [attr.d]="calc.iconPath" />
+              </svg>
+            </span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mt-1 h-4 w-4 shrink-0 text-[var(--noc-neutral-500)] transition-transform group-hover:translate-x-0.5 group-hover:text-[var(--noc-accent)]">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 18l6-6-6-6" />
+            </svg>
+          </div>
+          <h3 class="mt-4 text-[16px] font-medium">{{ calc.title }}</h3>
           <p class="mt-2 text-sm leading-relaxed text-[var(--noc-neutral-500)]">{{ calc.description }}</p>
         </a>
       }
