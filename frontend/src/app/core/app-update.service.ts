@@ -31,7 +31,18 @@ export class AppUpdateService {
     setInterval(() => this.swUpdate.checkForUpdate(), 60 * 60 * 1000);
   }
 
+  // Sadece location.reload() çağırmak yeterli DEĞİL — yeni service worker
+  // "waiting" durumunda kalmaya devam eder, sayfa hâlâ ESKİ (etkin) SW
+  // tarafından kontrol edilir. activateUpdate() yeni SW'ye "hemen etkinleş"
+  // sinyali gönderiyor (SKIP_WAITING), reload ondan SONRA yapılmalı —
+  // aksi halde kullanıcı "yenile"ye bassa bile hiçbir şey değişmiyordu
+  // (gerçek prod bug'ı, kullanıcı bildirdi: mağazaya git düzeltmesi deploy
+  // sonrası bile etkisiz kalıyordu).
   reload(): void {
-    if (this.isBrowser) window.location.reload();
+    if (!this.isBrowser) return;
+    this.swUpdate
+      .activateUpdate()
+      .catch(() => undefined)
+      .finally(() => window.location.reload());
   }
 }
