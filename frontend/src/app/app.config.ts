@@ -1,5 +1,5 @@
 import { ApplicationConfig, provideBrowserGlobalErrorListeners, isDevMode } from '@angular/core';
-import { RouteReuseStrategy, provideRouter } from '@angular/router';
+import { PreloadAllModules, RouteReuseStrategy, provideRouter, withPreloading } from '@angular/router';
 import { provideHttpClient, withFetch } from '@angular/common/http';
 import { provideClientHydration } from '@angular/platform-browser';
 
@@ -10,7 +10,11 @@ import { provideServiceWorker } from '@angular/service-worker';
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    provideRouter(routes),
+    // Lazy route'lar (app.routes.ts) ilk yükte indirilmiyor ama
+    // PreloadAllModules ile ana sayfa yüklenip tarayıcı boşa düşünce
+    // (idle) arka planda hepsi önceden çekiliyor — kullanıcı bir linke
+    // tıkladığında ekstra ağ gecikmesi yaşanmıyor, sadece ilk yük küçülüyor.
+    provideRouter(routes, withPreloading(PreloadAllModules)),
     provideHttpClient(withFetch()),
     provideClientHydration(),
     { provide: RouteReuseStrategy, useClass: DealsRouteReuseStrategy },
