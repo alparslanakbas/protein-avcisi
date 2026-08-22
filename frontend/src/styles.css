@@ -95,9 +95,15 @@ body {
 }
 
 :root:not(.dark) {
-  --noc-bg: #f3f5fe;
-  --noc-surface: #e4e7f5;
-  --noc-card: #fbfbff;
+  /* Kullanıcı geri bildirimi (2026-08-22): açık temada beyazlık göz
+     yoruyordu — özellikle --noc-card'ın neredeyse saf beyaz (#fbfbff)
+     olması. Nocturne öncesi aynı şikayet bg-white/stone-50 için de
+     yaşanmıştı (bkz. CLAUDE.md "Açık tema parlaklığı azaltıldı"), burada
+     tekrarı. Üç ton da bir kademe kısıldı, hiyerarşi (bg < surface'ten
+     açık, card en açık) korundu. */
+  --noc-bg: #ebedf5;
+  --noc-surface: #dde0ee;
+  --noc-card: #f4f5f9;
   --noc-text: #292b31;
   /* Aksan açık zeminde küçük punto için yeterli kontrastta değil — README:
      vurgulu metin/grafik çizgisi accent-600, link/kicker accent-700. */
