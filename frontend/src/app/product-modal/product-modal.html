@@ -14,7 +14,6 @@
         <div>
           <a
             [routerLink]="['/marka', deal().brandName.toLowerCase(), 'indirim-kodu']"
-            (click)="close()"
             class="text-[10px] font-medium uppercase tracking-[0.08em] text-[var(--noc-accent)] hover:underline"
           >
             {{ deal().brandName }}
@@ -163,7 +162,6 @@
 
       <a
         [routerLink]="reviewLink()"
-        (click)="closed.emit()"
         class="mt-2 block w-full text-center text-xs font-medium text-[var(--noc-neutral-500)] hover:text-[var(--noc-accent)]"
       >
         Bu ürünün incelemesini oku →
