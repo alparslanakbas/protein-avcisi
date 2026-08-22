@@ -1,5 +1,5 @@
 import { DOCUMENT, isPlatformBrowser } from '@angular/common';
-import { Component, OnInit, PLATFORM_ID, inject, signal } from '@angular/core';
+import { Component, OnInit, PLATFORM_ID, computed, inject, signal } from '@angular/core';
 import { ActivatedRouteSnapshot, NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
 
@@ -38,6 +38,24 @@ export class App implements OnInit {
   protected readonly currentYear = new Date().getFullYear();
   protected readonly brands = signal<string[]>([]);
   protected readonly categories = signal<{ slug: string; label: string }[]>([]);
+
+  // Marka karşılaştırma sayfalarına (/karsilastir/:pair) footer'dan bir giriş
+  // noktası — brand-page.ts'teki comparisonPairSlug ile aynı kanonik kural:
+  // alfabetik sıralı, benzersiz ikili kombinasyonlar (hiq-vs-ssn gibi, hiç
+  // ssn-vs-hiq yok — duplicate content'e düşmemek için).
+  protected readonly comparisonPairs = computed(() => {
+    const sorted = [...this.brands()].sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+    const pairs: { slug: string; label: string }[] = [];
+    for (let i = 0; i < sorted.length; i++) {
+      for (let j = i + 1; j < sorted.length; j++) {
+        pairs.push({
+          slug: `${sorted[i].toLowerCase()}-vs-${sorted[j].toLowerCase()}`,
+          label: `${sorted[i]} - ${sorted[j]}`,
+        });
+      }
+    }
+    return pairs;
+  });
 
   ngOnInit(): void {
     this.dealsService.getFilterOptions().subscribe((options) => {

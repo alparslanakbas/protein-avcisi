@@ -71,6 +71,24 @@
       </div>
     }
 
+    @if (comparisonPairs().length > 0) {
+      <div class="mt-6 border-t border-[var(--noc-divider)] pt-4">
+        <p class="mb-2 text-center text-[11px] font-medium uppercase tracking-[0.1em] text-[var(--noc-neutral-500)]">
+          Marka Karşılaştırmaları
+        </p>
+        <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+          @for (pair of comparisonPairs(); track pair.slug) {
+            <a
+              [routerLink]="['/karsilastir', pair.slug]"
+              class="inline-block py-1 text-xs text-[var(--noc-neutral-500)] hover:text-[var(--noc-accent)] hover:underline"
+            >
+              {{ pair.label }}
+            </a>
+          }
+        </div>
+      </div>
+    }
+
     <div class="mt-6 border-t border-[var(--noc-divider)] pt-4 text-center text-xs text-[var(--noc-neutral-500)]">
       <p>
         © {{ currentYear }} ProteinAvcısı. Fiyatlar ilgili markaların kendi web sitelerinden otomatik olarak
@@ -84,7 +102,8 @@
         <a routerLink="/sozluk" class="inline-block py-1 hover:text-[var(--noc-accent)] hover:underline">Sözlük</a>
         <span class="mx-1.5">·</span>
         <a routerLink="/hesaplama" class="inline-block py-1 hover:text-[var(--noc-accent)] hover:underline">Hesaplama Araçları</a>
-        <span class="mx-1.5">·</span>
+      </p>
+      <p class="mt-2 leading-loose">
         <a routerLink="/nasil-calisiyoruz" class="inline-block py-1 hover:text-[var(--noc-accent)] hover:underline">Nasıl Çalışıyoruz?</a>
         <span class="mx-1.5">·</span>
         <a routerLink="/hakkimizda" class="inline-block py-1 hover:text-[var(--noc-accent)] hover:underline">Hakkımızda</a>
