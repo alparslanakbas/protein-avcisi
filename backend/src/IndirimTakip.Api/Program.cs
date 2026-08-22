@@ -307,6 +307,17 @@ app.MapGet("/api/brand-stats", async (string? brand, DealsQueryService deals, Ca
     return Results.Ok(result);
 });
 
+// Ürün incelemesi sayfasındaki "bu ürün kategorisinde nasıl konumlanıyor"
+// bölümü için — bkz. DealsQueryService.GetCategoryPriceStatsAsync.
+app.MapGet("/api/category-price-stats", async (string? category, DealsQueryService deals, CancellationToken ct) =>
+{
+    if (string.IsNullOrWhiteSpace(category))
+        return Results.BadRequest(new { message = "category parametresi gerekli." });
+
+    var result = await deals.GetCategoryPriceStatsAsync(category, ct);
+    return result is null ? Results.NotFound() : Results.Ok(result);
+});
+
 app.MapGet("/api/products/{id:int}", async (int id, DealsQueryService deals, CancellationToken ct) =>
 {
     var result = await deals.GetProductByIdAsync(id, cancellationToken: ct);

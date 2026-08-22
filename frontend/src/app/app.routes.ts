@@ -3,6 +3,7 @@ import { Routes, UrlSegment } from '@angular/router';
 import { AboutPage } from './about-page/about-page';
 import { ArticleListPage } from './article-list-page/article-list-page';
 import { GlossaryPage } from './glossary-page/glossary-page';
+import { ProductReviewPage } from './product-review-page/product-review-page';
 import { ArticlePage } from './article-page/article-page';
 import { BrandPage } from './brand-page/brand-page';
 import { CategoryListPage } from './category-list-page/category-list-page';
@@ -38,6 +39,7 @@ export const routes: Routes = [
   { path: 'nasil-calisiyoruz', component: HowItWorksPage },
   { path: 'hakkimizda', component: AboutPage },
   { path: 'sozluk', component: GlossaryPage },
+  { path: 'urun-inceleme/:id/:slug', component: ProductReviewPage },
   { path: 'hesaplama', component: CalculatorListPage },
   // SIRA ÖNEMLİ: spesifik hesaplayıcı route'ları, en alttaki generic
   // 'hesaplama/:slug'dan ÖNCE gelmeli.

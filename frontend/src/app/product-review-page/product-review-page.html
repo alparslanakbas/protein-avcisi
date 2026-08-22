@@ -1,0 +1,152 @@
+<div class="noc-shell min-h-screen bg-[var(--noc-bg)] text-[var(--noc-text)]">
+  <app-site-header />
+
+  <main class="mx-auto max-w-[880px] px-[28px] py-[22px] pb-[80px]">
+    @if (loadError()) {
+      <div class="mx-auto max-w-md rounded-[8px] bg-[var(--noc-surface)] px-6 py-8 text-center">
+        Ürün bilgisi şu anda yüklenemedi. Lütfen birazdan tekrar dene.
+        <a routerLink="/" class="mt-2 block w-full text-sm font-medium text-[var(--noc-accent)]">Ana sayfaya dön</a>
+      </div>
+    } @else if (loading()) {
+      <div class="mx-auto max-w-md px-6 py-10 text-center text-sm text-[var(--noc-neutral-500)]">Yükleniyor…</div>
+    } @else if (deal(); as d) {
+      <nav class="mb-2 text-xs text-[var(--noc-neutral-500)]">
+        <a routerLink="/" class="hover:text-[var(--noc-accent)]">Ana Sayfa</a> /
+        @if (d.category) {
+          <a [routerLink]="['/kategori', d.category]" class="hover:text-[var(--noc-accent)]">{{ categoryLabel(d.category) }}</a> /
+        }
+        {{ d.productName }} İncelemesi
+      </nav>
+
+      <h1 class="text-[28px] font-medium leading-tight tracking-[-0.03em] sm:text-[34px]">{{ d.productName }} İncelemesi</h1>
+      <p class="mt-2 max-w-2xl text-[15px] text-[var(--noc-neutral-300)]">
+        {{ d.brandName }} markasının bu ürününü kendi verimize (fiyat geçmişi, besin değeri, kategori karşılaştırması)
+        dayanarak inceliyoruz — gerçek kullanım deneyimi iddia etmiyoruz, sadece elimizdeki nesnel veriyi şeffafça
+        sunuyoruz.
+      </p>
+
+      <!-- Özet kutusu -->
+      <div class="mt-[22px] flex flex-wrap items-start gap-4 rounded-[14px] bg-[var(--noc-card)] p-4 shadow-[var(--noc-shadow-sm)]">
+        @if (d.imageUrl) {
+          <img [src]="d.imageUrl" [alt]="d.productName" class="h-[100px] w-[100px] shrink-0 object-contain" loading="lazy" />
+        }
+        <div class="min-w-0 flex-1">
+          <div class="text-[10px] uppercase tracking-[0.08em] text-[var(--noc-accent)]">{{ d.brandName }}</div>
+          <div class="mt-2 flex flex-wrap items-baseline gap-2">
+            <span class="text-2xl font-medium">{{ d.currentPrice | number: '1.2-2' }} ₺</span>
+            @if (d.discountPercent > 0) {
+              <span class="text-sm text-[var(--noc-neutral-500)] line-through">{{ d.referencePrice | number: '1.2-2' }} ₺</span>
+              <span class="rounded-[4px] px-1.5 py-0.5 text-[11px] font-medium text-[var(--noc-accent-100)]" style="background: var(--noc-accent-800)">
+                Doğrulanmış -%{{ d.discountPercent }}
+              </span>
+            }
+          </div>
+          <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--noc-neutral-500)]">
+            <span>Paket: {{ d.size || '—' }}</span>
+            @if (pricePerServing(); as pps) {
+              <span>Servis başı: {{ pps | number: '1.2-2' }} ₺</span>
+            }
+            <span>Son kontrol: {{ lastChecked() }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Kategorisinde nasıl konumlanıyor -->
+      @if (categoryPricePosition(); as pos) {
+        <div class="mt-6 rounded-[8px] border-l-4 border-[var(--noc-accent)] bg-[var(--noc-surface)] px-5 py-4 text-sm leading-relaxed text-[var(--noc-neutral-300)]">
+          Bu ürün, {{ categoryLabel(d.category) }} kategorisinde takip ettiğimiz {{ categoryStats()?.productCount }}
+          üründen biri. Kategori ortalama fiyatı {{ categoryStats()?.averagePrice | number: '1.2-2' }} ₺ — bu ürün
+          ortalamaya göre
+          <span class="font-medium text-[var(--noc-text)]">
+            %{{ pos.isCheaper ? -pos.diffPercent : pos.diffPercent }} {{ pos.isCheaper ? 'daha ucuz' : 'daha pahalı' }}
+          </span>.
+        </div>
+      }
+
+      <!-- Fiyat geçmişi -->
+      <h2 class="mt-[45px] text-[20px] font-medium">Son {{ historyDays }} günün fiyat geçmişi</h2>
+      <div class="mt-3 rounded-[14px] bg-[var(--noc-card)] p-4 shadow-[var(--noc-shadow-sm)]">
+        @if (points().length > 1) {
+          <svg [attr.viewBox]="'0 0 ' + chart.width + ' ' + chart.height" class="h-[160px] w-full" preserveAspectRatio="none">
+            <path [attr.d]="chartArea()" fill="var(--noc-accent)" opacity="0.14" />
+            <path [attr.d]="chartPath()" fill="none" stroke="var(--noc-accent)" stroke-width="2" />
+          </svg>
+        } @else {
+          <div class="py-8 text-center text-xs text-[var(--noc-neutral-500)]">
+            Bu ürün için henüz yeterli fiyat geçmişi birikmedi.
+          </div>
+        }
+      </div>
+
+      <!-- Ürün açıklaması — veri yoksa dürüst not (kullanıcı isteğiyle: sessizce
+           boş bırakmıyoruz, neden bilgi olmadığını açıkça söylüyoruz). -->
+      <h2 class="mt-[45px] text-[20px] font-medium">{{ d.brandName }} Ne Diyor?</h2>
+      <div class="mt-3 rounded-[14px] bg-[var(--noc-card)] p-4 shadow-[var(--noc-shadow-sm)]">
+        @if (d.description) {
+          @for (paragraph of d.description.split('\n\n'); track paragraph) {
+            <p class="mb-2 text-sm leading-relaxed text-[var(--noc-neutral-300)] last:mb-0">{{ paragraph }}</p>
+          }
+        } @else {
+          <p class="text-sm text-[var(--noc-neutral-500)]">
+            {{ d.brandName }}, bu ürün için bir açıklama metni paylaşmıyor — bu yüzden burada gösteremiyoruz.
+            Uydurma bir açıklama yazmak yerine bu bilgiyi olduğu gibi eksik bırakıyoruz.
+          </p>
+        }
+      </div>
+
+      <!-- Besin değerleri — veri yoksa dürüst not -->
+      <h2 class="mt-[45px] text-[20px] font-medium">Besin Değerleri</h2>
+      <div class="mt-3 overflow-hidden rounded-[14px] bg-[var(--noc-card)] shadow-[var(--noc-shadow-sm)]">
+        @if (nutritionRows().length > 0) {
+          <table class="w-full text-sm">
+            <tbody>
+              @for (row of nutritionRows(); track row.label; let isLast = $last) {
+                <tr [class.border-b]="!isLast" class="border-[var(--noc-divider)]">
+                  <th class="px-4 py-3 text-left text-xs font-normal text-[var(--noc-neutral-500)]">{{ row.label }}</th>
+                  <td class="px-4 py-3 text-[var(--noc-neutral-300)]">{{ row.value }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        } @else {
+          <p class="p-4 text-sm text-[var(--noc-neutral-500)]">
+            {{ d.brandName }}, bu ürün için besin değeri tablosu paylaşmıyor. Tahmini bir rakam uydurmak yerine bu
+            bölümü boş bırakıyoruz — bu ürünle ilgili başka bir bilgi kaynağına ihtiyacın olabilir.
+          </p>
+        }
+      </div>
+
+      <!-- Benzer ürünler -->
+      @if (similarProducts().length > 0) {
+        <h2 class="mt-[45px] text-[20px] font-medium">Aynı Kategoriden Diğer Ürünler</h2>
+        <div class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          @for (item of similarProducts(); track item.productId) {
+            <a [routerLink]="productLink(item)" class="rounded-[8px] bg-[var(--noc-card)] p-3 text-center hover:bg-[color-mix(in_srgb,var(--noc-text)_4%,var(--noc-card))]">
+              @if (item.imageUrl) {
+                <img [src]="item.imageUrl" [alt]="item.productName" class="mx-auto h-14 w-14 object-contain" loading="lazy" />
+              }
+              <div class="mt-2 line-clamp-2 text-xs font-medium">{{ item.productName }}</div>
+              <div class="mt-1 text-xs text-[var(--noc-accent)]">{{ item.currentPrice | number: '1.2-2' }} ₺</div>
+            </a>
+          }
+        </div>
+      }
+
+      <div class="mt-[45px]">
+        <a
+          [href]="storeUrl()"
+          target="_blank"
+          rel="noopener nofollow sponsored"
+          class="block rounded-[8px] py-2.5 text-center text-sm font-medium text-[var(--noc-accent-100)]"
+          style="background: var(--noc-accent-800)"
+        >
+          {{ d.brandName }} mağazasına git
+        </a>
+      </div>
+
+      <div class="mt-6 text-center">
+        <a [routerLink]="productLink(d)" class="text-sm font-medium text-[var(--noc-accent)]">Ürün detayına ve fiyat alarmına git →</a>
+      </div>
+    }
+  </main>
+</div>

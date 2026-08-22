@@ -161,6 +161,14 @@
         </svg>
       </a>
 
+      <a
+        [routerLink]="reviewLink()"
+        (click)="closed.emit()"
+        class="mt-2 block w-full text-center text-xs font-medium text-[var(--noc-neutral-500)] hover:text-[var(--noc-accent)]"
+      >
+        Bu ürünün incelemesini oku →
+      </a>
+
       <button
         type="button"
         (click)="toggleFavorite()"

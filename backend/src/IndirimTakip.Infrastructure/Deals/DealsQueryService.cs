@@ -448,7 +448,8 @@ public partial class DealsQueryService(AppDbContext db)
             select new SitemapEntryDto(
                 p.Id,
                 p.Name,
-                p.PriceHistories.OrderByDescending(ph => ph.ScrapedAt).Select(ph => ph.ScrapedAt).FirstOrDefault()))
+                p.PriceHistories.OrderByDescending(ph => ph.ScrapedAt).Select(ph => ph.ScrapedAt).FirstOrDefault(),
+                p.Description != null || p.NutritionJson != null))
             .AsNoTracking()
             .ToListAsync(cancellationToken);
     }
@@ -547,6 +548,32 @@ public partial class DealsQueryService(AppDbContext db)
             : null;
 
         return new BrandStatsDto(totalProducts, discountCount, thirtyDayLowCount, averageDiscountPercent, lastScanAt);
+    }
+
+    // Ürün incelemesi sayfası için — aynı kategorideki aktif ürünlerin güncel
+    // fiyat ortalaması/aralığı. Sadece skaler agregasyon (AverageAsync/Min/Max),
+    // ürün satırları hiç .NET tarafına çekilmiyor (GetHomepageStatsAsync'teki
+    // aynı "CountAsync, hiç satır yok" desende).
+    public async Task<CategoryPriceStatsDto?> GetCategoryPriceStatsAsync(string category, CancellationToken cancellationToken = default)
+    {
+        var staleSince = DateTimeOffset.UtcNow.Subtract(StaleThreshold);
+
+        var latestPrices = (
+            from p in db.Products
+            join b in db.Brands on p.BrandId equals b.Id
+            where b.IsActive && p.Category == category
+            let latest = p.PriceHistories.OrderByDescending(ph => ph.ScrapedAt).FirstOrDefault()
+            where latest != null && latest.ScrapedAt >= staleSince
+            select latest.Price);
+
+        var count = await latestPrices.CountAsync(cancellationToken);
+        if (count == 0) return null;
+
+        var avg = await latestPrices.AverageAsync(cancellationToken);
+        var min = await latestPrices.MinAsync(cancellationToken);
+        var max = await latestPrices.MaxAsync(cancellationToken);
+
+        return new CategoryPriceStatsDto(count, Math.Round(avg, 2), min, max);
     }
 
     public async Task<FilterOptionsDto> GetFilterOptionsAsync(CancellationToken cancellationToken = default)

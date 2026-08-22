@@ -4,6 +4,7 @@ import { Observable, catchError, of, shareReplay, throwError } from 'rxjs';
 
 import { API_BASE_URL } from './api.config';
 import { BrandStats } from './brand-stats.model';
+import { CategoryPriceStats } from './category-price-stats.model';
 import { Deal } from './deal.model';
 import { HomepageStats } from './homepage-stats.model';
 import { FilterOptions, PagedResult } from './paged-result.model';
@@ -62,6 +63,16 @@ export class DealsService {
   getBrandStats(brand: string): Observable<BrandStats> {
     const params = new HttpParams().set('brand', brand);
     return this.http.get<BrandStats>(`${API_BASE_URL}/api/brand-stats`, { params });
+  }
+
+  // Ürün incelemesi sayfasındaki "kategorisinde nasıl konumlanıyor" bölümü
+  // için. Kategoride hiç aktif ürün yoksa backend 404 dönüyor — component
+  // bu durumda bölümü hiç göstermemeli, hata olarak ele almıyoruz.
+  getCategoryPriceStats(category: string): Observable<CategoryPriceStats | null> {
+    const params = new HttpParams().set('category', category);
+    return this.http
+      .get<CategoryPriceStats>(`${API_BASE_URL}/api/category-price-stats`, { params })
+      .pipe(catchError(() => of(null)));
   }
 
   // Protein hesaplayıcısının "servis başı en uygun ürünler" tablosu için.

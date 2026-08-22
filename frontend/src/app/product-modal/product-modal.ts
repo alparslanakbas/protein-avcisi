@@ -77,6 +77,8 @@ export class ProductModal {
     () => `${canonicalOrigin(this.document)}/urun/${this.deal().productId}/${slugify(this.deal().productName)}`,
   );
 
+  protected readonly reviewLink = computed(() => ['/urun-inceleme', this.deal().productId, slugify(this.deal().productName)]);
+
   protected readonly timeRanges = TIME_RANGES;
   protected readonly selectedRange = signal<TimeRangeOption>(TIME_RANGES[2]);
   protected readonly lastCheckedText = computed(() => formatRelativeTime(this.deal().scrapedAt));

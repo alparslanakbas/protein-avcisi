@@ -27,6 +27,7 @@ interface SitemapEntry {
   id: number;
   name: string;
   lastScrapedAt: string;
+  hasReviewContent: boolean;
 }
 
 interface FilterOptions {
@@ -74,6 +75,18 @@ app.get('/sitemap.xml', async (req, res) => {
       .map(
         (p) =>
           `<url><loc>${origin}/urun/${p.id}/${slugify(p.name)}</loc><lastmod>${new Date(p.lastScrapedAt).toISOString()}</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>`,
+      )
+      .join('');
+
+    // Ürün incelemesi sayfaları — sadece gerçek bir içerik kaynağı (marka
+    // açıklaması veya besin değeri tablosu) olan ürünler için (bkz. backend
+    // HasReviewContent). Sayfa veri olmayan ürünler için de açık ama
+    // sitemap'e "ince içerik" olarak sunulmuyor.
+    const reviewUrls = products
+      .filter((p) => p.hasReviewContent)
+      .map(
+        (p) =>
+          `<url><loc>${origin}/urun-inceleme/${p.id}/${slugify(p.name)}</loc><lastmod>${new Date(p.lastScrapedAt).toISOString()}</lastmod><changefreq>weekly</changefreq><priority>0.6</priority></url>`,
       )
       .join('');
 
@@ -158,6 +171,7 @@ app.get('/sitemap.xml', async (req, res) => {
       brandCategoryUrls +
       categoryUrls +
       productUrls +
+      reviewUrls +
       legalUrls +
       articleUrls +
       comparisonUrls +
