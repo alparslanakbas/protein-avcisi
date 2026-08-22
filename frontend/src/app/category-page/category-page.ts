@@ -3,6 +3,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
+import { buildBreadcrumbJsonLd } from '../core/breadcrumb';
 import { CATEGORY_FAQS, FaqItem } from '../core/category-faqs';
 import { CATEGORY_INTROS, CATEGORY_LABELS } from '../core/category-labels';
 import { Deal } from '../core/deal.model';
@@ -40,6 +41,7 @@ export class CategoryPage implements OnInit {
   // olmaktan çıkıyor.
   protected readonly faqItems = signal<FaqItem[]>([]);
   private faqStructuredDataEl: HTMLScriptElement | null = null;
+  private breadcrumbEl: HTMLScriptElement | null = null;
   protected readonly otherCategories = signal<{ slug: string; label: string }[]>([]);
   protected readonly loading = signal(true);
   // bkz. brand-page.ts'teki aynı isim/gerekçe: bu yalnızca /api/filters
@@ -274,7 +276,7 @@ export class CategoryPage implements OnInit {
   }
 
   private setMeta(label: string, slug: string): void {
-    const title = `${label} Fiyatları ve İndirimleri | ProteinAvcısı`;
+    const title = `${label} Fiyatları ve İndirimleri 2026 | ProteinAvcısı`;
     const description = `${label} kategorisindeki güncel fiyatlar, gerçek fiyat geçmişine dayanan doğrulanmış indirimler ve mağaza kampanyaları. ProteinAvcısı, fiyatları düzenli olarak takip ediyor.`;
 
     this.pageMeta.set({
@@ -282,6 +284,16 @@ export class CategoryPage implements OnInit {
       description,
       canonicalPath: `/kategori/${slug}`,
     });
+
+    this.breadcrumbEl = upsertJsonLdScript(
+      this.document,
+      this.breadcrumbEl,
+      buildBreadcrumbJsonLd(this.document, [
+        { name: 'Ana Sayfa', path: '/' },
+        { name: 'Kategoriler', path: '/kategoriler' },
+        { name: label, path: `/kategori/${slug}` },
+      ]),
+    );
   }
 
   protected discountBadge(deal: Deal): string {

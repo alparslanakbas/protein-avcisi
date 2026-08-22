@@ -1,15 +1,16 @@
-import { DecimalPipe } from '@angular/common';
+import { DOCUMENT, DecimalPipe } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
+import { buildBreadcrumbJsonLd } from '../core/breadcrumb';
 import { CATEGORY_LABELS } from '../core/category-labels';
 import { ComparisonService } from '../core/comparison.service';
 import { Coupon } from '../core/coupon.model';
 import { CouponsService } from '../core/coupons.service';
 import { Deal } from '../core/deal.model';
 import { DealsService } from '../core/deals.service';
-import { PageMetaService } from '../core/page-meta.service';
+import { PageMetaService, upsertJsonLdScript } from '../core/page-meta.service';
 import { PricePoint } from '../core/price-history.model';
 import { PriceHistoryService } from '../core/price-history.service';
 import { formatRelativeTime } from '../core/relative-time';
@@ -32,8 +33,10 @@ export class BrandPage implements OnInit {
   private readonly dealsService = inject(DealsService);
   private readonly couponsService = inject(CouponsService);
   private readonly pageMeta = inject(PageMetaService);
+  private readonly document = inject(DOCUMENT);
   private readonly priceHistoryService = inject(PriceHistoryService);
   protected readonly comparison = inject(ComparisonService);
+  private breadcrumbEl: HTMLScriptElement | null = null;
 
   protected readonly brandName = signal<string>('');
   protected readonly coupons = signal<Coupon[]>([]);
@@ -301,6 +304,7 @@ export class BrandPage implements OnInit {
 
   private setMeta(brand: string): void {
     const category = this.fixedCategory();
+    const brandSlug = brand.toLowerCase();
 
     // Kesişim sayfası ("Hardline Protein Tozu Fiyatları") ile marka indirim
     // kodu sayfası tamamen farklı arama niyetlerini hedefliyor — başlık,
@@ -308,10 +312,19 @@ export class BrandPage implements OnInit {
     if (category) {
       const label = this.fixedCategoryLabel();
       this.pageMeta.set({
-        title: `${brand} ${label} Fiyatları ve İndirimleri | ProteinAvcısı`,
+        title: `${brand} ${label} Fiyatları ve İndirimleri 2026 | ProteinAvcısı`,
         description: `${brand} markasının ${label.toLocaleLowerCase('tr')} ürünleri, güncel fiyatları ve gerçek fiyat geçmişine dayanan doğrulanmış indirimleri tek sayfada.`,
-        canonicalPath: `/marka/${brand.toLowerCase()}/${category}`,
+        canonicalPath: `/marka/${brandSlug}/${category}`,
       });
+      this.breadcrumbEl = upsertJsonLdScript(
+        this.document,
+        this.breadcrumbEl,
+        buildBreadcrumbJsonLd(this.document, [
+          { name: 'Ana Sayfa', path: '/' },
+          { name: brand, path: `/marka/${brandSlug}/indirim-kodu` },
+          { name: label, path: `/marka/${brandSlug}/${category}` },
+        ]),
+      );
       return;
     }
 
@@ -321,8 +334,16 @@ export class BrandPage implements OnInit {
     this.pageMeta.set({
       title,
       description,
-      canonicalPath: `/marka/${brand.toLowerCase()}/indirim-kodu`,
+      canonicalPath: `/marka/${brandSlug}/indirim-kodu`,
     });
+    this.breadcrumbEl = upsertJsonLdScript(
+      this.document,
+      this.breadcrumbEl,
+      buildBreadcrumbJsonLd(this.document, [
+        { name: 'Ana Sayfa', path: '/' },
+        { name: brand, path: `/marka/${brandSlug}/indirim-kodu` },
+      ]),
+    );
   }
 
   protected discountBadge(deal: Deal): string {

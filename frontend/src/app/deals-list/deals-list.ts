@@ -8,6 +8,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ArticleSummary } from '../core/article.model';
 import { ArticlesService } from '../core/articles.service';
 import { canonicalOrigin } from '../core/canonical-link';
+import { buildBreadcrumbJsonLd } from '../core/breadcrumb';
 import { CATEGORY_LABELS } from '../core/category-labels';
 import { ComparisonService } from '../core/comparison.service';
 import { Coupon } from '../core/coupon.model';
@@ -114,6 +115,7 @@ export class DealsList implements OnInit {
   private searchDebounceHandle: ReturnType<typeof setTimeout> | null = null;
   private structuredDataEl: HTMLScriptElement | null = null;
   private faqStructuredDataEl: HTMLScriptElement | null = null;
+  private breadcrumbEl: HTMLScriptElement | null = null;
 
   protected readonly shortcutLabel = isMac ? '⌘K' : 'Ctrl+K';
 
@@ -246,6 +248,8 @@ export class DealsList implements OnInit {
         });
         this.structuredDataEl?.remove();
         this.structuredDataEl = null;
+        this.breadcrumbEl?.remove();
+        this.breadcrumbEl = null;
         // Gerçek SEO içerik denetimi bulgusu (2026-08-17): bu FAQPage
         // JSON-LD'si eskiden ngOnInit'te KOŞULSUZ bir kez ekleniyordu —
         // /urun/:id ilk yüklenen sayfa olduğunda bile SSR HTML'ine
@@ -305,6 +309,17 @@ export class DealsList implements OnInit {
       };
 
       this.structuredDataEl = upsertJsonLdScript(this.document, this.structuredDataEl, jsonLd);
+
+      const categoryLabel = deal.category ? (CATEGORY_LABELS[deal.category] ?? deal.category) : null;
+      this.breadcrumbEl = upsertJsonLdScript(
+        this.document,
+        this.breadcrumbEl,
+        buildBreadcrumbJsonLd(this.document, [
+          { name: 'Ana Sayfa', path: '/' },
+          ...(categoryLabel && deal.category ? [{ name: categoryLabel, path: `/kategori/${deal.category}` }] : []),
+          { name: deal.productName, path: canonicalProductPath },
+        ]),
+      );
     });
   }
 

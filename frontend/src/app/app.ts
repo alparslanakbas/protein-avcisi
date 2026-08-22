@@ -1,10 +1,13 @@
-import { isPlatformBrowser } from '@angular/common';
+import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { Component, OnInit, PLATFORM_ID, inject, signal } from '@angular/core';
 import { ActivatedRouteSnapshot, NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
 
+import { canonicalOrigin } from './core/canonical-link';
 import { CATEGORY_LABELS } from './core/category-labels';
 import { DealsService } from './core/deals.service';
+import { upsertJsonLdScript } from './core/page-meta.service';
+import { FOUNDER, SITE_NAME } from './core/site-identity';
 import { ComparisonBar } from './comparison-bar/comparison-bar';
 import { CookieConsentBanner } from './cookie-consent-banner/cookie-consent-banner';
 import { MobileTabBar } from './mobile-tab-bar/mobile-tab-bar';
@@ -28,6 +31,7 @@ function leafComponent(snapshot: ActivatedRouteSnapshot): unknown {
 export class App implements OnInit {
   private readonly dealsService = inject(DealsService);
   private readonly router = inject(Router);
+  private readonly document = inject(DOCUMENT);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
   private lastLeafComponent: unknown = undefined;
 
@@ -39,6 +43,37 @@ export class App implements OnInit {
     this.dealsService.getFilterOptions().subscribe((options) => {
       this.brands.set(options.brands);
       this.categories.set(options.categories.map((slug) => ({ slug, label: CATEGORY_LABELS[slug] ?? slug })));
+    });
+
+    // Organization + Person (kurucu) schema.org işaretlemesi — site
+    // genelinde, sayfa navigasyonundan bağımsız, sadece bir kez eklenip
+    // hiç kaldırılmıyor (deals-list.ts'teki ürün Product/FAQ JSON-LD'sinin
+    // aksine, bu ikisi tüm sayfalarda sabit kalmalı). YMYL niteliğindeki
+    // bir konuda (takviye/sağlık) yazar kimliği sinyali için — rakip
+    // analizinde eksik olduğumuz, en yüksek etkili maddeydi.
+    const origin = canonicalOrigin(this.document);
+    upsertJsonLdScript(this.document, null, {
+      '@context': 'https://schema.org',
+      '@type': 'Organization',
+      name: SITE_NAME,
+      url: origin,
+      logo: `${origin}/favicon.svg`,
+      founder: {
+        '@type': 'Person',
+        name: FOUNDER.name,
+        jobTitle: FOUNDER.jobTitle,
+        url: FOUNDER.blogUrl,
+        sameAs: [FOUNDER.linkedInUrl],
+      },
+    });
+    upsertJsonLdScript(this.document, null, {
+      '@context': 'https://schema.org',
+      '@type': 'Person',
+      name: FOUNDER.name,
+      jobTitle: FOUNDER.jobTitle,
+      url: FOUNDER.blogUrl,
+      sameAs: [FOUNDER.linkedInUrl],
+      worksFor: { '@type': 'Organization', name: SITE_NAME, url: origin },
     });
 
     // Kullanıcı geri bildirimi: footer'daki bir linke (ör. Rehber, Kategoriler)
