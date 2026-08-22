@@ -682,11 +682,15 @@
   </main>
 
   @if (showScrollTop()) {
+    <!-- Mobil alt sekme çubuğu (56px, fixed bottom-0) hesaba katılmadan
+         sabit bottom-6 kullanılıyordu — "Takip Listem" ikonunun üzerine
+         biniyordu (kullanıcı bildirdi). Cookie banner/comparison bar'daki
+         aynı desen: mobilde tab bar'ın üstüne, masaüstünde eski konumda. -->
     <button
       type="button"
       title="Yukarı çık"
       (click)="scrollToTop()"
-      class="fixed bottom-6 right-6 z-40 flex h-11 w-11 items-center justify-center rounded-full border border-[var(--noc-accent)] bg-[var(--noc-card)] text-[var(--noc-accent)] shadow-[var(--noc-shadow-md)]"
+      class="fixed bottom-[80px] right-6 z-40 flex h-11 w-11 items-center justify-center rounded-full border border-[var(--noc-accent)] bg-[var(--noc-card)] text-[var(--noc-accent)] shadow-[var(--noc-shadow-md)] sm:bottom-6"
     >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-5 w-5">
         <path stroke-linecap="round" stroke-linejoin="round" d="M12 19V5M5 12l7-7 7 7" />
