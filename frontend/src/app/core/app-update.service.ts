@@ -21,14 +21,28 @@ export class AppUpdateService {
 
     this.swUpdate.versionUpdates
       .pipe(filter((event): event is VersionReadyEvent => event.type === 'VERSION_READY'))
-      .subscribe(() => this.updateAvailable.set(true));
+      .subscribe(() => {
+        this.updateAvailable.set(true);
+        // Kullanıcı banner'ı hiç görmese/tıklamasa bile — service worker'ı
+        // arka planda hemen aktive ediyoruz (sayfayı YENİLEMEDEN). Angular'ın
+        // service worker'ı bunu yapınca açık sekmeyi de devralıyor
+        // (clients.claim()), yani JS kodu güncellenmese bile SONRAKİ bir
+        // ağ isteği (ör. "Mağazaya Git" linki) artık düzeltilmiş service
+        // worker üzerinden geçiyor. Kritik bir düzeltmenin (ör. bozuk bir
+        // yönlendirme) sitede açık kalan sekmelere ulaşması için kullanıcı
+        // aksiyonuna bağımlı kalınmasın diye eklendi.
+        this.swUpdate.activateUpdate().catch(() => undefined);
+      });
 
     // registerWhenStable:30000 sadece İLK kaydı geciktiriyor, service
     // worker'ın kendisi periyodik olarak yeni versiyon aramıyor — bu
-    // yüzden sekme uzun süre açık kalırsa hiç kontrol edilmez. Saatte
-    // bir elle kontrol tetikliyoruz (ağır bir işlem değil, sadece
-    // ngsw.json'un ETag'ini kontrol ediyor).
-    setInterval(() => this.swUpdate.checkForUpdate(), 60 * 60 * 1000);
+    // yüzden sekme uzun süre açık kalırsa hiç kontrol edilmez. Sayfa
+    // yüklenir yüklenmez bir kez, sonra her 10 dakikada bir elle kontrol
+    // tetikliyoruz (ağır bir işlem değil, sadece ngsw.json'un ETag'ini
+    // kontrol ediyor) — önceden 1 saatlik aralık, acil bir düzeltmenin
+    // yayılmasını gereksiz yere geciktiriyordu.
+    this.swUpdate.checkForUpdate().catch(() => undefined);
+    setInterval(() => this.swUpdate.checkForUpdate().catch(() => undefined), 10 * 60 * 1000);
   }
 
   // Sadece location.reload() çağırmak yeterli DEĞİL — yeni service worker
