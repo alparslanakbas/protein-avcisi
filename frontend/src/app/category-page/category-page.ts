@@ -4,7 +4,9 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { buildBreadcrumbJsonLd } from '../core/breadcrumb';
+import { canonicalOrigin } from '../core/canonical-link';
 import { CATEGORY_FAQS, FaqItem } from '../core/category-faqs';
+import { CATEGORY_GUIDES, CategoryGuide } from '../core/category-guides';
 import { CATEGORY_INTROS, CATEGORY_LABELS } from '../core/category-labels';
 import { Deal } from '../core/deal.model';
 import { DealsService } from '../core/deals.service';
@@ -42,6 +44,11 @@ export class CategoryPage implements OnInit {
   protected readonly faqItems = signal<FaqItem[]>([]);
   private faqStructuredDataEl: HTMLScriptElement | null = null;
   private breadcrumbEl: HTMLScriptElement | null = null;
+  // Uzun-format bilimsel rehber içeriği — şimdilik yalnızca en yüksek
+  // hacimli 3 kategoride (bkz. core/category-guides.ts), diğerlerinde
+  // null: sayfa o durumda bu bölümü hiç göstermiyor.
+  protected readonly categoryGuide = signal<CategoryGuide | null>(null);
+  private speakableEl: HTMLScriptElement | null = null;
   protected readonly otherCategories = signal<{ slug: string; label: string }[]>([]);
   protected readonly loading = signal(true);
   // bkz. brand-page.ts'teki aynı isim/gerekçe: bu yalnızca /api/filters
@@ -135,6 +142,7 @@ export class CategoryPage implements OnInit {
         this.categorySlug.set(match);
         this.categoryLabel.set(label);
         this.categoryIntro.set(CATEGORY_INTROS[match]);
+        this.categoryGuide.set(CATEGORY_GUIDES[match] ?? null);
         this.setFaq(match);
         this.otherCategories.set(
           options.categories
@@ -294,6 +302,21 @@ export class CategoryPage implements OnInit {
         { name: label, path: `/kategori/${slug}` },
       ]),
     );
+
+    // Uzun-format rehber içeriği olan kategorilerde, AI/sesli asistan
+    // motorlarının doğrudan alıntılayabileceği bir "konuşulabilir" bölüm
+    // işaretlemesi (rakip analizinde gördüğümüz bir desen).
+    if (CATEGORY_GUIDES[slug]) {
+      this.speakableEl = upsertJsonLdScript(this.document, this.speakableEl, {
+        '@context': 'https://schema.org',
+        '@type': 'WebPage',
+        speakable: { '@type': 'SpeakableSpecification', cssSelector: ['#zero-click-answer'] },
+        url: `${canonicalOrigin(this.document)}/kategori/${slug}`,
+      });
+    } else {
+      this.speakableEl?.remove();
+      this.speakableEl = null;
+    }
   }
 
   protected discountBadge(deal: Deal): string {
