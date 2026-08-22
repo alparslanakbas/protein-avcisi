@@ -20,6 +20,7 @@ Thumbs.db
 
 # İş stratejisi / iç geliştirme günlüğü — public repo'da görünmesin
 CLAUDE.md
+AGENTS.md
 .claude/
 
 # IDE
