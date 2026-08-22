@@ -296,6 +296,17 @@ app.MapGet("/api/stats", async (DealsQueryService deals, CancellationToken ct) =
     return Results.Ok(result);
 });
 
+// Marka sayfasındaki "bu markaya genel bakış" bölümü için — kendi verimize
+// dayanan, kopyalanmamış özgün içerik (bkz. DealsQueryService.GetBrandStatsAsync).
+app.MapGet("/api/brand-stats", async (string? brand, DealsQueryService deals, CancellationToken ct) =>
+{
+    if (string.IsNullOrWhiteSpace(brand))
+        return Results.BadRequest(new { message = "brand parametresi gerekli." });
+
+    var result = await deals.GetBrandStatsAsync(brand, cancellationToken: ct);
+    return Results.Ok(result);
+});
+
 app.MapGet("/api/products/{id:int}", async (int id, DealsQueryService deals, CancellationToken ct) =>
 {
     var result = await deals.GetProductByIdAsync(id, cancellationToken: ct);

@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { Observable, catchError, of, shareReplay, throwError } from 'rxjs';
 
 import { API_BASE_URL } from './api.config';
+import { BrandStats } from './brand-stats.model';
 import { Deal } from './deal.model';
 import { HomepageStats } from './homepage-stats.model';
 import { FilterOptions, PagedResult } from './paged-result.model';
@@ -53,6 +54,14 @@ export class DealsService {
   // Ana sayfadaki "canlı tarama şeridi" için — her sayfa yüklemesinde bir kez.
   getStats(): Observable<HomepageStats> {
     return this.http.get<HomepageStats>(`${API_BASE_URL}/api/stats`);
+  }
+
+  // Marka sayfasındaki "bu markaya genel bakış" bölümü için — kendi
+  // verimize dayanan özgün istatistik, markanın kopyalanmış tarihçesi
+  // yerine (bkz. CLAUDE.md "marka sayfaları" tartışması).
+  getBrandStats(brand: string): Observable<BrandStats> {
+    const params = new HttpParams().set('brand', brand);
+    return this.http.get<BrandStats>(`${API_BASE_URL}/api/brand-stats`, { params });
   }
 
   // Protein hesaplayıcısının "servis başı en uygun ürünler" tablosu için.

@@ -1,9 +1,10 @@
 import { DOCUMENT, DecimalPipe } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { buildBreadcrumbJsonLd } from '../core/breadcrumb';
+import { BrandStats } from '../core/brand-stats.model';
 import { CATEGORY_LABELS } from '../core/category-labels';
 import { ComparisonService } from '../core/comparison.service';
 import { Coupon } from '../core/coupon.model';
@@ -52,6 +53,14 @@ export class BrandPage implements OnInit {
   // Bu markanın gerçekten ürünü olan kategorileri — sayfa altındaki iç
   // linkler için (boş kombinasyona link vermemek adına).
   protected readonly brandCategories = signal<{ slug: string; label: string; count: number }[]>([]);
+  // Bu markaya özgün, kendi verimize dayanan istatistik bölümü — sadece
+  // markanın kendi (kesişim değil) sayfasında gösteriliyor.
+  protected readonly brandStats = signal<BrandStats | null>(null);
+  protected readonly topCategoryLabel = computed(() => {
+    const cats = this.brandCategories();
+    if (cats.length === 0) return null;
+    return [...cats].sort((a, b) => b.count - a.count)[0].label;
+  });
   protected readonly loading = signal(true);
   // Adı "notFound" değil "loadError" — bu yalnızca /api/filters isteği
   // BAŞARISIZ olunca set ediliyor (network/API hatası). Geçersiz bir marka
@@ -129,6 +138,7 @@ export class BrandPage implements OnInit {
     this.hasActiveFilters.set(false);
     this.fixedCategory.set(null);
     this.fixedCategoryLabel.set('');
+    this.brandStats.set(null);
 
     this.dealsService.getFilterOptions().subscribe({
       next: (options) => {
@@ -177,6 +187,16 @@ export class BrandPage implements OnInit {
         this.couponsService.getCoupons().subscribe((coupons) => {
           this.coupons.set(coupons.filter((c) => c.brandName === match));
         });
+
+        // Kesişim sayfasında (categorySlug doluyken) gösterilmiyor — orada
+        // zaten dar bir kategori odağı var, marka geneli istatistik yanıltıcı
+        // olurdu.
+        if (!categorySlug) {
+          this.dealsService.getBrandStats(match).subscribe({
+            next: (stats) => this.brandStats.set(stats),
+            error: () => this.brandStats.set(null),
+          });
+        }
 
         this.loadItems();
       },

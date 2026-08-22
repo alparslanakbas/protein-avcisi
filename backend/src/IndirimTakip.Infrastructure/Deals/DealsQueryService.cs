@@ -497,6 +497,58 @@ public partial class DealsQueryService(AppDbContext db)
         return new HomepageStatsDto(totalProducts, discountCount, thirtyDayLowCount, lastScanAt);
     }
 
+    // Marka sayfasına özgün, kendi verimize dayanan istatistik bölümü için —
+    // GetHomepageStatsAsync'in aynı "sadece iki CountAsync, hiç satır çekme"
+    // desende marka filtreli hali. Rakip analizinde marka sayfalarının
+    // (bizde ve rakipte) en zayıf halka olduğu görüldü — marka hakkında
+    // kopyalanmış bir tarihçe/vizyon metni yerine, sadece bizde olan gerçek
+    // veriyi (indirim sıklığı/derinliği) göstermek tercih edildi.
+    public async Task<BrandStatsDto> GetBrandStatsAsync(string brandName, int referenceWindowDays = 30, CancellationToken cancellationToken = default)
+    {
+        var referenceSince = DateTimeOffset.UtcNow.AddDays(-referenceWindowDays);
+        var staleSince = DateTimeOffset.UtcNow.Subtract(StaleThreshold);
+
+        var activeProducts = (
+            from p in db.Products
+            join b in db.Brands on p.BrandId equals b.Id
+            where b.IsActive && b.Name == brandName
+                  && p.PriceHistories.OrderByDescending(ph => ph.ScrapedAt).Select(ph => ph.ScrapedAt).FirstOrDefault() >= staleSince
+            select p).AsNoTracking();
+
+        var totalProducts = await activeProducts.CountAsync(cancellationToken);
+
+        var statsQuery = activeProducts.Select(p => new
+        {
+            Latest = p.PriceHistories.OrderByDescending(ph => ph.ScrapedAt).Select(ph => (decimal?)ph.Price).FirstOrDefault(),
+            ReferencePrice = p.PriceHistories.Where(ph => ph.ScrapedAt >= referenceSince).Max(ph => (decimal?)ph.Price),
+            ThirtyDayLowPrice = p.PriceHistories.Where(ph => ph.ScrapedAt >= referenceSince).Min(ph => (decimal?)ph.Price),
+        });
+
+        var discountedQuery = statsQuery.Where(r => r.Latest != null && r.ReferencePrice != null && r.Latest < r.ReferencePrice);
+        var discountCount = await discountedQuery.CountAsync(cancellationToken);
+        var averageDiscountPercent = discountCount > 0
+            ? Math.Round(
+                await discountedQuery.AverageAsync(r => (double)((r.ReferencePrice!.Value - r.Latest!.Value) / r.ReferencePrice.Value * 100), cancellationToken),
+                1)
+            : (double?)null;
+
+        var thirtyDayLowCount = await statsQuery.CountAsync(
+            r => r.Latest != null && r.ThirtyDayLowPrice != null && r.ReferencePrice != null
+                 && r.Latest <= r.ThirtyDayLowPrice && r.ThirtyDayLowPrice < r.ReferencePrice,
+            cancellationToken);
+
+        var lastScanAt = totalProducts > 0
+            ? await (from p in db.Products
+                     join b in db.Brands on p.BrandId equals b.Id
+                     where b.Name == brandName
+                     from ph in p.PriceHistories
+                     select (DateTimeOffset?)ph.ScrapedAt)
+                .MaxAsync(cancellationToken)
+            : null;
+
+        return new BrandStatsDto(totalProducts, discountCount, thirtyDayLowCount, averageDiscountPercent, lastScanAt);
+    }
+
     public async Task<FilterOptionsDto> GetFilterOptionsAsync(CancellationToken cancellationToken = default)
     {
         var brands = await db.Brands

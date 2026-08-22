@@ -37,6 +37,37 @@
         </div>
       </div>
 
+      <!-- Bu markaya özgün, kendi verimize dayanan istatistik bölümü —
+           markanın kopyalanmış tarihçesi/vizyonu yerine (bkz. CLAUDE.md
+           "marka sayfaları" tartışması), sadece bizde olan veri. -->
+      @if (brandStats(); as bs) {
+        <div class="mt-6 flex flex-wrap items-center divide-x divide-[var(--noc-divider)] rounded-[14px] border border-[var(--noc-divider)] bg-[var(--noc-surface)] text-sm">
+          <div class="px-[18px] py-[11px]">
+            <span class="text-[15px] font-medium">{{ bs.totalProducts }}</span>
+            <span class="text-[var(--noc-neutral-500)]"> ürün takipte</span>
+          </div>
+          <div class="px-[18px] py-[11px]">
+            <span class="text-[15px] font-medium">{{ bs.discountCount }}</span>
+            <span class="text-[var(--noc-neutral-500)]"> gerçek indirim</span>
+          </div>
+          @if (bs.averageDiscountPercent; as avg) {
+            <div class="px-[18px] py-[11px]">
+              <span class="text-[15px] font-medium text-[var(--noc-accent)]">%{{ avg }}</span>
+              <span class="text-[var(--noc-neutral-500)]"> ortalama indirim derinliği</span>
+            </div>
+          }
+          <div class="px-[18px] py-[11px]">
+            <span class="text-[15px] font-medium">{{ bs.thirtyDayLowCount }}</span>
+            <span class="text-[var(--noc-neutral-500)]"> tanesi 30 günün en düşüğünde</span>
+          </div>
+          @if (topCategoryLabel(); as topCat) {
+            <div class="px-[18px] py-[11px] text-[var(--noc-neutral-500)]">
+              En güçlü kategori: <span class="font-medium text-[var(--noc-text)]">{{ topCat }}</span>
+            </div>
+          }
+        </div>
+      }
+
       @if (coupons().length > 0) {
         <div class="mt-6">
           <h2 class="mb-2 text-[11px] font-medium uppercase tracking-[0.1em] text-[var(--noc-neutral-500)]">Güncel Kupon Kodları</h2>
