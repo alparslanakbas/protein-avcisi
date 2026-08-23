@@ -114,18 +114,69 @@
         }
       </div>
 
-      <!-- Benzer ürünler -->
-      @if (similarProducts().length > 0) {
-        <h2 class="mt-[45px] text-[20px] font-medium">Aynı Kategoriden Diğer Ürünler</h2>
-        <div class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          @for (item of similarProducts(); track item.productId) {
-            <a [routerLink]="productLink(item)" class="rounded-[8px] bg-[var(--noc-card)] p-3 text-center hover:bg-[color-mix(in_srgb,var(--noc-text)_4%,var(--noc-card))]">
-              @if (item.imageUrl) {
-                <img [src]="item.imageUrl" [alt]="displayName(item.productName)" class="mx-auto h-14 w-14 object-contain" loading="lazy" />
+      <!-- Kategoride servis başına en uygun ürünler — /api/best-value-per-serving
+           zaten servis başı fiyata göre sıralı döndürüyor. -->
+      @if (bestValueInCategory().length > 0) {
+        <h2 class="mt-[45px] text-[20px] font-medium">{{ categoryLabel(d.category) }} Kategorisinde Servis Başına En Uygun</h2>
+        <div class="mt-3 overflow-x-auto rounded-[14px] bg-[var(--noc-card)] shadow-[var(--noc-shadow-sm)]">
+          <table class="w-full min-w-[480px] text-sm">
+            <thead>
+              <tr class="border-b border-[var(--noc-divider)] text-left text-xs text-[var(--noc-neutral-500)]">
+                <th class="px-4 py-2 font-normal">Ürün</th>
+                <th class="px-4 py-2 font-normal">Fiyat</th>
+                <th class="px-4 py-2 font-normal">Servis Başı</th>
+                <th class="px-4 py-2 font-normal">30g Protein Maliyeti</th>
+                <th class="px-4 py-2"></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of bestValueInCategory(); track item.productId; let isLast = $last) {
+                <tr [class.border-b]="!isLast" class="border-[var(--noc-divider)]">
+                  <td class="px-4 py-3">
+                    <a [routerLink]="productLink(item)" class="font-medium hover:text-[var(--noc-accent)]">{{ displayName(item.productName) }}</a>
+                    <div class="text-xs text-[var(--noc-neutral-500)]">{{ item.brandName }}</div>
+                  </td>
+                  <td class="px-4 py-3">{{ item.currentPrice | number: '1.2-2' }} ₺</td>
+                  <td class="px-4 py-3">
+                    @if (pricePerServingFor(item); as pps) {
+                      {{ pps | number: '1.2-2' }} ₺
+                    } @else {
+                      —
+                    }
+                  </td>
+                  <td class="px-4 py-3">
+                    @if (proteinCostPerServing30g(item); as cost) {
+                      {{ cost | number: '1.2-2' }} ₺
+                    } @else {
+                      —
+                    }
+                  </td>
+                  <td class="px-4 py-3">
+                    <a [routerLink]="comparisonLink(item)" class="whitespace-nowrap text-xs font-medium text-[var(--noc-accent)] hover:underline">Karşılaştır →</a>
+                  </td>
+                </tr>
               }
-              <div class="mt-2 line-clamp-2 text-xs font-medium">{{ displayName(item.productName) }}</div>
-              <div class="mt-1 text-xs text-[var(--noc-accent)]">{{ item.currentPrice | number: '1.2-2' }} ₺</div>
-            </a>
+            </tbody>
+          </table>
+        </div>
+      }
+
+      <!-- Fiyatça en yakın alternatifler — sadece ölçülebilir farklar,
+           öznel "daha iyi" yorumu yok. -->
+      @if (closestAlternatives().length > 0) {
+        <h2 class="mt-[45px] text-[20px] font-medium">Fiyatça En Yakın Alternatifler</h2>
+        <div class="mt-3 grid gap-3 sm:grid-cols-2">
+          @for (item of closestAlternatives(); track item.productId) {
+            <div class="flex items-center gap-3 rounded-[14px] bg-[var(--noc-card)] p-4 shadow-[var(--noc-shadow-sm)]">
+              @if (item.imageUrl) {
+                <img [src]="item.imageUrl" [alt]="displayName(item.productName)" class="h-14 w-14 shrink-0 object-contain" loading="lazy" />
+              }
+              <div class="min-w-0 flex-1">
+                <a [routerLink]="productLink(item)" class="line-clamp-2 text-sm font-medium hover:text-[var(--noc-accent)]">{{ displayName(item.productName) }}</a>
+                <div class="mt-0.5 text-xs text-[var(--noc-neutral-500)]">{{ item.currentPrice | number: '1.2-2' }} ₺ — {{ comparisonNote(item) }}</div>
+                <a [routerLink]="comparisonLink(item)" class="mt-1 inline-block text-xs font-medium text-[var(--noc-accent)] hover:underline">Karşılaştır →</a>
+              </div>
+            </div>
           }
         </div>
       }

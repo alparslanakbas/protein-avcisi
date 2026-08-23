@@ -1,5 +1,5 @@
 import { DecimalPipe } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { BrandComparison } from '../core/brand-comparison.model';
@@ -69,4 +69,35 @@ export class BrandComparisonPage implements OnInit {
     if (cat.brand1AvgPrice === cat.brand2AvgPrice) return null;
     return cat.brand1AvgPrice < cat.brand2AvgPrice ? 1 : 2;
   }
+
+  // Tablonun altına kısa bir özet paragrafı — kaç kategoride hangi markanın
+  // daha ucuz olduğu + en belirgin farkın hangi kategoride olduğu. Tamamen
+  // mevcut kategori verisinden türetiliyor, ekstra bir backend çağrısı
+  // gerekmiyor (dış bir kod incelemesinde önerildi: "sadece tablo, hiç
+  // yorum yok" eleştirisine cevap).
+  protected readonly summary = computed(() => {
+    const c = this.comparison();
+    if (!c || c.categories.length === 0) return null;
+
+    let brand1Wins = 0;
+    let brand2Wins = 0;
+    let biggestDiff: { category: string; percent: number; cheaper: 1 | 2 } | null = null;
+
+    for (const cat of c.categories) {
+      const winner = this.cheaperBrand(cat);
+      if (winner === 1) brand1Wins++;
+      else if (winner === 2) brand2Wins++;
+
+      if (winner !== null && cat.brand1AvgPrice !== null && cat.brand2AvgPrice !== null) {
+        const higher = winner === 1 ? cat.brand2AvgPrice : cat.brand1AvgPrice;
+        const lower = winner === 1 ? cat.brand1AvgPrice : cat.brand2AvgPrice;
+        const percent = Math.round(((higher - lower) / higher) * 100);
+        if (!biggestDiff || percent > biggestDiff.percent) {
+          biggestDiff = { category: cat.category, percent, cheaper: winner };
+        }
+      }
+    }
+
+    return { brand1Wins, brand2Wins, biggestDiff };
+  });
 }

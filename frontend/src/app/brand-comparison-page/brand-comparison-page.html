@@ -66,6 +66,16 @@
         <p class="mt-4 text-center text-xs text-[var(--noc-neutral-500)]">
           Fiyatlar, o kategorideki tüm ürünlerin güncel fiyatlarının ortalamasıdır — vurgulu taraf o kategoride ortalama olarak daha uygun fiyatlı.
         </p>
+
+        @if (summary(); as s) {
+          <p class="mx-auto mt-4 max-w-xl text-center text-sm leading-relaxed text-[var(--noc-neutral-300)]">
+            {{ c.categories.length }} ortak kategoride ortalama olarak daha ucuz olan taraf: {{ c.brand1 }} ({{ s.brand1Wins }} kategori), {{ c.brand2 }} ({{ s.brand2Wins }} kategori).
+            @if (s.biggestDiff; as d) {
+              En belirgin fark {{ categoryLabel(d.category) }} kategorisinde:
+              {{ d.cheaper === 1 ? c.brand1 : c.brand2 }} yaklaşık %{{ d.percent }} daha uygun.
+            }
+          </p>
+        }
       }
 
       <div class="mt-6 text-center">

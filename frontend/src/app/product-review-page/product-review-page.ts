@@ -9,6 +9,7 @@ import { buildBreadcrumbJsonLd } from '../core/breadcrumb';
 import { canonicalOrigin } from '../core/canonical-link';
 import { CATEGORY_LABELS } from '../core/category-labels';
 import { CategoryPriceStats } from '../core/category-price-stats.model';
+import { ComparisonService } from '../core/comparison.service';
 import { Deal } from '../core/deal.model';
 import { DealsService } from '../core/deals.service';
 import { displayName } from '../core/display-name';
@@ -23,6 +24,8 @@ import { SiteHeader } from '../site-header/site-header';
 const CHART = { width: 640, height: 160, paddingY: 16 };
 const HISTORY_DAYS = 30;
 const SIMILAR_PRODUCTS_LIMIT = 4;
+const BEST_VALUE_LIMIT = 3;
+const CLOSEST_ALTERNATIVES_LIMIT = 2;
 
 interface NutritionRow {
   label: string;
@@ -60,6 +63,15 @@ export class ProductReviewPage implements OnInit {
   protected readonly points = signal<PricePoint[]>([]);
   protected readonly categoryStats = signal<CategoryPriceStats | null>(null);
   protected readonly similarProducts = signal<Deal[]>([]);
+  // "Bu kategoride servis başı en uygun ürünler" mini-tablosu —
+  // /api/best-value-per-serving zaten servis başı fiyata göre sıralı
+  // döndürüyor (aynı hesaplayıcı sayfasının kullandığı uç nokta), burada
+  // mevcut ürün listeden çıkarılıp ilk 3'ü alınıyor. Amaç: "GI+ vs X" gibi
+  // karşılaştırma niyetini de bu sayfada karşılamak (dış bir kod
+  // incelemesinde önerildi, kullanıcı onayladı) — canonical'ı /urun'a
+  // birleştirip bu sayfayı Google'dan gizlemek yerine, gerçekten
+  // farklılaştırıp indekslenebilir tutmak.
+  protected readonly bestValueInCategory = signal<Deal[]>([]);
 
   protected readonly chart = CHART;
   protected readonly historyDays = HISTORY_DAYS;
@@ -119,11 +131,21 @@ export class ProductReviewPage implements OnInit {
         this.setMeta(deal);
         this.loading.set(false);
 
+        this.bestValueInCategory.set([]);
         if (deal.category) {
           this.dealsService.getCategoryPriceStats(deal.category).subscribe((stats) => this.categoryStats.set(stats));
           this.dealsService
             .getAllProducts({ categories: [deal.category], pageSize: SIMILAR_PRODUCTS_LIMIT + 1 })
             .subscribe((result) => this.similarProducts.set(result.items.filter((d) => d.productId !== id).slice(0, SIMILAR_PRODUCTS_LIMIT)));
+          this.dealsService
+            .getBestValuePerServing({ category: deal.category, pageSize: BEST_VALUE_LIMIT + 1 })
+            .subscribe({
+              next: (result) => this.bestValueInCategory.set(result.items.filter((d) => d.productId !== id).slice(0, BEST_VALUE_LIMIT)),
+              // Kategoride porsiyon verisi olan hiçbir ürün yoksa endpoint
+              // 404 dönebilir — bölüm bu durumda sessizce görünmüyor,
+              // ana içerik (fiyat/besin değeri) etkilenmiyor.
+              error: () => this.bestValueInCategory.set([]),
+            });
         }
       },
       error: (err: HttpErrorResponse) => {
@@ -159,6 +181,69 @@ export class ProductReviewPage implements OnInit {
     const value = Number(match[1].replace(',', '.'));
     if (!value) return null;
     return match[2].toLowerCase() === 'kg' ? value * 1000 : value;
+  }
+
+  // Servis başı fiyat — herhangi bir Deal için (mevcut ürün ile
+  // sınırlı olan yukarıdaki servings/pricePerServing computed'lerinin
+  // aksine, mini-karşılaştırma tablosundaki HER satır için ayrı ayrı
+  // hesaplanması gerekiyor).
+  protected pricePerServingFor(deal: Deal): number | null {
+    const servings = this.calculateServings(deal);
+    return servings && servings >= 1 ? deal.currentPrice / servings : null;
+  }
+
+  // "30 g protein maliyeti" — markanın beyan ettiği porsiyon başı protein
+  // miktarı (ProteinPerServingGrams) varsa gerçek bir orantıyla hesaplanıyor,
+  // yoksa null (tahmin YOK, satır "—" gösterir).
+  protected proteinCostPerServing30g(deal: Deal): number | null {
+    const perServing = this.pricePerServingFor(deal);
+    if (!perServing || !deal.proteinPerServingGrams || deal.proteinPerServingGrams <= 0) return null;
+    return (perServing / deal.proteinPerServingGrams) * 30;
+  }
+
+  // Aynı kategorideki ürünler arasından mevcut ürüne FİYATÇA en yakın
+  // olanları — "en yakın alternatif" burada bilinçli olarak sadece
+  // sayısal bir yakınlık, öznel bir "benzer ürün" yorumu değil.
+  protected readonly closestAlternatives = computed(() => {
+    const current = this.deal();
+    if (!current) return [];
+    return [...this.similarProducts()]
+      .sort((a, b) => Math.abs(a.currentPrice - current.currentPrice) - Math.abs(b.currentPrice - current.currentPrice))
+      .slice(0, CLOSEST_ALTERNATIVES_LIMIT);
+  });
+
+  // Bir alternatifin mevcut ürüne göre farkını dürüst bir cümleyle özetliyor
+  // — sadece ölçülebilir farklar (fiyat, indirim durumu, servis başı fiyat),
+  // hiçbir öznel "daha iyi/kötü" yorumu yok.
+  protected comparisonNote(alt: Deal): string {
+    const current = this.deal();
+    if (!current) return '';
+
+    const parts: string[] = [];
+    const priceDiff = alt.currentPrice - current.currentPrice;
+    if (Math.abs(priceDiff) >= 1) {
+      parts.push(priceDiff < 0 ? `${Math.abs(priceDiff).toFixed(0)} ₺ daha ucuz` : `${priceDiff.toFixed(0)} ₺ daha pahalı`);
+    }
+
+    const altPerServing = this.pricePerServingFor(alt);
+    const currentPerServing = this.pricePerServingFor(current);
+    if (altPerServing && currentPerServing && Math.abs(altPerServing - currentPerServing) >= 0.5) {
+      parts.push(altPerServing < currentPerServing ? 'servis başına daha uygun' : 'servis başına daha pahalı');
+    }
+
+    if (alt.discountPercent > 0 && current.discountPercent === 0) {
+      parts.push(`şu an %${alt.discountPercent} indirimde`);
+    }
+
+    return parts.length > 0 ? parts.join(', ') : 'fiyatı neredeyse aynı';
+  }
+
+  // /karsilastir-urun/{id}-vs-{id} — mevcut ürün karşılaştırma sayfasıyla
+  // aynı kanonik (alfabetik) URL kuralı.
+  protected comparisonLink(other: Deal): string[] {
+    const current = this.deal();
+    if (!current) return ['/'];
+    return ['/karsilastir-urun', ComparisonService.pairSlug(current.productId, other.productId)];
   }
 
   protected chartPath(): string {
