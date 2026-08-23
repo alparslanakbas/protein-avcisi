@@ -27,6 +27,12 @@ internal sealed class ShopifyProduct
 
     [JsonPropertyName("variants")]
     public List<ShopifyVariant> Variants { get; set; } = [];
+
+    // HIQ mağazasının kendi ürün etiketleme sistemi (ör. "type:wearable",
+    // "type:equipment", "type:protein") — takviye olmayan ürünleri (tişört,
+    // hoodie, shaker) ayıklamak için kullanılıyor, bkz. ScrapeAsync.
+    [JsonPropertyName("tags")]
+    public List<string> Tags { get; set; } = [];
 }
 
 internal sealed class ShopifyImage

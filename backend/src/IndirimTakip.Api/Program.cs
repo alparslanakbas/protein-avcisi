@@ -356,6 +356,21 @@ app.MapPut("/api/dev/coupons/{id:int}", async (int id, UpdateCouponRequest reque
     return result is null ? Results.NotFound() : Results.Ok(result);
 }).RequireAdminKey(adminApiKey);
 
+// Kapsam dışı kalan ürünleri (ör. bir markanın feed'inde karışan giyim/
+// ekipman ürünleri — bkz. HiqScraper'daki "type:wearable"/"type:equipment"
+// filtresi) elle temizlemek için. Cascade delete sayesinde ilişkili
+// PriceHistory/ProductFavorite/ProductWatch kayıtları da otomatik siliniyor.
+// Scraper filtresi zaten kurulduğu için silinen ürün bir sonraki taramada
+// geri gelmiyor.
+app.MapDelete("/api/dev/products/{id:int}", async (int id, AppDbContext db, CancellationToken ct) =>
+{
+    var product = await db.Products.FindAsync([id], ct);
+    if (product is null) return Results.NotFound();
+    db.Products.Remove(product);
+    await db.SaveChangesAsync(ct);
+    return Results.Ok();
+}).RequireAdminKey(adminApiKey);
+
 // "Rehber" bilgi yazıları — SEO/güven amaçlı, kupon deseniyle aynı: elle
 // yazılıp elle eklenen içerik, otomatik üretilmiyor.
 app.MapGet("/api/articles", async (ArticleService articles, CancellationToken ct) =>

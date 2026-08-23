@@ -36,6 +36,17 @@ public partial class HiqScraper(HttpClient httpClient) : IBrandScraper
                 if (variant is null)
                     continue;
 
+                // Site kapsamı spor takviyesi/protein — HIQ mağazasında tişört/
+                // hoodie ("type:wearable") ve shaker/ekipman ("type:equipment")
+                // gibi takviye dışı ürünler de satılıyor, kendi etiketleriyle
+                // (tags) açıkça işaretli. Bunlar kullanıcı isteğiyle scrape
+                // edilmiyor — bir shaker'ın "indirimi" bu sitenin amacına
+                // (gerçek takviye fiyat takibi) hizmet etmiyor. "Başlangıç
+                // Paketi + Shaker" gibi gerçek takviye paketleri "type:amino"/
+                // "type:protein"/"type:preworkout" taşıdığı için etkilenmiyor.
+                if (product.Tags.Any(t => t is "type:wearable" or "type:equipment"))
+                    continue;
+
                 var nutritionJson = ExtractNutritionJson(product.BodyHtml);
 
                 result.Add(new ScrapedProduct(
