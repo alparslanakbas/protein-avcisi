@@ -11,6 +11,7 @@ import { CATEGORY_LABELS } from '../core/category-labels';
 import { CategoryPriceStats } from '../core/category-price-stats.model';
 import { Deal } from '../core/deal.model';
 import { DealsService } from '../core/deals.service';
+import { displayName } from '../core/display-name';
 import { PageMetaService, upsertJsonLdScript } from '../core/page-meta.service';
 import { PricePoint } from '../core/price-history.model';
 import { PriceHistoryService } from '../core/price-history.service';
@@ -43,6 +44,7 @@ interface NutritionRow {
   templateUrl: './product-review-page.html',
 })
 export class ProductReviewPage implements OnInit {
+  protected readonly displayName = displayName;
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly dealsService = inject(DealsService);
@@ -195,8 +197,9 @@ export class ProductReviewPage implements OnInit {
 
   private setMeta(deal: Deal): void {
     const slug = slugify(deal.productName);
-    const title = `${deal.productName} İncelemesi 2026 | ${deal.brandName}`;
-    const description = `${deal.productName} için gerçek fiyat geçmişi, besin değeri ve kategori karşılaştırmasına dayanan bağımsız inceleme. ProteinAvcısı, marka beyanına değil kendi verisine güvenir.`;
+    const name = displayName(deal.productName);
+    const title = `${name} İncelemesi 2026 | ${deal.brandName}`;
+    const description = `${name} için gerçek fiyat geçmişi, besin değeri ve kategori karşılaştırmasına dayanan bağımsız inceleme. ProteinAvcısı, marka beyanına değil kendi verisine güvenir.`;
 
     this.pageMeta.set({
       title,
@@ -210,7 +213,7 @@ export class ProductReviewPage implements OnInit {
     const jsonLd = {
       '@context': 'https://schema.org',
       '@type': 'Product',
-      name: deal.productName,
+      name,
       sku: String(deal.productId),
       ...(deal.imageUrl ? { image: deal.imageUrl } : {}),
       brand: { '@type': 'Brand', name: deal.brandName },
@@ -238,7 +241,7 @@ export class ProductReviewPage implements OnInit {
       buildBreadcrumbJsonLd(this.document, [
         { name: 'Ana Sayfa', path: '/' },
         ...(deal.category ? [{ name: this.categoryLabel(deal.category), path: `/kategori/${deal.category}` }] : []),
-        { name: `${deal.productName} İncelemesi`, path: `/urun-inceleme/${deal.productId}/${slug}` },
+        { name: `${name} İncelemesi`, path: `/urun-inceleme/${deal.productId}/${slug}` },
       ]),
     );
   }

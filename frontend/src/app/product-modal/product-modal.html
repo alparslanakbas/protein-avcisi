@@ -9,7 +9,7 @@
     <div class="flex items-start justify-between gap-4 border-b border-[var(--noc-divider)] p-5">
       <div class="flex items-center gap-3">
         @if (deal().imageUrl) {
-          <img [src]="deal().imageUrl" [alt]="deal().productName" class="h-14 w-14 rounded-[8px] bg-[color-mix(in_srgb,var(--noc-text)_5%,transparent)] object-contain p-1" />
+          <img [src]="deal().imageUrl" [alt]="displayName(deal().productName)" class="h-14 w-14 rounded-[8px] bg-[color-mix(in_srgb,var(--noc-text)_5%,transparent)] object-contain p-1" />
         }
         <div>
           <a
@@ -18,12 +18,12 @@
           >
             {{ deal().brandName }}
           </a>
-          <h2 class="text-[15px] font-medium leading-tight">{{ deal().productName }}</h2>
+          <h2 class="text-[15px] font-medium leading-tight">{{ displayName(deal().productName) }}</h2>
           <p class="mt-0.5 text-[11px] text-[var(--noc-neutral-500)]">Fiyat kontrolü: {{ lastCheckedText() }}</p>
         </div>
       </div>
       <div class="flex shrink-0 items-center gap-1">
-        <app-share-button [title]="deal().productName" [shareUrl]="shareUrl()" />
+        <app-share-button [title]="displayName(deal().productName)" [shareUrl]="shareUrl()" />
         <button
           type="button"
           title="Kapat"

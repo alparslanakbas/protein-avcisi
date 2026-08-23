@@ -16,6 +16,7 @@ import { Coupon } from '../core/coupon.model';
 import { CouponsService } from '../core/coupons.service';
 import { Deal } from '../core/deal.model';
 import { DealsQuery, DealsService } from '../core/deals.service';
+import { displayName } from '../core/display-name';
 import { FavoritesService } from '../core/favorites.service';
 import { HomepageStats } from '../core/homepage-stats.model';
 import { PageMetaService, upsertJsonLdScript } from '../core/page-meta.service';
@@ -91,6 +92,10 @@ const FAQ_ITEMS: { question: string; answer: string }[] = [
   templateUrl: './deals-list.html',
 })
 export class DealsList implements OnInit {
+  // Template'te (H1, kart başlıkları) ALL CAPS ürün isimlerini okunabilir
+  // Title Case'e çeviren saf fonksiyon — component metodu değil, doğrudan
+  // referans veriliyor.
+  protected readonly displayName = displayName;
   private readonly dealsService = inject(DealsService);
   private readonly couponsService = inject(CouponsService);
   private readonly articlesService = inject(ArticlesService);
@@ -272,20 +277,34 @@ export class DealsList implements OnInit {
       this.faqStructuredDataEl?.remove();
       this.faqStructuredDataEl = null;
 
+      const displayedName = displayName(deal.productName);
       const priceText = `${deal.currentPrice.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TL`;
-      const title = `${deal.productName} Fiyatı: ${priceText} | ${deal.brandName} — ProteinAvcısı`;
+      // Title'da fiyat BİLİNÇLİ OLARAK yok — fiyat günde 4 kez değişebiliyor,
+      // her değişimde title'ı yeniden yazmak Google'ın snippet'i sürekli
+      // güncellemesine/tarama bütçesini boşa harcamasına yol açıyordu (dış
+      // kod incelemesinde bulunan bir madde, kodla doğrulandı). Fiyat artık
+      // sadece description'da ve JSON-LD Offer.price'ta kalıyor. Paylaşım
+      // kartında (WhatsApp/Twitter) fiyatlı görünmesi hâlâ isteniyor —
+      // ogTitle ayrı tutuluyor.
+      const title = `${displayedName} Fiyatı ve Fiyat Geçmişi | ${deal.brandName}`;
+      const ogTitle = `${displayedName} Fiyatı: ${priceText} | ${deal.brandName} — ProteinAvcısı`;
       const description =
         deal.discountPercent > 0
-          ? `${deal.productName} şu an ${priceText} — ${deal.brandName} markasında %${deal.discountPercent} doğrulanmış indirim. Fiyat geçmişini ProteinAvcısı'nda takip et.`
-          : `${deal.productName} güncel fiyatı ${priceText}. ${deal.brandName} markasının fiyat geçmişini ProteinAvcısı'nda takip et.`;
+          ? `${displayedName} şu an ${priceText} — ${deal.brandName} markasında %${deal.discountPercent} doğrulanmış indirim. Fiyat geçmişini ProteinAvcısı'nda takip et.`
+          : `${displayedName} güncel fiyatı ${priceText}. ${deal.brandName} markasının fiyat geçmişini ProteinAvcısı'nda takip et.`;
 
       const canonicalProductPath = `/urun/${deal.productId}/${slugify(deal.productName)}`;
 
       this.pageMeta.set({
         title,
+        ogTitle,
         description,
         canonicalPath: canonicalProductPath,
-        ogType: 'product',
+        // og:type 'product' resmi bir Open Graph tipi değil (Facebook'un
+        // katalog entegrasyonu için ayrı ek alanlar gerektiriyor, biz onları
+        // hiç doldurmuyoruz) — asıl ürün sinyali zaten aşağıdaki JSON-LD
+        // Product/Offer'da veriliyor.
+        ogType: 'website',
         ogImage: deal.imageUrl ?? undefined,
       });
 
@@ -297,7 +316,7 @@ export class DealsList implements OnInit {
       const jsonLd = {
         '@context': 'https://schema.org',
         '@type': 'Product',
-        name: deal.productName,
+        name: displayedName,
         sku: String(deal.productId),
         ...(deal.imageUrl ? { image: deal.imageUrl } : {}),
         brand: { '@type': 'Brand', name: deal.brandName },

@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 
 import { canonicalOrigin } from '../core/canonical-link';
 import { Deal } from '../core/deal.model';
+import { displayName } from '../core/display-name';
 import { FavoritesService } from '../core/favorites.service';
 import { friendlyErrorMessage } from '../core/friendly-error-message';
 import { PricePoint } from '../core/price-history.model';
@@ -63,6 +64,7 @@ const tooltipDateTimeFormatter = new Intl.DateTimeFormat('tr-TR', {
   templateUrl: './product-modal.html',
 })
 export class ProductModal {
+  protected readonly displayName = displayName;
   private readonly priceHistoryService = inject(PriceHistoryService);
   private readonly watchService = inject(WatchService);
   private readonly productFeedbackService = inject(ProductFeedbackService);

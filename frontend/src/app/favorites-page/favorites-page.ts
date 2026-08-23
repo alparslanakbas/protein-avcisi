@@ -6,6 +6,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { Deal } from '../core/deal.model';
 import { DealsService } from '../core/deals.service';
+import { displayName } from '../core/display-name';
 import { FavoritesService } from '../core/favorites.service';
 import { friendlyErrorMessage } from '../core/friendly-error-message';
 import { PageMetaService } from '../core/page-meta.service';
@@ -20,6 +21,7 @@ import { SiteHeader } from '../site-header/site-header';
   templateUrl: './favorites-page.html',
 })
 export class FavoritesPage implements OnInit {
+  protected readonly displayName = displayName;
   private readonly favoritesService = inject(FavoritesService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);

@@ -119,12 +119,12 @@
                     <div class="flex items-center gap-3">
                       <div class="h-12 w-12 shrink-0 rounded-[6px] bg-[color-mix(in_srgb,var(--noc-text)_5%,transparent)]">
                         @if (deal.imageUrl) {
-                          <img [src]="deal.imageUrl" [alt]="deal.productName" loading="lazy" class="h-full w-full object-contain p-1" />
+                          <img [src]="deal.imageUrl" [alt]="displayName(deal.productName)" loading="lazy" class="h-full w-full object-contain p-1" />
                         }
                       </div>
                       <div>
                         <div class="text-[10px] uppercase tracking-[0.08em] text-[var(--noc-accent)]">{{ deal.brandName }}</div>
-                        <div [title]="deal.productName" class="line-clamp-2 max-w-xs text-[13px] font-medium">{{ deal.productName }}</div>
+                        <div [title]="displayName(deal.productName)" class="line-clamp-2 max-w-xs text-[13px] font-medium">{{ displayName(deal.productName) }}</div>
                       </div>
                     </div>
                   </td>

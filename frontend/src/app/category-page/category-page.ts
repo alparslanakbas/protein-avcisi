@@ -10,6 +10,7 @@ import { CATEGORY_GUIDES, CategoryGuide } from '../core/category-guides';
 import { CATEGORY_INTROS, CATEGORY_LABELS } from '../core/category-labels';
 import { Deal } from '../core/deal.model';
 import { DealsService } from '../core/deals.service';
+import { displayName } from '../core/display-name';
 import { PageMetaService, upsertJsonLdScript } from '../core/page-meta.service';
 import { PriceHistoryService } from '../core/price-history.service';
 import { formatRelativeTime } from '../core/relative-time';
@@ -26,6 +27,7 @@ const SEARCH_DEBOUNCE_MS = 350;
   templateUrl: './category-page.html',
 })
 export class CategoryPage implements OnInit {
+  protected readonly displayName = displayName;
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly dealsService = inject(DealsService);

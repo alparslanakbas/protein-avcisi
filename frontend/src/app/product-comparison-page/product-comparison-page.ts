@@ -9,6 +9,7 @@ import { CATEGORY_LABELS } from '../core/category-labels';
 import { ComparisonService } from '../core/comparison.service';
 import { Deal } from '../core/deal.model';
 import { DealsService } from '../core/deals.service';
+import { displayName } from '../core/display-name';
 import { PageMetaService } from '../core/page-meta.service';
 import { PricePoint } from '../core/price-history.model';
 import { PriceHistoryService } from '../core/price-history.service';
@@ -42,6 +43,7 @@ interface ComparedProduct {
   templateUrl: './product-comparison-page.html',
 })
 export class ProductComparisonPage implements OnInit {
+  protected readonly displayName = displayName;
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly dealsService = inject(DealsService);
@@ -238,10 +240,12 @@ export class ProductComparisonPage implements OnInit {
   }
 
   private setMeta(a: Deal, b: Deal): void {
-    const title = `${a.productName} vs ${b.productName} — Fiyat Karşılaştırması | ProteinAvcısı`;
+    const nameA = displayName(a.productName);
+    const nameB = displayName(b.productName);
+    const title = `${nameA} vs ${nameB} — Fiyat Karşılaştırması | ProteinAvcısı`;
     this.pageMeta.set({
       title,
-      description: `${a.brandName} ${a.productName} ile ${b.brandName} ${b.productName} ürünlerini güncel fiyat, servis başı maliyet ve 30 günlük fiyat geçmişiyle yan yana karşılaştır.`,
+      description: `${a.brandName} ${nameA} ile ${b.brandName} ${nameB} ürünlerini güncel fiyat, servis başı maliyet ve 30 günlük fiyat geçmişiyle yan yana karşılaştır.`,
       canonicalPath: `/karsilastir-urun/${ComparisonService.pairSlug(a.productId, b.productId)}`,
     });
   }

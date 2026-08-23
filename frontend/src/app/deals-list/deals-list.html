@@ -185,20 +185,32 @@
                title/description/canonical/JSON-LD zaten ürüne özeldi ama
                H1 hiç değişmiyordu (SEO denetiminde bulundu). Modal tüm
                ekranı kapladığı için (fixed inset-0) bu H1'in metni
-               değişse de kullanıcı görsel olarak fark etmiyor. -->
-          <h1 class="text-[38px] font-medium leading-[1.02] tracking-[-0.03em] sm:text-[56px]">
+               değişse de kullanıcı görsel olarak fark etmiyor.
+
+               2026-08-23: H1 ile slogan ayrı elementlere ayrıldı — eskiden
+               ikisi AYNI H1 içinde iki <span> idi, Google bunları tek bir
+               cümle gibi ("Spor Takviyesi Fiyat Takibi Etiket oyununa
+               gelme.") birleştirip anlamsız bir metin üretiyordu (dış kod
+               incelemesinde bulundu). Artık H1 tek başına anlamlı bir cümle,
+               slogan ayrı bir <p>. Görsel hiyerarşi (H1 küçük "kicker",
+               slogan/ürün adı büyük punto) [class] binding'iyle korunuyor —
+               ürün seçiliyken H1 büyük punto alıyor (ürün adı ana görsel
+               odak), ana sayfada küçük kalıyor (slogan p'si büyük punto
+               taşıyor). -->
+          <h1
+            [class]="selectedDeal()
+              ? 'text-[38px] font-medium leading-[1.02] tracking-[-0.03em] sm:text-[56px]'
+              : 'text-[15px] font-normal tracking-normal text-[var(--noc-neutral-300)] sm:text-[17px]'"
+          >
             @if (selectedDeal(); as deal) {
-              {{ deal.productName }} Fiyatı ve Fiyat Geçmişi
+              {{ displayName(deal.productName) }} Fiyatı ve Fiyat Geçmişi
             } @else {
-              <!-- Ana sayfada H1, sayfanın konusunu taşıyan kısa bir satırla
-                   açılıyor; marka sloganı hemen altında AYNI H1 içinde ama
-                   büyük puntoyla duruyor — görsel hiyerarşi korunurken
-                   Google'ın gördüğü tek H1 artık anahtar kelime de içeriyor
-                   (eskiden sadece "Etiket oyununa gelme." vardı). -->
-              <span class="block text-[15px] font-normal tracking-normal text-[var(--noc-neutral-300)] sm:text-[17px]">Spor Takviyesi Fiyat Takibi</span>
-              <span class="mt-1 block">Etiket oyununa gelme.</span>
+              Spor Takviyesi Fiyat Takibi
             }
           </h1>
+          @if (!selectedDeal()) {
+            <p class="mt-1 text-[38px] font-medium leading-[1.02] tracking-[-0.03em] sm:text-[56px]">Etiket oyununa gelme.</p>
+          }
           @if (showFullHomepageContent()) {
             <p class="mt-3 text-[16px] leading-[1.6] text-[var(--noc-neutral-300)]">
               {{ availableBrands().length }} markanın her ürününü günde 4 kez tarıyoruz. Bir fiyat gerçekten düştüyse burada
@@ -469,8 +481,8 @@
               <span class="text-[var(--noc-neutral-500)] normal-case tracking-normal">{{ lastCheckedText(deal) }}</span>
             </div>
 
-            <h3 [title]="deal.productName" class="line-clamp-2 min-h-[38px] text-[15px] font-medium leading-[1.28]">
-              {{ deal.productName }}
+            <h3 [title]="displayName(deal.productName)" class="line-clamp-2 min-h-[38px] text-[15px] font-medium leading-[1.28]">
+              {{ displayName(deal.productName) }}
             </h3>
 
             @if (deal.size || deal.flavor) {

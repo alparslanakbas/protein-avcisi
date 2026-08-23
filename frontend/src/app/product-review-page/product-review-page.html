@@ -15,10 +15,10 @@
         @if (d.category) {
           <a [routerLink]="['/kategori', d.category]" class="hover:text-[var(--noc-accent)]">{{ categoryLabel(d.category) }}</a> /
         }
-        {{ d.productName }} İncelemesi
+        {{ displayName(d.productName) }} İncelemesi
       </nav>
 
-      <h1 class="text-[28px] font-medium leading-tight tracking-[-0.03em] sm:text-[34px]">{{ d.productName }} İncelemesi</h1>
+      <h1 class="text-[28px] font-medium leading-tight tracking-[-0.03em] sm:text-[34px]">{{ displayName(d.productName) }} İncelemesi</h1>
       <p class="mt-2 max-w-2xl text-[15px] text-[var(--noc-neutral-300)]">
         {{ d.brandName }} markasının bu ürününü kendi verimize (fiyat geçmişi, besin değeri, kategori karşılaştırması)
         dayanarak inceliyoruz — gerçek kullanım deneyimi iddia etmiyoruz, sadece elimizdeki nesnel veriyi şeffafça
@@ -28,7 +28,7 @@
       <!-- Özet kutusu -->
       <div class="mt-[22px] flex flex-wrap items-start gap-4 rounded-[14px] bg-[var(--noc-card)] p-4 shadow-[var(--noc-shadow-sm)]">
         @if (d.imageUrl) {
-          <img [src]="d.imageUrl" [alt]="d.productName" class="h-[100px] w-[100px] shrink-0 object-contain" loading="lazy" />
+          <img [src]="d.imageUrl" [alt]="displayName(d.productName)" class="h-[100px] w-[100px] shrink-0 object-contain" loading="lazy" />
         }
         <div class="min-w-0 flex-1">
           <div class="text-[10px] uppercase tracking-[0.08em] text-[var(--noc-accent)]">{{ d.brandName }}</div>
@@ -121,9 +121,9 @@
           @for (item of similarProducts(); track item.productId) {
             <a [routerLink]="productLink(item)" class="rounded-[8px] bg-[var(--noc-card)] p-3 text-center hover:bg-[color-mix(in_srgb,var(--noc-text)_4%,var(--noc-card))]">
               @if (item.imageUrl) {
-                <img [src]="item.imageUrl" [alt]="item.productName" class="mx-auto h-14 w-14 object-contain" loading="lazy" />
+                <img [src]="item.imageUrl" [alt]="displayName(item.productName)" class="mx-auto h-14 w-14 object-contain" loading="lazy" />
               }
-              <div class="mt-2 line-clamp-2 text-xs font-medium">{{ item.productName }}</div>
+              <div class="mt-2 line-clamp-2 text-xs font-medium">{{ displayName(item.productName) }}</div>
               <div class="mt-1 text-xs text-[var(--noc-accent)]">{{ item.currentPrice | number: '1.2-2' }} ₺</div>
             </a>
           }

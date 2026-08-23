@@ -11,6 +11,7 @@ import { Coupon } from '../core/coupon.model';
 import { CouponsService } from '../core/coupons.service';
 import { Deal } from '../core/deal.model';
 import { DealsService } from '../core/deals.service';
+import { displayName } from '../core/display-name';
 import { PageMetaService, upsertJsonLdScript } from '../core/page-meta.service';
 import { PricePoint } from '../core/price-history.model';
 import { PriceHistoryService } from '../core/price-history.service';
@@ -29,6 +30,7 @@ const SEARCH_DEBOUNCE_MS = 350;
   templateUrl: './brand-page.html',
 })
 export class BrandPage implements OnInit {
+  protected readonly displayName = displayName;
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly dealsService = inject(DealsService);
