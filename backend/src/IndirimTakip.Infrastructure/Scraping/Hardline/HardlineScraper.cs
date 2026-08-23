@@ -35,11 +35,19 @@ public class HardlineScraper(HttpClient httpClient) : IBrandScraper, IProductDet
             if (string.IsNullOrEmpty(url))
                 continue;
 
+            var name = HtmlEntity.DeEntitize(linkNode.InnerText).Trim();
+            // Hardline'ın kataloğunda takviye dışı ürünler de var (tişört,
+            // anahtarlık, huni, pillbox gibi) — Hardline hiçbir kategori/etiket
+            // bilgisi vermediği için (HIQ'daki gibi tag bazlı bir filtre burada
+            // mümkün değil) isim bazlı ortak filtre kullanılıyor.
+            if (NonSupplementProductFilter.IsAccessoryOrApparel(name))
+                continue;
+
             var imgNode = node.SelectSingleNode(".//img");
             var (price, storeOldPrice) = TurkishPriceParser.ParsePricePair(priceContainer.InnerText);
 
             products.Add(new ScrapedProduct(
-                Name: HtmlEntity.DeEntitize(linkNode.InnerText).Trim(),
+                Name: name,
                 Url: url,
                 ImageUrl: imgNode?.Attributes["src"]?.Value,
                 Category: null,

@@ -1,0 +1,22 @@
+using System.Text.RegularExpressions;
+
+namespace IndirimTakip.Infrastructure.Scraping;
+
+// Hardline ve ProteinOcean, HIQ'nun aksine ürün isimlerine yapılandırılmış
+// bir kategori/etiket bilgisi eklemiyor (Hardline hiç kategori vermiyor,
+// ProteinOcean'ın GraphQL API'si tek "Tüm Ürünler" kategorisi kullanıyor) —
+// bu yüzden HIQ'daki gibi Shopify "tags" ("type:wearable"/"type:equipment")
+// bazlı bir filtre burada mümkün değil, isim bazlı bir kelime listesi
+// kullanılıyor. Site kapsamı spor takviyesi/protein — tişört, hoodie,
+// şapka, anahtarlık, huni, pillbox gibi giyim/aksesuar ürünleri kullanıcı
+// isteğiyle kapsam dışı bırakıldı (bkz. CLAUDE.md, 2026-08-23).
+public static partial class NonSupplementProductFilter
+{
+    public static bool IsAccessoryOrApparel(string productName) =>
+        AccessoryKeywordRegex().IsMatch(productName);
+
+    [GeneratedRegex(
+        @"\b(t-?shirt|sweatshirt|hoodie|şapka|beyzbol|pillbox|bileklik|havlu|buff|atlet|anahtarlık|maskot|huni|shaker|şort)\b",
+        RegexOptions.IgnoreCase)]
+    private static partial Regex AccessoryKeywordRegex();
+}

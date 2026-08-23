@@ -75,6 +75,14 @@ public partial class ProteinOceanScraper(HttpClient httpClient) : IBrandScraper,
                 if (variant is null || variant.Prices.Count == 0)
                     continue;
 
+                // ProteinOcean'ın "Tüm Ürünler" kategorisi (tek sorguyla tüm
+                // katalog) takviye dışı ürünleri de içeriyor (ör. "Batman
+                // Shaker") — GraphQL sorgusu kategori/etiket bilgisi vermediği
+                // için (HIQ'daki tag bazlı filtre burada mümkün değil) isim
+                // bazlı ortak filtre kullanılıyor.
+                if (NonSupplementProductFilter.IsAccessoryOrApparel(product.Name))
+                    continue;
+
                 var image = variant.Images.Find(i => i.IsMain) ?? variant.Images.FirstOrDefault();
 
                 products.Add(new ScrapedProduct(
