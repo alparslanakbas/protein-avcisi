@@ -14,6 +14,18 @@ import { SUPPLEMENT_DOSAGES } from './app/core/supplement-dosages';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
+// Site iki host'ta erişilebilir: gerçek domain (canonical) + eski
+// protein-avcisi.onrender.com (geriye dönük uyumluluk için bilinçli açık
+// bırakıldı, bkz. CLAUDE.md). Sitemap/robots ÖNCEDEN isteğin Host header'ından
+// origin üretiyordu (`${req.protocol}://${req.get('host')}`) — bu da
+// onrender.com'a gidildiğinde o adresin KENDİ sitemap'ini/robots'unu ilan
+// etmesine yol açıyordu; Google bu ikinci kopyayı da tarayıp indeksleyebilir
+// (canonical <link> tek başına bunu engellemez, botlar sitemap/robots'a
+// canonical'dan bağımsız davranabilir). Artık sitemap/robots HER ZAMAN bu
+// sabit origin'i kullanıyor, host'tan bağımsız.
+const CANONICAL_HOST = 'www.proteinavcisi.com.tr';
+const CANONICAL_ORIGIN = `https://${CANONICAL_HOST}`;
+
 const app = express();
 // Render'ın edge proxy'si (Cloudflare) TLS'i kendi ucunda sonlandırıp
 // bize düz HTTP olarak iletiyor — bu ayar olmadan req.protocol her zaman
@@ -21,6 +33,20 @@ const app = express();
 // sitemap.xml/robots.txt'teki tüm URL'lerin yanlışlıkla http:// ile
 // üretilmesine yol açıyordu.
 app.set('trust proxy', true);
+
+// Canonical host DIŞINDA bir adresten (onrender.com, www'siz kök domain vb.)
+// gelen HER isteğe noindex header'ı ekliyoruz — sadece sitemap/robots değil,
+// Angular SSR'ın ürettiği TÜM sayfalar (ürün/kategori/marka/rehber) dahil.
+// Kök domain zaten Render'da www'ye 301 atıyor (bu middleware'e hiç
+// düşmüyor), asıl hedef onrender.com'un kendi kopyasının indekslenmesini
+// engellemek.
+app.use((req, res, next) => {
+  if ((req.hostname || '').toLowerCase() !== CANONICAL_HOST) {
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+  }
+  next();
+});
+
 const angularApp = new AngularNodeAppEngine();
 
 interface SitemapEntry {
@@ -57,7 +83,7 @@ const MIN_PRODUCTS_FOR_SITEMAP = 3;
 // sunucu zaten kendi public origin'ini (req üzerinden) bildiği için domain'i
 // ayrıca config'lemeye gerek yok.
 app.get('/sitemap.xml', async (req, res) => {
-  const origin = `${req.protocol}://${req.get('host')}`;
+  const origin = CANONICAL_ORIGIN;
 
   try {
     const [productsResponse, filtersResponse, articlesResponse, pairsResponse] = await Promise.all([
@@ -202,12 +228,19 @@ app.get('/go/:id', async (req, res) => {
 });
 
 app.get('/robots.txt', (req, res) => {
-  const origin = `${req.protocol}://${req.get('host')}`;
   res.set('Content-Type', 'text/plain');
+  // Canonical host DIŞINDaki bir adresten (onrender.com vb.) istek gelirse
+  // tamamen farklı bir robots.txt — o kopyayı hiç taramaya açmıyoruz, kendi
+  // sitemap'ini de ilan etmiyor. Yukarıdaki X-Robots-Tag header'ıyla birlikte
+  // iki bağımsız sinyal (biri crawl'ı, biri index'i engelliyor).
+  if ((req.hostname || '').toLowerCase() !== CANONICAL_HOST) {
+    res.send('User-agent: *\nDisallow: /\n');
+    return;
+  }
   // /go/{id} affiliate yönlendirmeleri gerçek bir içerik sayfası değil,
   // dış siteye 302 atan bir uç nokta — botlar bunu ayrı bir "sayfa" gibi
   // taramaya/indekslemeye çalışmasın diye kapatıyoruz.
-  res.send(`User-agent: *\nAllow: /\nDisallow: /go/\n\nSitemap: ${origin}/sitemap.xml\n`);
+  res.send(`User-agent: *\nAllow: /\nDisallow: /go/\n\nSitemap: ${CANONICAL_ORIGIN}/sitemap.xml\n`);
 });
 
 /**
