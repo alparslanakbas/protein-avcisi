@@ -16,10 +16,17 @@ import { UpdateBanner } from './update-banner/update-banner';
 
 // Route ağacının en derinindeki component referansını buluyor —
 // DealsRouteReuseStrategy'nin "aynı component mi" kontrolüyle aynı mantık.
+// ÖNEMLİ: current.routeConfig.component DEĞİL, current.component kullanılıyor —
+// routeConfig.component sadece statik (eager) import edilen route'larda dolu;
+// route bazlı lazy loading eklendikten sonra (loadComponent kullanan route'lar)
+// bu alan hep undefined kalıyordu, iki farklı lazy sayfa arasında geçişte
+// "undefined !== undefined" hep false çıkıp scroll hiç sıfırlanmıyordu (gerçek
+// bir prod bug'ı, kullanıcı bildirdi). current.component ise Router'ın
+// resolve ettiği gerçek sınıfı taşıyor, hem eager hem lazy route'larda dolu.
 function leafComponent(snapshot: ActivatedRouteSnapshot): unknown {
   let current = snapshot;
   while (current.firstChild) current = current.firstChild;
-  return current.routeConfig?.component ?? null;
+  return current.component ?? null;
 }
 
 @Component({
