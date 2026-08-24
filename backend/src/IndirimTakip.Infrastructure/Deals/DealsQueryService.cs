@@ -108,6 +108,10 @@ public partial class DealsQueryService(AppDbContext db)
             query = query.Where(r => r.Product.Category != null && categories.Contains(r.Product.Category));
 
         var searchTerm = search?.Trim().ToLower();
+        // Aşağıdaki relevance sıralamasında da kullanılıyor (bkz. orderedQuery
+        // öncesi) — bu yüzden if bloğunun dışında, boş dizi varsayılanıyla
+        // tanımlı.
+        string[] searchTerms = [];
         if (!string.IsNullOrEmpty(searchTerm))
         {
             // "kreatin" yazınca "creatine" geçen ürünleri de bulsun diye
@@ -117,7 +121,7 @@ public partial class DealsQueryService(AppDbContext db)
             var synonyms = expandSearchSynonyms
                 ? ProductAttributeParser.GetSearchSynonyms(searchTerm)
                 : [];
-            var searchTerms = synonyms.Count > 0
+            searchTerms = synonyms.Count > 0
                 ? synonyms.Append(searchTerm).Distinct().ToArray()
                 : [searchTerm];
 
@@ -148,18 +152,24 @@ public partial class DealsQueryService(AppDbContext db)
         var totalCount = await query.CountAsync(cancellationToken);
 
         // Arama varsa önce ALAKA DÜZEYİNE göre sırala — "magnezyum" araması
-        // hem "ProteinOcean Magnezyum" (sadece o bileşen) hem "Kreatin +
-        // Magnezyum + Çinko Kompleks" (yan bileşen) gibi ürünleri buluyordu;
-        // ikincisi indirim oranına göre üstte çıkıp kullanıcının asıl aradığı
-        // ürünü gizleyebiliyordu (kullanıcı geri bildirimi). Öncelik: tam
-        // eşleşme > isimle başlama > isimde geçme (bu üçü de kendi içinde en
-        // KISA/spesifik isme göre); arama yoksa bu sıralama no-op.
-        var relevanceOrdered = !string.IsNullOrEmpty(searchTerm)
+        // hem "MAGNESIUM COMPLEX" (sadece o bileşen) hem "vitamin" kategorisinin
+        // TÜM eşanlamlı grubu (omega, biotin, coenzyme...) üzerinden bulunan
+        // alakasız ürünleri getiriyordu; ikincisi indirim oranına göre üstte
+        // çıkıp kullanıcının asıl aradığı ürünü gizleyebiliyordu (kullanıcı geri
+        // bildirimi). ÖNEMLİ: karşılaştırma sadece kullanıcının yazdığı ham
+        // `searchTerm` ile DEĞİL, tüm `searchTerms` (eşanlamlılar dahil) ile
+        // yapılıyor — aksi halde "magnezyum" (Türkçe) hiçbir zaman "magnesium"
+        // (İngilizce ürün adı) ile tam/başlangıç eşleşmesi kuramazdı, ürün her
+        // zaman en düşük öncelik grubunda kalırdı (bu, ilk turda yaşanan bir
+        // bug'dı — deploy sonrası production'da bulundu). Öncelik: tam eşleşme
+        // > isimle başlama > isimde geçme (bu üçü de kendi içinde en KISA/
+        // spesifik isme göre); arama yoksa bu sıralama no-op.
+        var relevanceOrdered = searchTerms.Length > 0
             ? query
                 .OrderBy(r =>
-                    r.Product.Name.ToLower() == searchTerm ? 0
-                    : r.Product.Name.ToLower().StartsWith(searchTerm) ? 1
-                    : r.Product.Name.ToLower().Contains(searchTerm) ? 2
+                    searchTerms.Any(t => r.Product.Name.ToLower() == t) ? 0
+                    : searchTerms.Any(t => r.Product.Name.ToLower().StartsWith(t)) ? 1
+                    : searchTerms.Any(t => r.Product.Name.ToLower().Contains(t)) ? 2
                     : 3)
                 .ThenBy(r => r.Product.Name.Length)
             : query.OrderBy(r => 0);
