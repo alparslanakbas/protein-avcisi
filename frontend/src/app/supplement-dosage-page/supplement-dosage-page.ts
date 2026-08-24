@@ -6,6 +6,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ComparisonService } from '../core/comparison.service';
 import { Deal } from '../core/deal.model';
 import { DealsService } from '../core/deals.service';
+import { displayName } from '../core/display-name';
 import { PageMetaService, upsertJsonLdScript } from '../core/page-meta.service';
 import { slugify } from '../core/slugify';
 import { SupplementDosage, findSupplementDosage } from '../core/supplement-dosages';
@@ -45,6 +46,7 @@ const SEARCH_DEBOUNCE_MS = 350;
   templateUrl: './supplement-dosage-page.html',
 })
 export class SupplementDosagePage implements OnInit {
+  protected readonly displayName = displayName;
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly dealsService = inject(DealsService);

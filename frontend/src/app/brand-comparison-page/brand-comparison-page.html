@@ -69,10 +69,17 @@
 
         @if (summary(); as s) {
           <p class="mx-auto mt-4 max-w-xl text-center text-sm leading-relaxed text-[var(--noc-neutral-300)]">
-            {{ c.categories.length }} ortak kategoride ortalama olarak daha ucuz olan taraf: {{ c.brand1 }} ({{ s.brand1Wins }} kategori), {{ c.brand2 }} ({{ s.brand2Wins }} kategori).
-            @if (s.biggestDiff; as d) {
-              En belirgin fark {{ categoryLabel(d.category) }} kategorisinde:
-              {{ d.cheaper === 1 ? c.brand1 : c.brand2 }} yaklaşık %{{ d.percent }} daha uygun.
+            @if (s.leader; as leader) {
+              {{ c.categories.length }} ortak kategoriden {{ s.leaderWins }} tanesinde {{ leader === 1 ? c.brand1 : c.brand2 }} ortalama daha ucuz
+              @if (s.ties > 0) {
+                ({{ s.ties }} kategori eşit)
+              }.
+              @if (s.biggestDiff; as d) {
+                En belirgin fark {{ categoryLabel(d.category) }} kategorisinde:
+                {{ d.cheaper === 1 ? c.brand1 : c.brand2 }} yaklaşık %{{ d.percent }} daha uygun.
+              }
+            } @else {
+              Ortak kategorilerde ortalama fiyatlar neredeyse eşit.
             }
           </p>
         }

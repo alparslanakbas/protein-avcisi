@@ -75,6 +75,14 @@ export class BrandComparisonPage implements OnInit {
   // mevcut kategori verisinden türetiliyor, ekstra bir backend çağrısı
   // gerekmiyor (dış bir kod incelemesinde önerildi: "sadece tablo, hiç
   // yorum yok" eleştirisine cevap).
+  //
+  // "leader" alanı BİLİNÇLİ OLARAK eklendi (2026-08-24, ikinci bir dış
+  // inceleme bulgusu) — önceki şablon "daha ucuz olan taraf: {brand1}
+  // (Nwins), {brand2} (Mwins)" şeklinde brand1'i (alfabetik ilk marka,
+  // kazanan olsun olmasın) HER ZAMAN önce yazıyordu; "Hardline (0
+  // kategori), HIQ (7 kategori)" gibi Hardline'ı "daha ucuz taraf" diye
+  // açıp sonra 0 diyen kafa karıştırıcı cümleler üretiyordu. Artık kazanan
+  // marka ayrıca hesaplanıp şablonda TEK ve NET bir özne olarak kullanılıyor.
   protected readonly summary = computed(() => {
     const c = this.comparison();
     if (!c || c.categories.length === 0) return null;
@@ -98,6 +106,11 @@ export class BrandComparisonPage implements OnInit {
       }
     }
 
-    return { brand1Wins, brand2Wins, biggestDiff };
+    const ties = c.categories.length - brand1Wins - brand2Wins;
+    const leader: 1 | 2 | null = brand1Wins === brand2Wins ? null : brand1Wins > brand2Wins ? 1 : 2;
+    const leaderWins = leader === 1 ? brand1Wins : leader === 2 ? brand2Wins : 0;
+    const otherWins = leader === 1 ? brand2Wins : leader === 2 ? brand1Wins : 0;
+
+    return { brand1Wins, brand2Wins, ties, leader, leaderWins, otherWins, biggestDiff };
   });
 }

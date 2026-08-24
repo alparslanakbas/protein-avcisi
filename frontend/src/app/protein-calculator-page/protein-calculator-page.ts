@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 
 import { Deal } from '../core/deal.model';
 import { DealsService } from '../core/deals.service';
+import { displayName } from '../core/display-name';
 import { PageMetaService, upsertJsonLdScript } from '../core/page-meta.service';
 import { DOCUMENT } from '@angular/common';
 import { slugify } from '../core/slugify';
@@ -69,6 +70,7 @@ const SEARCH_DEBOUNCE_MS = 350;
   templateUrl: './protein-calculator-page.html',
 })
 export class ProteinCalculatorPage implements OnInit {
+  protected readonly displayName = displayName;
   private readonly dealsService = inject(DealsService);
   private readonly pageMeta = inject(PageMetaService);
   private readonly document = inject(DOCUMENT);

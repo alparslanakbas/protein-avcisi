@@ -159,6 +159,53 @@
             </tbody>
           </table>
         </div>
+      } @else if (priceFallbackProducts().length > 0) {
+        <!-- Kategoride porsiyon verisi olan ürün yoksa (servis başı tablo
+             boş) en azından FİYATA dayalı bir karşılaştırma göster —
+             uydurma servis başı/protein maliyeti YOK, veri yoksa "—". -->
+        <h2 class="mt-[45px] text-[20px] font-medium">{{ categoryLabel(d.category) }} Kategorisinden Fiyat Karşılaştırması</h2>
+        <div class="mt-3 overflow-x-auto rounded-[14px] bg-[var(--noc-card)] shadow-[var(--noc-shadow-sm)]">
+          <table class="w-full min-w-[420px] text-sm">
+            <thead>
+              <tr class="border-b border-[var(--noc-divider)] text-left text-xs text-[var(--noc-neutral-500)]">
+                <th class="px-4 py-2 font-normal">Ürün</th>
+                <th class="px-4 py-2 font-normal">Marka</th>
+                <th class="px-4 py-2 font-normal">Fiyat</th>
+                <th class="px-4 py-2 font-normal">Servis Başı</th>
+                <th class="px-4 py-2"></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of priceFallbackProducts(); track item.productId; let isLast = $last) {
+                <tr [class.border-b]="!isLast" class="border-[var(--noc-divider)]">
+                  <td class="px-4 py-3">
+                    <a [routerLink]="productLink(item)" class="font-medium hover:text-[var(--noc-accent)]">{{ displayName(item.productName) }}</a>
+                  </td>
+                  <td class="px-4 py-3 text-[var(--noc-neutral-500)]">{{ item.brandName }}</td>
+                  <td class="px-4 py-3">{{ item.currentPrice | number: '1.2-2' }} ₺</td>
+                  <td class="px-4 py-3">
+                    @if (pricePerServingFor(item); as pps) {
+                      {{ pps | number: '1.2-2' }} ₺
+                    } @else {
+                      —
+                    }
+                  </td>
+                  <td class="px-4 py-3">
+                    <a [routerLink]="comparisonLink(item)" class="whitespace-nowrap text-xs font-medium text-[var(--noc-accent)] hover:underline">Karşılaştır →</a>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <!-- Ne servis başı ne fiyat bazlı bir karşılaştırma çıkarılabiliyor
+             (kategori yok ya da kategoride başka ürün yok) — sessizce
+             bölümü kaldırmak yerine dürüst bir not (kullanıcı isteğiyle
+             kurulan "eksik veri sessizce gizlenmez" ilkesiyle tutarlı). -->
+        <p class="mt-[45px] text-sm text-[var(--noc-neutral-500)]">
+          Bu kategoride karşılaştıracak başka ürün takip etmiyoruz.
+        </p>
       }
 
       <!-- Fiyatça en yakın alternatifler — sadece ölçülebilir farklar,

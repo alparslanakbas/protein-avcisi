@@ -201,6 +201,17 @@ export class ProductReviewPage implements OnInit {
     return (perServing / deal.proteinPerServingGrams) * 30;
   }
 
+  // "Servis başına en uygun" tablosu (bestValueInCategory) boş kaldığında
+  // — ürünün kategorisi yok, ya da kategoride porsiyon verisi olan hiçbir
+  // ürün yok — TAMAMEN İNCE bir sayfa yerine en azından FİYATA dayalı bir
+  // karşılaştırma göstermek için (dış bir kod incelemesinde bulundu: "GI+
+  // incelemesinde hiçbir karşılaştırma bloğu çıkmıyor"). similarProducts
+  // zaten kategori bazlı çekiliyor (servis verisi şartı olmadan), burada
+  // sadece fiyata göre sıralanıp ilk 3'ü alınıyor.
+  protected readonly priceFallbackProducts = computed(() =>
+    [...this.similarProducts()].sort((a, b) => a.currentPrice - b.currentPrice).slice(0, 3),
+  );
+
   // Aynı kategorideki ürünler arasından mevcut ürüne FİYATÇA en yakın
   // olanları — "en yakın alternatif" burada bilinçli olarak sadece
   // sayısal bir yakınlık, öznel bir "benzer ürün" yorumu değil.
@@ -283,7 +294,10 @@ export class ProductReviewPage implements OnInit {
   private setMeta(deal: Deal): void {
     const slug = slugify(deal.productName);
     const name = displayName(deal.productName);
-    const title = `${name} İncelemesi 2026 | ${deal.brandName}`;
+    // Yıl bilinçli olarak title'da YOK — hardcode "2026" 2027'de tüm
+    // title'ları bakımsız/yalan gösterirdi, Google zaten tarihi lastmod/
+    // yayın tarihinden okuyor (dış kod incelemesinde bulundu).
+    const title = `${name} İncelemesi | ${deal.brandName}`;
     const description = `${name} için gerçek fiyat geçmişi, besin değeri ve kategori karşılaştırmasına dayanan bağımsız inceleme. ProteinAvcısı, marka beyanına değil kendi verisine güvenir.`;
 
     this.pageMeta.set({

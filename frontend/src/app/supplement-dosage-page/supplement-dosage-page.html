@@ -142,7 +142,7 @@
                     <tr class="border-b border-[var(--noc-divider)] last:border-b-0">
                       <td class="px-4 py-3">
                         <a [routerLink]="productLink(item.deal)" class="font-medium hover:text-[var(--noc-accent)]">
-                          {{ item.deal.productName }}
+                          {{ displayName(item.deal.productName) }}
                         </a>
                         <span class="block text-xs text-[var(--noc-neutral-500)]">{{ item.deal.brandName }}</span>
                       </td>
@@ -226,10 +226,10 @@
                   }
                   <div class="flex items-center gap-2">
                     @if (item.imageUrl) {
-                      <img [src]="item.imageUrl" [alt]="item.productName" class="h-10 w-10 shrink-0 object-contain" loading="lazy" />
+                      <img [src]="item.imageUrl" [alt]="displayName(item.productName)" class="h-10 w-10 shrink-0 object-contain" loading="lazy" />
                     }
                     <div class="min-w-0">
-                      <div class="truncate text-xs font-medium">{{ item.productName }}</div>
+                      <div class="truncate text-xs font-medium">{{ displayName(item.productName) }}</div>
                       <div class="text-[11px] text-[var(--noc-neutral-500)]">{{ item.brandName }} · {{ item.currentPrice | number: '1.2-2' }} ₺</div>
                     </div>
                   </div>
