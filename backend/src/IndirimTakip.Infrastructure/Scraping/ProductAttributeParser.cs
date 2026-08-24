@@ -127,14 +127,43 @@ public static partial class ProductAttributeParser
         return null;
     }
 
+    // "vitamin" kategorisi KATEGORİ TESPİTİ için 35+ farklı (birbiriyle
+    // tamamen alakasız) bileşeni tek grupta topluyor — bkz. CategoryKeywords
+    // üzerindeki yorum. Bu grubu ARAMA EŞANLAMLISI olarak kullanmak "magnezyum"
+    // aramasının "NMN"/"ZMA"/"Biotin" gibi hiç ilgisi olmayan ürünleri de
+    // eşanlamlı sayıp en üste çıkarmasına yol açıyordu (gerçek kullanıcı
+    // bulgusu, 2026-08-24: "magnezyum" araması ProteinOcean'ın MAGNESIUM
+    // COMPLEX ürününü değil NMN'yi ilk sıraya koyuyordu). Bu grup içinde
+    // SADECE gerçekten aynı kavramın iki dildeki karşılığı olan (yazım
+    // varyasyonu) çiftler eşanlamlı sayılıyor — diğer 30+ kelime kendi
+    // başına aranıyor, kategori tespiti (InferCategory, CategoryKeywords'ü
+    // olduğu gibi kullanıyor) hiç etkilenmiyor.
+    private static readonly (string Turkish, string English)[] SpellingVariantPairs =
+    [
+        ("magnezyum", "magnesium"),
+        ("cinko", "zinc"),
+        ("çinko", "zinc"),
+    ];
+
     // Arama kutusu için: kullanıcı "kreatin" yazdığında "creatine" geçen
     // ürünleri de (ve tersini) bulabilsin diye kategori tahmininde zaten
     // var olan Türkçe/İngilizce eşanlamlı kelime gruplarını yeniden
-    // kullanıyoruz — ayrı bir eşanlamlı sözlük bakımı gerekmiyor.
+    // kullanıyoruz — ayrı bir eşanlamlı sözlük bakımı gerekmiyor. "vitamin"
+    // kategorisi bu genel kurala tabi DEĞİL (bkz. SpellingVariantPairs
+    // üzerindeki açıklama).
     public static IReadOnlyCollection<string> GetSearchSynonyms(string term)
     {
-        foreach (var (_, keywords) in CategoryKeywords)
+        foreach (var (turkish, english) in SpellingVariantPairs)
         {
+            if (term == turkish || term == english)
+                return [turkish, english];
+        }
+
+        foreach (var (category, keywords) in CategoryKeywords)
+        {
+            if (category == "vitamin")
+                continue;
+
             if (keywords.Any(keyword => keyword.Contains(term, StringComparison.Ordinal) || term.Contains(keyword, StringComparison.Ordinal)))
                 return keywords;
         }
