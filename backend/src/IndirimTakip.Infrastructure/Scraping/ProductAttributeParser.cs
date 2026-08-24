@@ -127,45 +127,67 @@ public static partial class ProductAttributeParser
         return null;
     }
 
-    // "vitamin" kategorisi KATEGORİ TESPİTİ için 35+ farklı (birbiriyle
-    // tamamen alakasız) bileşeni tek grupta topluyor — bkz. CategoryKeywords
-    // üzerindeki yorum. Bu grubu ARAMA EŞANLAMLISI olarak kullanmak "magnezyum"
-    // aramasının "NMN"/"ZMA"/"Biotin" gibi hiç ilgisi olmayan ürünleri de
-    // eşanlamlı sayıp en üste çıkarmasına yol açıyordu (gerçek kullanıcı
-    // bulgusu, 2026-08-24: "magnezyum" araması ProteinOcean'ın MAGNESIUM
-    // COMPLEX ürününü değil NMN'yi ilk sıraya koyuyordu). Bu grup içinde
-    // SADECE gerçekten aynı kavramın iki dildeki karşılığı olan (yazım
-    // varyasyonu) çiftler eşanlamlı sayılıyor — diğer 30+ kelime kendi
-    // başına aranıyor, kategori tespiti (InferCategory, CategoryKeywords'ü
-    // olduğu gibi kullanıyor) hiç etkilenmiyor.
-    private static readonly (string Turkish, string English)[] SpellingVariantPairs =
+    // Arama kutusu için eşanlamlı gruplar — CategoryKeywords'ten BİLİNÇLİ
+    // OLARAK AYRI bir yapı. CategoryKeywords listeleri KATEGORİ TESPİTİ için
+    // doğru (bir ürünün hangi kategoriye ait olduğunu belirlemek için geniş/
+    // heterojen bir kelime havuzu gerekiyor — "vitamin" kategorisinde 35+
+    // birbiriyle alakasız bileşen olması kategori tespiti açısından sorun
+    // değil). Ama bu geniş listeleri ARAMA EŞANLAMLISI olarak kullanmak
+    // (kullanıcı bir kelime yazınca TÜM kategoriyi eşanlamlı saymak) yanlış
+    // sonuç veriyordu — ilk bulgu 2026-08-24: "magnezyum" araması "vitamin"
+    // kategorisinin tamamını (NMN, ZMA, Biotin dahil, hiçbiri magnezyumla
+    // ilgisi olmayan) eşanlamlı sayıp en üste çıkarıyordu. Kullanıcı sorunca
+    // aynı deseni TÜM kategorilerde kontrol ettik — "amino-asitler" (16
+    // kelime) ve "kilo-hacim" (10 kelime) de aynı şekilde bozuktu (ör.
+    // "taurine"/"glutamin"/"arginin" aramalarının HEPSİ aynı 83 ürünü, aynı
+    // sırayla döndürdüğü doğrulandı).
+    //
+    // Çözüm: her kategori için CategoryKeywords'ü OLDUĞU GİBİ bırakıp (kategori
+    // tespiti hiç etkilenmiyor), SADECE gerçekten aynı kavramın farklı yazımı/
+    // dili/markası olan DAR alt-grupları burada ayrıca tanımlıyoruz. Aynı
+    // kategorideki ama birbirinden farklı bileşenler (ör. "glycine" ve
+    // "taurine", ikisi de amino-asitler ama biri diğerinin eşanlamlısı değil)
+    // BİLİNÇLİ OLARAK hiçbir grupta yer almıyor — kendi başlarına aranıyorlar.
+    private static readonly string[][] SynonymGroups =
     [
-        ("magnezyum", "magnesium"),
-        ("cinko", "zinc"),
-        ("çinko", "zinc"),
+        // protein-tozu
+        ["isolate", "izole"],
+        ["casein", "kazein"],
+        ["hipro", "high pro"],
+        // kreatin (kategori zaten dar/tutarlı, ama tutarlılık için burada da var)
+        ["creatine", "kreatin", "creapure"],
+        // amino-asitler — "amino"/"bcaa"/"eaa"/"glycine"/"taurine"/"theanine"/
+        // "tyrosine"/"leucine" BİLİNÇLİ OLARAK burada yok, hepsi ayrı amino asit/
+        // terim, birbirinin eşanlamlısı değil.
+        ["arginin", "arjinin"],
+        ["sitrulin", "citrulline"],
+        ["alanine", "alanin"],
+        ["glutamin", "glutapure"],
+        // pre-workout — "pump"/"nitric"/"hellfire"/"caffeine" ayrı kalıyor.
+        ["pre workout", "preworkout", "pre-workout"],
+        // l-carnitine-cla — "cla" BİLİNÇLİ OLARAK hariç, karnitinden farklı bir
+        // bileşen (conjugated linoleic acid), karnitin aramasında çıkmamalı.
+        ["l-carnitine", "karnitin", "carnitine", "alcar", "carnifit", "carnıfıt"],
+        // yag-yakici (kategori zaten dar/tutarlı)
+        ["burner", "yag yakici", "thermo", "termojenik"],
+        // kilo-hacim — "mass"/"maltodextrin"/"dextrose"/"vitargo"/"cream of
+        // rice"/"carbopure" BİLİNÇLİ OLARAK ayrı, her biri farklı bir
+        // karbonhidrat kaynağı/terim.
+        ["gainer", "gain", "kilo", "hacim"],
+        // vitamin — 2026-08-24'te bulunan ilk vaka.
+        ["magnezyum", "magnesium"],
+        ["cinko", "çinko", "zinc"],
+        // saglikli-atistirmaliklar — "bar"/"atistirmalik" ayrı kalıyor.
+        ["cookie", "kurabiye"],
+        ["rice cake", "pirinc"],
     ];
 
-    // Arama kutusu için: kullanıcı "kreatin" yazdığında "creatine" geçen
-    // ürünleri de (ve tersini) bulabilsin diye kategori tahmininde zaten
-    // var olan Türkçe/İngilizce eşanlamlı kelime gruplarını yeniden
-    // kullanıyoruz — ayrı bir eşanlamlı sözlük bakımı gerekmiyor. "vitamin"
-    // kategorisi bu genel kurala tabi DEĞİL (bkz. SpellingVariantPairs
-    // üzerindeki açıklama).
     public static IReadOnlyCollection<string> GetSearchSynonyms(string term)
     {
-        foreach (var (turkish, english) in SpellingVariantPairs)
+        foreach (var group in SynonymGroups)
         {
-            if (term == turkish || term == english)
-                return [turkish, english];
-        }
-
-        foreach (var (category, keywords) in CategoryKeywords)
-        {
-            if (category == "vitamin")
-                continue;
-
-            if (keywords.Any(keyword => keyword.Contains(term, StringComparison.Ordinal) || term.Contains(keyword, StringComparison.Ordinal)))
-                return keywords;
+            if (group.Contains(term, StringComparer.Ordinal))
+                return group;
         }
 
         return [];
