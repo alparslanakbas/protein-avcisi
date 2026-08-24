@@ -147,18 +147,37 @@ public partial class DealsQueryService(AppDbContext db)
 
         var totalCount = await query.CountAsync(cancellationToken);
 
+        // Arama varsa önce ALAKA DÜZEYİNE göre sırala — "magnezyum" araması
+        // hem "ProteinOcean Magnezyum" (sadece o bileşen) hem "Kreatin +
+        // Magnezyum + Çinko Kompleks" (yan bileşen) gibi ürünleri buluyordu;
+        // ikincisi indirim oranına göre üstte çıkıp kullanıcının asıl aradığı
+        // ürünü gizleyebiliyordu (kullanıcı geri bildirimi). Öncelik: tam
+        // eşleşme > isimle başlama > isimde geçme (bu üçü de kendi içinde en
+        // KISA/spesifik isme göre); arama yoksa bu sıralama no-op.
+        var relevanceOrdered = !string.IsNullOrEmpty(searchTerm)
+            ? query
+                .OrderBy(r =>
+                    r.Product.Name.ToLower() == searchTerm ? 0
+                    : r.Product.Name.ToLower().StartsWith(searchTerm) ? 1
+                    : r.Product.Name.ToLower().Contains(searchTerm) ? 2
+                    : 3)
+                .ThenBy(r => r.Product.Name.Length)
+            : query.OrderBy(r => 0);
+
         // Kullanıcı bir sıralama seçtiyse onu uygula; seçmediyse mağaza
         // kampanyaları görünümünde mağazanın beyan ettiği indirim oranına,
         // diğer görünümlerde bizim doğruladığımız indirim oranına göre sırala.
+        // Arama varsa bu hep alaka düzeyinden SONRA (ThenBy) gelen ikincil
+        // bir sıralama.
         var orderedQuery = sortBy switch
         {
-            "name_asc" => query.OrderBy(r => r.Product.Name),
-            "name_desc" => query.OrderByDescending(r => r.Product.Name),
-            "price_asc" => query.OrderBy(r => r.Latest!.Price).ThenBy(r => r.Product.Name),
-            "price_desc" => query.OrderByDescending(r => r.Latest!.Price).ThenBy(r => r.Product.Name),
+            "name_asc" => relevanceOrdered.ThenBy(r => r.Product.Name),
+            "name_desc" => relevanceOrdered.ThenByDescending(r => r.Product.Name),
+            "price_asc" => relevanceOrdered.ThenBy(r => r.Latest!.Price).ThenBy(r => r.Product.Name),
+            "price_desc" => relevanceOrdered.ThenByDescending(r => r.Latest!.Price).ThenBy(r => r.Product.Name),
             _ => onlyStoreDiscounted
-                ? query.OrderByDescending(r => (r.Latest!.StoreOldPrice!.Value - r.Latest.Price) / r.Latest.StoreOldPrice.Value).ThenBy(r => r.Product.Name)
-                : query.OrderByDescending(r => (r.ReferencePrice!.Value - r.Latest!.Price) / r.ReferencePrice.Value).ThenBy(r => r.Product.Name),
+                ? relevanceOrdered.ThenByDescending(r => (r.Latest!.StoreOldPrice!.Value - r.Latest.Price) / r.Latest.StoreOldPrice.Value).ThenBy(r => r.Product.Name)
+                : relevanceOrdered.ThenByDescending(r => (r.ReferencePrice!.Value - r.Latest!.Price) / r.ReferencePrice.Value).ThenBy(r => r.Product.Name),
         };
 
         var pageRows = await orderedQuery
