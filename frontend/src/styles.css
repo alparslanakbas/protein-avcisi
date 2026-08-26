@@ -3,6 +3,29 @@
 @import "@phosphor-icons/web/regular";
 @import "@phosphor-icons/web/fill";
 
+/* Phosphor paketi font-display:block ile geliyor — ikon fontu
+   yüklenene kadar TÜM ikonlar (header, ürün kartları, menüler)
+   görünmez kalıyor, bu da sayfa geçişlerinde "geç render" hissi
+   yaratıyor. Aynı font-family/weight/style ile tanımlanan bu ikinci
+   @font-face bildirimi, aynı kaynak dosyaları kullanıp yalnızca
+   font-display'i swap'a çeviriyor — tarayıcı font hazır olana kadar
+   sistem fontuyla (görünmez yerine boş/varsayılan glif) hemen render
+   eder, font gelince yerini alır. */
+@font-face {
+  font-family: "Phosphor";
+  src: url("../node_modules/@phosphor-icons/web/src/regular/Phosphor.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Phosphor-Fill";
+  src: url("../node_modules/@phosphor-icons/web/src/fill/Phosphor-Fill.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* Koyu mod: <html> elemanına "dark" class'ı eklenince devreye girer
    (ThemeService yönetiyor) — sistem tercihini otomatik takip etmez,
    çünkü "sistem" seçeneğini de biz JS tarafında class ekleyerek uyguluyoruz. */
