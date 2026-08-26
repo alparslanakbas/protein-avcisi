@@ -29,14 +29,14 @@
             </button>
             @if (categoriesOpen()) {
               <div class="fixed inset-0 z-40" (click)="closeCategories()"></div>
-              <div class="absolute right-0 top-full z-50 mt-4 grid w-[520px] grid-cols-2 gap-1 rounded-[14px] border border-[var(--noc-divider)] bg-[var(--noc-card)] p-2 text-[var(--noc-neutral-900)] shadow-[var(--noc-shadow-lg)] dark:text-[var(--noc-text)]">
+              <div class="pa-category-menu">
                 @for (category of availableCategories(); track category) {
-                  <a [routerLink]="['/kategori', category]" (click)="closeCategories()" class="flex items-center gap-3 rounded-[9px] px-3 py-2.5 text-sm hover:bg-[color-mix(in_srgb,var(--noc-accent)_8%,transparent)] hover:text-[var(--noc-accent)]">
-                    <i [class]="'ph ' + categoryPhosphorIcon(category) + ' text-lg text-[var(--noc-accent)]'" aria-hidden="true"></i>
+                  <a [routerLink]="['/kategori', category]" (click)="closeCategories()" class="pa-category-menu-link">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--noc-neutral-100)] text-[var(--noc-accent)]"><i [class]="'ph ' + categoryPhosphorIcon(category) + ' text-lg'" aria-hidden="true"></i></span>
                     {{ categoryLabel(category) }}
                   </a>
                 }
-                <a routerLink="/kategoriler" (click)="closeCategories()" class="col-span-2 mt-1 rounded-[9px] border border-[var(--noc-divider)] px-3 py-2.5 text-center text-sm font-semibold text-[var(--noc-accent)]">Tüm kategorileri gör</a>
+                <a routerLink="/kategoriler" (click)="closeCategories()" class="pa-category-menu-footer">Tüm kategorileri gör</a>
               </div>
             }
           </div>
