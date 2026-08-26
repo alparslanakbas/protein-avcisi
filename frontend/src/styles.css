@@ -1,30 +1,19 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
-@import "@phosphor-icons/web/regular";
-@import "@phosphor-icons/web/fill";
 
-/* Phosphor paketi font-display:block ile geliyor — ikon fontu
-   yüklenene kadar TÜM ikonlar (header, ürün kartları, menüler)
-   görünmez kalıyor, bu da sayfa geçişlerinde "geç render" hissi
-   yaratıyor. Aynı font-family/weight/style ile tanımlanan bu ikinci
-   @font-face bildirimi, aynı kaynak dosyaları kullanıp yalnızca
-   font-display'i swap'a çeviriyor — tarayıcı font hazır olana kadar
-   sistem fontuyla (görünmez yerine boş/varsayılan glif) hemen render
-   eder, font gelince yerini alır. */
-@font-face {
-  font-family: "Phosphor";
-  src: url("../node_modules/@phosphor-icons/web/src/regular/Phosphor.woff2") format("woff2");
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Phosphor-Fill";
-  src: url("../node_modules/@phosphor-icons/web/src/fill/Phosphor-Fill.woff2") format("woff2");
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
+/* @phosphor-icons/web paketinin kendi CSS'i yerine bilinçli olarak
+   yerel bir kopyası kullanılıyor (vendor/phosphor/) — paketin orijinal
+   @font-face'i font-display:block + TTF/WOFF/SVG fallback'leri
+   içeriyordu: font yüklenene kadar TÜM ikonlar (header, ürün
+   kartları, menüler) görünmez kalıyordu, ayrıca gereksiz SVG format
+   referansı prod'da bir bot isteğinde Angular router'a garip bir
+   path (`.../media/Phosphor-....svg`) olarak düşüp NG04002 hatasına
+   yol açtı. Yerel kopyada @font-face sadece WOFF2 + font-display:swap
+   (2026'da hedef kitlenin tamamı modern tarayıcı, fallback formatlara
+   gerek yok), glyph class tanımları (`.ph::before{...}`) değişmeden
+   korunuyor. */
+@import "./vendor/phosphor/regular.css";
+@import "./vendor/phosphor/fill.css";
 
 /* Koyu mod: <html> elemanına "dark" class'ı eklenince devreye girer
    (ThemeService yönetiyor) — sistem tercihini otomatik takip etmez,
