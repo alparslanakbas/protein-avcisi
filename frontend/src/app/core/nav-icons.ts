@@ -17,6 +17,28 @@ export const CATEGORY_ICON_PATHS: Record<string, string> = {
 };
 export const DEFAULT_CATEGORY_ICON = 'M4 6h16M4 12h16M4 18h16';
 
+// Phosphor ikonları ana sayfadaki kategori şeridi ve paylaşılan header
+// dropdown'ında ortak kullanılıyor. Görsel path listesinden ayrı tutuluyor;
+// yeni arayüz font ikonlarını, eski hesaplama kartları ise path'leri kullanıyor.
+export const CATEGORY_PHOSPHOR_ICONS: Record<string, string> = {
+  'protein-tozu': 'ph-jar',
+  'amino-asitler': 'ph-share-network',
+  kreatin: 'ph-lightning',
+  'pre-workout': 'ph-gauge',
+  'protein-bar': 'ph-cookie',
+  'yag-yakici': 'ph-fire',
+  'kilo-hacim': 'ph-barbell',
+  vitamin: 'ph-shield-plus',
+  'saglikli-atistirmaliklar': 'ph-leaf',
+  'l-carnitine-cla': 'ph-drop-half',
+};
+
+export const DEFAULT_CATEGORY_PHOSPHOR_ICON = 'ph-dots-three';
+
+export function categoryPhosphorIcon(slug: string): string {
+  return CATEGORY_PHOSPHOR_ICONS[slug] ?? DEFAULT_CATEGORY_PHOSPHOR_ICON;
+}
+
 export type CalculatorIcon = 'plate' | 'capsule' | 'flame' | 'ruler' | 'droplet';
 
 export const CALCULATOR_ICON_PATHS: Record<CalculatorIcon, string> = {
@@ -42,4 +64,22 @@ export function calculatorIconPath(slug: string): string {
   if (slug === 'protein-ihtiyaci') return CALCULATOR_ICON_PATHS.plate;
   const bodyIcon = BODY_CALCULATOR_ICON_BY_SLUG[slug];
   return CALCULATOR_ICON_PATHS[bodyIcon ?? 'capsule'];
+}
+
+// Menüde her araç kendi işlevini ilk bakışta anlatır: beslenme, enerji,
+// ölçüm, su ve takviye türleri aynı hesap makinesi simgesini paylaşmaz.
+const CALCULATOR_PHOSPHOR_ICON_BY_SLUG: Record<string, string> = {
+  'protein-ihtiyaci': 'ph-bowl-food',
+  'kalori-ihtiyaci': 'ph-fire',
+  'vucut-kitle-indeksi': 'ph-scales',
+  'gunluk-su-ihtiyaci': 'ph-drop',
+  'kreatin-dozu': 'ph-lightning',
+  'beta-alanine-dozu': 'ph-waves',
+  'sitrulin-dozu': 'ph-heartbeat',
+  'betain-dozu': 'ph-drop-half-bottom',
+  'eaa-dozu': 'ph-share-network',
+};
+
+export function calculatorPhosphorIcon(slug: string): string {
+  return CALCULATOR_PHOSPHOR_ICON_BY_SLUG[slug] ?? 'ph-pill';
 }

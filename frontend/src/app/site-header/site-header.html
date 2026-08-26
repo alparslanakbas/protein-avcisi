@@ -21,7 +21,7 @@
           <div class="absolute right-0 top-full z-50 mt-4 grid w-[520px] grid-cols-2 gap-1 rounded-[14px] border border-[var(--noc-divider)] bg-[var(--noc-card)] p-2 text-[var(--noc-text)] shadow-[var(--noc-shadow-lg)]">
             @for (category of categories(); track category.slug) {
               <a [routerLink]="['/kategori', category.slug]" (click)="closeCategories()" class="flex items-center gap-3 rounded-[9px] px-3 py-2.5 text-sm hover:bg-[color-mix(in_srgb,var(--noc-accent)_8%,transparent)] hover:text-[var(--noc-accent)]">
-                <span class="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--noc-neutral-100)] text-[var(--noc-accent)]"><i class="ph ph-cube text-base" aria-hidden="true"></i></span>
+                <span class="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--noc-neutral-100)] text-[var(--noc-accent)]"><i [class]="'ph ' + category.iconClass + ' text-base'" aria-hidden="true"></i></span>
                 {{ category.label }}
               </a>
             }
@@ -40,7 +40,7 @@
           <div class="absolute right-0 top-full z-50 mt-4 w-72 rounded-[14px] border border-[var(--noc-divider)] bg-[var(--noc-card)] p-2 text-[var(--noc-text)] shadow-[var(--noc-shadow-lg)]">
             @for (calc of calculators; track calc.path) {
               <a [routerLink]="calc.path" (click)="closeCalculators()" class="flex items-center gap-3 rounded-[9px] px-3 py-2.5 text-sm hover:bg-[color-mix(in_srgb,var(--noc-accent)_8%,transparent)] hover:text-[var(--noc-accent)]">
-                <i class="ph ph-calculator text-lg text-[var(--noc-accent)]" aria-hidden="true"></i>{{ calc.label }}
+                <i [class]="'ph ' + calc.iconClass + ' text-lg text-[var(--noc-accent)]'" aria-hidden="true"></i>{{ calc.label }}
               </a>
             }
             <a routerLink="/hesaplama" (click)="closeCalculators()" class="mt-1 block rounded-[9px] border border-[var(--noc-divider)] px-3 py-2.5 text-center text-sm font-semibold text-[var(--noc-accent)]">Tüm araçları gör</a>

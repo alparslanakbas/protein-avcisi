@@ -10,7 +10,7 @@ import { ArticlesService } from '../core/articles.service';
 import { canonicalOrigin } from '../core/canonical-link';
 import { buildBreadcrumbJsonLd } from '../core/breadcrumb';
 import { CATEGORY_LABELS } from '../core/category-labels';
-import { CATEGORY_ICON_PATHS, DEFAULT_CATEGORY_ICON } from '../core/nav-icons';
+import { CATEGORY_ICON_PATHS, DEFAULT_CATEGORY_ICON, categoryPhosphorIcon } from '../core/nav-icons';
 import { ComparisonService } from '../core/comparison.service';
 import { Coupon } from '../core/coupon.model';
 import { CouponsService } from '../core/coupons.service';
@@ -40,17 +40,6 @@ const SEARCH_DEBOUNCE_MS = 350;
 // Hero kartındaki küçük fiyat grafiği — product-modal'ın tam boyutlu
 // grafiğinden çok daha küçük, kendi ölçüleri (Nocturne referansı: 280×90).
 const HERO_CHART = { width: 280, height: 90, paddingY: 8 };
-
-const CATEGORY_PHOSPHOR_ICONS: Record<string, string> = {
-  'protein-tozu': 'ph-jar',
-  'amino-asitler': 'ph-share-network',
-  kreatin: 'ph-lightning',
-  'pre-workout': 'ph-gauge',
-  'protein-bar': 'ph-chocolate-bar',
-  'yag-yakici': 'ph-fire',
-  vitamin: 'ph-shield-plus',
-  'saglikli-atistirmaliklar': 'ph-leaf',
-};
 
 // timeZone sabit Europe/Istanbul — bkz. product-modal.ts'teki aynı gerekçe
 // (kullanıcının cihaz saat dilimine bırakılırsa aynı an farklı ziyaretçilere
@@ -668,7 +657,7 @@ export class DealsList implements OnInit {
   }
 
   protected categoryPhosphorIcon(category: string): string {
-    return CATEGORY_PHOSPHOR_ICONS[category] ?? 'ph-dots-three';
+    return categoryPhosphorIcon(category);
   }
 
   protected setTheme(preference: ThemePreference): void {
