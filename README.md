@@ -53,7 +53,9 @@ Kısacası: markanın söylediğine değil, biriktirdiği veriye güveniyor.
 - PWA (manifest + service worker)
 
 **Altyapı**
-- [Render](https://render.com) — backend (Docker) + frontend (Node/SSR) hosting
+- [Oracle Cloud Infrastructure](https://www.oracle.com/cloud/) — VPS (Ampere ARM,
+  Docker + Docker Compose ile backend/frontend/[Caddy](https://caddyserver.com)
+  reverse proxy, otomatik Let's Encrypt SSL)
 - [Neon](https://neon.tech) — serverless PostgreSQL
 - [Cloudflare](https://cloudflare.com) — DNS, CDN, edge güvenlik kuralları
 - [UptimeRobot](https://uptimerobot.com) — periyodik uptime izleme
