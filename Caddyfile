@@ -1,0 +1,7 @@
+www.proteinavcisi.com.tr, proteinavcisi.com.tr {
+	reverse_proxy frontend:4000
+}
+
+api.proteinavcisi.com.tr {
+	reverse_proxy backend:8080
+}

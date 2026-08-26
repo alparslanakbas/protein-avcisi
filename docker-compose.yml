@@ -1,0 +1,47 @@
+services:
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - PORT=8080
+      - ConnectionStrings__Default=${CONNECTION_STRING}
+      - AdminApiKey=${ADMIN_API_KEY}
+      - Brevo__ApiKey=${BREVO_API_KEY}
+      - PublicBaseUrl=https://api.proteinavcisi.com.tr
+      - Cors__AllowedOrigins__0=https://proteinavcisi.com.tr
+      - Cors__AllowedOrigins__1=https://www.proteinavcisi.com.tr
+      - Scraping__Enabled=true
+      - Digest__Enabled=true
+      - DescriptionBackfill__Enabled=true
+    expose:
+      - "8080"
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    environment:
+      - PORT=4000
+      - NG_ALLOWED_HOSTS=proteinavcisi.com.tr,www.proteinavcisi.com.tr
+    expose:
+      - "4000"
+    depends_on:
+      - backend
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+      - frontend
+
+volumes:
+  caddy_data:
+  caddy_config:
