@@ -466,6 +466,9 @@ body {
   .pa-container { width: min(100% - 24px, 1380px); }
 
   .pa-product-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
     overflow: visible;
     border: 0;
     background: transparent;
@@ -473,18 +476,57 @@ body {
   }
 
   .pa-product-row {
-    grid-template-columns: 88px minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 120px auto auto 1fr auto;
     min-height: 0;
-    margin-bottom: 10px;
+    height: 100%;
+    margin-bottom: 0;
+    align-content: start;
+    align-items: start;
+    gap: 10px;
+    padding: 10px;
+    overflow: hidden;
     border: 1px solid var(--noc-divider);
     border-radius: 13px;
     background: var(--noc-card);
   }
 
   .pa-product-row:last-child { border-bottom: 1px solid var(--noc-divider); }
-  .pa-product-image-well { height: 92px; }
-  .pa-product-price { grid-column: 1 / -1; }
-  .pa-product-store { grid-column: 1 / -1; grid-row: auto; }
+  .pa-product-image-well { height: 120px; }
+  .pa-product-details h2 { font-size: 13px; line-height: 1.25; }
+  .pa-product-details > button { margin-top: 7px; }
+  .pa-product-details > button p { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pa-product-meta { display: none; }
+  .pa-product-row .pa-positive-badge,
+  .pa-product-row .pa-campaign-badge {
+    max-width: 100%;
+    justify-content: center;
+    padding: 4px 6px;
+    text-align: center;
+    font-size: 9px;
+    line-height: 1.2;
+  }
+  .pa-product-price { grid-column: auto; min-width: 0; }
+  .pa-product-price > div:first-child { font-size: 18px; white-space: nowrap; }
+  .pa-product-price > div:nth-child(n+2) { font-size: 10px; }
+  .pa-product-store {
+    grid-column: auto;
+    grid-row: auto;
+    gap: 7px;
+    padding-top: 9px;
+    align-self: end;
+    border-top: 1px solid var(--noc-divider);
+  }
+  .pa-product-store > div { display: none; }
+  .pa-product-store .pa-primary-button { height: 38px; padding-inline: 8px; font-size: 11px; white-space: nowrap; }
+  .pa-product-store .pa-primary-button i { margin-left: 5px; font-size: 14px; }
+  .pa-product-store .pa-secondary-button { height: 34px; font-size: 10px; }
+  .pa-product-loading {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .pa-product-loading > * { height: 320px; }
   .pa-category-link {
     min-width: 98px;
     padding-inline: 6px;

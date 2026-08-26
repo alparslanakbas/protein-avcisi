@@ -29,7 +29,7 @@
             </button>
             @if (categoriesOpen()) {
               <div class="fixed inset-0 z-40" (click)="closeCategories()"></div>
-              <div class="absolute right-0 top-full z-50 mt-4 grid w-[520px] grid-cols-2 gap-1 rounded-[14px] border border-[var(--noc-divider)] bg-[var(--noc-card)] p-2 text-[var(--noc-text)] shadow-[var(--noc-shadow-lg)]">
+              <div class="absolute right-0 top-full z-50 mt-4 grid w-[520px] grid-cols-2 gap-1 rounded-[14px] border border-[var(--noc-divider)] bg-[var(--noc-card)] p-2 text-[var(--noc-neutral-900)] shadow-[var(--noc-shadow-lg)] dark:text-[var(--noc-text)]">
                 @for (category of availableCategories(); track category) {
                   <a [routerLink]="['/kategori', category]" (click)="closeCategories()" class="flex items-center gap-3 rounded-[9px] px-3 py-2.5 text-sm hover:bg-[color-mix(in_srgb,var(--noc-accent)_8%,transparent)] hover:text-[var(--noc-accent)]">
                     <i [class]="'ph ' + categoryPhosphorIcon(category) + ' text-lg text-[var(--noc-accent)]'" aria-hidden="true"></i>
@@ -77,7 +77,7 @@
       </div>
 
       @if (showFullHomepageContent() && heroDeal(); as hero) {
-        <article class="pa-featured-deal pa-hero-card grid gap-5 p-4 sm:grid-cols-[110px_minmax(190px,1.2fr)_minmax(140px,.72fr)_minmax(190px,.9fr)_150px] sm:items-center">
+        <article class="pa-featured-deal pa-hero-card grid gap-5 p-4 sm:grid-cols-[110px_minmax(190px,1.2fr)_minmax(140px,.72fr)_minmax(190px,.9fr)_180px] sm:items-center">
           <button type="button" (click)="openDeal(hero)" class="pa-hero-product flex h-[112px] items-center justify-center rounded-[10px] bg-white/[0.06]">
             @if (hero.imageUrl) { <img [src]="hero.imageUrl" [alt]="displayName(hero.productName)" class="h-full w-full object-contain p-2" /> }
           </button>
@@ -111,8 +111,8 @@
           </div>
 
           <div class="pa-hero-actions flex flex-col gap-2 border-white/10 sm:border-l sm:pl-5">
-            <a [href]="goToStoreUrl(hero.productId)" target="_blank" rel="nofollow sponsored noopener" class="pa-primary-button h-11 px-4 text-sm">Mağazaya git<i class="ph ph-arrow-square-out ml-2 text-base" aria-hidden="true"></i></a>
-            <button type="button" (click)="openDeal(hero)" class="h-10 rounded-[9px] border border-white/15 text-xs font-semibold text-[#e2e4ef] hover:border-[#8f80ff]/70">Fiyat geçmişini aç</button>
+            <a [href]="goToStoreUrl(hero.productId)" target="_blank" rel="nofollow sponsored noopener" class="pa-primary-button h-11 w-full whitespace-nowrap px-4 text-sm">Mağazaya git<i class="ph ph-arrow-square-out ml-2 shrink-0 text-base" aria-hidden="true"></i></a>
+            <button type="button" (click)="openDeal(hero)" class="h-10 w-full whitespace-nowrap rounded-[9px] border border-white/15 px-3 text-xs font-semibold text-[#e2e4ef] hover:border-[#8f80ff]/70">Fiyat geçmişini aç</button>
           </div>
         </article>
       }
@@ -144,9 +144,9 @@
       <div class="mb-4 flex flex-wrap items-end gap-3">
         <div>
           <div class="inline-flex overflow-hidden rounded-[10px] border border-[var(--noc-divider)] bg-[var(--noc-card)] p-1">
-            <button type="button" class="rounded-[7px] px-4 py-2 text-sm font-semibold" [class]="viewMode() === 'deals' ? 'bg-[var(--noc-accent)] text-white' : 'text-[var(--noc-neutral-600)] hover:text-[var(--noc-text)]'" (click)="setViewMode('deals')">Gerçek düşüşler</button>
-            <button type="button" class="rounded-[7px] px-4 py-2 text-sm font-semibold" [class]="viewMode() === 'store' ? 'bg-[var(--noc-accent)] text-white' : 'text-[var(--noc-neutral-600)] hover:text-[var(--noc-text)]'" (click)="setViewMode('store')">Mağaza kampanyaları</button>
-            <button type="button" class="hidden rounded-[7px] px-4 py-2 text-sm font-semibold sm:block" [class]="viewMode() === 'all' ? 'bg-[var(--noc-accent)] text-white' : 'text-[var(--noc-neutral-600)] hover:text-[var(--noc-text)]'" (click)="setViewMode('all')">Tümü</button>
+            <button type="button" class="rounded-[7px] px-2.5 py-2 text-xs font-semibold sm:px-4 sm:text-sm" [class]="viewMode() === 'deals' ? 'bg-[var(--noc-accent)] text-white' : 'text-[var(--noc-neutral-600)] hover:text-[var(--noc-text)]'" (click)="setViewMode('deals')">Gerçek düşüşler</button>
+            <button type="button" class="rounded-[7px] px-2.5 py-2 text-xs font-semibold sm:px-4 sm:text-sm" [class]="viewMode() === 'store' ? 'bg-[var(--noc-accent)] text-white' : 'text-[var(--noc-neutral-600)] hover:text-[var(--noc-text)]'" (click)="setViewMode('store')">Mağaza kampanyaları</button>
+            <button type="button" class="rounded-[7px] px-2.5 py-2 text-xs font-semibold sm:px-4 sm:text-sm" [class]="viewMode() === 'all' ? 'bg-[var(--noc-accent)] text-white' : 'text-[var(--noc-neutral-600)] hover:text-[var(--noc-text)]'" (click)="setViewMode('all')">Tümü</button>
           </div>
           <p class="mt-2 text-xs text-[var(--noc-neutral-500)]">{{ viewMode() === 'deals' ? 'Kendi topladığımız fiyat geçmişiyle doğrulanan düşüşler.' : viewMode() === 'store' ? 'Markaların kendi sitesinde gösterdiği güncel kampanyalar.' : 'Takipteki tüm ürünler.' }}</p>
         </div>
@@ -179,7 +179,7 @@
       }
 
       @if (loading()) {
-        <div class="space-y-3" aria-label="Ürünler yükleniyor">
+        <div class="pa-product-loading space-y-3" aria-label="Ürünler yükleniyor">
           @for (item of [1, 2, 3]; track item) { <div class="pa-card pa-skeleton h-[146px]"></div> }
         </div>
       } @else if (error()) {
@@ -200,7 +200,7 @@
                 <span class="absolute right-1.5 top-1.5 rounded-full bg-[var(--noc-card)] px-1.5 py-0.5 text-[9px] font-semibold text-[var(--noc-neutral-600)]">{{ deal.brandName }}</span>
               </button>
 
-              <div class="min-w-0">
+              <div class="pa-product-details min-w-0">
                 @if (deal.discountPercent > 0 || deal.isAtThirtyDayLow) {
                   <span class="pa-positive-badge">{{ deal.isAtThirtyDayLow ? 'Son 30 günün en düşüğü' : discountBadge(deal) }}</span>
                 } @else if (deal.storeDiscountPercent && deal.storeDiscountPercent > 0) {
@@ -210,7 +210,7 @@
                   <h2 [title]="displayName(deal.productName)" class="line-clamp-2 text-[16px] font-semibold leading-tight tracking-[-0.012em]">{{ displayName(deal.productName) }}</h2>
                   <p class="mt-1 text-xs text-[var(--noc-neutral-500)]">{{ deal.brandName }}{{ deal.size ? ' · ' + deal.size : '' }}{{ deal.flavor ? ' · ' + deal.flavor : '' }}</p>
                 </button>
-                <div class="mt-3 flex flex-wrap items-center gap-3 text-xs text-[var(--noc-neutral-500)]">
+                <div class="pa-product-meta mt-3 flex flex-wrap items-center gap-3 text-xs text-[var(--noc-neutral-500)]">
                   <span class="inline-flex items-center gap-1"><i class="ph-fill ph-seal-check text-[15px] text-[var(--noc-accent)]" aria-hidden="true"></i>Fiyat geçmişi takipte</span>
                   <span>{{ lastCheckedText(deal) }}</span>
                   <button type="button" class="inline-flex items-center gap-1 hover:text-[var(--noc-accent)] disabled:opacity-40" [disabled]="comparison.isFull() && !comparison.isSelected(deal.productId)" (click)="comparison.toggle(deal)">
