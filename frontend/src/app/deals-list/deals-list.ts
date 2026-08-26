@@ -41,6 +41,17 @@ const SEARCH_DEBOUNCE_MS = 350;
 // grafiğinden çok daha küçük, kendi ölçüleri (Nocturne referansı: 280×90).
 const HERO_CHART = { width: 280, height: 90, paddingY: 8 };
 
+const CATEGORY_PHOSPHOR_ICONS: Record<string, string> = {
+  'protein-tozu': 'ph-jar',
+  'amino-asitler': 'ph-share-network',
+  kreatin: 'ph-lightning',
+  'pre-workout': 'ph-gauge',
+  'protein-bar': 'ph-chocolate-bar',
+  'yag-yakici': 'ph-fire',
+  vitamin: 'ph-shield-plus',
+  'saglikli-atistirmaliklar': 'ph-leaf',
+};
+
 // timeZone sabit Europe/Istanbul — bkz. product-modal.ts'teki aynı gerekçe
 // (kullanıcının cihaz saat dilimine bırakılırsa aynı an farklı ziyaretçilere
 // farklı "gün/saat" gösterebilirdi, site sadece TR pazarına hizmet ediyor).
@@ -654,6 +665,10 @@ export class DealsList implements OnInit {
   // sadece düz metindi (bkz. site-header.ts'teki aynı desen).
   protected categoryIconPath(category: string): string {
     return CATEGORY_ICON_PATHS[category] ?? DEFAULT_CATEGORY_ICON;
+  }
+
+  protected categoryPhosphorIcon(category: string): string {
+    return CATEGORY_PHOSPHOR_ICONS[category] ?? 'ph-dots-three';
   }
 
   protected setTheme(preference: ThemePreference): void {

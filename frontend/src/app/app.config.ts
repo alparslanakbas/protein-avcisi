@@ -1,4 +1,4 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners, isDevMode } from '@angular/core';
+import { ApplicationConfig, LOCALE_ID, provideBrowserGlobalErrorListeners, isDevMode } from '@angular/core';
 import { PreloadAllModules, RouteReuseStrategy, provideRouter, withPreloading } from '@angular/router';
 import { provideHttpClient, withFetch } from '@angular/common/http';
 import { provideClientHydration } from '@angular/platform-browser';
@@ -17,6 +17,7 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes, withPreloading(PreloadAllModules)),
     provideHttpClient(withFetch()),
     provideClientHydration(),
+    { provide: LOCALE_ID, useValue: 'tr-TR' },
     { provide: RouteReuseStrategy, useClass: DealsRouteReuseStrategy },
     provideServiceWorker('ngsw-worker.js', {
       enabled: !isDevMode(),

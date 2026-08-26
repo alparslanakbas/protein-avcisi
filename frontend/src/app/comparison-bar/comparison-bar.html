@@ -1,9 +1,9 @@
 @if (comparison.slots().length > 0) {
   <!-- Mobilde alt sekme çubuğunun (56px) ÜSTÜNDE duruyor, masaüstünde
        sayfanın en altında. Çerez bandıyla aynı konumlandırma yaklaşımı. -->
-  <div class="noc-shell fixed bottom-[56px] left-0 right-0 z-40 border-t border-[var(--noc-divider)] bg-[var(--noc-card)] shadow-[var(--noc-shadow-md)] sm:bottom-0">
-    <div class="mx-auto flex max-w-[1280px] items-center gap-3 px-[16px] py-3 sm:px-[28px]">
-      <span class="hidden text-xs font-medium text-[var(--noc-neutral-500)] sm:block">Karşılaştır</span>
+  <div class="noc-shell fixed bottom-[66px] left-0 right-0 z-40 px-3 pb-3 sm:bottom-0 sm:px-6">
+    <div class="pa-card mx-auto flex max-w-[1380px] items-center gap-3 px-4 py-3 shadow-[var(--noc-shadow-lg)]">
+      <span class="hidden items-center gap-2 text-xs font-bold sm:flex"><i class="ph ph-scales text-lg text-[var(--noc-accent)]" aria-hidden="true"></i>Karşılaştır <span class="font-normal text-[var(--noc-neutral-500)]">({{ comparison.slots().length }}/2)</span></span>
 
       <div class="flex min-w-0 flex-1 items-center gap-2">
         @for (slot of comparison.slots(); track slot.productId) {
@@ -21,9 +21,7 @@
               [attr.aria-label]="slot.productName + ' ürününü karşılaştırmadan çıkar'"
               (click)="comparison.remove(slot.productId)"
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
-                <path stroke-linecap="round" d="M6 6l12 12M18 6L6 18" />
-              </svg>
+              <i class="ph ph-x text-base" aria-hidden="true"></i>
             </button>
           </div>
         }
@@ -39,22 +37,14 @@
 
       <button
         type="button"
-        class="shrink-0 rounded-[8px] px-3 py-2 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-45"
-        [class]="comparison.isFull() ? 'text-[var(--noc-accent-100)]' : 'border border-[var(--noc-divider)] text-[var(--noc-neutral-500)]'"
-        [style.background]="comparison.isFull() ? 'var(--noc-accent-800)' : 'transparent'"
+        class="pa-primary-button shrink-0 px-4 py-2 text-xs disabled:cursor-not-allowed disabled:opacity-45"
         [disabled]="!comparison.isFull()"
         (click)="go()"
       >
         Karşılaştır
       </button>
 
-      <button
-        type="button"
-        class="shrink-0 text-xs text-[var(--noc-neutral-500)] underline hover:text-[var(--noc-accent)]"
-        (click)="comparison.clear()"
-      >
-        Temizle
-      </button>
+      <button type="button" title="Karşılaştırmayı temizle" class="pa-icon-button h-9 w-9 shrink-0 text-[var(--noc-neutral-500)]" (click)="comparison.clear()"><i class="ph ph-trash text-base" aria-hidden="true"></i></button>
     </div>
   </div>
 }

@@ -1,5 +1,7 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
+@import "@phosphor-icons/web/regular";
+@import "@phosphor-icons/web/fill";
 
 /* Koyu mod: <html> elemanına "dark" class'ı eklenince devreye girer
    (ThemeService yönetiyor) — sistem tercihini otomatik takip etmez,
@@ -35,7 +37,7 @@
 }
 
 body {
-  @apply bg-stone-50 text-stone-800 antialiased transition-colors duration-200 dark:bg-stone-950 dark:text-stone-200;
+  @apply m-0 bg-stone-50 text-stone-800 antialiased transition-colors duration-200 dark:bg-stone-950 dark:text-stone-200;
   font-family: var(--font-sans);
 }
 
@@ -50,11 +52,12 @@ body {
    kaldirdigi durumda devreye giriyor. Bu, siteninkinin tersi bir kural:
    Nocturne'de koyu varsayilan, site genelinde acik varsayilan. */
 :root {
-  --noc-bg: #161826;
-  --noc-surface: #232532;
-  --noc-card: #232532;
-  --noc-text: #e9e9ed;
-  --noc-accent: #9184d9;
+  color-scheme: dark;
+  --noc-bg: #0e1122;
+  --noc-surface: #181c31;
+  --noc-card: #1d2238;
+  --noc-text: #f5f6fb;
+  --noc-accent: #9b8cff;
 
   --noc-accent-100: #f5f4ff;
   --noc-accent-200: #e7e5fe;
@@ -76,8 +79,18 @@ body {
   --noc-neutral-800: #3f424d;
   --noc-neutral-900: #292b31;
 
-  --noc-section: #262a60;
-  --noc-section-glow: #353b80;
+  --noc-section: #171b3f;
+  --noc-section-glow: #292f69;
+
+  --pa-hero: #0b0f27;
+  --pa-hero-elevated: #171c3b;
+  --pa-hero-border: rgba(180, 188, 232, 0.18);
+  --pa-positive: #75d49d;
+  --pa-positive-bg: rgba(45, 139, 91, 0.18);
+  --pa-campaign: #f5ba63;
+  --pa-campaign-bg: rgba(178, 112, 27, 0.18);
+  --pa-danger: #ff8e9e;
+  --pa-focus: rgba(155, 140, 255, 0.42);
 
   --noc-divider: color-mix(in srgb, #e9e9ed 16%, transparent);
   --noc-shadow-sm: 0 0 0 1px #3f424d;
@@ -95,34 +108,434 @@ body {
 }
 
 :root:not(.dark) {
-  /* Kullanıcı geri bildirimi (2026-08-22): açık temada beyazlık göz
-     yoruyordu — özellikle --noc-card'ın neredeyse saf beyaz (#fbfbff)
-     olması. Nocturne öncesi aynı şikayet bg-white/stone-50 için de
-     yaşanmıştı (bkz. CLAUDE.md "Açık tema parlaklığı azaltıldı"), burada
-     tekrarı. Üç ton da bir kademe kısıldı, hiyerarşi (bg < surface'ten
-     açık, card en açık) korundu. */
-  --noc-bg: #ebedf5;
-  --noc-surface: #dde0ee;
-  --noc-card: #f4f5f9;
-  --noc-text: #292b31;
-  /* Aksan açık zeminde küçük punto için yeterli kontrastta değil — README:
-     vurgulu metin/grafik çizgisi accent-600, link/kicker accent-700. */
-  --noc-accent: #796cbf;
-  /* Koyu temada gövde paragrafı için açık bir gri olan neutral-300, açık
-     zeminde neredeyse görünmez kalıyordu (kontrast bug'ı, ekran görüntüsüyle
-     yakalandı) — açık temada koyu bir gri olan neutral-700'e çekildi. */
-  --noc-neutral-300: #595d6c;
-  /* neutral-500 (rozet/"Kontrol: X" gibi ikincil metin) de aynı sebeple
-     açık zeminde çok soluk kalıyordu — bir kademe koyulaştırıldı. */
-  --noc-neutral-500: #75798c;
-  --noc-divider: color-mix(in srgb, #292b31 15%, transparent);
-  --noc-shadow-sm: 0 0 0 1px #cfd3e5;
-  --noc-shadow-md: 0 0 0 1px #cfd3e5, 0 6px 18px rgba(41, 43, 49, 0.1);
-  --noc-shadow-lg: 0 0 0 1px #cfd3e5, 0 16px 40px rgba(41, 43, 49, 0.18);
+  color-scheme: light;
+  --noc-bg: #f6f7fb;
+  --noc-surface: #ffffff;
+  --noc-card: #ffffff;
+  --noc-text: #171a2e;
+  --noc-accent: #6556e8;
+  --noc-accent-100: #f2f0ff;
+  --noc-accent-200: #e5e0ff;
+  --noc-accent-300: #c8bfff;
+  --noc-accent-400: #9f91ff;
+  --noc-accent-500: #7c6cf2;
+  --noc-accent-600: #6556e8;
+  --noc-accent-700: #5042c6;
+  --noc-accent-800: #3d3496;
+  --noc-accent-900: #29245f;
+  --noc-neutral-100: #f7f8fc;
+  --noc-neutral-200: #eef0f6;
+  /* Eski sayfalar gövde metninde neutral-300 kullanıyor; açık temada
+     bu token da okunabilir bir metin rengi olmak zorunda. */
+  --noc-neutral-300: #535a70;
+  --noc-neutral-400: #646b80;
+  --noc-neutral-500: #70768a;
+  --noc-neutral-600: #60667a;
+  --noc-neutral-700: #484e60;
+  --noc-neutral-800: #303548;
+  --noc-neutral-900: #202438;
+  --noc-section: #171b3f;
+  --noc-section-glow: #292f69;
+  --pa-positive: #16794b;
+  --pa-positive-bg: #e8f7ef;
+  --pa-campaign: #9a5d0b;
+  --pa-campaign-bg: #fff4df;
+  --pa-danger: #b52e42;
+  --pa-focus: rgba(101, 86, 232, 0.24);
+  --noc-divider: #e4e6ef;
+  --noc-shadow-sm: 0 1px 2px rgba(20, 24, 48, 0.04), 0 0 0 1px rgba(36, 42, 73, 0.09);
+  --noc-shadow-md: 0 10px 30px rgba(20, 24, 48, 0.1), 0 0 0 1px rgba(36, 42, 73, 0.08);
+  --noc-shadow-lg: 0 24px 70px rgba(20, 24, 48, 0.16), 0 0 0 1px rgba(36, 42, 73, 0.08);
 }
 
 .noc-shell {
   --spacing: var(--noc-spacing);
+}
+
+/* ProteinAvcısı 2026 hibrit arayüzü. Koyu marka alanı her iki temada
+   sabit; alttaki ticaret/içerik yüzeyleri kullanıcı tercihine uyuyor. */
+.pa-topbar,
+.pa-hero-zone {
+  --noc-text: #f7f7fc;
+  --noc-neutral-300: #c7cbe0;
+  --noc-neutral-500: #9399b7;
+  --noc-divider: rgba(188, 194, 231, 0.17);
+  color: var(--noc-text);
+  background: var(--pa-hero);
+}
+
+.pa-topbar {
+  position: relative;
+  z-index: 35;
+  border-bottom: 1px solid var(--noc-divider);
+}
+
+.pa-footer {
+  --noc-surface: rgba(255, 255, 255, 0.07);
+  --noc-card: rgba(255, 255, 255, 0.07);
+  --noc-accent: #a89dff;
+  --noc-neutral-500: #aeb4ce;
+  color: #f7f7fc;
+  background: #0b0f27;
+}
+
+.pa-container {
+  width: min(100% - 40px, 1380px);
+  margin-inline: auto;
+}
+
+.pa-brand-mark {
+  display: inline-flex;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #7c6cf2;
+  border-radius: 10px;
+  color: #a89dff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.pa-search {
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid rgba(38, 43, 70, 0.14);
+  border-radius: 10px;
+  background: #fff;
+  color: #171a2e;
+  box-shadow: 0 4px 18px rgba(8, 10, 27, 0.14);
+}
+
+.pa-search:focus {
+  border-color: #8c7cff;
+  outline: 4px solid rgba(140, 124, 255, 0.16);
+}
+
+.pa-hero-zone {
+  position: relative;
+  overflow: hidden;
+}
+
+.pa-hero-zone::before {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(700px 310px at 8% 15%, rgba(94, 83, 190, 0.25), transparent 70%),
+    radial-gradient(520px 280px at 88% 20%, rgba(53, 83, 159, 0.16), transparent 72%);
+  content: "";
+  pointer-events: none;
+}
+
+.pa-hero-card {
+  border: 1px solid var(--pa-hero-border);
+  border-radius: 14px;
+  background: rgba(25, 30, 62, 0.78);
+  box-shadow: 0 14px 44px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(14px);
+}
+
+.pa-primary-button,
+.pa-secondary-button,
+.pa-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  font-weight: 600;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+}
+
+.pa-primary-button {
+  border: 1px solid #7565ed;
+  background: #6556e8;
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(83, 68, 207, 0.2);
+}
+
+.pa-primary-button:hover {
+  background: #5949db;
+  box-shadow: 0 10px 24px rgba(83, 68, 207, 0.28);
+  transform: translateY(-1px);
+}
+
+.pa-secondary-button {
+  border: 1px solid var(--noc-divider);
+  background: var(--noc-card);
+  color: var(--noc-text);
+}
+
+.pa-secondary-button:hover,
+.pa-icon-button:hover {
+  border-color: var(--noc-accent);
+  color: var(--noc-accent);
+}
+
+.pa-category-strip {
+  position: relative;
+  z-index: 2;
+  border-bottom: 1px solid var(--noc-divider);
+  background: var(--noc-card);
+}
+
+.pa-category-strip > div {
+  scrollbar-width: none;
+}
+
+.pa-category-strip > div::-webkit-scrollbar {
+  display: none;
+}
+
+.pa-category-link {
+  display: flex;
+  min-width: 92px;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 18px 10px 16px;
+  border-radius: 12px;
+  color: var(--noc-neutral-700);
+  font-size: 12px;
+  white-space: nowrap;
+  transition: color 160ms ease, background 160ms ease;
+}
+
+.dark .pa-category-link {
+  color: var(--noc-neutral-300);
+}
+
+.pa-category-link:hover,
+.pa-category-link[aria-current="true"] {
+  background: color-mix(in srgb, var(--noc-accent) 10%, transparent);
+  color: var(--noc-accent);
+}
+
+.pa-category-icon {
+  display: inline-flex;
+  width: 46px;
+  height: 46px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--noc-divider);
+  border-radius: 50%;
+  background: var(--noc-neutral-100);
+  color: var(--noc-neutral-700);
+  font-size: 21px;
+}
+
+.dark .pa-category-icon {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--noc-neutral-300);
+}
+
+.pa-card {
+  border: 1px solid var(--noc-divider);
+  border-radius: 14px;
+  background: var(--noc-card);
+  box-shadow: var(--noc-shadow-sm);
+}
+
+.pa-filter-control {
+  min-height: 42px;
+  border: 1px solid var(--noc-divider);
+  border-radius: 9px;
+  background: var(--noc-card);
+  color: var(--noc-text);
+}
+
+.pa-filter-control:focus {
+  border-color: var(--noc-accent);
+  outline: 4px solid var(--pa-focus);
+}
+
+.pa-product-list {
+  overflow: hidden;
+  border: 1px solid var(--noc-divider);
+  border-radius: 14px;
+  background: var(--noc-card);
+  box-shadow: var(--noc-shadow-sm);
+}
+
+.pa-product-row {
+  display: grid;
+  grid-template-columns: 146px minmax(240px, 1.55fr) minmax(135px, 0.72fr) minmax(180px, 0.9fr) minmax(135px, 0.68fr);
+  min-height: 146px;
+  align-items: center;
+  gap: 20px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--noc-divider);
+}
+
+.pa-product-row:last-child {
+  border-bottom: 0;
+}
+
+.pa-product-row:hover {
+  background: color-mix(in srgb, var(--noc-accent) 3.5%, var(--noc-card));
+}
+
+.pa-product-image-well {
+  display: flex;
+  height: 112px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: var(--noc-neutral-100);
+}
+
+.dark .pa-product-image-well {
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.pa-positive-badge,
+.pa-campaign-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.pa-positive-badge {
+  border: 1px solid color-mix(in srgb, var(--pa-positive) 30%, transparent);
+  background: var(--pa-positive-bg);
+  color: var(--pa-positive);
+}
+
+.pa-campaign-badge {
+  border: 1px solid color-mix(in srgb, var(--pa-campaign) 30%, transparent);
+  background: var(--pa-campaign-bg);
+  color: var(--pa-campaign);
+}
+
+.pa-section-title {
+  color: var(--noc-text);
+  font-size: clamp(1.55rem, 2.2vw, 2.2rem);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.08;
+}
+
+.noc-shell main h1 {
+  font-weight: 700;
+  letter-spacing: -0.035em;
+}
+
+.pa-muted {
+  color: var(--noc-neutral-600);
+}
+
+.dark .pa-muted {
+  color: var(--noc-neutral-400);
+}
+
+.pa-skeleton {
+  background: linear-gradient(100deg, var(--noc-neutral-100) 20%, var(--noc-neutral-200) 38%, var(--noc-neutral-100) 56%);
+  background-size: 200% 100%;
+  animation: pa-shimmer 1.4s infinite linear;
+}
+
+@keyframes pa-shimmer {
+  to { background-position-x: -200%; }
+}
+
+*:focus-visible {
+  outline: 3px solid var(--pa-focus);
+  outline-offset: 2px;
+}
+
+@media (max-width: 900px) {
+  .pa-container { width: min(100% - 28px, 1380px); }
+
+  .pa-product-row {
+    grid-template-columns: 100px minmax(0, 1fr) auto;
+    min-height: 132px;
+    gap: 14px;
+    padding: 14px;
+  }
+
+  .pa-product-image-well { height: 96px; }
+  .pa-product-chart { display: none; }
+  .pa-product-store { grid-column: 3; grid-row: 1; }
+}
+
+@media (max-width: 640px) {
+  .pa-container { width: min(100% - 24px, 1380px); }
+
+  .pa-product-list {
+    overflow: visible;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .pa-product-row {
+    grid-template-columns: 88px minmax(0, 1fr);
+    min-height: 0;
+    margin-bottom: 10px;
+    border: 1px solid var(--noc-divider);
+    border-radius: 13px;
+    background: var(--noc-card);
+  }
+
+  .pa-product-row:last-child { border-bottom: 1px solid var(--noc-divider); }
+  .pa-product-image-well { height: 92px; }
+  .pa-product-price { grid-column: 1 / -1; }
+  .pa-product-store { grid-column: 1 / -1; grid-row: auto; }
+  .pa-category-link {
+    min-width: 98px;
+    padding-inline: 6px;
+    text-align: center;
+    white-space: normal;
+    line-height: 1.2;
+  }
+
+  .pa-featured-deal {
+    grid-template-columns: 92px minmax(0, 1fr);
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .pa-featured-deal .pa-hero-product { height: 92px; }
+  .pa-featured-deal .pa-hero-info h2 { font-size: 14px; }
+  .pa-featured-deal .pa-hero-info p:last-child { margin-top: 7px; font-size: 10px; }
+  .pa-featured-deal .pa-hero-price {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+  }
+  .pa-featured-deal .pa-hero-price > div { margin-top: 0; }
+  .pa-featured-deal .pa-hero-price > div:first-of-type { white-space: nowrap; font-size: 24px; }
+  .pa-featured-deal .pa-hero-chart { display: none; }
+  .pa-featured-deal .pa-hero-actions { grid-column: 1 / -1; align-self: end; }
+  .pa-featured-deal .pa-hero-actions > button { display: none; }
+
+  .pa-responsive-table { overflow: visible; background: transparent; box-shadow: none; }
+  .pa-responsive-table table,
+  .pa-responsive-table tbody { display: block; min-width: 0; width: 100%; }
+  .pa-responsive-table thead { display: none; }
+  .pa-responsive-table tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 3px 10px;
+    margin-bottom: 10px;
+    padding: 12px;
+    border: 1px solid var(--noc-divider);
+    border-radius: 12px;
+    background: var(--noc-card);
+  }
+  .pa-responsive-table td { display: block; padding: 3px !important; border: 0 !important; }
+  .pa-responsive-table td:nth-child(1) { grid-column: 1 / -1; }
+  .pa-responsive-table td:nth-child(2) { grid-column: 1; }
+  .pa-responsive-table td:nth-child(3) { grid-column: 2; grid-row: 2; text-align: right; }
+  .pa-responsive-table td:nth-child(4) { grid-column: 1; grid-row: 3; text-align: left; }
+  .pa-responsive-table td:nth-child(5) { grid-column: 1; grid-row: 4; }
+  .pa-responsive-table td:nth-child(6) { grid-column: 2; grid-row: 3 / 5; align-self: center; }
 }
 
 /* Canlı tarama şeridindeki nabız noktası — sadece motion-safe: altında

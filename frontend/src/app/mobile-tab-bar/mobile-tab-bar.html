@@ -1,57 +1,9 @@
-<nav
-  class="noc-shell fixed inset-x-0 bottom-0 z-30 flex h-[56px] border-t border-[var(--noc-divider)] bg-[var(--noc-card)] sm:hidden"
-  aria-label="Mobil gezinme"
->
-  <a
-    routerLink="/"
-    routerLinkActive="text-[var(--noc-accent)]"
-    [routerLinkActiveOptions]="{ exact: true }"
-    class="flex flex-1 flex-col items-center justify-center gap-0.5 text-[10px] text-[var(--noc-neutral-500)]"
-  >
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-5 w-5">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M3 11.5 12 4l9 7.5M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9" />
-    </svg>
-    İndirimler
-  </a>
-
-  <a
-    routerLink="/kategoriler"
-    routerLinkActive="text-[var(--noc-accent)]"
-    class="flex flex-1 flex-col items-center justify-center gap-0.5 text-[10px] text-[var(--noc-neutral-500)]"
-  >
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-5 w-5">
-      <rect x="3.5" y="3.5" width="7" height="7" rx="1.5" /><rect x="13.5" y="3.5" width="7" height="7" rx="1.5" /><rect x="3.5" y="13.5" width="7" height="7" rx="1.5" /><rect x="13.5" y="13.5" width="7" height="7" rx="1.5" />
-    </svg>
-    Kategoriler
-  </a>
-
-  <a
-    routerLink="/rehber"
-    routerLinkActive="text-[var(--noc-accent)]"
-    class="flex flex-1 flex-col items-center justify-center gap-0.5 text-[10px] text-[var(--noc-neutral-500)]"
-  >
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-5 w-5">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M4 5.5A2 2 0 0 1 6 4h5a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H4Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M20 5.5A2 2 0 0 0 18 4h-5a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h7Z" />
-    </svg>
-    Rehber
-  </a>
-
-  <a
-    routerLink="/favorilerim"
-    routerLinkActive="text-[var(--noc-accent)]"
-    class="relative flex flex-1 flex-col items-center justify-center gap-0.5 text-[10px] text-[var(--noc-neutral-500)]"
-  >
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-5 w-5">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M12 20s-7-4.35-9.5-8.5C.8 8 2.2 4.5 5.6 4a4.9 4.9 0 0 1 6.4 2 4.9 4.9 0 0 1 6.4-2c3.4.5 4.8 4 3.1 7.5C19 15.65 12 20 12 20Z" />
-    </svg>
-    Takip Listem
-    @if (favoritesCount() > 0) {
-      <span
-        class="absolute right-[22%] top-1 rounded-full px-1 text-[9px] font-medium"
-        style="background: var(--noc-accent-800); color: var(--noc-accent-100)"
-      >
-        {{ favoritesCount() }}
-      </span>
-    }
+<nav class="noc-shell fixed inset-x-0 bottom-0 z-30 grid h-[66px] grid-cols-4 border-t border-[var(--noc-divider)] bg-[color-mix(in_srgb,var(--noc-card)_94%,transparent)] px-2 shadow-[0_-8px_24px_rgba(20,24,48,0.08)] backdrop-blur sm:hidden" aria-label="Mobil gezinme">
+  <a routerLink="/" routerLinkActive="text-[var(--noc-accent)]" [routerLinkActiveOptions]="{ exact: true }" class="flex flex-col items-center justify-center gap-1 text-[10px] font-medium text-[var(--noc-neutral-500)]"><i class="ph ph-house text-[21px]" aria-hidden="true"></i>Ana sayfa</a>
+  <a routerLink="/kategoriler" routerLinkActive="text-[var(--noc-accent)]" class="flex flex-col items-center justify-center gap-1 text-[10px] font-medium text-[var(--noc-neutral-500)]"><i class="ph ph-squares-four text-[21px]" aria-hidden="true"></i>Kategoriler</a>
+  <a routerLink="/rehber" routerLinkActive="text-[var(--noc-accent)]" class="flex flex-col items-center justify-center gap-1 text-[10px] font-medium text-[var(--noc-neutral-500)]"><i class="ph ph-book-open-text text-[21px]" aria-hidden="true"></i>Rehber</a>
+  <a routerLink="/favorilerim" routerLinkActive="text-[var(--noc-accent)]" class="relative flex flex-col items-center justify-center gap-1 text-[10px] font-medium text-[var(--noc-neutral-500)]">
+    <i class="ph ph-bookmark-simple text-[21px]" aria-hidden="true"></i>Takip listem
+    @if (favoritesCount() > 0) { <span class="absolute right-[23%] top-2 min-w-4 rounded-full bg-[var(--noc-accent)] px-1 text-center text-[9px] font-bold text-white">{{ favoritesCount() }}</span> }
   </a>
 </nav>
