@@ -613,6 +613,50 @@ app.MapGet("/api/dev/click-report", async (AppDbContext db, CancellationToken ct
     return Results.Ok(report);
 }).RequireAdminKey(adminApiKey);
 
+// E-posta kapasitesi raporu. Sağlayıcının günlük kotası bültenle transactional
+// mailler (onay, fiyat alarmı, favori kurtarma) arasında paylaşıldığı için,
+// kota sessizce dolduğunda yeni bir abone onay mailini hiç alamaz — dışarıdan
+// hiçbir hata görünmeden. Bu uç nokta, o sınıra ne kadar kaldığını görünür
+// kılıyor; buradaki "kalan gün" tahmini abone sayısı arttıkça takip edilmeli.
+app.MapGet("/api/dev/email-stats", async (AppDbContext db, IConfiguration config, CancellationToken ct) =>
+{
+    var intervalDays = config.GetValue("Digest:IntervalDays", 7);
+    var dailyQuota = config.GetValue("Digest:DailyQuota", 200);
+    var now = DateTimeOffset.UtcNow;
+    var todayStart = new DateTimeOffset(now.UtcDateTime.Date, TimeSpan.Zero);
+    var dueBefore = now.AddDays(-intervalDays);
+
+    var activeSubscribers = await db.Subscribers
+        .CountAsync(s => s.IsConfirmed && s.UnsubscribedAt == null, ct);
+    var pendingConfirmation = await db.Subscribers
+        .CountAsync(s => !s.IsConfirmed && s.UnsubscribedAt == null, ct);
+    var sentToday = await db.Subscribers
+        .CountAsync(s => s.LastDigestSentAt >= todayStart, ct);
+    var awaitingDigest = await db.Subscribers
+        .CountAsync(s => s.IsConfirmed && s.UnsubscribedAt == null
+            && (s.LastDigestSentAt == null || s.LastDigestSentAt < dueBefore), ct);
+
+    // Bir bülten turunun kaç güne yayıldığı: kota tavanı aşıldığında kalanlar
+    // ertesi güne devrediyor (bkz. DigestService).
+    var daysPerRound = (int)Math.Ceiling(activeSubscribers / (double)dailyQuota);
+
+    return Results.Ok(new
+    {
+        activeSubscribers,
+        pendingConfirmation,
+        digestIntervalDays = intervalDays,
+        dailyDigestQuota = dailyQuota,
+        sentToday,
+        remainingQuotaToday = Math.Max(0, dailyQuota - sentToday),
+        awaitingDigest,
+        daysPerRound,
+        // Bülten turu, gönderim aralığından uzun sürmeye başladığında abonelerin
+        // bir kısmı o turu kaçırmaya başlar — pratik tavan bu.
+        maxSubscribersAtCurrentSettings = dailyQuota * intervalDays,
+        capacityUsedPercent = Math.Round(activeSubscribers * 100.0 / (dailyQuota * intervalDays), 2),
+    });
+}).RequireAdminKey(adminApiKey);
+
 app.Run();
 
 // Onay/çıkış linklerinin ikisi de aynı markalı kart tasarımını kullanıyor —
