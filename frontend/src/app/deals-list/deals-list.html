@@ -270,6 +270,20 @@
         </section>
       }
 
+      <!-- "Uygulama olarak yükle" ipucu. `canInstall` yalnızca tarayıcının
+           `beforeinstallprompt` event'i ateşlendiğinde true oluyor (pratikte
+           Android Chrome ve benzeri Chromium tabanlı tarayıcılar); iOS
+           Safari'de bu event hiç ateşlenmediği için orada otomatik olarak
+           hiç çıkmaz. -->
+      @if (pwaInstall.canInstall()) {
+        <section class="pa-card mt-14 flex items-center gap-4 p-5">
+          <span class="hidden h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--noc-accent-100)] text-[var(--noc-accent)] sm:inline-flex"><i class="ph ph-device-mobile text-2xl" aria-hidden="true"></i></span>
+          <p class="flex-1 text-sm leading-6 pa-muted">Bu siteyi telefonuna uygulama gibi ekleyip ana ekrandan hızlıca açabilirsin.</p>
+          <button type="button" (click)="pwaInstall.promptInstall()" class="pa-primary-button h-10 shrink-0 px-4 text-sm">Yükle</button>
+          <button type="button" title="Kapat" aria-label="Kapat" (click)="pwaInstall.dismiss()" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--noc-neutral-500)] hover:bg-[color-mix(in_srgb,var(--noc-text)_7%,transparent)]"><i class="ph ph-x text-base" aria-hidden="true"></i></button>
+        </section>
+      }
+
       <section id="alarm" class="relative mt-14 overflow-hidden rounded-[18px] bg-[var(--noc-section)] px-6 py-9 text-white sm:px-10">
         <div class="relative z-10 max-w-xl">
           <span class="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/10"><i class="ph ph-bell-ringing text-2xl text-[#a89dff]" aria-hidden="true"></i></span>
