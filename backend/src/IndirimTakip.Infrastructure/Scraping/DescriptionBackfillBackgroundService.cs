@@ -19,18 +19,30 @@ public class DescriptionBackfillBackgroundService(
         }
 
         var intervalDays = configuration.GetValue("DescriptionBackfill:IntervalDays", 7);
-        using var timer = new PeriodicTimer(TimeSpan.FromDays(intervalDays));
 
-        // DigestBackgroundService ile aynı desen — do-while DEĞİL, while. Her
-        // deploy/restart'ta hemen tetiklenip marka sitelerine gereksiz istek
-        // atılmasın diye ilk periyodun tamamen dolması bekleniyor.
-        while (await timer.WaitForNextTickAsync(stoppingToken))
+        // Timer artık periyodun kendisini DEĞİL, yalnızca kontrol sıklığını
+        // belirliyor; "sırası geldi mi" kararı DB'deki son çalışma damgasından
+        // veriliyor (ProductDetailBackfillService.IsDueAsync).
+        //
+        // Öncesinde periyodu timer'ın kendisi tutuyordu ve bu, işin hiç
+        // çalışmamasına yol açıyordu: her deploy/restart süreci sıfırdan
+        // başlattığı için 7 günlük periyot bir kez bile dolmuyordu (bültende
+        // aynı hata gerçekleşti, bkz. DigestBackgroundService). Durum DB'de
+        // olduğundan başlangıçta hemen kontrol etmek de güvenli — aralık
+        // dolmadıysa marka sitelerine hiç istek gitmiyor.
+        var checkIntervalHours = configuration.GetValue("DescriptionBackfill:CheckIntervalHours", 6);
+        using var timer = new PeriodicTimer(TimeSpan.FromHours(checkIntervalHours));
+
+        do
         {
             using var scope = scopeFactory.CreateScope();
             var backfill = scope.ServiceProvider.GetRequiredService<ProductDetailBackfillService>();
 
             try
             {
+                if (!await backfill.IsDueAsync(intervalDays, stoppingToken))
+                    continue;
+
                 var updated = await backfill.BackfillAsync(stoppingToken);
                 logger.LogInformation("Açıklama tamamlama çalıştı: {Count} ürün güncellendi.", updated);
             }
@@ -39,5 +51,6 @@ public class DescriptionBackfillBackgroundService(
                 logger.LogError(ex, "Açıklama tamamlama sırasında hata oluştu.");
             }
         }
+        while (await timer.WaitForNextTickAsync(stoppingToken));
     }
 }

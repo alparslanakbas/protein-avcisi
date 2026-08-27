@@ -26,6 +26,18 @@ public class ProductDetailBackfillService(
     // çalışmanın süresini makul tutar hem de bir sorun çıkarsa etkiyi sınırlar.
     private const int MaxProductsPerRun = 60;
 
+    // Bu işin "en son ne zaman çalıştığı" için ayrı bir kayıt tutmaya gerek yok:
+    // NutritionCheckedAt damgasını YALNIZCA bu servis yazdığı için, en yeni damga
+    // doğrudan son çalışma zamanını veriyor. Zamanlamanın süreç belleğinde değil
+    // burada durması önemli — periyot günler mertebesinde olduğu için, bellekte
+    // tutulsaydı deploy'lar periyodun dolmasına hiç izin vermezdi (bültende tam
+    // olarak bu yaşandı, bkz. DigestBackgroundService).
+    public async Task<bool> IsDueAsync(int intervalDays, CancellationToken cancellationToken = default)
+    {
+        var lastRun = await db.Products.MaxAsync(p => p.NutritionCheckedAt, cancellationToken);
+        return lastRun is null || lastRun < DateTimeOffset.UtcNow.AddDays(-intervalDays);
+    }
+
     public async Task<int> BackfillAsync(CancellationToken cancellationToken = default)
     {
         var totalUpdated = 0;
