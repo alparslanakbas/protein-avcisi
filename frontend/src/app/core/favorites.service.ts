@@ -27,6 +27,21 @@ export class FavoritesService {
     return this.isBrowser ? localStorage.getItem(TOKEN_KEY) : null;
   }
 
+  hasToken(): boolean {
+    return this.getToken() !== null;
+  }
+
+  // Listeyi BU CİHAZDAN ayırır; sunucudaki favoriler olduğu gibi kalır ve
+  // kurtarma linkiyle geri alınabilir.
+  //
+  // Bu düğme olmadan liste bir kez kaydedildiğinde o tarayıcıdan hiç
+  // çıkarılamıyordu: ortak kullanılan bir bilgisayarda sonraki kişi önceki
+  // kişinin listesini görüyor ve bunu fark etmesinin de bir yolu bulunmuyordu.
+  signOut(): void {
+    if (this.isBrowser) localStorage.removeItem(TOKEN_KEY);
+    this.count.set(0);
+  }
+
   saveToken(token: string | null): void {
     // token null gelebilir — e-posta zaten başka bir aboneye aitse backend
     // artık o hesabın token'ını ifşa etmiyor (bkz. 2026-08-15 güvenlik

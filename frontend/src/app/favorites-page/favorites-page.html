@@ -50,7 +50,16 @@
         <a routerLink="/" class="mt-2 block w-full text-sm font-medium text-[var(--noc-accent)]">Ürünlere göz at</a>
       </div>
     } @else {
-      <p class="mt-6 text-sm text-[var(--noc-neutral-500)]">{{ favorites().length }} ürün izliyorsun.</p>
+      <div class="mt-6 flex flex-wrap items-center justify-between gap-3">
+        <p class="text-sm text-[var(--noc-neutral-500)]">{{ favorites().length }} ürün izliyorsun.</p>
+        <button type="button" (click)="signOut()" class="text-xs font-medium text-[var(--noc-neutral-500)] underline underline-offset-2 hover:text-[var(--noc-accent)]">
+          Bu cihazdan çıkış yap
+        </button>
+      </div>
+      <p class="mt-1 text-xs leading-5 text-[var(--noc-neutral-600)]">
+        Bu liste bu tarayıcıya kayıtlı, e-posta adresine değil. Ortak kullanılan bir cihazdaysan çıkış yapabilirsin;
+        favorilerin silinmez, e-postana göndereceğimiz bağlantıyla istediğin zaman geri dönersin.
+      </p>
       <div class="mt-3 divide-y divide-[var(--noc-divider)] rounded-[14px] bg-[var(--noc-card)] shadow-[var(--noc-shadow-sm)]">
         @for (deal of favorites(); track deal.productId) {
           <div class="flex flex-wrap items-center gap-3 p-[11.2px] sm:flex-nowrap">

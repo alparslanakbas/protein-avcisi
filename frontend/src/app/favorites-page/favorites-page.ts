@@ -114,6 +114,16 @@ export class FavoritesPage implements OnInit {
     });
   }
 
+  // Listeyi yalnızca bu tarayıcıdan ayırır — sunucudaki favoriler duruyor,
+  // kurtarma bağlantısıyla geri alınabiliyor. Sayfa, token'ı olmayan
+  // ziyaretçiye gösterdiği "e-postana bağlantı gönderelim" formuna dönüyor.
+  protected signOut(): void {
+    this.favoritesService.signOut();
+    this.hasToken.set(false);
+    this.favorites.set([]);
+    this.recoverStatusMessage.set(null);
+  }
+
   protected submitRecover(): void {
     const email = this.recoverEmail().trim();
     if (!email) return;
