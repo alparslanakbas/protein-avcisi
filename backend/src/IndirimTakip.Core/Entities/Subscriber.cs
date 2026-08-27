@@ -18,4 +18,11 @@ public class Subscriber
     // için ayrı bir cooldown alanı — onay mailiyle aynı amaç ama farklı akış,
     // ikisinin birbirini sıfırlamaması için ayrı tutuluyor.
     public DateTimeOffset? LastRecoveryEmailSentAt { get; set; }
+    // Bültenin bu aboneye en son ne zaman gittiği. Zamanlamanın TEK kaynağı
+    // bu alan — bellekteki bir sayaç değil, çünkü o her deploy/restart'ta
+    // sıfırlanıyordu ve bülten hiç gönderilemiyordu. Ayrıca "kim bu haftanın
+    // bültenini henüz almadı" sorusunu da cevapladığı için, günlük gönderim
+    // kotası aşıldığında kalan aboneler ertesi gün kaldığı yerden devam
+    // ediyor (bkz. DigestService).
+    public DateTimeOffset? LastDigestSentAt { get; set; }
 }

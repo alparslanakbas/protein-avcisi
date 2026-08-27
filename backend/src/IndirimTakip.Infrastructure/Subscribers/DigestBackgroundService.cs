@@ -18,17 +18,25 @@ public class DigestBackgroundService(
             return;
         }
 
-        var intervalDays = configuration.GetValue("Digest:IntervalDays", 7);
-        using var timer = new PeriodicTimer(TimeSpan.FromDays(intervalDays));
+        // Zamanlamayı ARTIK bu timer belirlemiyor; sadece "kontrol etme"
+        // sıklığı. Gerçek karar (hangi abonenin maili zamanı geldi) her turda
+        // DB'deki Subscriber.LastDigestSentAt'e bakılarak veriliyor.
+        //
+        // Öncesinde timer'ın kendisi 7 günlük periyodu tutuyordu ve bu, bülten
+        // hiç gönderilememesine yol açıyordu: her deploy/restart süreci
+        // sıfırdan başlattığı için 7 günlük periyot bir kez bile dolmuyordu.
+        // Durum artık DB'de olduğundan restart zamanlamayı etkilemiyor, aynı
+        // sebeple başlangıçta hemen bir kontrol yapmak da güvenli (gönderim
+        // için hâlâ aboneye özel 7 günün dolması gerekiyor, yani deploy başına
+        // tekrar mail gitmiyor).
+        var checkIntervalHours = configuration.GetValue("Digest:CheckIntervalHours", 6);
+        using var timer = new PeriodicTimer(TimeSpan.FromHours(checkIntervalHours));
 
-        // ScrapingBackgroundService'in aksine BAŞLANGIÇTA hemen göndermiyoruz
-        // (do-while değil, while) — bu projede deploy/restart sık olduğu için
-        // her yeniden başlatmada abonelere bülten gitmesin diye ilk periyodun
-        // tamamen dolmasını bekliyoruz.
-        while (await timer.WaitForNextTickAsync(stoppingToken))
+        do
         {
             await SendDigestAsync(stoppingToken);
         }
+        while (await timer.WaitForNextTickAsync(stoppingToken));
     }
 
     private async Task SendDigestAsync(CancellationToken cancellationToken)
@@ -40,9 +48,12 @@ public class DigestBackgroundService(
         try
         {
             var result = await digest.SendDigestAsync(baseUrl, cancellationToken);
-            logger.LogInformation(
-                "Zamanlanmış bülten gönderildi: {DealCount} ürün, {SubscriberCount} abone.",
-                result.DealCount, result.SubscriberCount);
+            if (result.SubscriberCount > 0 || result.PendingCount > 0)
+            {
+                logger.LogInformation(
+                    "Zamanlanmış bülten: {DealCount} ürün, {SubscriberCount} aboneye gönderildi, {PendingCount} abone sıradaki tura kaldı.",
+                    result.DealCount, result.SubscriberCount, result.PendingCount);
+            }
         }
         catch (Exception ex)
         {

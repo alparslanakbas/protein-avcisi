@@ -5,7 +5,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace IndirimTakip.Infrastructure.Subscribers;
 
-public record DigestResult(int DealCount, int SubscriberCount);
+public record DigestResult(int DealCount, int SubscriberCount, int PendingCount = 0);
 
 // Kişiye özel ürün alarmı DEĞİL (bkz. CLAUDE.md) — zamanlanmış tarama
 // döngüsünün tespit ettiği en yüksek indirimlerden genel bir özet, tüm
@@ -16,8 +16,41 @@ public class DigestService(AppDbContext db, DealsQueryService dealsQuery, IEmail
     private const int FeaturedDealCount = 6;
     private static readonly CultureInfo TurkishCulture = CultureInfo.GetCultureInfo("tr-TR");
 
+    // Brevo'nun ücretsiz katmanı günde 300 e-posta veriyor ve bu kota bültenle
+    // transactional mailler (abonelik onayı, fiyat alarmı, favori kurtarma)
+    // arasında PAYLAŞILIYOR. Bültenin tüm kotayı yiyip yeni bir abonenin onay
+    // mailini engellememesi için burada bilinçli olarak bir tavan var; kalan
+    // aboneler ertesi gün kaldığı yerden alıyor (LastDigestSentAt sayesinde).
+    private const int DefaultDailyQuota = 200;
+
     public async Task<DigestResult> SendDigestAsync(string unsubscribeBaseUrl, CancellationToken cancellationToken = default)
     {
+        var intervalDays = configuration.GetValue("Digest:IntervalDays", 7);
+        var dailyQuota = configuration.GetValue("Digest:DailyQuota", DefaultDailyQuota);
+        var now = DateTimeOffset.UtcNow;
+        var dueBefore = now.AddDays(-intervalDays);
+
+        // Bu turda kimlere gitmeli: onaylı, çıkmamış ve bu bülten periyodunda
+        // henüz mail almamış aboneler.
+        var pendingQuery = db.Subscribers
+            .Where(s => s.IsConfirmed && s.UnsubscribedAt == null)
+            .Where(s => s.LastDigestSentAt == null || s.LastDigestSentAt < dueBefore);
+
+        var pendingCount = await pendingQuery.CountAsync(cancellationToken);
+        if (pendingCount == 0)
+            return new DigestResult(0, 0);
+
+        // Bugün bültenden kaç mail çıktığını abonelerin kendi damgasından
+        // sayıyoruz — ayrı bir sayaç tablosu tutmaya gerek yok ve restart'tan
+        // etkilenmiyor.
+        var todayStart = new DateTimeOffset(now.UtcDateTime.Date, TimeSpan.Zero);
+        var sentToday = await db.Subscribers
+            .CountAsync(s => s.LastDigestSentAt >= todayStart, cancellationToken);
+
+        var remainingQuota = dailyQuota - sentToday;
+        if (remainingQuota <= 0)
+            return new DigestResult(0, 0, pendingCount);
+
         var deals = await dealsQuery.GetDealsAsync(
             referenceWindowDays: 30, brands: null, categories: null, search: null,
             minPrice: null, maxPrice: null, onlyDiscounted: true, onlyStoreDiscounted: false,
@@ -26,10 +59,11 @@ public class DigestService(AppDbContext db, DealsQueryService dealsQuery, IEmail
         // Gösterecek gerçek bir indirim yoksa boş/anlamsız bir e-posta göndermek
         // yerine hiç göndermiyoruz.
         if (deals.Items.Count == 0)
-            return new DigestResult(0, 0);
+            return new DigestResult(0, 0, pendingCount);
 
-        var subscribers = await db.Subscribers
-            .Where(s => s.IsConfirmed && s.UnsubscribedAt == null)
+        var subscribers = await pendingQuery
+            .OrderBy(s => s.LastDigestSentAt == null ? 0 : 1).ThenBy(s => s.Id)
+            .Take(remainingQuota)
             .ToListAsync(cancellationToken);
 
         var frontendBaseUrl = configuration["FrontendBaseUrl"] ?? "https://www.proteinavcisi.com.tr";
@@ -46,6 +80,9 @@ public class DigestService(AppDbContext db, DealsQueryService dealsQuery, IEmail
             try
             {
                 await emailSender.SendAsync(subscriber.Email, "Protein Avcısı — Bu Haftanın Öne Çıkan İndirimleri", html, cancellationToken);
+                // Damgayı yalnızca gönderim GERÇEKTEN başarılıysa atıyoruz;
+                // hata alan abone bir sonraki turda tekrar sıraya giriyor.
+                subscriber.LastDigestSentAt = now;
                 sentCount++;
             }
             catch (Exception)
@@ -54,7 +91,10 @@ public class DigestService(AppDbContext db, DealsQueryService dealsQuery, IEmail
             }
         }
 
-        return new DigestResult(deals.Items.Count, sentCount);
+        if (sentCount > 0)
+            await db.SaveChangesAsync(cancellationToken);
+
+        return new DigestResult(deals.Items.Count, sentCount, pendingCount - sentCount);
     }
 
     private static string BuildDealRowHtml(DealDto deal, string frontendBaseUrl)
