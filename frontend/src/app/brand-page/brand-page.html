@@ -218,7 +218,7 @@
                 <span class="text-[var(--noc-neutral-500)] normal-case tracking-normal">{{ lastCheckedText(deal) }}</span>
               </div>
 
-              <h3 [title]="displayName(deal.productName)" class="line-clamp-2 min-h-[38px] text-[15px] font-medium leading-[1.28]">{{ displayName(deal.productName) }}</h3>
+              <h3 class="min-h-[38px]"><a [href]="productPath(deal)" (click)="onProductClick($event, deal)" [title]="displayName(deal.productName)" class="line-clamp-2 text-[15px] font-medium leading-[1.28] hover:text-[var(--noc-accent)]">{{ displayName(deal.productName) }}</a></h3>
 
               @if (deal.size || deal.flavor) {
                 <span class="text-xs text-[var(--noc-neutral-500)]">{{ deal.size }}{{ deal.size && deal.flavor ? ' · ' : '' }}{{ deal.flavor }}</span>

@@ -9,6 +9,7 @@ import { CATEGORY_FAQS, FaqItem } from '../core/category-faqs';
 import { CATEGORY_GUIDES, CategoryGuide } from '../core/category-guides';
 import { CATEGORY_INTROS, CATEGORY_LABELS } from '../core/category-labels';
 import { Deal } from '../core/deal.model';
+import { productPath, shouldHandleInApp } from '../core/product-link';
 import { DealsService } from '../core/deals.service';
 import { displayName } from '../core/display-name';
 import { PageMetaService, upsertJsonLdScript } from '../core/page-meta.service';
@@ -327,6 +328,23 @@ export class CategoryPage implements OnInit {
 
   protected storeDiscountBadge(deal: Deal): string {
     return `Mağaza -%${deal.storeDiscountPercent}`;
+  }
+
+  // Kart/satır bağlantıları gerçek <a href> olmak zorunda (bkz.
+  // core/product-link.ts). Bu sayfalarda modal, ürün sayfasına gitmeden
+  // ?urun= parametresiyle açılıyor — bu yüzden RouterLink yerine gerçek bir
+  // href + kontrollü tıklama kullanılıyor: bot kanonik ürün adresini görüyor,
+  // kullanıcı ise sayfadan ayrılmadan modalı açıyor.
+  protected productPath(deal: Deal): string {
+    return productPath(deal);
+  }
+
+  protected onProductClick(event: MouseEvent, deal: Deal): void {
+    // Satırın/kartın kendi tıklama işleyicisi de varsa iki kez tetiklenmesin.
+    event.stopPropagation();
+    if (!shouldHandleInApp(event)) return;
+    event.preventDefault();
+    this.openDeal(deal);
   }
 
   protected openDeal(deal: Deal): void {

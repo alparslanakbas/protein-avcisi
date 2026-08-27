@@ -54,15 +54,15 @@
       <div class="mt-3 divide-y divide-[var(--noc-divider)] rounded-[14px] bg-[var(--noc-card)] shadow-[var(--noc-shadow-sm)]">
         @for (deal of favorites(); track deal.productId) {
           <div class="flex flex-wrap items-center gap-3 p-[11.2px] sm:flex-nowrap">
-            <button type="button" (click)="openDeal(deal)" class="h-16 w-16 shrink-0 rounded-[8px] bg-[color-mix(in_srgb,var(--noc-text)_5%,transparent)]">
+            <a [href]="productPath(deal)" (click)="onProductClick($event, deal)" tabindex="-1" aria-hidden="true" class="block h-16 w-16 shrink-0 rounded-[8px] bg-[color-mix(in_srgb,var(--noc-text)_5%,transparent)]">
               @if (deal.imageUrl) {
                 <img [src]="deal.imageUrl" [alt]="displayName(deal.productName)" loading="lazy" class="h-full w-full object-contain p-1.5" />
               }
-            </button>
-            <button type="button" (click)="openDeal(deal)" class="min-w-0 flex-1 text-left sm:w-[300px] sm:flex-none">
+            </a>
+            <a [href]="productPath(deal)" (click)="onProductClick($event, deal)" class="block min-w-0 flex-1 text-left sm:w-[300px] sm:flex-none">
               <div class="text-[10px] uppercase tracking-[0.08em] text-[var(--noc-accent)]">{{ deal.brandName }}</div>
               <div [title]="displayName(deal.productName)" class="line-clamp-2 text-[15px] font-medium leading-tight">{{ displayName(deal.productName) }}</div>
-            </button>
+            </a>
             <div class="ml-auto text-right">
               <div class="text-[15px] font-medium">{{ deal.currentPrice | number: '1.2-2' }} ₺</div>
               @if (deal.discountPercent > 0) {

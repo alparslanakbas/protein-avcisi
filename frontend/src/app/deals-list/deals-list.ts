@@ -25,6 +25,7 @@ import { PriceHistoryService } from '../core/price-history.service';
 import { PwaInstallService } from '../core/pwa-install.service';
 import { formatRelativeTime } from '../core/relative-time';
 import { slugify } from '../core/slugify';
+import { productPath } from '../core/product-link';
 import { buildAreaPath, buildLinePath, toCoordinates } from '../core/spark-chart';
 import { SubscribeService } from '../core/subscribe.service';
 import { ThemePreference, ThemeService } from '../core/theme.service';
@@ -670,6 +671,14 @@ export class DealsList implements OnInit {
 
   protected closeCategories(): void {
     this.categoriesOpen.set(false);
+  }
+
+  // Kartlardaki bağlantılar RouterLink ile kuruluyor (bkz. core/product-link.ts):
+  // gerçek bir <a href> üretiyor — arama motorları takip edebiliyor, orta tık ve
+  // "yeni sekmede aç" çalışıyor — ama tıklandığında yine SPA gezinmesi yapıyor,
+  // yani aşağıdaki openDeal ile birebir aynı sonucu veriyor.
+  protected productPath(deal: Deal): string {
+    return productPath(deal);
   }
 
   protected openDeal(deal: Deal): void {
