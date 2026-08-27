@@ -698,6 +698,7 @@ static string BuildSubscriptionConfirmedPage(string frontendBaseUrl)
     var baseUrl = frontendBaseUrl.TrimEnd('/');
     var signalImageUrl = $"{baseUrl}/email-assets/subscription-confirmed-signal.jpg";
     var logoUrl = $"{baseUrl}/favicon.svg";
+    var mailIconUrl = $"{baseUrl}/email-assets/step-confirm.png";
     var shieldImageUrl = $"{baseUrl}/email-assets/trust-shield.png";
 
     return $$"""
@@ -723,20 +724,20 @@ static string BuildSubscriptionConfirmedPage(string frontendBaseUrl)
               display:flex;
               flex-direction:column;
               align-items:center;
-              justify-content:center;
-              padding:42px 24px;
+              justify-content:flex-start;
+              padding:48px 24px 56px;
             }
             .brand-link {
               display:inline-flex;
               align-items:center;
               gap:14px;
-              margin-bottom:30px;
+              margin-bottom:36px;
               color:#171a2e;
               text-decoration:none;
             }
-            .brand-link img { width:54px; height:54px; display:block; }
+            .brand-link img { width:58px; height:58px; display:block; }
             .brand-name {
-              font-size:30px;
+              font-size:32px;
               font-weight:800;
               line-height:1;
               letter-spacing:-1.2px;
@@ -744,7 +745,7 @@ static string BuildSubscriptionConfirmedPage(string frontendBaseUrl)
             }
             .brand-name span { color:#6556e8; }
             .confirmation-card {
-              width:min(100%, 1040px);
+              width:min(100%, 1120px);
               overflow:hidden;
               background:#ffffff;
               border:1px solid #e4e6ef;
@@ -752,31 +753,34 @@ static string BuildSubscriptionConfirmedPage(string frontendBaseUrl)
               box-shadow:0 18px 54px rgba(20,24,48,.14);
             }
             .confirmation-hero {
-              min-height:520px;
-              padding:72px 70px;
+              min-height:675px;
+              padding:80px 86px;
               background-color:#0e1122;
               background-image:url('{{signalImageUrl}}');
               background-position:center;
               background-repeat:no-repeat;
               background-size:cover;
             }
-            .confirmation-content { width:51%; }
+            .confirmation-content { width:44%; }
             .eyebrow {
-              display:inline-block;
-              padding:10px 18px;
+              display:inline-flex;
+              align-items:center;
+              gap:10px;
+              padding:12px 20px 12px 14px;
               border:1px solid #796cbf;
               border-radius:999px;
               background:#2b2741;
               color:#f5f6fb;
-              font-size:14px;
+              font-size:17px;
               font-weight:800;
-              line-height:20px;
+              line-height:22px;
               letter-spacing:.9px;
             }
+            .eyebrow img { width:28px; height:28px; display:block; }
             h1 {
-              margin:28px 0 18px;
+              margin:32px 0 22px;
               color:#ffffff;
-              font-size:58px;
+              font-size:72px;
               font-weight:800;
               line-height:1.04;
               letter-spacing:-2.1px;
@@ -784,18 +788,18 @@ static string BuildSubscriptionConfirmedPage(string frontendBaseUrl)
             .confirmation-copy {
               margin:0;
               color:#c7cbe0;
-              font-size:20px;
+              font-size:25px;
               line-height:1.5;
             }
             .primary-action {
               display:block;
               width:100%;
-              margin-top:34px;
-              padding:18px 26px;
+              margin-top:36px;
+              padding:26px;
               border-radius:10px;
               background:#6556e8;
               color:#ffffff;
-              font-size:19px;
+              font-size:22px;
               font-weight:800;
               line-height:24px;
               text-align:center;
@@ -809,13 +813,14 @@ static string BuildSubscriptionConfirmedPage(string frontendBaseUrl)
               display:flex;
               align-items:center;
               gap:18px;
-              padding:28px 70px;
+              min-height:145px;
+              padding:38px 86px;
               background:#ffffff;
               color:#303548;
-              font-size:16px;
+              font-size:19px;
               line-height:1.5;
             }
-            .trust-strip img { width:52px; height:52px; display:block; flex:0 0 auto; }
+            .trust-strip img { width:76px; height:76px; display:block; flex:0 0 auto; }
             @media (max-width:760px) {
               .confirmation-page { justify-content:flex-start; padding:28px 14px; }
               .brand-link { margin-bottom:24px; gap:10px; }
@@ -828,10 +833,11 @@ static string BuildSubscriptionConfirmedPage(string frontendBaseUrl)
                 background-position:67% center;
               }
               .confirmation-content { width:100%; }
-              .eyebrow { padding:8px 13px; font-size:12px; line-height:18px; }
+              .eyebrow { padding:8px 13px 8px 9px; gap:8px; font-size:12px; line-height:18px; }
+              .eyebrow img { width:22px; height:22px; }
               h1 { margin-top:22px; font-size:40px; line-height:1.06; letter-spacing:-1.3px; }
               .confirmation-copy { font-size:17px; line-height:1.5; }
-              .primary-action { margin-top:26px; font-size:17px; }
+              .primary-action { margin-top:26px; padding:18px 26px; font-size:17px; }
               .trust-strip { align-items:flex-start; padding:24px 24px; gap:12px; font-size:14px; }
               .trust-strip img { width:42px; height:42px; }
             }
@@ -851,9 +857,9 @@ static string BuildSubscriptionConfirmedPage(string frontendBaseUrl)
             <section class="confirmation-card" aria-labelledby="confirmation-heading">
               <div class="confirmation-hero">
                 <div class="confirmation-content">
-                  <div class="eyebrow">ABONELİK AKTİF</div>
+                  <div class="eyebrow"><img src="{{mailIconUrl}}" width="24" height="24" alt="">ABONELİK AKTİF</div>
                   <h1 id="confirmation-heading">Aboneliğin<br>onaylandı!</h1>
-                  <p class="confirmation-copy">Artık gerçek fiyat düşüşleri ve haftanın öne çıkan fırsatları e-postana gelecek.</p>
+                  <p class="confirmation-copy">Artık gerçek fiyat düşüşleri ve haftanın öne çıkan fırsatları e&#8209;postana gelecek.</p>
                   <a class="primary-action" href="{{baseUrl}}">İndirimleri Gör</a>
                 </div>
               </div>
