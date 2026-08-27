@@ -129,32 +129,45 @@ public class FavoriteService(AppDbContext db, SubscriberService subscribers, IEm
         if (subscriber.LastRecoveryEmailSentAt is { } lastSent && DateTimeOffset.UtcNow - lastSent < RecoveryEmailCooldown)
             return;
 
-        var recoverUrl = $"{frontendBaseUrl}/favorilerim?recover={subscriber.Token}";
-        // Onay mailiyle aynı email-safe düzen (inline-block/vertical-align,
-        // flexbox yerine — bkz. SubscriberService.SendConfirmationEmailAsync).
-        var html = $"""
-            <div style="max-width:480px;margin:0 auto;padding:32px 24px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-              <div style="text-align:center;margin-bottom:24px;">
-                <span style="display:inline-block;width:36px;height:36px;line-height:36px;border-radius:8px;background:#059669;color:#ffffff;font-weight:800;font-size:14px;text-align:center;vertical-align:middle;">PA</span>
-                <span style="font-size:18px;font-weight:700;color:#1c1917;vertical-align:middle;margin-left:8px;">Protein<span style="color:#059669;">Avcısı</span></span>
-              </div>
-              <div style="background:#ffffff;border:1px solid #e7e5e4;border-radius:16px;padding:32px 28px;">
-                <h1 style="font-size:18px;font-weight:800;color:#1c1917;margin:0 0 12px;">Favori listeni geri getir</h1>
-                <p style="font-size:14px;color:#57534e;line-height:1.6;margin:0 0 20px;">
-                  Bu cihazda favori ürünlerini göremiyor musun? Aşağıdaki butona tıklayınca bu tarayıcıda listen otomatik geri gelecek.
-                </p>
-                <div style="text-align:center;margin:24px 0;">
-                  <a href="{recoverUrl}" style="display:inline-block;background:#059669;color:#ffffff;text-decoration:none;font-weight:600;font-size:14px;padding:12px 32px;border-radius:9999px;">Favorilerimi Göster</a>
-                </div>
-                <p style="font-size:12px;color:#a8a29e;line-height:1.5;margin:0 0 8px;">
-                  Birden fazla tarayıcı kullanıyorsan (ör. hem Chrome hem Edge), bu linke her birinden ayrı ayrı tıklaman gerekir — her tarayıcı kendi listesini ayrı hatırlar.
-                </p>
-                <p style="font-size:12px;color:#a8a29e;line-height:1.5;margin:0;">
-                  Bu isteği sen yapmadıysan bu e-postayı yok sayabilirsin, herhangi bir işlem yapılmayacak.
-                </p>
-              </div>
-            </div>
+        var recoverUrl = $"{frontendBaseUrl.TrimEnd('/')}/favorilerim?recover={subscriber.Token}";
+        var shieldIconUrl = EmailTemplate.AssetUrl(frontendBaseUrl, "trust-shield.png");
+        var confirmIconUrl = EmailTemplate.AssetUrl(frontendBaseUrl, "step-confirm.png");
+        var content = $"""
+            <table class="email-shell" role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="width:600px;max-width:600px;background:#ffffff;border:1px solid #e4e6ef;border-radius:16px;overflow:hidden;box-shadow:0 16px 44px rgba(20,24,48,.10);">
+              {EmailTemplate.BrandHeader(frontendBaseUrl)}
+              <tr>
+                <td class="email-hero" bgcolor="#0e1122" style="padding:42px 38px;font-family:Arial,Helvetica,sans-serif;">
+                  <div style="display:inline-block;border:1px solid #796cbf;background:#2b2741;color:#f5f6fb;font-size:11px;font-weight:800;line-height:16px;letter-spacing:.8px;padding:7px 12px;border-radius:999px;">FAVORİ LİSTESİ</div>
+                  <h1 class="email-title" style="margin:20px 0 12px;color:#ffffff;font-size:34px;font-weight:800;line-height:1.1;letter-spacing:-1px;">Favori listeni geri getir</h1>
+                  <p style="max-width:440px;margin:0;color:#c7cbe0;font-size:15px;line-height:23px;">Bu cihazda favori ürünlerini göremiyorsan listen tek tıkla yeniden bağlanacak.</p>
+                </td>
+              </tr>
+              <tr>
+                <td class="email-pad" bgcolor="#ffffff" style="padding:30px 38px 28px;">
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                      <td width="64" valign="top"><img src="{EmailTemplate.Encode(confirmIconUrl)}" width="56" height="56" alt="" style="display:block;width:56px;height:56px;"></td>
+                      <td valign="top" style="padding-left:12px;font-family:Arial,Helvetica,sans-serif;">
+                        <div style="color:#171a2e;font-size:16px;font-weight:800;line-height:22px;">Bu tarayıcıyı listenle eşleştir</div>
+                        <div style="margin-top:6px;color:#60667a;font-size:13px;line-height:20px;">Bağlantıya tıklayınca favorilerin bu cihazda otomatik olarak görünecek.</div>
+                      </td>
+                    </tr>
+                  </table>
+                  <div style="margin-top:24px;text-align:center;">{EmailTemplate.PrimaryButton(recoverUrl, "Favorilerimi Göster")}</div>
+                  <p style="margin:24px 0 0;padding-top:20px;border-top:1px solid #e4e6ef;color:#60667a;font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:17px;">Birden fazla tarayıcı kullanıyorsan bu bağlantıya her birinden ayrı ayrı tıklaman gerekir; her tarayıcı kendi listesini ayrı hatırlar.</p>
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:16px;">
+                    <tr>
+                      <td width="38" valign="middle"><img src="{EmailTemplate.Encode(shieldIconUrl)}" width="30" height="30" alt="" style="display:block;width:30px;height:30px;"></td>
+                      <td valign="middle" style="padding-left:8px;color:#60667a;font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:16px;">Bu isteği sen yapmadıysan e-postayı yok sayabilirsin.</td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
             """;
+        var html = EmailTemplate.Document(
+            "Favori ürünlerini bu tarayıcıda yeniden görmek için listeni geri getir.",
+            content);
 
         await emailSender.SendAsync(subscriber.Email, "Favori listeni geri getir", html, cancellationToken);
 

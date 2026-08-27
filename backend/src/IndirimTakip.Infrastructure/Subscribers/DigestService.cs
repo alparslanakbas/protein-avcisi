@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 using IndirimTakip.Infrastructure.Deals;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -67,7 +68,7 @@ public class DigestService(AppDbContext db, DealsQueryService dealsQuery, IEmail
             .ToListAsync(cancellationToken);
 
         var frontendBaseUrl = configuration["FrontendBaseUrl"] ?? "https://www.proteinavcisi.com.tr";
-        var dealsHtml = string.Concat(deals.Items.Select(deal => BuildDealRowHtml(deal, frontendBaseUrl)));
+        var dealsHtml = BuildDealGridHtml(deals.Items, frontendBaseUrl);
 
         // Her göndermeyi kendi try/catch'ine alıyoruz — bir alıcının gönderimi
         // (ör. Brevo'dan geçici bir hata) patlarsa listedeki diğer abonelerin
@@ -97,60 +98,123 @@ public class DigestService(AppDbContext db, DealsQueryService dealsQuery, IEmail
         return new DigestResult(deals.Items.Count, sentCount, pendingCount - sentCount);
     }
 
-    private static string BuildDealRowHtml(DealDto deal, string frontendBaseUrl)
+    private static string BuildDealGridHtml(IReadOnlyList<DealDto> deals, string frontendBaseUrl)
     {
-        var productUrl = $"{frontendBaseUrl}/urun/{deal.ProductId}";
+        var html = new StringBuilder();
+
+        for (var index = 0; index < deals.Count; index += 2)
+        {
+            html.Append("<tr>");
+            html.Append(BuildDealCardHtml(deals[index], frontendBaseUrl, isLeftColumn: true));
+
+            if (index + 1 < deals.Count)
+                html.Append(BuildDealCardHtml(deals[index + 1], frontendBaseUrl, isLeftColumn: false));
+            else
+                html.Append("<td class=\"product-cell\" width=\"50%\" style=\"width:50%;\"></td>");
+
+            html.Append("</tr>");
+        }
+
+        return html.ToString();
+    }
+
+    private static string BuildDealCardHtml(DealDto deal, string frontendBaseUrl, bool isLeftColumn)
+    {
+        var productUrl = $"{frontendBaseUrl.TrimEnd('/')}/urun/{deal.ProductId}";
         var imageHtml = deal.ImageUrl is not null
-            ? $"""<img src="{deal.ImageUrl}" alt="" width="72" height="72" style="display:block;border-radius:8px;object-fit:contain;background:#f5f5f4;" />"""
-            : """<div style="width:72px;height:72px;border-radius:8px;background:#f5f5f4;"></div>""";
+            ? $"""<img class="product-image" src="{EmailTemplate.Encode(deal.ImageUrl)}" alt="" width="96" height="96" style="display:block;width:96px;height:96px;object-fit:contain;background:#ffffff;" />"""
+            : """<div class="product-image" style="width:96px;height:96px;background:#f7f8fc;"></div>""";
         var referencePrice = deal.ReferencePrice.ToString("N2", TurkishCulture);
         var currentPrice = deal.CurrentPrice.ToString("N2", TurkishCulture);
         var discountPercent = Math.Round(deal.DiscountPercent);
+        var rightBorder = isLeftColumn ? "border-right:1px solid #e4e6ef;" : string.Empty;
 
         return $"""
-            <tr>
-              <td style="padding:12px 0;border-bottom:1px solid #f0efed;">
-                <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-                  <tr>
-                    <td width="72" valign="top"><a href="{productUrl}">{imageHtml}</a></td>
-                    <td style="padding-left:14px;" valign="top">
-                      <a href="{productUrl}" style="color:#1c1917;text-decoration:none;font-size:13px;font-weight:600;line-height:1.4;">{deal.ProductName}</a>
-                      <div style="font-size:11px;color:#a8a29e;text-transform:uppercase;margin-top:2px;">{deal.BrandName}</div>
-                      <div style="margin-top:6px;">
-                        <span style="color:#a8a29e;text-decoration:line-through;font-size:12px;">{referencePrice} TL</span>
-                        <span style="color:#059669;font-weight:800;font-size:14px;margin-left:6px;">{currentPrice} TL</span>
-                        <span style="background:#f97316;color:#ffffff;font-size:11px;font-weight:700;padding:2px 6px;border-radius:9999px;margin-left:6px;">-%{discountPercent}</span>
-                      </div>
-                    </td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
+            <td class="product-cell" width="50%" valign="top" style="width:50%;padding:0;{rightBorder}border-bottom:1px solid #e4e6ef;">
+              <table class="product-card" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="min-height:190px;">
+                <tr>
+                  <td class="email-pad" valign="top" style="padding:22px 18px;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td width="102" valign="top"><a href="{EmailTemplate.Encode(productUrl)}" style="text-decoration:none;">{imageHtml}</a></td>
+                        <td valign="top" style="padding-left:12px;font-family:Arial,Helvetica,sans-serif;">
+                          <a href="{EmailTemplate.Encode(productUrl)}" style="display:block;color:#171a2e;text-decoration:none;font-size:13px;font-weight:800;line-height:1.35;">{EmailTemplate.Encode(deal.ProductName)}</a>
+                          <div style="margin-top:4px;color:#70768a;font-size:11px;font-weight:700;line-height:16px;text-transform:uppercase;">{EmailTemplate.Encode(deal.BrandName)}</div>
+                          <div style="margin-top:14px;color:#70768a;text-decoration:line-through;font-size:11px;line-height:16px;">{referencePrice} TL</div>
+                          <div style="margin-top:2px;color:#168453;font-size:17px;font-weight:800;line-height:22px;white-space:nowrap;">{currentPrice} TL</div>
+                          <div style="display:inline-block;margin-top:6px;background:#dff7e8;color:#168453;font-size:11px;font-weight:800;line-height:16px;padding:3px 8px;border-radius:6px;">-%{discountPercent}</div>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
             """;
     }
 
     // Deal kartları için <table> düzeni bilinçli — e-posta istemcileri arasında
     // (özellikle görsel + metnin yan yana durduğu bu tarz çok-sütunlu
     // yerleşimlerde) en güvenilir sonucu tablo veriyor, flex/grid değil.
-    private static string BuildDigestHtml(string dealsHtml, string unsubscribeUrl, string frontendBaseUrl) => $"""
-        <div style="max-width:480px;margin:0 auto;padding:32px 24px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-          <div style="text-align:center;margin-bottom:24px;">
-            <span style="display:inline-block;width:36px;height:36px;line-height:36px;border-radius:8px;background:#059669;color:#ffffff;font-weight:800;font-size:14px;text-align:center;vertical-align:middle;">PA</span>
-            <span style="font-size:18px;font-weight:700;color:#1c1917;vertical-align:middle;margin-left:8px;">Protein<span style="color:#059669;">Avcısı</span></span>
-          </div>
-          <div style="background:#ffffff;border:1px solid #e7e5e4;border-radius:16px;padding:24px 20px;">
-            <h1 style="font-size:16px;font-weight:800;color:#1c1917;margin:0 0 16px;">Bu Haftanın Öne Çıkan İndirimleri</h1>
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-              {dealsHtml}
+    private static string BuildDigestHtml(string dealsHtml, string unsubscribeUrl, string frontendBaseUrl)
+    {
+        var tagImageUrl = EmailTemplate.AssetUrl(frontendBaseUrl, "weekly-price-tag.png");
+        var shieldIconUrl = EmailTemplate.AssetUrl(frontendBaseUrl, "trust-shield.png");
+
+        var content = $"""
+            <table class="email-shell" role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="width:600px;max-width:600px;background:#ffffff;border:1px solid #e4e6ef;border-radius:16px;overflow:hidden;box-shadow:0 16px 44px rgba(20,24,48,.10);">
+              {EmailTemplate.BrandHeaderDark(frontendBaseUrl)}
+              <tr>
+                <td bgcolor="#0e1122" style="padding:20px 38px 34px;border-bottom:4px solid #6556e8;">
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                      <td class="mobile-block mobile-center" width="68%" valign="middle" style="width:68%;font-family:Arial,Helvetica,sans-serif;">
+                        <h1 class="email-title" style="margin:0;color:#ffffff;font-size:34px;font-weight:800;line-height:1.1;letter-spacing:-1px;">Haftalık fiyat özeti</h1>
+                        <p style="margin:12px 0 0;color:#c7cbe0;font-size:14px;line-height:21px;">Son 30 günlük geçmişte öne çıkan 6 gerçek düşüş</p>
+                      </td>
+                      <td class="mobile-hide" width="32%" align="right" valign="middle" style="width:32%;padding-left:12px;">
+                        <img src="{EmailTemplate.Encode(tagImageUrl)}" width="150" height="113" alt="" style="display:block;width:150px;height:113px;object-fit:cover;">
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              <tr>
+                <td bgcolor="#ffffff" style="padding:0;">
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                    {dealsHtml}
+                  </table>
+                </td>
+              </tr>
+              <tr>
+                <td class="email-pad" align="center" bgcolor="#ffffff" style="padding:28px 38px 20px;">
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                      <td align="center">{EmailTemplate.FullWidthButton(frontendBaseUrl, "Tüm İndirimleri Gör")}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding-top:22px;">
+                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center">
+                          <tr>
+                            <td width="34" valign="middle"><img src="{EmailTemplate.Encode(shieldIconUrl)}" width="30" height="30" alt="" style="display:block;width:30px;height:30px;"></td>
+                            <td valign="middle" style="padding-left:8px;font-family:Arial,Helvetica,sans-serif;color:#60667a;font-size:11px;line-height:16px;text-align:left;">Fiyatlar ilgili markaların kendi web sitelerinden<br class="mobile-hide"> otomatik olarak toplanmaktadır.</td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td align="center" style="padding-top:18px;border-top:1px solid #e5e0ff;font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:16px;">
+                        <a href="{EmailTemplate.Encode(unsubscribeUrl)}" style="color:#6556e8;text-decoration:underline;">Bültenden çık</a>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
             </table>
-            <div style="text-align:center;margin-top:24px;">
-              <a href="{frontendBaseUrl}" style="display:inline-block;background:#059669;color:#ffffff;text-decoration:none;font-weight:600;font-size:13px;padding:10px 24px;border-radius:9999px;">Tüm İndirimleri Gör</a>
-            </div>
-          </div>
-          <p style="font-size:11px;color:#a8a29e;line-height:1.5;text-align:center;margin-top:20px;">
-            Fiyatlar ilgili markaların kendi web sitelerinden otomatik olarak toplanmaktadır.<br>
-            <a href="{unsubscribeUrl}" style="color:#a8a29e;">Bültenden çık</a>
-          </p>
-        </div>
-        """;
+            """;
+
+        return EmailTemplate.Document(
+            "Son 30 günlük fiyat geçmişinde öne çıkan 6 gerçek indirimi keşfet.",
+            content);
+    }
 }
