@@ -26,6 +26,7 @@ import { PwaInstallService } from '../core/pwa-install.service';
 import { formatRelativeTime } from '../core/relative-time';
 import { slugify } from '../core/slugify';
 import { productPath } from '../core/product-link';
+import { buildProductDescription } from '../core/meta-description';
 import { buildAreaPath, buildLinePath, toCoordinates } from '../core/spark-chart';
 import { SubscribeService } from '../core/subscribe.service';
 import { ThemePreference, ThemeService } from '../core/theme.service';
@@ -289,10 +290,16 @@ export class DealsList implements OnInit {
       // ogTitle ayrı tutuluyor.
       const title = `${displayedName} Fiyatı ve Fiyat Geçmişi | ${deal.brandName}`;
       const ogTitle = `${displayedName} Fiyatı: ${priceText} | ${deal.brandName} — ProteinAvcısı`;
-      const description =
-        deal.discountPercent > 0
-          ? `${displayedName} şu an ${priceText} — ${deal.brandName} markasında %${deal.discountPercent} doğrulanmış indirim. Fiyat geçmişini ProteinAvcısı'nda takip et.`
-          : `${displayedName} güncel fiyatı ${priceText}. ${deal.brandName} markasının fiyat geçmişini ProteinAvcısı'nda takip et.`;
+      // Açıklama artık markanın kendi ürün metninden besleniyor (bkz.
+      // core/meta-description.ts) — arama sonucunda ürünün ne olduğunu
+      // söyleyen tek şey burasıydı ve yalnızca fiyat cümlesi taşıyordu.
+      const description = buildProductDescription({
+        displayName: displayedName,
+        brandName: deal.brandName,
+        priceText,
+        discountPercent: deal.discountPercent,
+        description: deal.description,
+      });
 
       const canonicalProductPath = `/urun/${deal.productId}/${slugify(deal.productName)}`;
 
