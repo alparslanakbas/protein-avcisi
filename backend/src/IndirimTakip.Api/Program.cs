@@ -73,11 +73,34 @@ builder.Services.AddRateLimiter(options =>
 // production'da hosting platformunun ortam değişkeniyle gerçek frontend
 // domain'i eklenecek) — kod değişikliği gerekmeden ortam başına ayarlanabilsin.
 const string CorsPolicy = "Frontend";
+const string PublicDataCachePolicy = "PublicData";
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(CorsPolicy, policy =>
         policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod());
+});
+
+// Sunucu yanıt süresi (TTFB) 27 Ağustos ölçümünde ana sayfada 2,45 sn çıktı;
+// sayfayı sunucuda render ederken çağrılan uçlar bu sürenin büyük kısmını
+// oluşturuyor. Bu uçların döndürdüğü veri taramalar arasında (altı saat)
+// değişmediği için kısa ömürlü bir çıktı önbelleği tazelikten ödün vermeden
+// tekrarlanan sorguları ortadan kaldırıyor.
+//
+// Varsayılan politika bilinçli olarak "önbellekleme yok": böylece bir uç,
+// açıkça işaretlenmediği sürece önbelleğe girmiyor. Kişiye özel yanıt
+// döndüren uçlar (favori listesi, abonelik onayı) ve sayaç artıran /go/{id}
+// bu yüzden kazara önbelleğe alınamaz.
+var publicCacheSeconds = builder.Configuration.GetValue("OutputCache:PublicSeconds", 60);
+builder.Services.AddOutputCache(options =>
+{
+    options.AddBasePolicy(policy => policy.NoCache());
+    options.AddPolicy(PublicDataCachePolicy, policy => policy
+        .Expire(TimeSpan.FromSeconds(publicCacheSeconds))
+        // Filtre/sayfalama parametreleri yanıtı tamamen değiştiriyor; tümü
+        // önbellek anahtarına dahil edilmezse farklı filtreler birbirinin
+        // sonucunu görürdü.
+        .SetVaryByQuery("*"));
 });
 
 var app = builder.Build();
@@ -160,7 +183,11 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseCors(CorsPolicy);
+// Çıktı önbelleği CORS'tan SONRA gelmeli — aksi halde önbellekten dönen yanıtta
+// CORS başlıkları eksik kalabilir. Hız sınırlayıcıdan da sonra gelmesi bilinçli:
+// önbellekten karşılanan istekler de sayılmaya devam ediyor.
 app.UseRateLimiter();
+app.UseOutputCache();
 
 // 2026-08-15 güvenlik denetimi: tarayıcı seviyesinde ek bir savunma katmanı
 // hiç yoktu. Bu API çoğunlukla JSON döndürüyor (bu header'lar orada etkisiz)
@@ -213,7 +240,7 @@ void MapDealsQueryEndpoint(string route, bool onlyDiscounted, bool onlyStoreDisc
             page is null or <= 0 ? 1 : page.Value, NormalizePageSize(pageSize), ct,
             expandSearchSynonyms: expandSynonyms ?? true);
         return Results.Ok(result);
-    });
+    }).CacheOutput(PublicDataCachePolicy);
 }
 
 MapDealsQueryEndpoint("/api/deals", onlyDiscounted: true, onlyStoreDiscounted: false);
@@ -235,7 +262,7 @@ app.MapGet("/api/brand-comparison", async (string? brand1, string? brand2, Deals
 
     var result = await deals.GetBrandComparisonAsync(brand1, brand2, ct);
     return result is null ? Results.NotFound() : Results.Ok(result);
-});
+}).CacheOutput(PublicDataCachePolicy);
 
 // Protein ihtiyacı hesaplayıcısının "servis başı en uygun ürünler" tablosu —
 // hesap Size metnini ayrıştırmayı gerektirdiği için SQL'e çevrilemiyor,
@@ -262,7 +289,7 @@ app.MapGet("/api/best-value-per-serving", async (
         ct);
 
     return Results.Ok(result);
-});
+}).CacheOutput(PublicDataCachePolicy);
 
 // Marka × kategori kesişim sayfaları (/marka/:brand/:category) — sitemap ve
 // iç linkler yalnızca gerçekten ürünü olan çiftleri kullanıyor.
@@ -270,7 +297,7 @@ app.MapGet("/api/brand-category-pairs", async (DealsQueryService deals, Cancella
 {
     var result = await deals.GetBrandCategoryPairsAsync(ct);
     return Results.Ok(result);
-});
+}).CacheOutput(PublicDataCachePolicy);
 
 // Hesaplayıcı tablosundaki marka çipleri — yalnızca o kategoride servis
 // başı fiyatı hesaplanabilen ürünü olan markalar.
@@ -281,20 +308,20 @@ app.MapGet("/api/best-value-brands", async (string? category, DealsQueryService 
 
     var result = await deals.GetBestValueBrandsAsync(category, ct);
     return Results.Ok(result);
-});
+}).CacheOutput(PublicDataCachePolicy);
 
 app.MapGet("/api/filters", async (DealsQueryService deals, CancellationToken ct) =>
 {
     var result = await deals.GetFilterOptionsAsync(ct);
     return Results.Ok(result);
-});
+}).CacheOutput(PublicDataCachePolicy);
 
 // Ana sayfadaki "canlı tarama şeridi" için özet sayılar.
 app.MapGet("/api/stats", async (DealsQueryService deals, CancellationToken ct) =>
 {
     var result = await deals.GetHomepageStatsAsync(cancellationToken: ct);
     return Results.Ok(result);
-});
+}).CacheOutput(PublicDataCachePolicy);
 
 // Marka sayfasındaki "bu markaya genel bakış" bölümü için — kendi verimize
 // dayanan, kopyalanmamış özgün içerik (bkz. DealsQueryService.GetBrandStatsAsync).
@@ -305,7 +332,7 @@ app.MapGet("/api/brand-stats", async (string? brand, DealsQueryService deals, Ca
 
     var result = await deals.GetBrandStatsAsync(brand, cancellationToken: ct);
     return Results.Ok(result);
-});
+}).CacheOutput(PublicDataCachePolicy);
 
 // Ürün incelemesi sayfasındaki "bu ürün kategorisinde nasıl konumlanıyor"
 // bölümü için — bkz. DealsQueryService.GetCategoryPriceStatsAsync.
@@ -316,13 +343,13 @@ app.MapGet("/api/category-price-stats", async (string? category, DealsQueryServi
 
     var result = await deals.GetCategoryPriceStatsAsync(category, ct);
     return result is null ? Results.NotFound() : Results.Ok(result);
-});
+}).CacheOutput(PublicDataCachePolicy);
 
 app.MapGet("/api/products/{id:int}", async (int id, DealsQueryService deals, CancellationToken ct) =>
 {
     var result = await deals.GetProductByIdAsync(id, cancellationToken: ct);
     return result is null ? Results.NotFound() : Results.Ok(result);
-});
+}).CacheOutput(PublicDataCachePolicy);
 
 // sitemap.xml üretimi için — asıl XML frontend'in SSR sunucusunda kuruluyor
 // (kendi domain'ini biliyor), burası sadece ham veriyi veriyor.
@@ -330,13 +357,13 @@ app.MapGet("/api/products/sitemap", async (DealsQueryService deals, Cancellation
 {
     var result = await deals.GetSitemapEntriesAsync(ct);
     return Results.Ok(result);
-});
+}).CacheOutput(PublicDataCachePolicy);
 
 app.MapGet("/api/coupons", async (CouponService coupons, CancellationToken ct) =>
 {
     var result = await coupons.GetActiveCouponsAsync(ct);
     return Results.Ok(result);
-});
+}).CacheOutput(PublicDataCachePolicy);
 
 // Geçici elle-ekleme endpoint'i (roadmap'teki /api/dev/ingest ile aynı desende):
 // kupon kodları scrape edilmiyor, elle doğrulanıp buradan ekleniyor. Henüz auth
@@ -377,13 +404,13 @@ app.MapGet("/api/articles", async (ArticleService articles, CancellationToken ct
 {
     var result = await articles.GetPublishedArticlesAsync(ct);
     return Results.Ok(result);
-});
+}).CacheOutput(PublicDataCachePolicy);
 
 app.MapGet("/api/articles/{slug}", async (string slug, ArticleService articles, CancellationToken ct) =>
 {
     var result = await articles.GetBySlugAsync(slug, ct);
     return result is null ? Results.NotFound() : Results.Ok(result);
-});
+}).CacheOutput(PublicDataCachePolicy);
 
 app.MapPost("/api/dev/articles", async (CreateArticleRequest request, ArticleService articles, CancellationToken ct) =>
 {
@@ -404,7 +431,7 @@ app.MapGet("/api/products/{id:int}/price-history", async (int id, int? days, Pri
     var windowDays = days is null or <= 0 ? 30 : days.Value;
     var result = await service.GetPriceHistoryAsync(id, windowDays, ct);
     return result is null ? Results.NotFound() : Results.Ok(result);
-});
+}).CacheOutput(PublicDataCachePolicy);
 
 // Ürün kartlarındaki mini sparkline'lar için toplu uç nokta — bir sayfa
 // (24 kart) için tek istek, N+1 yerine. ids sayısı sayfa boyutuyla sınırlı
@@ -416,7 +443,7 @@ app.MapGet("/api/products/sparklines", async (int[] ids, int? days, PriceHistory
     var limitedIds = ids.Distinct().Take(100).ToList();
     var result = await service.GetSparklinesAsync(limitedIds, windowDays, ct);
     return Results.Ok(result);
-});
+}).CacheOutput(PublicDataCachePolicy);
 
 // "Haber Ver" — bir sonraki taramada bu ürünün fiyatı gerçekten düşerse
 // tek seferlik bir bildirim e-postası gönderiliyor (bkz. ProductWatchNotifier).
@@ -529,7 +556,7 @@ app.MapGet("/api/subscribe/confirm/{token}", async (string token, SubscriberServ
 {
     var success = await subscribers.ConfirmAsync(token, ct);
     var html = success
-        ? BuildInfoPage("Aboneliğin onaylandı!", "Artık öne çıkan indirimlerden haberdar olacaksın.", frontendBaseUrl)
+        ? BuildSubscriptionConfirmedPage(frontendBaseUrl)
         : BuildInfoPage("Bu bağlantı geçersiz.", "Onay linki süresi geçmiş ya da daha önce kullanılmış olabilir.", frontendBaseUrl);
     return Results.Content(html, "text/html; charset=utf-8");
 });
@@ -659,8 +686,185 @@ app.MapGet("/api/dev/email-stats", async (AppDbContext db, IConfiguration config
 
 app.Run();
 
-// Onay/çıkış linklerinin ikisi de aynı markalı kart tasarımını kullanıyor —
-// site genelindeki renk paletiyle (brand-600 yeşil, stone nötrleri) tutarlı.
+// Başarılı onay durumu, kullanıcı e-postada gördüğü Hybrid Nocturne görsel
+// dilinden kopmadan doğrudan güncel indirimlere dönebilsin diye ayrı ve daha
+// güçlü bir başarı yüzeyi kullanıyor. Geçersiz link ve bültenden çıkış gibi
+// nötr durumlar aşağıdaki kompakt bilgi sayfasını kullanmaya devam ediyor.
+static string BuildSubscriptionConfirmedPage(string frontendBaseUrl)
+{
+    var baseUrl = frontendBaseUrl.TrimEnd('/');
+    var signalImageUrl = $"{baseUrl}/email-assets/subscription-confirmed-signal.jpg";
+    var logoUrl = $"{baseUrl}/favicon.svg";
+    var shieldImageUrl = $"{baseUrl}/email-assets/trust-shield.png";
+
+    return $$"""
+        <!doctype html>
+        <html lang="tr">
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <meta name="color-scheme" content="light only">
+          <title>Aboneliğin onaylandı! — Protein Avcısı</title>
+          <style>
+            * { box-sizing:border-box; }
+            html, body { min-height:100%; }
+            body {
+              margin:0;
+              background:#f7f7fc;
+              color:#171a2e;
+              font-family:Arial,Helvetica,sans-serif;
+              -webkit-font-smoothing:antialiased;
+            }
+            .confirmation-page {
+              min-height:100vh;
+              display:flex;
+              flex-direction:column;
+              align-items:center;
+              justify-content:center;
+              padding:42px 24px;
+            }
+            .brand-link {
+              display:inline-flex;
+              align-items:center;
+              gap:14px;
+              margin-bottom:30px;
+              color:#171a2e;
+              text-decoration:none;
+            }
+            .brand-link img { width:54px; height:54px; display:block; }
+            .brand-name {
+              font-size:30px;
+              font-weight:800;
+              line-height:1;
+              letter-spacing:-1.2px;
+              white-space:nowrap;
+            }
+            .brand-name span { color:#6556e8; }
+            .confirmation-card {
+              width:min(100%, 1040px);
+              overflow:hidden;
+              background:#ffffff;
+              border:1px solid #e4e6ef;
+              border-radius:20px;
+              box-shadow:0 18px 54px rgba(20,24,48,.14);
+            }
+            .confirmation-hero {
+              min-height:520px;
+              padding:72px 70px;
+              background-color:#0e1122;
+              background-image:url('{{signalImageUrl}}');
+              background-position:center;
+              background-repeat:no-repeat;
+              background-size:cover;
+            }
+            .confirmation-content { width:51%; }
+            .eyebrow {
+              display:inline-block;
+              padding:10px 18px;
+              border:1px solid #796cbf;
+              border-radius:999px;
+              background:#2b2741;
+              color:#f5f6fb;
+              font-size:14px;
+              font-weight:800;
+              line-height:20px;
+              letter-spacing:.9px;
+            }
+            h1 {
+              margin:28px 0 18px;
+              color:#ffffff;
+              font-size:58px;
+              font-weight:800;
+              line-height:1.04;
+              letter-spacing:-2.1px;
+            }
+            .confirmation-copy {
+              margin:0;
+              color:#c7cbe0;
+              font-size:20px;
+              line-height:1.5;
+            }
+            .primary-action {
+              display:block;
+              width:100%;
+              margin-top:34px;
+              padding:18px 26px;
+              border-radius:10px;
+              background:#6556e8;
+              color:#ffffff;
+              font-size:19px;
+              font-weight:800;
+              line-height:24px;
+              text-align:center;
+              text-decoration:none;
+              box-shadow:0 10px 24px rgba(101,86,232,.24);
+              transition:background-color .18s ease, transform .18s ease;
+            }
+            .primary-action:hover { background:#7567ec; transform:translateY(-1px); }
+            .primary-action:focus-visible { outline:3px solid #b5abfc; outline-offset:4px; }
+            .trust-strip {
+              display:flex;
+              align-items:center;
+              gap:18px;
+              padding:28px 70px;
+              background:#ffffff;
+              color:#303548;
+              font-size:16px;
+              line-height:1.5;
+            }
+            .trust-strip img { width:52px; height:52px; display:block; flex:0 0 auto; }
+            @media (max-width:760px) {
+              .confirmation-page { justify-content:flex-start; padding:28px 14px; }
+              .brand-link { margin-bottom:24px; gap:10px; }
+              .brand-link img { width:44px; height:44px; }
+              .brand-name { font-size:23px; letter-spacing:-.8px; }
+              .confirmation-card { border-radius:16px; }
+              .confirmation-hero {
+                min-height:630px;
+                padding:42px 26px 270px;
+                background-position:67% center;
+              }
+              .confirmation-content { width:100%; }
+              .eyebrow { padding:8px 13px; font-size:12px; line-height:18px; }
+              h1 { margin-top:22px; font-size:40px; line-height:1.06; letter-spacing:-1.3px; }
+              .confirmation-copy { font-size:17px; line-height:1.5; }
+              .primary-action { margin-top:26px; font-size:17px; }
+              .trust-strip { align-items:flex-start; padding:24px 24px; gap:12px; font-size:14px; }
+              .trust-strip img { width:42px; height:42px; }
+            }
+            @media (max-width:380px) {
+              .brand-name { font-size:21px; }
+              .confirmation-hero { padding-left:22px; padding-right:22px; }
+              h1 { font-size:36px; }
+            }
+          </style>
+        </head>
+        <body>
+          <main class="confirmation-page">
+            <a class="brand-link" href="{{baseUrl}}" aria-label="Protein Avcısı ana sayfası">
+              <img src="{{logoUrl}}" width="54" height="54" alt="">
+              <span class="brand-name">PROTEİN<span>AVCISI</span></span>
+            </a>
+            <section class="confirmation-card" aria-labelledby="confirmation-heading">
+              <div class="confirmation-hero">
+                <div class="confirmation-content">
+                  <div class="eyebrow">ABONELİK AKTİF</div>
+                  <h1 id="confirmation-heading">Aboneliğin<br>onaylandı!</h1>
+                  <p class="confirmation-copy">Artık gerçek fiyat düşüşleri ve haftanın öne çıkan fırsatları e-postana gelecek.</p>
+                  <a class="primary-action" href="{{baseUrl}}">İndirimleri Gör</a>
+                </div>
+              </div>
+              <div class="trust-strip">
+                <img src="{{shieldImageUrl}}" width="52" height="52" alt="">
+                <span>E-posta tercihini dilediğin zaman değiştirebilirsin.</span>
+              </div>
+            </section>
+          </main>
+        </body>
+        </html>
+        """;
+}
+
 // frontendBaseUrl config'ten geliyor — bu proje domainini bu oturumda 2 kez
 // değiştirdi, hardcoded bir adresin unutulup eskide kalması gerçek bir risk.
 static string BuildInfoPage(string heading, string message, string frontendBaseUrl) => $"""
