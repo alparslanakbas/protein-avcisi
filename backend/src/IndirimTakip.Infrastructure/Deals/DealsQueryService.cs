@@ -563,7 +563,11 @@ public partial class DealsQueryService(AppDbContext db)
     // (bizde ve rakipte) en zayıf halka olduğu görüldü — marka hakkında
     // kopyalanmış bir tarihçe/vizyon metni yerine, sadece bizde olan gerçek
     // veriyi (indirim sıklığı/derinliği) göstermek tercih edildi.
-    public async Task<BrandStatsDto> GetBrandStatsAsync(string brandName, int referenceWindowDays = 30, CancellationToken cancellationToken = default)
+    // category verilirse istatistikler markanın YALNIZCA o kategorideki
+    // ürünleriyle hesaplanır — marka × kategori sayfaları bu şekilde kendi
+    // verisine kavuşuyor.
+    public async Task<BrandStatsDto> GetBrandStatsAsync(
+        string brandName, int referenceWindowDays = 30, string? category = null, CancellationToken cancellationToken = default)
     {
         var referenceSince = DateTimeOffset.UtcNow.AddDays(-referenceWindowDays);
         var staleSince = DateTimeOffset.UtcNow.Subtract(StaleThreshold);
@@ -572,6 +576,7 @@ public partial class DealsQueryService(AppDbContext db)
             from p in db.Products
             join b in db.Brands on p.BrandId equals b.Id
             where b.IsActive && b.Name == brandName
+                  && (category == null || p.Category == category)
                   && p.PriceHistories.OrderByDescending(ph => ph.ScrapedAt).Select(ph => ph.ScrapedAt).FirstOrDefault() >= staleSince
             select p).AsNoTracking();
 
@@ -606,7 +611,14 @@ public partial class DealsQueryService(AppDbContext db)
                 .MaxAsync(cancellationToken)
             : null;
 
-        return new BrandStatsDto(totalProducts, discountCount, thirtyDayLowCount, averageDiscountPercent, lastScanAt);
+        var averagePrice = totalProducts > 0
+            ? await statsQuery.Where(r => r.Latest != null)
+                .AverageAsync(r => (decimal?)r.Latest, cancellationToken)
+            : null;
+
+        return new BrandStatsDto(
+            totalProducts, discountCount, thirtyDayLowCount, averageDiscountPercent, lastScanAt,
+            averagePrice is null ? null : Math.Round(averagePrice.Value, 2));
     }
 
     // Ürün incelemesi sayfası için — aynı kategorideki aktif ürünlerin güncel

@@ -60,9 +60,19 @@
             <span class="text-[15px] font-medium">{{ bs.thirtyDayLowCount }}</span>
             <span class="text-[var(--noc-neutral-500)]"> tanesi 30 günün en düşüğünde</span>
           </div>
-          @if (topCategoryLabel(); as topCat) {
+          @if (!fixedCategory() && topCategoryLabel(); as topCat) {
             <div class="px-[18px] py-[11px] text-[var(--noc-neutral-500)]">
               En güçlü kategori: <span class="font-medium text-[var(--noc-text)]">{{ topCat }}</span>
+            </div>
+          }
+          <!-- Kesişimde markanın o kategorideki ortalama fiyatı, kategorinin
+               geneliyle birlikte — bu sayfaların tek özgün verisi. -->
+          @if (fixedCategory() && bs.averagePrice; as avgPrice) {
+            <div class="px-[18px] py-[11px] text-[var(--noc-neutral-500)]">
+              Ortalama fiyat: <span class="font-medium text-[var(--noc-text)]">{{ avgPrice | number: '1.2-2' }} ₺</span>
+              @if (categoryPriceStats(); as cs) {
+                <span class="text-[var(--noc-neutral-600)]"> · kategori geneli {{ cs.averagePrice | number: '1.2-2' }} ₺</span>
+              }
             </div>
           }
         </div>
@@ -314,6 +324,28 @@
            aynısı. Ürün listesinden SONRA geliyor: sayfaya gelenin asıl amacı
            önce fiyatlara bakmak. Yalnızca marka ana sayfasında görünüyor,
            marka × kategori kesişiminde değil. -->
+      <!-- Marka × kategori kesişimine özel SSS. Ayrı bir blok: sorular da,
+           başlık da marka ana sayfasındakinden farklı (orası kupon odaklı,
+           burası fiyat konumu odaklı). -->
+      @if (brandCategoryFaqs().length > 0) {
+        <section class="mt-[45px]">
+          <h2 class="mb-4 text-lg font-medium">{{ brandName() }} {{ fixedCategoryLabel() }} Hakkında Sık Sorulanlar</h2>
+          <div class="flex flex-col gap-2">
+            @for (item of brandCategoryFaqs(); track item.question) {
+              <details class="group rounded-[8px] border border-[var(--noc-divider)] px-4 py-3">
+                <summary class="flex cursor-pointer list-none items-center justify-between gap-2 text-sm font-medium">
+                  {{ item.question }}
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4 shrink-0 text-[var(--noc-neutral-500)] transition-transform group-open:rotate-180">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6" />
+                  </svg>
+                </summary>
+                <p class="mt-2 text-sm leading-relaxed text-[var(--noc-neutral-500)]">{{ item.answer }}</p>
+              </details>
+            }
+          </div>
+        </section>
+      }
+
       @if (brandFaqs().length > 0) {
         <section class="mt-[45px]">
           <h2 class="mb-4 text-lg font-medium">{{ brandName() }} İndirim Kodu Hakkında Sık Sorulanlar</h2>

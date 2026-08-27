@@ -3,9 +3,10 @@ import { Component, OnInit, computed, effect, inject, signal } from '@angular/co
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
-import { buildBrandFaqs } from '../core/brand-faqs';
+import { buildBrandCategoryFaqs, buildBrandFaqs } from '../core/brand-faqs';
 import { buildBreadcrumbJsonLd } from '../core/breadcrumb';
 import { BrandStats } from '../core/brand-stats.model';
+import { CategoryPriceStats } from '../core/category-price-stats.model';
 import { CATEGORY_LABELS } from '../core/category-labels';
 import { ComparisonService } from '../core/comparison.service';
 import { Coupon } from '../core/coupon.model';
@@ -43,6 +44,26 @@ export class BrandPage implements OnInit {
   protected readonly comparison = inject(ComparisonService);
   private breadcrumbEl: HTMLScriptElement | null = null;
   private faqEl: HTMLScriptElement | null = null;
+
+  protected readonly categoryPriceStats = signal<CategoryPriceStats | null>(null);
+
+  // Marka × kategori kesişimine özel SSS. Marka ana sayfasındaki sorulardan
+  // ayrı: oradakiler kupon odaklı, buradakiler markanın o kategorideki fiyat
+  // konumu odaklı.
+  protected readonly brandCategoryFaqs = computed(() => {
+    const category = this.fixedCategory();
+    const brand = this.brandName();
+    if (!category || !brand) return [];
+    const stats = this.brandStats();
+    return buildBrandCategoryFaqs({
+      brandName: brand,
+      categoryLabel: this.fixedCategoryLabel(),
+      productCount: stats?.totalProducts ?? null,
+      averagePrice: stats?.averagePrice ?? null,
+      categoryAveragePrice: this.categoryPriceStats()?.averagePrice ?? null,
+      averageDiscountPercent: stats?.averageDiscountPercent ?? null,
+    });
+  });
 
   // Markaya özel SSS — yalnızca marka ana sayfasında (marka × kategori
   // kesişiminde değil), çünkü "indirim kodu" sorguları oraya gelmiyor.
@@ -165,6 +186,7 @@ export class BrandPage implements OnInit {
     this.fixedCategory.set(null);
     this.fixedCategoryLabel.set('');
     this.brandStats.set(null);
+    this.categoryPriceStats.set(null);
 
     this.dealsService.getFilterOptions().subscribe({
       next: (options) => {
@@ -214,13 +236,21 @@ export class BrandPage implements OnInit {
           this.coupons.set(coupons.filter((c) => c.brandName === match));
         });
 
-        // Kesişim sayfasında (categorySlug doluyken) gösterilmiyor — orada
-        // zaten dar bir kategori odağı var, marka geneli istatistik yanıltıcı
-        // olurdu.
-        if (!categorySlug) {
-          this.dealsService.getBrandStats(match).subscribe({
-            next: (stats) => this.brandStats.set(stats),
-            error: () => this.brandStats.set(null),
+        // Marka ana sayfasında marka geneli, kesişimde ise YALNIZCA o
+        // kategoriye ait istatistik çekiliyor. Kesişimde marka geneli
+        // rakamları göstermek yanıltıcı olurdu; kategoriye özel olanlar ise
+        // o sayfanın tek özgün içeriği.
+        this.dealsService.getBrandStats(match, categorySlug ?? undefined).subscribe({
+          next: (stats) => this.brandStats.set(stats),
+          error: () => this.brandStats.set(null),
+        });
+
+        // Kesişimde markanın kategori içindeki fiyat konumunu söyleyebilmek
+        // için kategorinin geneli de gerekiyor.
+        if (categorySlug) {
+          this.dealsService.getCategoryPriceStats(categorySlug).subscribe({
+            next: (stats) => this.categoryPriceStats.set(stats),
+            error: () => this.categoryPriceStats.set(null),
           });
         }
 
@@ -400,7 +430,7 @@ export class BrandPage implements OnInit {
   // dayanıyor ve ikisi de sayfa meta'sı yazıldıktan SONRA geliyor; tek seferlik
   // bir çağrı henüz boş olan veriyle şema üretirdi.
   private setFaqJsonLd(): void {
-    const faqs = this.brandFaqs();
+    const faqs = this.fixedCategory() ? this.brandCategoryFaqs() : this.brandFaqs();
     if (faqs.length === 0) {
       // Marka × kategori sayfasına geçildiğinde önceki şema geride kalmasın.
       this.faqEl?.remove();

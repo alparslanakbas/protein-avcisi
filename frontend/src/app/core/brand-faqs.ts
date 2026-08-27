@@ -20,6 +20,65 @@ export interface BrandFaqInput {
 //    geçmiş bir kodla ödeme sayfasında karşılaşmak, hiç kod olmamasından kötü.
 // 2. Cevaplar markanın kendisi hakkında spekülasyon yapmıyor (kampanya
 //    takvimini bilmiyoruz), yalnızca KENDİ verimize dayanıyor.
+export interface BrandCategoryFaqInput {
+  brandName: string;
+  categoryLabel: string;
+  productCount: number | null;
+  averagePrice: number | null;
+  categoryAveragePrice: number | null;
+  averageDiscountPercent: number | null;
+}
+
+// Marka × kategori sayfaları ("hardline creatine", "proteinocean kreatin"
+// gibi sorgular — 28 Ağustos GSC analizinde 21 sorgu, 60 gösterim, 17-18.
+// sıra). O sayfalar 150-270 kelimeydi, yani neredeyse yalnızca ürün
+// listesiydi; sıralamanın düşük kalmasının sebebi buydu.
+//
+// Sorular kategori sayfasındakilerden AYRI tutuluyor (aynı metni iki sayfada
+// tekrarlamak ikisini de zayıflatırdı) ve tamamı kesişime özgü: markanın o
+// kategorideki fiyat konumu, ürün sayısı, indirim derinliği. Hepsi kendi
+// verimizden geliyor — marka hakkında hiçbir varsayım yok.
+export function buildBrandCategoryFaqs(input: BrandCategoryFaqInput): FaqItem[] {
+  const { brandName, categoryLabel, productCount, averagePrice, categoryAveragePrice, averageDiscountPercent } = input;
+  const lower = categoryLabel.toLocaleLowerCase('tr');
+  const faqs: FaqItem[] = [];
+
+  // Sayfanın en özgün içeriği: markanın o kategorideki fiyat konumu.
+  if (averagePrice && categoryAveragePrice) {
+    const diff = Math.round(Math.abs(averagePrice - categoryAveragePrice) / categoryAveragePrice * 100);
+    const cheaper = averagePrice < categoryAveragePrice;
+    const priceText = (v: number) => v.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    faqs.push({
+      question: `${brandName} ${lower} ürünleri pahalı mı?`,
+      answer: diff < 3
+        ? `${brandName} markasının takip ettiğimiz ${lower} ürünlerinin ortalama fiyatı ${priceText(averagePrice)} TL; kategorinin geneli ise ${priceText(categoryAveragePrice)} TL. Yani marka bu kategoride ortalamaya çok yakın konumlanıyor. Ortalama tek başına yeterli bir ölçüt değil: paket boyutları farklı olduğu için servis başına düşen maliyete bakmak daha doğru sonuç verir.`
+        : `${brandName} markasının takip ettiğimiz ${lower} ürünlerinin ortalama fiyatı ${priceText(averagePrice)} TL; kategorinin geneli ise ${priceText(categoryAveragePrice)} TL — yani ortalamadan yaklaşık %${diff} daha ${cheaper ? 'uygun' : 'yüksek'}. Ortalama tek başına yeterli bir ölçüt değil: paket boyutları farklı olduğu için servis başına düşen maliyete bakmak daha doğru sonuç verir.`,
+    });
+  }
+
+  if (productCount) {
+    faqs.push({
+      question: `${brandName} markasının kaç ${lower} ürünü takip ediliyor?`,
+      answer: `Şu anda ${brandName} kataloğundan ${productCount} ${lower} ürününü takip ediyoruz ve her birinin fiyatını günde dört kez kaydediyoruz. Marka kataloğundan bir ürünü kaldırdığında biz de listelemeyi bırakıyoruz, ama o ürünün birikmiş fiyat geçmişini siliyor değiliz.`,
+    });
+  }
+
+  faqs.push({
+    question: `${brandName} ${lower} ürünlerinde indirim ne sıklıkla oluyor?`,
+    answer: averageDiscountPercent
+      ? `Şu an bu kategoride doğruladığımız indirimlerin ortalama derinliği %${averageDiscountPercent}. Bu oran sabit bir kampanya vaadi değil, her taramada yeniden hesaplanan anlık durum — fiyatlar değiştikçe değişiyor.`
+      : `Şu anda bu kategoride doğrulanmış bir fiyat düşüşü görünmüyor. Bu, markanın kampanya yapmadığı anlamına gelmiyor; yalnızca bizim topladığımız fiyat geçmişinde henüz gerçek bir düşüş oluşmadı demek. Sayfayı takip listene ekleyerek fiyat düştüğünde haberdar olabilirsin.`,
+  });
+
+  faqs.push({
+    question: `Buradaki ${lower} fiyatları güncel mi?`,
+    answer:
+      'Fiyatları markanın kendi sitesinden günde dört kez topluyoruz; her ürün kartında son kontrolün ne zaman yapıldığı yazıyor. Yine de nihai fiyat markanın ödeme sayfasında geçerlidir — kargo, kampanya koşulu veya sepet indirimi gibi ayrıntılar orada değişebilir.',
+  });
+
+  return faqs;
+}
+
 export function buildBrandFaqs(input: BrandFaqInput): FaqItem[] {
   const { brandName, couponCodes, totalProducts, averageDiscountPercent, topCategoryLabel } = input;
   const hasCoupon = couponCodes.length > 0;

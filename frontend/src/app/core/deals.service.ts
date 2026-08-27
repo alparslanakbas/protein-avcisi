@@ -60,8 +60,11 @@ export class DealsService {
   // Marka sayfasındaki "bu markaya genel bakış" bölümü için — kendi
   // verimize dayanan özgün istatistik, markanın kopyalanmış tarihçesi
   // yerine (bkz. CLAUDE.md "marka sayfaları" tartışması).
-  getBrandStats(brand: string): Observable<BrandStats> {
-    const params = new HttpParams().set('brand', brand);
+  // category verilirse istatistikler markanın yalnızca o kategorideki
+  // ürünlerinden hesaplanır — marka × kategori sayfalarının kendi verisi.
+  getBrandStats(brand: string, category?: string): Observable<BrandStats> {
+    let params = new HttpParams().set('brand', brand);
+    if (category) params = params.set('category', category);
     return this.http.get<BrandStats>(`${API_BASE_URL}/api/brand-stats`, { params });
   }
 
