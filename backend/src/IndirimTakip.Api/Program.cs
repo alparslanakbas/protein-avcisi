@@ -117,6 +117,10 @@ var adminApiKey = app.Configuration["AdminApiKey"];
 // ürün/site linkleri için — tek yerden yönetiliyor ki domain değişince
 // (bu proje bu oturumda bile 2 kez değiştirdi) unutulan bir yer kalmasın.
 var frontendBaseUrl = app.Configuration["FrontendBaseUrl"] ?? "https://www.proteinavcisi.com.tr";
+var frontendImageSource = Uri.TryCreate(frontendBaseUrl, UriKind.Absolute, out var frontendUri)
+    && frontendUri.Scheme is "http" or "https"
+        ? frontendUri.GetLeftPart(UriPartial.Authority)
+        : null;
 
 // Uygulama açılırken bekleyen migration'ları otomatik uygula — hosting
 // platformunda elle migration komutu çalıştırmaya gerek kalmasın diye
@@ -195,13 +199,20 @@ app.UseOutputCache();
 // e-postadan doğrudan tıklanan bu sayfalar clickjacking/MIME-sniffing gibi
 // saldırılara açık olmasın diye. CSP inline style'lara izin veriyor
 // (BuildInfoPage stil için bunu kullanıyor) ama script'i tamamen kapatıyor.
+// Başarılı abonelik onay sayfasındaki görseller frontend domaininden geliyor;
+// bu origin açıkça izinli değilse tarayıcı dosyalar 200 dönse bile hepsini CSP
+// nedeniyle engelliyor. Config değeri Uri ile ayrıştırılarak yalnızca güvenli
+// http/https origin'i ekleniyor; ham config metni header'a taşınmıyor.
 app.Use(async (context, next) =>
 {
     context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
     context.Response.Headers.Append("X-Frame-Options", "DENY");
     context.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
+    var imageSources = frontendImageSource is null
+        ? "'self'"
+        : $"'self' {frontendImageSource}";
     context.Response.Headers.Append("Content-Security-Policy",
-        "default-src 'none'; style-src 'unsafe-inline'; img-src 'self'; base-uri 'none'; frame-ancestors 'none'");
+        $"default-src 'none'; style-src 'unsafe-inline'; img-src {imageSources}; base-uri 'none'; frame-ancestors 'none'");
     await next();
 });
 
