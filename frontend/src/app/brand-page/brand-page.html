@@ -68,17 +68,32 @@
         </div>
       }
 
-      @if (coupons().length > 0) {
+      <!-- Kupon durumu. Kod YOKKEN de bir şey söylemek önemli: sayfaya
+           "{marka} indirim kodu" aramasından gelen kişi, kod olup olmadığını
+           öğrenmek istiyor. Boş bırakmak hem o kişiyi cevapsız bırakıyordu hem
+           de sayfayı sorguyla ilgisiz gösteriyordu. -->
+      @if (!fixedCategory()) {
         <div class="mt-6">
-          <h2 class="mb-2 text-[11px] font-medium uppercase tracking-[0.1em] text-[var(--noc-neutral-500)]">Güncel Kupon Kodları</h2>
-          <div class="flex flex-wrap items-center gap-2">
-            @for (coupon of coupons(); track coupon.id) {
-              <div class="flex items-center gap-2 rounded-[8px] border border-dashed border-[var(--noc-accent)] px-3 py-1.5 text-xs">
-                <code class="rounded-[6px] px-2 py-0.5 font-mono font-medium text-[var(--noc-accent)]" style="background: var(--noc-accent-800)">{{ coupon.code }}</code>
-                <span class="text-[var(--noc-neutral-500)]">{{ coupon.description }}</span>
-              </div>
-            }
-          </div>
+          <h2 class="mb-2 text-[11px] font-medium uppercase tracking-[0.1em] text-[var(--noc-neutral-500)]">{{ brandName() }} Kupon Kodları</h2>
+          @if (coupons().length > 0) {
+            <div class="flex flex-wrap items-center gap-2">
+              @for (coupon of coupons(); track coupon.id) {
+                <div class="flex items-center gap-2 rounded-[8px] border border-dashed border-[var(--noc-accent)] px-3 py-1.5 text-xs">
+                  <code class="rounded-[6px] px-2 py-0.5 font-mono font-medium text-[var(--noc-accent)]" style="background: var(--noc-accent-800)">{{ coupon.code }}</code>
+                  <span class="text-[var(--noc-neutral-500)]">{{ coupon.description }}</span>
+                </div>
+              }
+            </div>
+            <p class="mt-2 max-w-2xl text-xs leading-5 text-[var(--noc-neutral-500)]">
+              Kodları otomatik toplamıyoruz; her birini elle kontrol edip ekliyor, süresi dolduğunda kaldırıyoruz.
+            </p>
+          } @else {
+            <p class="max-w-2xl text-[13px] leading-6 text-[var(--noc-neutral-500)]">
+              {{ brandName() }} için şu anda doğruladığımız aktif bir indirim kodu yok. Bulamadığımızda uydurma kod
+              listelemiyoruz — süresi geçmiş bir kodu ödeme sayfasında denemek, hiç kod olmamasından daha can sıkıcı.
+              Kod yerine aşağıdaki listeden markanın gerçek fiyat düşüşlerini takip edebilirsin.
+            </p>
+          }
         </div>
       }
 
@@ -293,6 +308,29 @@
             }
           </div>
         </div>
+      }
+
+      <!-- Markaya ÖZEL SSS — kategori sayfalarındaki accordion deseninin
+           aynısı. Ürün listesinden SONRA geliyor: sayfaya gelenin asıl amacı
+           önce fiyatlara bakmak. Yalnızca marka ana sayfasında görünüyor,
+           marka × kategori kesişiminde değil. -->
+      @if (brandFaqs().length > 0) {
+        <section class="mt-[45px]">
+          <h2 class="mb-4 text-lg font-medium">{{ brandName() }} İndirim Kodu Hakkında Sık Sorulanlar</h2>
+          <div class="flex flex-col gap-2">
+            @for (item of brandFaqs(); track item.question) {
+              <details class="group rounded-[8px] border border-[var(--noc-divider)] px-4 py-3">
+                <summary class="flex cursor-pointer list-none items-center justify-between gap-2 text-sm font-medium">
+                  {{ item.question }}
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4 shrink-0 text-[var(--noc-neutral-500)] transition-transform group-open:rotate-180">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6" />
+                  </svg>
+                </summary>
+                <p class="mt-2 text-sm leading-relaxed text-[var(--noc-neutral-500)]">{{ item.answer }}</p>
+              </details>
+            }
+          </div>
+        </section>
       }
 
       @if (otherBrands().length > 0) {

@@ -1,8 +1,9 @@
 import { DOCUMENT, DecimalPipe } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
+import { buildBrandFaqs } from '../core/brand-faqs';
 import { buildBreadcrumbJsonLd } from '../core/breadcrumb';
 import { BrandStats } from '../core/brand-stats.model';
 import { CATEGORY_LABELS } from '../core/category-labels';
@@ -41,6 +42,24 @@ export class BrandPage implements OnInit {
   private readonly priceHistoryService = inject(PriceHistoryService);
   protected readonly comparison = inject(ComparisonService);
   private breadcrumbEl: HTMLScriptElement | null = null;
+  private faqEl: HTMLScriptElement | null = null;
+
+  // Markaya özel SSS — yalnızca marka ana sayfasında (marka × kategori
+  // kesişiminde değil), çünkü "indirim kodu" sorguları oraya gelmiyor.
+  // Kupon durumuna ve marka istatistiklerine bağlı olduğu için computed.
+  protected readonly brandFaqs = computed(() => {
+    if (this.fixedCategory()) return [];
+    const brand = this.brandName();
+    if (!brand) return [];
+    const stats = this.brandStats();
+    return buildBrandFaqs({
+      brandName: brand,
+      couponCodes: this.coupons().map((c) => c.code),
+      totalProducts: stats?.totalProducts ?? null,
+      averageDiscountPercent: stats?.averageDiscountPercent ?? null,
+      topCategoryLabel: this.topCategoryLabel(),
+    });
+  });
 
   protected readonly brandName = signal<string>('');
   protected readonly coupons = signal<Coupon[]>([]);
@@ -102,6 +121,10 @@ export class BrandPage implements OnInit {
   // route'u) navigate ediyordu — modal kapanınca marka sayfasından çıkıp
   // ana sayfaya düşen bir bug'dı.
   protected readonly selectedDeal = signal<Deal | null>(null);
+
+  constructor() {
+    effect(() => this.setFaqJsonLd());
+  }
 
   ngOnInit(): void {
     this.route.paramMap.subscribe((params) => {
@@ -367,6 +390,33 @@ export class BrandPage implements OnInit {
         { name: brand, path: `/marka/${brandSlug}/indirim-kodu` },
       ]),
     );
+  }
+
+  // Görünür SSS ile aynı içerikten üretiliyor — kategori sayfalarındaki desenin
+  // aynısı. İkisinin ayrışmaması önemli: arama motoruna gösterilen soru/cevap,
+  // sayfada gerçekten okunabilir olmalı.
+  //
+  // effect ile bağlı, çünkü sorular kuponlara ve marka istatistiklerine
+  // dayanıyor ve ikisi de sayfa meta'sı yazıldıktan SONRA geliyor; tek seferlik
+  // bir çağrı henüz boş olan veriyle şema üretirdi.
+  private setFaqJsonLd(): void {
+    const faqs = this.brandFaqs();
+    if (faqs.length === 0) {
+      // Marka × kategori sayfasına geçildiğinde önceki şema geride kalmasın.
+      this.faqEl?.remove();
+      this.faqEl = null;
+      return;
+    }
+
+    this.faqEl = upsertJsonLdScript(this.document, this.faqEl, {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: faqs.map((faq) => ({
+        '@type': 'Question',
+        name: faq.question,
+        acceptedAnswer: { '@type': 'Answer', text: faq.answer },
+      })),
+    });
   }
 
   protected discountBadge(deal: Deal): string {
