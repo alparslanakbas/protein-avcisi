@@ -314,6 +314,12 @@ export class DealsList implements OnInit {
         // Product/Offer'da veriliyor.
         ogType: 'website',
         ogImage: deal.imageUrl ?? undefined,
+        // Markanın taramada artık döndürmediği ve yerine geçen güncel bir
+        // kaydı da bulunmayan ürün: sayfa çalışmaya devam ediyor (biriktirdiği
+        // fiyat geçmişi hâlâ değerli ve paylaşılmış linkler bozulmuyor) ama
+        // dizine girmemesi gerekiyor — site içinde hiçbir listede
+        // görünmediği için oraya giden hiçbir bağlantı yok.
+        noIndex: deal.isStale === true,
       });
 
       // schema.org Product/Offer — Google'ın arama sonucunda fiyat gösterme
@@ -429,6 +435,19 @@ export class DealsList implements OnInit {
   // linklerinin ranking sinyalini kanonik (slug'lı) URL'e taşıması için.
   // Slug zaten doğruysa hiçbir şey yapmıyor (sonsuz döngü riski yok).
   private ensureCanonicalSlug(deal: Deal, slugParam: string | null): void {
+    // Marka bu kaydın adresini değiştirmiş ve aynı ürünün güncel bir kaydı
+    // var — iki sayfanın arama sonuçlarında birbiriyle çakışmaması için eski
+    // adres güncel kayda taşınıyor. Aynı yönlendirme mekanizması (SSR'da
+    // gerçek bir HTTP yönlendirmesine dönüşüyor) slug düzeltmesinde de
+    // kullanılıyor.
+    if (deal.replacementProductId) {
+      this.router.navigate(['/urun', deal.replacementProductId, slugify(deal.productName)], {
+        replaceUrl: true,
+        queryParamsHandling: 'preserve',
+      });
+      return;
+    }
+
     const canonicalSlug = slugify(deal.productName);
     if (slugParam === canonicalSlug) return;
     this.router.navigate(['/urun', deal.productId, canonicalSlug], {

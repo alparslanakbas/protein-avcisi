@@ -26,4 +26,8 @@ export interface Deal {
   storeDiscountPercent: number | null;
   scrapedAt: string;
   isAtThirtyDayLow: boolean;
+  // Yalnızca tekil ürün ucundan gelir; listelerde donmuş kayıtlar zaten
+  // gizlendiği için orada hep varsayılan değerdedir.
+  isStale?: boolean;
+  replacementProductId?: number | null;
 }

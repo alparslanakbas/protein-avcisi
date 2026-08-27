@@ -15,6 +15,13 @@ export interface PageMetaOptions {
   // fiyat görünsün ama Google'a giden <title> fiyatsız kalsın diye) — yoksa
   // options.title kullanılır.
   ogTitle?: string;
+  // Sayfa arama motoru dizinine girmemeli (kişiye özel içerik, ya da markanın
+  // artık taramada döndürmediği bir ürün kaydı).
+  //
+  // Değer verilmediğinde servis etiketi KALDIRIYOR — bu şart: tek sayfa
+  // uygulamasında bir sayfada eklenen robots etiketi, sonraki sayfaya
+  // geçildiğinde geride kalsaydı normal sayfalar da dizinden düşerdi.
+  noIndex?: boolean;
 }
 
 // 2026-08-15 kod kalitesi taraması: title/description/OG/canonical ayarlama
@@ -53,6 +60,14 @@ export class PageMetaService {
     this.metaService.updateTag({ name: 'twitter:title', content: ogTitle });
     this.metaService.updateTag({ name: 'twitter:description', content: options.description });
     this.metaService.updateTag({ name: 'twitter:image', content: ogImage });
+
+    if (options.noIndex) {
+      this.metaService.updateTag({ name: 'robots', content: 'noindex, follow' });
+    } else {
+      // Kaldırmak, eklemek kadar önemli — bkz. noIndex alanının açıklaması.
+      this.metaService.removeTag("name='robots'");
+    }
+
     setCanonicalLink(this.document, options.canonicalPath);
   }
 }

@@ -231,7 +231,37 @@ public partial class DealsQueryService(AppDbContext db)
         if (row?.Latest is null || row.ReferencePrice is null || row.ThirtyDayLowPrice is null)
             return null;
 
-        return MapToDealDto(new DealRow(row.Product, row.BrandName, row.Latest, row.ReferencePrice.Value, row.ThirtyDayLowPrice.Value));
+        var dto = MapToDealDto(new DealRow(row.Product, row.BrandName, row.Latest, row.ReferencePrice.Value, row.ThirtyDayLowPrice.Value));
+
+        // Bu uç, listelerdeki donmuş-ürün filtresinden BİLİNÇLİ olarak muaf
+        // (doğrudan paylaşılmış bir link bozulmasın diye). Ama bu, markanın
+        // artık taramada döndürmediği bir kaydın sessizce canlı sayfa gibi
+        // durmasına yol açıyor: listelerde görünmediği için hiçbir yerden iç
+        // bağlantı almıyor, buna karşın arama motorunun dizininde kalmaya
+        // devam ediyor ve çoğu zaman aynı ürünün güncel kaydıyla çakışıyor.
+        // (HIQ'da 141 üründen 51'i bu durumda — marka ürün adresini
+        // değiştirdikçe eski kayıt kalıcı olarak donuyor.)
+        //
+        // Çözüm silmek değil: fiyat geçmişini korumak baştan beri bilinçli bir
+        // tercih. Onun yerine sayfaya, kendisinin güncel olmadığını ve varsa
+        // yerine geçen kaydın hangisi olduğunu söylüyoruz.
+        var staleSince = DateTimeOffset.UtcNow.Subtract(StaleThreshold);
+        var isStale = row.Latest.ScrapedAt < staleSince;
+        if (!isStale)
+            return dto;
+
+        // Aynı marka + aynı isimli GÜNCEL kayıt varsa, o bu ürünün yerine
+        // geçmiş demektir (marka yalnızca adresini değiştirmiş).
+        var replacementId = await (
+            from p in db.Products
+            where p.Id != productId
+                && p.BrandId == row.Product.BrandId
+                && p.Name == row.Product.Name
+                && p.PriceHistories.OrderByDescending(ph => ph.ScrapedAt).First().ScrapedAt >= staleSince
+            orderby p.Id descending
+            select (int?)p.Id).FirstOrDefaultAsync(cancellationToken);
+
+        return dto with { IsStale = true, ReplacementProductId = replacementId };
     }
 
     // Favoriler listesi (/favorilerim) için — belirli bir ürün ID kümesini,
