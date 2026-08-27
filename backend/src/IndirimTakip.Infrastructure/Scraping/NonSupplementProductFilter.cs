@@ -15,8 +15,12 @@ public static partial class NonSupplementProductFilter
     public static bool IsAccessoryOrApparel(string productName) =>
         AccessoryKeywordRegex().IsMatch(productName);
 
+    // Not: liste, kaçan ürünler bulundukça genişliyor — korse/eşofman/çanta
+    // 28 Ağustos'ta eklendi (ilk temizlik turunda gözden kaçmışlardı).
+    // "performans" gibi genel kelimeler BİLİNÇLİ olarak yok: markaların gerçek
+    // takviye paketleri de o kelimeyi taşıyor (ör. "orta-guc-performans").
     [GeneratedRegex(
-        @"\b(t-?shirt|sweatshirt|hoodie|şapka|beyzbol|pillbox|bileklik|havlu|buff|atlet|anahtarlık|maskot|huni|shaker|şort)\b",
+        @"\b(t-?shirt|sweatshirt|hoodie|şapka|beyzbol|pillbox|bileklik|havlu|buff|atlet|anahtarlık|maskot|huni|shaker|şort|korse|eşofman|esofman|çanta|canta|handbag)\b",
         RegexOptions.IgnoreCase)]
     private static partial Regex AccessoryKeywordRegex();
 }
