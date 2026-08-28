@@ -8,6 +8,7 @@ using IndirimTakip.Infrastructure.Scraping.Hiq;
 using IndirimTakip.Infrastructure.Scraping.BigJoy;
 using IndirimTakip.Infrastructure.Scraping.ProteinOcean;
 using IndirimTakip.Infrastructure.Scraping.Ssn;
+using IndirimTakip.Infrastructure.Scraping.Supplementler;
 using IndirimTakip.Infrastructure.Scraping.Torq;
 using IndirimTakip.Infrastructure.Scraping.West;
 using IndirimTakip.Infrastructure.Scraping.Yesilmarka;
@@ -82,6 +83,13 @@ public static class DependencyInjection
             client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
         });
         services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<BigJoyScraper>());
+
+        services.AddHttpClient<SupplementlerScraper>(client =>
+        {
+            client.BaseAddress = new Uri("https://www.supplementler.com/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
+        });
+        services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<SupplementlerScraper>());
 
         // Arama motorlarına sayfa değişikliği bildirimi (Bing/Yandex/Seznam).
         services.AddHttpClient<IndexNowClient>(client =>

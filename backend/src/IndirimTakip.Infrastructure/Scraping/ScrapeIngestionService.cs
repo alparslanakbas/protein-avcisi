@@ -14,18 +14,32 @@ public class ScrapeIngestionService(
 {
     public async Task<int> IngestAsync(IBrandScraper scraper, CancellationToken cancellationToken = default)
     {
-        var brand = await db.Brands.FirstOrDefaultAsync(b => b.Name == scraper.BrandName, cancellationToken);
-        if (brand is null)
-        {
-            brand = new Brand { Name = scraper.BrandName, BaseUrl = scraper.BaseUrl, IsActive = true };
-            db.Brands.Add(brand);
-        }
-
         var scrapedProducts = await scraper.ScrapeAsync(cancellationToken);
         var scrapedAt = DateTimeOffset.UtcNow;
 
+        // Markalar ada göre önbelleğe alınıyor: çok markalı bir kaynakta
+        // (bayi kataloğu) ürün başına marka çözmek gerekiyor ve her ürün için
+        // ayrı sorgu atmak yüzlerce gidiş-geliş demek olurdu.
+        var brandsByName = await db.Brands.ToDictionaryAsync(b => b.Name, cancellationToken);
+
+        Brand ResolveBrand(string name)
+        {
+            if (brandsByName.TryGetValue(name, out var existing))
+                return existing;
+
+            var created = new Brand { Name = name, BaseUrl = scraper.BaseUrl, IsActive = true };
+            db.Brands.Add(created);
+            brandsByName[name] = created;
+            return created;
+        }
+
+        // Mevcut ürünler MARKAYA değil ADRESE göre yükleniyor: çok markalı bir
+        // taramada marka filtresi ürünlerin çoğunu kaçırırdı. Döngü zaten
+        // yalnızca taranan adreslere bakıyor, tek markalı scraper'larda
+        // davranış değişmiyor.
+        var scrapedUrls = scrapedProducts.Select(sp => sp.Url).Distinct().ToList();
         var existingProducts = await db.Products
-            .Where(p => p.Brand!.Name == scraper.BrandName)
+            .Where(p => scrapedUrls.Contains(p.Url))
             .ToDictionaryAsync(p => p.Url, cancellationToken);
 
         var touchedProducts = new List<Product>();
@@ -47,7 +61,7 @@ public class ScrapeIngestionService(
             {
                 product = new Product
                 {
-                    Brand = brand,
+                    Brand = ResolveBrand(scraped.BrandName ?? scraper.BrandName),
                     Name = scraped.Name,
                     Url = scraped.Url,
                     ImageUrl = scraped.ImageUrl,

@@ -80,8 +80,12 @@ interface BrandCategoryPair {
 const MIN_PRODUCTS_FOR_SITEMAP = 3;
 
 /** Marka karşılaştırma sayfası için markanın toplam ürün eşiği: kategori
- *  ortalamasının anlamlı olabilmesi için gereken en az ürün sayısı. */
-const MIN_PRODUCTS_FOR_COMPARISON = 20;
+ *  ortalamasının anlamlı olabilmesi için gereken en az ürün sayısı.
+ *  Marka sayısı 8'den 37'ye çıkınca 20'lik eşik 91 karşılaştırma sayfası
+ *  üretiyordu; küçük markaların kategori ortalaması zaten tek ürüne dayandığı
+ *  için eşik yükseltildi. Sayfalar çalışmaya devam ediyor, taranmaya
+ *  sunulmuyor. */
+const MIN_PRODUCTS_FOR_COMPARISON = 40;
 
 // sitemap.xml ürün sayısına göre büyüyor, statik dosya olamaz — ham veriyi
 // backend'den (/api/products/sitemap) çekip burada XML'e çeviriyoruz. Bu

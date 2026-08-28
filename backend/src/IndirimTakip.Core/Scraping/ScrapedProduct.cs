@@ -27,4 +27,10 @@ public record ScrapedProduct(
     // ayrı bir arayüzle (IProductDetailFetcher) haftalık backfill'de doldurulur.
     string? NutritionJson = null,
     // Yukarıdaki tablodan ayrıştırılmış porsiyon başı protein (gram).
-    decimal? ProteinPerServingGrams = null);
+    decimal? ProteinPerServingGrams = null,
+    // Ürünün GERÇEK üretici markası. Tek markalı scraper'lar bunu hiç
+    // doldurmuyor (marka scraper'ın kendisinden geliyor). Çok markalı bir
+    // kaynakta (bir bayi kataloğu) her ürün kendi markasını taşıyor: ürün
+    // "Supplementler" değil "Optimum Nutrition" markası altında görünmeli,
+    // mağaza bağlantısı ise ürünün satıldığı yere gitmeli.
+    string? BrandName = null);
