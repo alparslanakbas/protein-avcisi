@@ -70,6 +70,11 @@ body {
   --noc-card: #1d2238;
   --noc-text: #f5f6fb;
   --noc-accent: #9b8cff;
+  /* Accent dolgulu bir ogenin (aktif sekme gibi) uzerindeki metin.
+     Koyu temada accent acik bir lila oldugu icin beyaz metin 2.76'da
+     kaliyordu; koyu murekkep 6.77 veriyor. Acik temada accent koyu
+     mor oldugundan orada beyaz dogru secim. */
+  --noc-on-accent: #16182a;
 
   --noc-accent-100: #f5f4ff;
   --noc-accent-200: #e7e5fe;
@@ -86,7 +91,10 @@ body {
   --noc-neutral-300: #cfd3e5;
   --noc-neutral-400: #b2b6ca;
   --noc-neutral-500: #9397ab;
-  --noc-neutral-600: #75798c;
+  /* Koyu temadaki sonuk metin rengi. #75798c iken kart zemininde (#1d2238)
+     kontrast 3.63'te kaliyordu, WCAG AA icin 4.5 gerekiyor; bu deger
+     kartta 4.59, sayfa zemininde 5.48 veriyor. */
+  --noc-neutral-600: #868a9e;
   --noc-neutral-700: #595d6c;
   --noc-neutral-800: #3f424d;
   --noc-neutral-900: #292b31;
@@ -126,6 +134,7 @@ body {
   --noc-card: #ffffff;
   --noc-text: #171a2e;
   --noc-accent: #6556e8;
+  --noc-on-accent: #ffffff;
   --noc-accent-100: #f2f0ff;
   --noc-accent-200: #e5e0ff;
   --noc-accent-300: #c8bfff;
@@ -186,6 +195,7 @@ body {
   --noc-surface: rgba(255, 255, 255, 0.07);
   --noc-card: rgba(255, 255, 255, 0.07);
   --noc-accent: #a89dff;
+  --noc-on-accent: #16182a;
   --noc-neutral-500: #aeb4ce;
   color: #f7f7fc;
   background: #0b0f27;

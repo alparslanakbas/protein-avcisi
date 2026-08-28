@@ -1,7 +1,7 @@
 <header class="pa-topbar">
   <div class="pa-container flex min-h-[76px] items-center gap-5">
-    <a routerLink="/" class="mr-auto flex shrink-0 items-center gap-2.5" aria-label="ProteinAvcısı ana sayfa">
-      <span class="pa-brand-mark">PA</span>
+    <a routerLink="/" class="mr-auto flex shrink-0 items-center gap-2.5">
+      <span class="pa-brand-mark" aria-hidden="true">PA</span>
       <span class="text-[19px] font-bold tracking-[-0.035em] text-white">PROTEİN<span class="text-[#8f80ff]">AVCISI</span></span>
     </a>
 
@@ -69,9 +69,9 @@
     </a>
 
     <div class="flex items-center rounded-full border border-white/15 bg-white/[0.05] p-1" aria-label="Tema seçimi">
-      <button type="button" title="Açık tema" class="flex h-7 w-7 items-center justify-center rounded-full text-[#aeb4ce]" [class.bg-white]="theme.preference() === 'light'" [class.text-[#6556e8]]="theme.preference() === 'light'" (click)="setTheme('light')"><i class="ph ph-sun text-[15px]" aria-hidden="true"></i></button>
-      <button type="button" title="Koyu tema" class="flex h-7 w-7 items-center justify-center rounded-full text-[#aeb4ce]" [class.bg-white]="theme.preference() === 'dark'" [class.text-[#6556e8]]="theme.preference() === 'dark'" (click)="setTheme('dark')"><i class="ph ph-moon text-[15px]" aria-hidden="true"></i></button>
-      <button type="button" title="Sistem teması" class="hidden h-7 w-7 items-center justify-center rounded-full text-[#aeb4ce] md:flex" [class.bg-white]="theme.preference() === 'system'" [class.text-[#6556e8]]="theme.preference() === 'system'" (click)="setTheme('system')"><i class="ph ph-desktop text-[15px]" aria-hidden="true"></i></button>
+      <button type="button" title="Açık tema" class="flex h-9 w-9 items-center justify-center rounded-full text-[#aeb4ce]" [class.bg-white]="theme.preference() === 'light'" [class.text-[#6556e8]]="theme.preference() === 'light'" (click)="setTheme('light')"><i class="ph ph-sun text-[15px]" aria-hidden="true"></i></button>
+      <button type="button" title="Koyu tema" class="flex h-9 w-9 items-center justify-center rounded-full text-[#aeb4ce]" [class.bg-white]="theme.preference() === 'dark'" [class.text-[#6556e8]]="theme.preference() === 'dark'" (click)="setTheme('dark')"><i class="ph ph-moon text-[15px]" aria-hidden="true"></i></button>
+      <button type="button" title="Sistem teması" class="hidden h-9 w-9 items-center justify-center rounded-full text-[#aeb4ce] md:flex" [class.bg-white]="theme.preference() === 'system'" [class.text-[#6556e8]]="theme.preference() === 'system'" (click)="setTheme('system')"><i class="ph ph-desktop text-[15px]" aria-hidden="true"></i></button>
     </div>
   </div>
 </header>

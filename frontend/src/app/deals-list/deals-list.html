@@ -2,8 +2,8 @@
   <div class="pa-hero-zone">
     <header class="pa-topbar">
       <div class="pa-container flex min-h-[80px] flex-wrap items-center gap-4 py-3">
-        <a routerLink="/" class="mr-auto flex shrink-0 items-center gap-2.5" aria-label="ProteinAvcısı ana sayfa">
-          <span class="pa-brand-mark">PA</span>
+        <a routerLink="/" class="mr-auto flex shrink-0 items-center gap-2.5">
+          <span class="pa-brand-mark" aria-hidden="true">PA</span>
           <span class="text-[19px] font-bold tracking-[-0.035em] text-white">PROTEİN<span class="text-[#8f80ff]">AVCISI</span></span>
         </a>
 
@@ -51,9 +51,9 @@
         </a>
 
         <div class="flex items-center rounded-full border border-white/15 bg-white/[0.05] p-1">
-          <button type="button" title="Açık tema" class="flex h-7 w-7 items-center justify-center rounded-full text-[#aeb4ce]" [class.bg-white]="theme.preference() === 'light'" [class.text-[#6556e8]]="theme.preference() === 'light'" (click)="setTheme('light')"><i class="ph ph-sun text-[15px]" aria-hidden="true"></i></button>
-          <button type="button" title="Koyu tema" class="flex h-7 w-7 items-center justify-center rounded-full text-[#aeb4ce]" [class.bg-white]="theme.preference() === 'dark'" [class.text-[#6556e8]]="theme.preference() === 'dark'" (click)="setTheme('dark')"><i class="ph ph-moon text-[15px]" aria-hidden="true"></i></button>
-          <button type="button" title="Sistem teması" class="hidden h-7 w-7 items-center justify-center rounded-full text-[#aeb4ce] md:flex" [class.bg-white]="theme.preference() === 'system'" [class.text-[#6556e8]]="theme.preference() === 'system'" (click)="setTheme('system')"><i class="ph ph-desktop text-[15px]" aria-hidden="true"></i></button>
+          <button type="button" title="Açık tema" class="flex h-9 w-9 items-center justify-center rounded-full text-[#aeb4ce]" [class.bg-white]="theme.preference() === 'light'" [class.text-[#6556e8]]="theme.preference() === 'light'" (click)="setTheme('light')"><i class="ph ph-sun text-[15px]" aria-hidden="true"></i></button>
+          <button type="button" title="Koyu tema" class="flex h-9 w-9 items-center justify-center rounded-full text-[#aeb4ce]" [class.bg-white]="theme.preference() === 'dark'" [class.text-[#6556e8]]="theme.preference() === 'dark'" (click)="setTheme('dark')"><i class="ph ph-moon text-[15px]" aria-hidden="true"></i></button>
+          <button type="button" title="Sistem teması" class="hidden h-9 w-9 items-center justify-center rounded-full text-[#aeb4ce] md:flex" [class.bg-white]="theme.preference() === 'system'" [class.text-[#6556e8]]="theme.preference() === 'system'" (click)="setTheme('system')"><i class="ph ph-desktop text-[15px]" aria-hidden="true"></i></button>
         </div>
       </div>
     </header>
@@ -144,9 +144,9 @@
       <div class="mb-4 flex flex-wrap items-end gap-3">
         <div>
           <div class="inline-flex overflow-hidden rounded-[10px] border border-[var(--noc-divider)] bg-[var(--noc-card)] p-1">
-            <button type="button" class="rounded-[7px] px-2.5 py-2 text-xs font-semibold sm:px-4 sm:text-sm" [class]="viewMode() === 'deals' ? 'bg-[var(--noc-accent)] text-white' : 'text-[var(--noc-neutral-600)] hover:text-[var(--noc-text)]'" (click)="setViewMode('deals')">Gerçek düşüşler</button>
-            <button type="button" class="rounded-[7px] px-2.5 py-2 text-xs font-semibold sm:px-4 sm:text-sm" [class]="viewMode() === 'store' ? 'bg-[var(--noc-accent)] text-white' : 'text-[var(--noc-neutral-600)] hover:text-[var(--noc-text)]'" (click)="setViewMode('store')">Mağaza kampanyaları</button>
-            <button type="button" class="rounded-[7px] px-2.5 py-2 text-xs font-semibold sm:px-4 sm:text-sm" [class]="viewMode() === 'all' ? 'bg-[var(--noc-accent)] text-white' : 'text-[var(--noc-neutral-600)] hover:text-[var(--noc-text)]'" (click)="setViewMode('all')">Tümü</button>
+            <button type="button" class="rounded-[7px] px-2.5 py-2 text-xs font-semibold sm:px-4 sm:text-sm" [class]="viewMode() === 'deals' ? 'bg-[var(--noc-accent)] text-[var(--noc-on-accent)]' : 'text-[var(--noc-neutral-600)] hover:text-[var(--noc-text)]'" (click)="setViewMode('deals')">Gerçek düşüşler</button>
+            <button type="button" class="rounded-[7px] px-2.5 py-2 text-xs font-semibold sm:px-4 sm:text-sm" [class]="viewMode() === 'store' ? 'bg-[var(--noc-accent)] text-[var(--noc-on-accent)]' : 'text-[var(--noc-neutral-600)] hover:text-[var(--noc-text)]'" (click)="setViewMode('store')">Mağaza kampanyaları</button>
+            <button type="button" class="rounded-[7px] px-2.5 py-2 text-xs font-semibold sm:px-4 sm:text-sm" [class]="viewMode() === 'all' ? 'bg-[var(--noc-accent)] text-[var(--noc-on-accent)]' : 'text-[var(--noc-neutral-600)] hover:text-[var(--noc-text)]'" (click)="setViewMode('all')">Tümü</button>
           </div>
           <p class="mt-2 text-xs text-[var(--noc-neutral-500)]">{{ viewMode() === 'deals' ? 'Kendi topladığımız fiyat geçmişiyle doğrulanan düşüşler.' : viewMode() === 'store' ? 'Markaların kendi sitesinde gösterdiği güncel kampanyalar.' : 'Takipteki tüm ürünler.' }}</p>
         </div>
