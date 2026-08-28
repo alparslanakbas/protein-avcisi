@@ -41,6 +41,7 @@ export class App implements OnInit {
   private readonly document = inject(DOCUMENT);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
   private lastLeafComponent: unknown = undefined;
+  private lastPath: string | null = null;
 
   protected readonly currentYear = new Date().getFullYear();
   protected readonly brands = signal<string[]>([]);
@@ -114,10 +115,29 @@ export class App implements OnInit {
     if (this.isBrowser) {
       this.router.events.pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd)).subscribe(() => {
         const current = leafComponent(this.router.routerState.snapshot.root);
-        if (current !== this.lastLeafComponent) {
+        // Yalnızca component'e bakmak yetmiyordu: marka sayfasındaki "Diğer
+        // Markalar" bağlantıları ya da kategori sayfasındaki "Diğer
+        // Kategoriler" aynı component'te kaldığı için sayfa değişse bile
+        // kaydırma konumu olduğu yerde duruyordu. Yol da karşılaştırılıyor.
+        const path = this.router.url.split('?')[0];
+        const changed = current !== this.lastLeafComponent || path !== this.lastPath;
+        // Tek istisna ürün modalı: ana sayfada modal açılıp kapanması '/' ile
+        // '/urun/...' arasında gerçek bir yol değişimi olarak görünüyor ama
+        // aslında aynı sayfanın üstündeki bir katman (bkz.
+        // DealsRouteReuseStrategy). Burada kaydırırsak, sayfanın ortasındaki
+        // bir ürüne tıklayıp modalı kapatan kişi kendini en başta bulurdu.
+        // İstisna yalnızca aynı component içinde kalırken geçerli:
+        // ürün modalından marka sayfasına geçmek gerçek bir sayfa
+        // değişimi ve orada kaydırma sıfırlanmalı.
+        const sameComponent = current === this.lastLeafComponent;
+        const productModalNav =
+          sameComponent && (path.startsWith('/urun/') || (this.lastPath?.startsWith('/urun/') ?? false));
+
+        if (changed && !productModalNav) {
           window.scrollTo(0, 0);
         }
         this.lastLeafComponent = current;
+        this.lastPath = path;
       });
     }
   }
