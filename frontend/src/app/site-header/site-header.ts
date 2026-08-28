@@ -1,5 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 
 import { BODY_CALCULATORS } from '../core/body-calculators';
 import { CATEGORY_LABELS } from '../core/category-labels';
@@ -19,17 +20,29 @@ import { ThemePreference, ThemeService } from '../core/theme.service';
 // Ana sayfa (deals-list) dışındaki tüm sayfalarda (kategori, marka, takip
 // listem, karşılaştırma, rehber) kullanılan paylaşılan nav — logo, tema
 // toggle'ı ve takip listesi rozetini tek yerde tutuyor. Ana sayfa kendi
-// arama kutusuna sahip özel nav'ını koruyor (bu bileşeni kullanmıyor),
-// o yüzden burada arama yok.
+// nav'ını koruyor (bu bileşeni kullanmıyor).
 @Component({
   selector: 'app-site-header',
-  imports: [RouterLink, RouterLinkActive],
+  imports: [FormsModule, RouterLink, RouterLinkActive],
   templateUrl: './site-header.html',
 })
 export class SiteHeader implements OnInit {
   private readonly dealsService = inject(DealsService);
   private readonly favoritesService = inject(FavoritesService);
+  private readonly router = inject(Router);
   protected readonly theme = inject(ThemeService);
+
+  // Üstteki arama alanı. Bu sayfalarda ürün listesi olmadığı için arama,
+  // sonucu gösterebilen ana sayfaya taşınıyor.
+  protected readonly searchQuery = signal('');
+
+  protected submitSearch(): void {
+    const term = this.searchQuery().trim();
+    // Boş aramada ana sayfaya atıp kullanıcının bulunduğu sayfadan
+    // koparmıyoruz — eski davranışın asıl sorunu buydu.
+    if (!term) return;
+    this.router.navigate(['/'], { queryParams: { search: term } });
+  }
 
   // Kullanıcı geri bildirimi: kategori sayfalarına footer'dan başka
   // erişimi olmayan biri onları neredeyse hiç görmüyordu — nav'a

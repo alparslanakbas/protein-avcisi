@@ -110,6 +110,8 @@ export class DealsList implements OnInit {
   protected readonly pwaInstall = inject(PwaInstallService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  /** ngOnInit'teki ilk queryParamMap emisyonunu ayırt etmek için. */
+  private initialLoadDone = false;
   private readonly destroyRef = inject(DestroyRef);
   private readonly pageMeta = inject(PageMetaService);
   private readonly document = inject(DOCUMENT);
@@ -369,7 +371,11 @@ export class DealsList implements OnInit {
     this.favoritesService.list().subscribe();
     this.articlesService.getArticles().subscribe((articles) => this.articles.set(articles.slice(0, 3)));
     this.loadHeroDeal();
-    this.load();
+    // İlk yükleme bilinçli olarak BURADA DEĞİL, aşağıdaki queryParamMap
+    // aboneliğinin içinde: abonelik kurulur kurulmaz senkron bir kez
+    // tetikleniyor, yani ?search= / ?page= varsa daha ilk istekte
+    // uygulanıyor. Burada ayrıca load() çağırmak iki paralel istek
+    // başlatıyordu ve filtresiz olan sonra dönüp filtreli sonucu eziyordu.
 
     // Sayfa numarası URL'de ?page= olarak tutuluyor — tarayıcının geri/ileri
     // (mouse yan tuşları dahil) butonlarının sayfalama geçmişinde doğru
@@ -378,11 +384,35 @@ export class DealsList implements OnInit {
     // (geri/ileri tuşu, paylaşılan link) devreye giriyor — sayfa zaten
     // eşleşiyorsa tekrar yüklemiyor.
     this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      // Diğer sayfalardaki üst menüden yapılan arama buraya ?search= ile
+      // geliyor (o menüde ürün listesi olmadığı için arama ana sayfada
+      // sonuçlanıyor). Önceden üstteki kutu yalnızca ana sayfaya giden bir
+      // bağlantıydı: tıklayan kişi arama yaptığını sanıp ana sayfaya
+      // düşüyordu.
+      const search = (params.get('search') ?? '').trim();
+      // İlk emisyon her zaman yüklemeli — o an değerler zaten eşit olduğu
+      // için aşağıdaki karşılaştırmalar false döner, liste hiç dolmazdı.
+      let needsLoad = !this.initialLoadDone;
+      this.initialLoadDone = true;
+
+      if (search !== this.searchQuery()) {
+        this.searchQuery.set(search);
+        needsLoad = true;
+        // Dışarıdan arama ile gelindiğinde "Tümü" sekmesine geçiyoruz.
+        // Varsayılan sekme mağaza kampanyaları; aranan ürünün o an bir
+        // kampanyası yoksa (ör. magnezyum) kişi sonuç varken boş ekran
+        // görürdü. Kullanıcının kendi seçtiği sekme korunuyor: bu satır
+        // yalnızca URL'den yeni bir arama geldiğinde çalışıyor.
+        if (search) this.viewMode.set('all');
+      }
+
       const page = Math.max(1, Number(params.get('page')) || 1);
       if (page !== this.currentPage()) {
         this.currentPage.set(page);
-        this.load();
+        needsLoad = true;
       }
+
+      if (needsLoad) this.load();
     });
 
     // Ürün modalı artık URL'e bağlı (/urun/:id) — bileşen '' ve 'urun/:id'

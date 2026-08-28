@@ -5,10 +5,23 @@
       <span class="text-[19px] font-bold tracking-[-0.035em] text-white">PROTEİN<span class="text-[#8f80ff]">AVCISI</span></span>
     </a>
 
-    <a routerLink="/" class="hidden h-11 min-w-[250px] items-center gap-2.5 rounded-[10px] border border-white/10 bg-white/[0.06] px-4 text-sm text-[#aeb4ce] transition-colors hover:border-[#8879f6]/60 hover:text-white lg:flex">
-      <i class="ph ph-magnifying-glass text-[18px]" aria-hidden="true"></i>
-      Ürün, marka veya kategori ara
-    </a>
+    <!-- Gerçek arama alanı. Önceden burada arama kutusu GÖRÜNÜMÜNDE ama
+         aslında ana sayfaya giden bir bağlantı vardı; tıklayan kişi arama
+         yaptığını sanıp ana sayfaya düşüyordu. Ürün listesi bu sayfalarda
+         olmadığı için arama, sonucu gösterebilen ana sayfaya ?search= ile
+         taşınıyor. -->
+    <form (ngSubmit)="submitSearch()" role="search" class="hidden h-11 min-w-[250px] items-center gap-2.5 rounded-[10px] border border-white/10 bg-white/[0.06] px-4 transition-colors focus-within:border-[#8879f6]/60 hover:border-[#8879f6]/60 lg:flex">
+      <i class="ph ph-magnifying-glass shrink-0 text-[18px] text-[#aeb4ce]" aria-hidden="true"></i>
+      <input
+        type="search"
+        name="search"
+        aria-label="Ürün, marka veya kategori ara"
+        placeholder="Ürün, marka veya kategori ara"
+        [ngModel]="searchQuery()"
+        (ngModelChange)="searchQuery.set($event)"
+        class="w-full bg-transparent text-sm text-white placeholder:text-[#aeb4ce] focus:outline-none"
+      />
+    </form>
 
     <nav class="hidden items-center gap-6 text-sm font-medium text-[#d8dbea] sm:flex" aria-label="Ana menü">
       <div class="relative">
