@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Options;
 using IndirimTakip.Core.Scraping;
 using IndirimTakip.Infrastructure;
 using IndirimTakip.Infrastructure.Articles;
@@ -102,6 +103,8 @@ builder.Services.AddOutputCache(options =>
         // sonucunu görürdü.
         .SetVaryByQuery("*"));
 });
+
+builder.Services.Configure<AffiliateOptions>(builder.Configuration.GetSection("Affiliate"));
 
 var app = builder.Build();
 
@@ -518,11 +521,17 @@ app.MapPost("/api/favorites/recover", async (RecoverFavoritesRequest request, Fa
 // Affiliate altyapısı: ürün linkleri buradan geçiyor ki ileride affiliate
 // id eklemek kolay olsun (roadmap adım 7). Şimdilik sadece tıklama sayısını
 // tutuyor, dış siteye 302 ile yönlendiriyor.
-app.MapGet("/go/{productId:int}", async (int productId, HttpContext http, AppDbContext db, CancellationToken ct) =>
+app.MapGet("/go/{productId:int}", async (int productId, HttpContext http, AppDbContext db,
+    IOptions<AffiliateOptions> affiliateOptions, CancellationToken ct) =>
 {
     var product = await db.Products.FindAsync([productId], ct);
     if (product is null)
         return Results.NotFound();
+
+    var brandName = await db.Brands
+        .Where(b => b.Id == product.BrandId)
+        .Select(b => b.Name)
+        .FirstOrDefaultAsync(ct);
 
     // Yönlendirme her zaman yapılıyor, ama tıklama SAYACI arama motoru
     // botlarında artmıyor: bu sayaç markalarla paylaşılan tıklama raporunu
@@ -535,7 +544,18 @@ app.MapGet("/go/{productId:int}", async (int productId, HttpContext http, AppDbC
         await db.SaveChangesAsync(ct);
     }
 
-    return Results.Redirect(product.Url, permanent: false);
+    // Ortaklık programı olan markalarda adrese takip kodu ekleniyor; marka
+    // bunu okuyup satış bize atfediyor. Kodlar yapılandırmadan geliyor
+    // (repoya girmiyor), tanımsız markada adres olduğu gibi kalıyor.
+    // Bot isteklerinde de eklenmiyor: markanın istatistiğini şişirmemek
+    // için, tıklama sayacıyla aynı gerekçe.
+    var url = product.Url;
+    if (http.Request.Headers["X-Bot-Request"] != "1")
+    {
+        url = AffiliateLinkBuilder.Apply(url, brandName, affiliateOptions.Value);
+    }
+
+    return Results.Redirect(url, permanent: false);
 }).RequireRateLimiting("General");
 
 // "Bu bilgi faydalı mıydı?" oyu — basit güven sinyali, /go ile aynı desende

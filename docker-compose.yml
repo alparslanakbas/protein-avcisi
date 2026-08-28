@@ -11,6 +11,10 @@ services:
       # Arama motoru bildirimi (Bing/Yandex/Seznam). Anahtar gizli değil —
       # site sahipliğini doğrulamak için /{key}.txt adresinde zaten açıkta.
       - IndexNow__Key=${INDEXNOW_KEY}
+      # Ortaklık programı takip kodları. Değerler .env'de (repoya girmiyor),
+      # tanımsız bırakılan marka için yönlendirme adresi hiç değişmiyor.
+      - Affiliate__TrackingCodes__Hardline=${AFFILIATE_HARDLINE}
+      - Affiliate__TrackingCodes__SSN=${AFFILIATE_SSN}
       - PublicBaseUrl=https://api.proteinavcisi.com.tr
       - Cors__AllowedOrigins__0=https://proteinavcisi.com.tr
       - Cors__AllowedOrigins__1=https://www.proteinavcisi.com.tr
