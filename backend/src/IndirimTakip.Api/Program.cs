@@ -518,14 +518,22 @@ app.MapPost("/api/favorites/recover", async (RecoverFavoritesRequest request, Fa
 // Affiliate altyapısı: ürün linkleri buradan geçiyor ki ileride affiliate
 // id eklemek kolay olsun (roadmap adım 7). Şimdilik sadece tıklama sayısını
 // tutuyor, dış siteye 302 ile yönlendiriyor.
-app.MapGet("/go/{productId:int}", async (int productId, AppDbContext db, CancellationToken ct) =>
+app.MapGet("/go/{productId:int}", async (int productId, HttpContext http, AppDbContext db, CancellationToken ct) =>
 {
     var product = await db.Products.FindAsync([productId], ct);
     if (product is null)
         return Results.NotFound();
 
-    product.ClickCount++;
-    await db.SaveChangesAsync(ct);
+    // Yönlendirme her zaman yapılıyor, ama tıklama SAYACI arama motoru
+    // botlarında artmıyor: bu sayaç markalarla paylaşılan tıklama raporunu
+    // besliyor ve bot trafiğiyle şişerse veri doğrudan yanıltıcı olur.
+    // İşareti ön yüzdeki yönlendirme katmanı koyuyor (bkz. server.ts) —
+    // orada user-agent zaten görülüyor.
+    if (http.Request.Headers["X-Bot-Request"] != "1")
+    {
+        product.ClickCount++;
+        await db.SaveChangesAsync(ct);
+    }
 
     return Results.Redirect(product.Url, permanent: false);
 }).RequireRateLimiting("General");

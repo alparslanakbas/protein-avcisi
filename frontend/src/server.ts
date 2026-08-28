@@ -216,9 +216,34 @@ app.get('/sitemap.xml', async (req, res) => {
 // (dikkatli kullanıcılara phishing linki gibi görünüyordu). Burada backend'in
 // gerçek /go/{id}'sine sunucu tarafında proxy yapıp aynı 302'yi iletiyoruz —
 // tıklama sayacı backend'de aynen çalışmaya devam ediyor.
+// Arama motoru botlarını user-agent'tan tanıyoruz. Kesin bir yöntem değil ama
+// amaç güvenlik değil, tıklama sayacını gerçek kullanıcıya yakın tutmak.
+const BOT_USER_AGENT = /bot|crawler|spider|crawling|bingpreview|slurp|duckduck|yandex|baidu|facebookexternalhit|embedly|quora|pinterest|whatsapp|telegram/i;
+
 app.get('/go/:id', async (req, res) => {
+  // /go/{id} bir içerik sayfası değil, dışarıya 302 atan bir uç. Daha önce
+  // robots.txt'te Disallow ile kapatılmıştı — ama Disallow bir adresin
+  // DİZİNE GİRMESİNİ engellemiyor, yalnızca içeriğinin okunmasını engelliyor.
+  // Sonuç: arama motoru adresi başka yoldan öğrenip dizine ekledi ama içeriği
+  // okuyamadığı için açıklama yerine "site izin vermiyor" bastı; marka
+  // aramasında ana sayfamız yerine bu adres çıkar oldu (28 Ağustos'ta Bing ve
+  // DuckDuckGo'da birebir görüldü).
+  //
+  // Doğru sinyal bu başlık: bot sayfayı çekebiliyor, "dizine ekleme" talimatını
+  // görüyor ve adresi dizinden düşürüyor. Bu yüzden robots.txt'teki Disallow da
+  // kaldırıldı — yoksa bot bu başlığı hiç göremezdi.
+  res.set('X-Robots-Tag', 'noindex, nofollow');
+
+  const isBot = BOT_USER_AGENT.test(req.get('user-agent') ?? '');
+
   try {
-    const response = await fetch(`${API_BASE_URL}/go/${req.params.id}`, { redirect: 'manual' });
+    const response = await fetch(`${API_BASE_URL}/go/${req.params.id}`, {
+      redirect: 'manual',
+      // Bot isteklerinde tıklama sayacı artmasın: bu sayaç markalarla
+      // paylaşılan tıklama raporunu besliyor, bot trafiğiyle şişmesi veriyi
+      // doğrudan yanıltıcı yapar.
+      headers: isBot ? { 'X-Bot-Request': '1' } : undefined,
+    });
     const location = response.headers.get('location');
     res.redirect(302, location ?? '/');
   } catch (error) {
@@ -237,10 +262,13 @@ app.get('/robots.txt', (req, res) => {
     res.send('User-agent: *\nDisallow: /\n');
     return;
   }
-  // /go/{id} affiliate yönlendirmeleri gerçek bir içerik sayfası değil,
-  // dış siteye 302 atan bir uç nokta — botlar bunu ayrı bir "sayfa" gibi
-  // taramaya/indekslemeye çalışmasın diye kapatıyoruz.
-  res.send(`User-agent: *\nAllow: /\nDisallow: /go/\n\nSitemap: ${CANONICAL_ORIGIN}/sitemap.xml\n`);
+  // /go/{id} için BİLİNÇLİ olarak Disallow YOK. Disallow yalnızca içeriğin
+  // okunmasını engelliyordu, adresin dizine girmesini değil — sonuçta marka
+  // aramasında ana sayfamızın yerini "açıklama gösterilemiyor" diyen bir
+  // yönlendirme adresi aldı. Bunun yerine o uç, isteğe X-Robots-Tag: noindex
+  // başlığı basıyor; botun bu başlığı görebilmesi için sayfayı çekebilmesi
+  // gerekiyor, dolayısıyla taramayı engellememek DOĞRU davranış.
+  res.send(`User-agent: *\nAllow: /\n\nSitemap: ${CANONICAL_ORIGIN}/sitemap.xml\n`);
 });
 
 /**
