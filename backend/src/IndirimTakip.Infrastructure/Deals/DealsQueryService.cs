@@ -187,7 +187,11 @@ public partial class DealsQueryService(AppDbContext db)
             "price_desc" => relevanceOrdered.ThenByDescending(r => r.Latest!.Price).ThenBy(r => r.Product.Name),
             _ => onlyStoreDiscounted
                 ? relevanceOrdered.ThenByDescending(r => (r.Latest!.StoreOldPrice!.Value - r.Latest.Price) / r.Latest.StoreOldPrice.Value).ThenBy(r => r.Product.Name)
-                : relevanceOrdered.ThenByDescending(r => (r.ReferencePrice!.Value - r.Latest!.Price) / r.ReferencePrice.Value).ThenBy(r => r.Product.Name),
+                // Referans fiyat 0 olabiliyor (bir marka ürünü 0 TL ile listelerse):
+                // korumasız bırakılınca veritabanı sıfıra bölme hatası veriyor ve
+                // TÜM ürün listesi 500 dönüyordu. Bu tür ürünler zaten indirimli
+                // sayılmadığı için sıralamada en sona düşmeleri doğru davranış.
+                : relevanceOrdered.ThenByDescending(r => r.ReferencePrice!.Value == 0m ? 0m : (r.ReferencePrice.Value - r.Latest!.Price) / r.ReferencePrice.Value).ThenBy(r => r.Product.Name),
         };
 
         var pageRows = await orderedQuery

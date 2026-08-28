@@ -126,6 +126,13 @@ public class WestNutritionScraper(HttpClient httpClient) : IBrandScraper
                     continue;
                 }
 
+                // Sitede 0 TL ile listelenen ürünler var (fiyatı girilmemiş
+                // kayıtlar). Bunları almak hem anlamsız bir fiyat geçmişi
+                // üretir hem de indirim oranı hesabında sıfıra bölmeye yol
+                // açar — fiyatı olmayan ürünü hiç almıyoruz.
+                if (price <= 0)
+                    continue;
+
                 // price-old sadece indirim varsa basılıyor — markanın kendi
                 // beyan ettiği eski fiyat, "Mağaza İndirimi" için ayrı tutulur.
                 var oldNode = card.SelectSingleNode(".//div[@class='showcase-price-old']");
