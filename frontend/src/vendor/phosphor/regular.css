@@ -46,6 +46,7 @@
 .ph.ph-caret-left:before { content: "\e138"; }
 .ph.ph-caret-right:before { content: "\e13a"; }
 .ph.ph-check-circle:before { content: "\e184"; }
+.ph.ph-clock-counter-clockwise:before { content: "\e1a0"; }
 .ph.ph-cookie:before { content: "\e6ca"; }
 .ph.ph-desktop:before { content: "\e560"; }
 .ph.ph-device-mobile:before { content: "\e1e0"; }
@@ -59,6 +60,7 @@
 .ph.ph-gauge:before { content: "\e628"; }
 .ph.ph-heartbeat:before { content: "\e2ac"; }
 .ph.ph-house:before { content: "\e2c2"; }
+.ph.ph-info:before { content: "\e2ce"; }
 .ph.ph-jar:before { content: "\e7e0"; }
 .ph.ph-leaf:before { content: "\e2da"; }
 .ph.ph-lightning:before { content: "\e2de"; }
@@ -72,6 +74,7 @@
 .ph.ph-shield-plus:before { content: "\e706"; }
 .ph.ph-squares-four:before { content: "\e464"; }
 .ph.ph-sun:before { content: "\e472"; }
+.ph.ph-tag:before { content: "\e478"; }
 .ph.ph-trash:before { content: "\e4a6"; }
 .ph.ph-warning-circle:before { content: "\e4e2"; }
 .ph.ph-waves:before { content: "\e6de"; }

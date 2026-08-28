@@ -1,68 +1,75 @@
 <div class="noc-shell min-h-screen bg-[var(--noc-bg)] text-[var(--noc-text)]">
   <app-site-header />
 
-  <main class="mx-auto max-w-[1280px] px-[28px] py-[22px]">
-    <nav class="mb-2 text-xs text-[var(--noc-neutral-500)]">
+  <main class="pa-directory-main">
+    <nav class="pa-directory-breadcrumb">
       <a routerLink="/" class="hover:text-[var(--noc-accent)]">Ana Sayfa</a> / Hesaplama
     </nav>
-    <h1 class="text-[38px] font-medium tracking-[-0.03em] sm:text-[42px]">Hesaplama Araçları</h1>
-    <p class="mt-2 max-w-2xl text-[15px] text-[var(--noc-neutral-300)]">
+    <h1 class="pa-directory-title">Hesaplama Araçları</h1>
+    <p class="pa-directory-lead">
       Doz ve ihtiyaç hesaplarını, güncel ürün fiyatlarıyla birleştiren araçlar. Sonuçlar bilgilendirme amaçlıdır,
       kişiye özel tıbbi tavsiye değildir.
     </p>
 
-    <h2 class="mb-3 mt-[32px] text-[11px] font-medium uppercase tracking-[0.1em] text-[var(--noc-neutral-500)]">
+    <section class="pa-calculator-toolbar" aria-label="Hesaplama bölümleri">
+      <div class="pa-calculator-tabs" role="group" aria-label="Hesaplama türü">
+        <button
+          type="button"
+          [class.is-active]="activeSection() === 'body'"
+          [attr.aria-pressed]="activeSection() === 'body'"
+          (click)="selectSection('body')"
+        >
+          Beslenme ve Vücut
+        </button>
+        <button
+          type="button"
+          [class.is-active]="activeSection() === 'dosage'"
+          [attr.aria-pressed]="activeSection() === 'dosage'"
+          (click)="selectSection('dosage')"
+        >
+          Takviye Dozu
+        </button>
+      </div>
+      <div class="pa-calculator-trust">
+        <span><i class="ph ph-clock-counter-clockwise" aria-hidden="true"></i> Güncel ürün fiyatlarıyla hesapla</span>
+        <span><i class="ph ph-info" aria-hidden="true"></i> Sonuçlar bilgilendirme amaçlıdır</span>
+      </div>
+    </section>
+
+    <h2 id="beslenme-araclari" class="pa-directory-section-title">
       Beslenme ve Vücut Hesaplayıcıları
     </h2>
-    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <div class="pa-body-calculator-grid">
       @for (calc of bodyGroupCalculators; track calc.path) {
         <a
           [routerLink]="calc.path"
-          class="group flex flex-col rounded-[14px] border border-transparent bg-[var(--noc-card)] p-5 shadow-[var(--noc-shadow-sm)] transition-all hover:-translate-y-0.5 hover:border-[var(--noc-accent)] hover:shadow-[var(--noc-shadow-md)]"
+          class="pa-body-calculator-card"
+          [attr.data-tone]="calc.tone"
         >
-          <div class="flex items-start justify-between gap-3">
-            <span
-              class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[var(--noc-accent)]"
-              style="background: color-mix(in srgb, var(--noc-accent) 16%, transparent)"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-5 w-5">
-                <path stroke-linecap="round" stroke-linejoin="round" [attr.d]="calc.iconPath" />
-              </svg>
-            </span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mt-1 h-4 w-4 shrink-0 text-[var(--noc-neutral-500)] transition-transform group-hover:translate-x-0.5 group-hover:text-[var(--noc-accent)]">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 18l6-6-6-6" />
-            </svg>
-          </div>
-          <h3 class="mt-4 text-[16px] font-medium">{{ calc.title }}</h3>
-          <p class="mt-2 text-sm leading-relaxed text-[var(--noc-neutral-500)]">{{ calc.description }}</p>
+          <span class="pa-calculator-icon-well" aria-hidden="true"><i [class]="'ph ' + calc.iconClass"></i></span>
+          <h3>{{ calc.title }}</h3>
+          <p>{{ calc.description }}</p>
+          <span class="pa-calculator-arrow" aria-hidden="true"><i class="ph ph-arrow-right"></i></span>
         </a>
       }
     </div>
 
-    <h2 class="mb-3 mt-[32px] text-[11px] font-medium uppercase tracking-[0.1em] text-[var(--noc-neutral-500)]">
+    <h2 id="takviye-araclari" class="pa-directory-section-title">
       Takviye Dozu Hesaplayıcıları
     </h2>
-    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <div class="pa-dosage-calculator-grid">
       @for (calc of dosageGroupCalculators; track calc.path) {
         <a
           [routerLink]="calc.path"
-          class="group flex flex-col rounded-[14px] border border-transparent bg-[var(--noc-card)] p-5 shadow-[var(--noc-shadow-sm)] transition-all hover:-translate-y-0.5 hover:border-[var(--noc-accent)] hover:shadow-[var(--noc-shadow-md)]"
+          class="pa-dosage-calculator-card"
+          [attr.data-tone]="calc.tone"
         >
-          <div class="flex items-start justify-between gap-3">
-            <span
-              class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[var(--noc-accent)]"
-              style="background: color-mix(in srgb, var(--noc-accent) 16%, transparent)"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-5 w-5">
-                <path stroke-linecap="round" stroke-linejoin="round" [attr.d]="calc.iconPath" />
-              </svg>
-            </span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mt-1 h-4 w-4 shrink-0 text-[var(--noc-neutral-500)] transition-transform group-hover:translate-x-0.5 group-hover:text-[var(--noc-accent)]">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 18l6-6-6-6" />
-            </svg>
+          <span class="pa-calculator-icon-well" aria-hidden="true"><i [class]="'ph ' + calc.iconClass"></i></span>
+          <div class="pa-dosage-copy">
+            <h3>{{ calc.title }}</h3>
+            <p>{{ calc.description }}</p>
           </div>
-          <h3 class="mt-4 text-[16px] font-medium">{{ calc.title }}</h3>
-          <p class="mt-2 text-sm leading-relaxed text-[var(--noc-neutral-500)]">{{ calc.description }}</p>
+          <span class="pa-calculator-arrow" aria-hidden="true"><i class="ph ph-arrow-right"></i></span>
         </a>
       }
     </div>

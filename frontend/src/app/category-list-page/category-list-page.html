@@ -1,41 +1,82 @@
 <div class="noc-shell min-h-screen bg-[var(--noc-bg)] text-[var(--noc-text)]">
   <app-site-header />
 
-  <main class="mx-auto max-w-[1280px] px-[28px] py-[22px]">
-    <nav class="mb-2 text-xs text-[var(--noc-neutral-500)]">
+  <main class="pa-directory-main">
+    <nav class="pa-directory-breadcrumb">
       <a routerLink="/" class="hover:text-[var(--noc-accent)]">Ana Sayfa</a> / Kategoriler
     </nav>
-    <h1 class="text-[38px] font-medium tracking-[-0.03em] sm:text-[42px]">Spor Takviyesi Kategorileri</h1>
-    <p class="mt-2 max-w-2xl text-[15px] text-[var(--noc-neutral-300)]">
+    <h1 class="pa-directory-title">Spor Takviyesi Kategorileri</h1>
+    <p class="pa-directory-lead">
       Takip ettiğimiz tüm spor takviyesi kategorileri, gerçek ürün sayılarıyla.
     </p>
 
+    <section class="pa-directory-toolbar" aria-label="Kategori arama ve filtreleme">
+      <label class="pa-directory-search">
+        <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
+        <span class="sr-only">Kategori ara</span>
+        <input
+          type="search"
+          placeholder="Kategori ara..."
+          [value]="categorySearch()"
+          (input)="setCategorySearch($any($event.target).value)"
+        />
+      </label>
+
+      <div class="pa-directory-filters" role="group" aria-label="Kategori türü">
+        @for (filter of categoryFilters; track filter.value) {
+          <button
+            type="button"
+            class="pa-directory-filter"
+            [class.is-active]="activeFilter() === filter.value"
+            [attr.aria-pressed]="activeFilter() === filter.value"
+            (click)="setFilter(filter.value)"
+          >
+            {{ filter.label }}
+          </button>
+        }
+      </div>
+
+      <div class="pa-directory-trust" aria-label="Sayfa özellikleri">
+        <span><i class="ph ph-clock-counter-clockwise" aria-hidden="true"></i> Gerçek ürün sayıları</span>
+        <span><i class="ph ph-tag" aria-hidden="true"></i> Güncel fiyatları karşılaştır</span>
+      </div>
+    </section>
+
     @if (loadError()) {
-      <div class="mx-auto mt-8 max-w-md rounded-[8px] bg-[var(--noc-surface)] px-6 py-8 text-center">
+      <div class="pa-directory-state">
         Kategoriler yüklenemedi. Lütfen daha sonra tekrar dene.
       </div>
     } @else if (loading()) {
-      <div class="py-24 text-center text-[var(--noc-neutral-500)]">Yükleniyor...</div>
+      <div class="pa-directory-state">Yükleniyor...</div>
     } @else {
-      <div class="mt-[22px] grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        @for (category of categories(); track category.slug) {
+      <div class="pa-category-directory-grid">
+        @for (category of filteredCategories(); track category.slug) {
           <a
             [routerLink]="['/kategori', category.slug]"
-            class="flex flex-col gap-[8.4px] rounded-[14px] bg-[var(--noc-card)] p-[16.8px] shadow-[var(--noc-shadow-sm)] transition-shadow hover:shadow-[var(--noc-shadow-md)]"
+            class="pa-category-directory-card"
+            [attr.data-tone]="category.tone"
           >
-            <div class="flex items-center justify-between">
-              <h2 class="text-[17px] font-medium">{{ category.label }}</h2>
-              <span class="rounded-[6px] border border-[var(--noc-divider)] px-2 py-0.5 text-xs text-[var(--noc-neutral-500)]">{{ category.productCount }} ürün</span>
+            <div class="pa-category-card-head">
+              <span class="pa-category-icon-well" aria-hidden="true">
+                <i [class]="'ph ' + category.iconClass"></i>
+              </span>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-start justify-between gap-3">
+                  <h2>{{ category.label }}</h2>
+                  <span class="pa-category-count">{{ category.productCount }} ürün</span>
+                </div>
+                <p>{{ category.intro }}</p>
+              </div>
             </div>
-            <p class="line-clamp-3 text-[13px] leading-relaxed text-[var(--noc-neutral-300)]">{{ category.intro }}</p>
-            <span class="mt-auto pt-2 text-xs font-medium text-[var(--noc-accent)]">İncele →</span>
+            <span class="pa-category-card-action" aria-hidden="true"><i class="ph ph-arrow-right"></i></span>
           </a>
+        } @empty {
+          <div class="pa-directory-state pa-directory-empty">
+            <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
+            Bu aramayla eşleşen kategori bulunamadı.
+          </div>
         }
       </div>
     }
-
-    <div class="mt-10 text-center">
-      <a routerLink="/" class="text-sm font-medium text-[var(--noc-accent)]">Tüm markaların indirimlerini gör →</a>
-    </div>
   </main>
 </div>

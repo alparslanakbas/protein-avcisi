@@ -53,6 +53,622 @@ body {
   font-family: var(--font-sans);
 }
 
+/* Kategori ve hesaplama indeksleri — seçilen "Utility Command Center"
+   yönü. İki sayfa aynı arama/sekme bandını, renk tonlarını ve responsive
+   yoğunluğu paylaşır; veri ve navigasyon mevcut Angular akışında kalır. */
+.pa-directory-main {
+  width: min(calc(100% - 40px), 1380px);
+  margin-inline: auto;
+  padding-block: 32px 64px;
+}
+
+.pa-directory-breadcrumb {
+  margin-bottom: 10px;
+  color: var(--noc-neutral-500);
+  font-size: 12px;
+}
+
+.pa-directory-title {
+  margin: 0;
+  color: var(--noc-text);
+  font-size: clamp(34px, 3vw, 46px);
+  font-weight: 650;
+  letter-spacing: -0.04em;
+  line-height: 1.04;
+}
+
+.pa-directory-lead {
+  max-width: 730px;
+  margin-top: 10px;
+  color: var(--noc-neutral-300);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.pa-directory-toolbar,
+.pa-calculator-toolbar {
+  display: flex;
+  min-height: 72px;
+  align-items: center;
+  gap: 18px;
+  margin-top: 26px;
+  padding: 12px 16px;
+  border: 1px solid var(--noc-divider);
+  border-radius: 14px;
+  background: var(--noc-card);
+  box-shadow: var(--noc-shadow-sm);
+}
+
+.pa-directory-search {
+  display: flex;
+  width: 250px;
+  min-height: 44px;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 10px;
+  padding-inline: 13px;
+  border: 1px solid var(--noc-divider);
+  border-radius: 10px;
+  background: var(--noc-surface);
+  color: var(--noc-neutral-500);
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.pa-directory-search:focus-within {
+  border-color: var(--noc-accent);
+  box-shadow: 0 0 0 4px var(--pa-focus);
+}
+
+.pa-directory-search i {
+  font-size: 17px;
+}
+
+.pa-directory-search input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--noc-text);
+  font: inherit;
+  font-size: 13px;
+}
+
+.pa-directory-search input::placeholder {
+  color: var(--noc-neutral-500);
+}
+
+.pa-directory-filters,
+.pa-calculator-tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pa-directory-filter,
+.pa-calculator-tabs button {
+  min-height: 40px;
+  padding-inline: 16px;
+  border: 1px solid var(--noc-divider);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--noc-neutral-300);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+.pa-directory-filter:hover,
+.pa-calculator-tabs button:hover {
+  border-color: color-mix(in srgb, var(--noc-accent) 55%, var(--noc-divider));
+  color: var(--noc-text);
+}
+
+.pa-directory-filter.is-active,
+.pa-calculator-tabs button.is-active {
+  border-color: var(--noc-accent);
+  background: var(--noc-accent);
+  color: var(--noc-on-accent);
+  box-shadow: 0 7px 18px color-mix(in srgb, var(--noc-accent) 24%, transparent);
+}
+
+.pa-directory-trust,
+.pa-calculator-trust {
+  display: grid;
+  gap: 6px;
+  margin-left: auto;
+  color: var(--noc-neutral-500);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.pa-directory-trust span,
+.pa-calculator-trust span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.pa-directory-trust i,
+.pa-calculator-trust i {
+  color: var(--noc-accent);
+  font-size: 15px;
+}
+
+.pa-directory-state {
+  display: flex;
+  min-height: 220px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 18px;
+  border: 1px dashed var(--noc-divider);
+  border-radius: 14px;
+  background: var(--noc-card);
+  color: var(--noc-neutral-500);
+  text-align: center;
+}
+
+.pa-directory-empty {
+  grid-column: 1 / -1;
+}
+
+.pa-category-directory-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.pa-category-directory-card,
+.pa-body-calculator-card,
+.pa-dosage-calculator-card {
+  --pa-tone: #6556e8;
+  --pa-tone-soft: color-mix(in srgb, var(--pa-tone) 13%, transparent);
+  border: 1px solid var(--noc-divider);
+  background: var(--noc-card);
+  color: var(--noc-text);
+  box-shadow: var(--noc-shadow-sm);
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+[data-tone="violet"] { --pa-tone: #7968f2; }
+[data-tone="mint"] { --pa-tone: #1ea775; }
+[data-tone="blue"] { --pa-tone: #397be8; }
+[data-tone="indigo"] { --pa-tone: #6f5ed8; }
+[data-tone="cyan"] { --pa-tone: #1b9fc5; }
+[data-tone="rose"] { --pa-tone: #ec5572; }
+[data-tone="orange"] { --pa-tone: #e88338; }
+
+.pa-category-directory-card {
+  position: relative;
+  display: flex;
+  min-height: 202px;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 22px;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.pa-category-directory-card:hover,
+.pa-body-calculator-card:hover,
+.pa-dosage-calculator-card:hover {
+  border-color: color-mix(in srgb, var(--pa-tone) 65%, var(--noc-divider));
+  box-shadow: var(--noc-shadow-md);
+  transform: translateY(-2px);
+}
+
+.pa-category-card-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.pa-category-icon-well,
+.pa-calculator-icon-well {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in srgb, var(--pa-tone) 20%, transparent);
+  border-radius: 12px;
+  background: var(--pa-tone-soft);
+  color: var(--pa-tone);
+}
+
+.pa-category-icon-well {
+  width: 54px;
+  height: 54px;
+  font-size: 25px;
+}
+
+.pa-category-directory-card h2 {
+  margin: 3px 0 0;
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.pa-category-directory-card p {
+  display: -webkit-box;
+  margin: 12px 0 0;
+  color: var(--noc-neutral-300);
+  font-size: 13px;
+  line-height: 1.58;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow: hidden;
+}
+
+.pa-category-count {
+  flex: 0 0 auto;
+  padding: 4px 7px;
+  border: 1px solid color-mix(in srgb, var(--pa-tone) 38%, var(--noc-divider));
+  border-radius: 7px;
+  background: var(--pa-tone-soft);
+  color: var(--pa-tone);
+  font-size: 11px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.pa-category-card-action,
+.pa-calculator-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--pa-tone);
+  font-size: 20px;
+  transition: transform 160ms ease;
+}
+
+.pa-category-card-action {
+  align-self: flex-end;
+  margin-top: 12px;
+}
+
+.pa-category-directory-card:hover .pa-category-card-action,
+.pa-body-calculator-card:hover .pa-calculator-arrow,
+.pa-dosage-calculator-card:hover .pa-calculator-arrow {
+  transform: translateX(3px);
+}
+
+.pa-calculator-toolbar {
+  justify-content: space-between;
+}
+
+.pa-calculator-tabs {
+  width: min(460px, 50%);
+  padding: 4px;
+  border: 1px solid var(--noc-divider);
+  border-radius: 11px;
+  background: var(--noc-surface);
+}
+
+.pa-calculator-tabs button {
+  flex: 1 1 0;
+  border-color: transparent;
+}
+
+.pa-directory-section-title {
+  scroll-margin-top: 20px;
+  margin: 30px 0 12px;
+  color: var(--noc-neutral-500);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.pa-body-calculator-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.pa-body-calculator-card {
+  position: relative;
+  display: flex;
+  min-height: 218px;
+  flex-direction: column;
+  padding: 18px;
+  border-radius: 14px;
+}
+
+.pa-calculator-icon-well {
+  width: 46px;
+  height: 46px;
+  font-size: 23px;
+}
+
+.pa-body-calculator-card h3,
+.pa-dosage-calculator-card h3 {
+  margin: 15px 0 0;
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  line-height: 1.3;
+}
+
+.pa-body-calculator-card p,
+.pa-dosage-calculator-card p {
+  margin: 8px 0 0;
+  color: var(--noc-neutral-500);
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+.pa-body-calculator-card .pa-calculator-arrow {
+  margin-top: auto;
+  align-self: flex-start;
+  padding-top: 14px;
+}
+
+.pa-dosage-calculator-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.pa-dosage-calculator-card {
+  display: grid;
+  min-height: 88px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 12px;
+}
+
+.pa-dosage-calculator-card .pa-calculator-icon-well {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  font-size: 20px;
+}
+
+.pa-dosage-copy {
+  min-width: 0;
+}
+
+.pa-dosage-calculator-card h3 {
+  margin: 0;
+}
+
+.pa-dosage-calculator-card p {
+  display: -webkit-box;
+  margin-top: 4px;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  overflow: hidden;
+}
+
+@media (max-width: 1080px) {
+  .pa-directory-toolbar {
+    flex-wrap: wrap;
+  }
+
+  .pa-directory-trust {
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-left: 0;
+    padding-top: 10px;
+    border-top: 1px solid var(--noc-divider);
+  }
+
+  .pa-category-directory-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pa-body-calculator-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .pa-directory-main {
+    width: min(calc(100% - 24px), 1380px);
+    padding-block: 22px 88px;
+  }
+
+  .pa-directory-breadcrumb {
+    margin-bottom: 8px;
+    font-size: 10px;
+  }
+
+  .pa-directory-title {
+    font-size: 30px;
+    line-height: 1.08;
+  }
+
+  .pa-directory-lead {
+    margin-top: 7px;
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .pa-directory-toolbar,
+  .pa-calculator-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 9px;
+    margin-top: 18px;
+    padding: 10px;
+    border-radius: 12px;
+  }
+
+  .pa-directory-search {
+    width: 100%;
+  }
+
+  .pa-directory-filters {
+    gap: 5px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .pa-directory-filters::-webkit-scrollbar {
+    display: none;
+  }
+
+  .pa-directory-filter {
+    min-height: 36px;
+    padding-inline: 12px;
+    font-size: 11px;
+  }
+
+  .pa-directory-trust,
+  .pa-calculator-trust {
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-left: 0;
+    padding-top: 8px;
+    border-top: 1px solid var(--noc-divider);
+    font-size: 9px;
+    white-space: normal;
+  }
+
+  .pa-category-directory-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .pa-category-directory-card {
+    min-height: 132px;
+    padding: 12px;
+    border-radius: 11px;
+  }
+
+  .pa-category-directory-card:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
+  .pa-category-card-head {
+    gap: 10px;
+  }
+
+  .pa-category-icon-well {
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
+    font-size: 17px;
+  }
+
+  .pa-category-directory-card h2 {
+    margin-top: 1px;
+    font-size: 12px;
+    line-height: 1.22;
+  }
+
+  .pa-category-directory-card p {
+    display: none;
+  }
+
+  .pa-category-count {
+    margin-top: 5px;
+    padding: 2px 5px;
+    border: 0;
+    background: transparent;
+    font-size: 9px;
+  }
+
+  .pa-category-card-head .flex.items-start {
+    display: block;
+  }
+
+  .pa-category-card-action {
+    margin-top: 8px;
+    font-size: 16px;
+  }
+
+  .pa-calculator-tabs {
+    width: 100%;
+  }
+
+  .pa-calculator-tabs button {
+    min-height: 38px;
+    padding-inline: 8px;
+    font-size: 11px;
+  }
+
+  .pa-directory-section-title {
+    margin-top: 22px;
+    font-size: 9px;
+  }
+
+  .pa-body-calculator-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .pa-body-calculator-card {
+    min-height: 132px;
+    padding: 12px;
+    border-radius: 11px;
+  }
+
+  .pa-calculator-icon-well {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    font-size: 16px;
+  }
+
+  .pa-body-calculator-card h3 {
+    margin-top: 10px;
+    font-size: 11px;
+  }
+
+  .pa-body-calculator-card p {
+    display: none;
+  }
+
+  .pa-body-calculator-card .pa-calculator-arrow {
+    padding-top: 6px;
+    font-size: 14px;
+  }
+
+  .pa-dosage-calculator-grid {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .pa-dosage-calculator-card {
+    min-height: 58px;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 9px;
+  }
+
+  .pa-dosage-calculator-card .pa-calculator-icon-well {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    font-size: 15px;
+  }
+
+  .pa-dosage-calculator-card h3 {
+    font-size: 11px;
+  }
+
+  .pa-dosage-calculator-card p {
+    font-size: 9px;
+  }
+
+  .pa-dosage-calculator-card .pa-calculator-arrow {
+    font-size: 14px;
+  }
+}
+
 /* Nocturne - yeni tasarim sistemi tokenlari (Faz 1: sadece ana sayfa).
    Mevcut --color-brand-* ve --color-accent-* tokenlarina (yukaridaki @theme)
    bilerek dokunulmadi - henuz yeniden tasarlanmayan diger sayfalar hala
