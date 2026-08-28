@@ -8,6 +8,9 @@ services:
       - ConnectionStrings__Default=${CONNECTION_STRING}
       - AdminApiKey=${ADMIN_API_KEY}
       - Brevo__ApiKey=${BREVO_API_KEY}
+      # Arama motoru bildirimi (Bing/Yandex/Seznam). Anahtar gizli değil —
+      # site sahipliğini doğrulamak için /{key}.txt adresinde zaten açıkta.
+      - IndexNow__Key=${INDEXNOW_KEY}
       - PublicBaseUrl=https://api.proteinavcisi.com.tr
       - Cors__AllowedOrigins__0=https://proteinavcisi.com.tr
       - Cors__AllowedOrigins__1=https://www.proteinavcisi.com.tr
