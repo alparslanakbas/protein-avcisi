@@ -283,12 +283,117 @@ app.use(
 );
 
 /**
- * Handle all other requests by rendering the Angular application.
+ * Sunucuda render edilen sayfalar için kısa ömürlü bellek içi önbellek.
+ *
+ * Ana sayfanın ilk bayta kadar geçen süresi ~1,8 saniyeydi ve bunun büyük
+ * kısmı backend'i beklemek değil, Angular'ın render işiydi (24 ürün kartı,
+ * grafikler, sık sorulanlar). Backend uçlarındaki 60 saniyelik çıktı
+ * önbelleğiyle aynı süre kullanılıyor: aynı anda iki katmandan farklı
+ * tazelikte veri dönmesin.
+ *
+ * Kasıtlı sınırlar:
+ * - Yalnızca GET ve yalnızca 200 dönen HTML. Yönlendirmeler (eski ürün
+ *   adresleri, kanonik slug) ve hata yanıtları hiç önbelleğe girmiyor;
+ *   geçici bir 503'ün bir dakika boyunca herkese servis edilmesi
+ *   arama motorlarına yanlış sinyal verirdi.
+ * - Kişiye özel hiçbir şey girmiyor: takip listesi sayfası ve kurtarma
+ *   bağlantısı taşıyan istekler dışarıda.
+ * - Çerez yazan bir yanıt önbelleğe alınmıyor.
  */
+const SSR_CACHE_TTL_MS = 60_000;
+// Sayfalar ~0,5 MB olduğu için tavan bilinçli olarak düşük: bu sayı
+// yaklaşık 70 MB'lık bir üst sınır demek. Ömür zaten 60 saniye, bu
+// yüzden daha büyük bir tavanın isabet oranına katkısı olmazdı;
+// asıl işlevi, dakikalar içinde binlerce adres gezen bir tarayıcının
+// belleği doldurmasını engellemek.
+const SSR_CACHE_MAX_ENTRIES = 120;
+/** Tek bir dev sayfa önbelleği doldurmasın; bu boyutun üstü hiç saklanmıyor. */
+const SSR_CACHE_MAX_BYTES = 1_000_000;
+
+interface SsrCacheEntry {
+  expiresAt: number;
+  status: number;
+  headers: [string, string][];
+  body: string;
+}
+
+/** Ekleme sırası korunduğu için en eski giriş her zaman ilk anahtar. */
+const ssrCache = new Map<string, SsrCacheEntry>();
+
+function ssrCacheKey(req: express.Request): string | null {
+  if (req.method !== 'GET') return null;
+  const path = req.path;
+  // Takip listesi tarayıcıdaki anahtara bağlı; kurtarma bağlantısı ise
+  // tek kişiye ait bir belirteç taşıyor.
+  if (path.startsWith('/favorilerim')) return null;
+  if (req.query['recover'] !== undefined) return null;
+  return req.originalUrl;
+}
+
 app.use((req, res, next) => {
+  const key = ssrCacheKey(req);
+
+  if (key) {
+    const hit = ssrCache.get(key);
+    if (hit && hit.expiresAt > Date.now()) {
+      // En son kullanılanı sona taşı ki eleme sırası doğru kalsın.
+      ssrCache.delete(key);
+      ssrCache.set(key, hit);
+      for (const [name, value] of hit.headers) res.setHeader(name, value);
+      res.setHeader('X-SSR-Cache', 'HIT');
+      res.status(hit.status).send(hit.body);
+      return;
+    }
+    if (hit) ssrCache.delete(key);
+  }
+
   angularApp
     .handle(req)
-    .then((response) => (response ? writeResponseToNodeResponse(response, res) : next()))
+    .then(async (response) => {
+      if (!response) return next();
+
+      const contentType = response.headers.get('content-type') ?? '';
+      const setsCookie = response.headers.has('set-cookie');
+      const cacheable =
+        key !== null && response.status === 200 && contentType.includes('text/html') && !setsCookie;
+
+      if (!cacheable) {
+        return writeResponseToNodeResponse(response, res);
+      }
+
+      // Gövdeyi kendimiz okuduğumuz için yanıtı da elle yazıyoruz;
+      // writeResponseToNodeResponse akışı tüketip bize bir şey bırakmıyor.
+      const body = await response.text();
+      const headers: [string, string][] = [];
+      response.headers.forEach((value, name) => {
+        // Uzunluk ve kodlama başlıkları gövdeyi kendimiz yazdığımız an
+        // geçersizleşiyor; olduğu gibi kopyalamak gövdeyle uyuşmayan bir
+        // Content-Length'e yol açıyordu. Express doğrusunu kendi hesaplıyor.
+        const lower = name.toLowerCase();
+        if (lower === 'content-length' || lower === 'content-encoding' || lower === 'transfer-encoding') {
+          return;
+        }
+        headers.push([name, value]);
+      });
+
+      if (Buffer.byteLength(body) <= SSR_CACHE_MAX_BYTES) {
+        if (ssrCache.size >= SSR_CACHE_MAX_ENTRIES) {
+          const oldest = ssrCache.keys().next().value;
+          if (oldest !== undefined) ssrCache.delete(oldest);
+        }
+        ssrCache.set(key, {
+          expiresAt: Date.now() + SSR_CACHE_TTL_MS,
+          status: response.status,
+          headers,
+          body,
+        });
+      }
+
+      for (const [name, value] of headers) res.setHeader(name, value);
+      res.setHeader('X-SSR-Cache', 'MISS');
+      res.status(response.status).send(body);
+      return;
+    })
     .catch(next);
 });
 
