@@ -28,6 +28,17 @@ public class TorqScraper(HttpClient httpClient) : IBrandScraper
 
     private static readonly TimeSpan DelayBetweenRequests = TimeSpan.FromMilliseconds(500);
 
+    /// <summary>
+    /// Torq kendi sitesinde başka markaların ürünlerini de satıyor. Bunları
+    /// almak, ürünü "Torq Nutrition" markası altında göstermek olurdu — yanlış
+    /// veri. Marka adı ürün adının başında geçtiği için ada göre eleniyor.
+    /// Yeni bir tedarikçi görülürse buraya eklenir.
+    /// </summary>
+    private static readonly string[] OtherBrandPrefixes =
+    [
+        "solgar", "nature's bounty", "natures bounty", "nutripure", "ocean ", "nutraxin",
+    ];
+
     public async Task<IReadOnlyList<ScrapedProduct>> ScrapeAsync(CancellationToken cancellationToken = default)
     {
         var products = new Dictionary<string, ScrapedProduct>();
@@ -63,6 +74,9 @@ public class TorqScraper(HttpClient httpClient) : IBrandScraper
 
                 var name = HtmlEntity.DeEntitize(linkNode.InnerText).Trim();
                 if (string.IsNullOrEmpty(name) || NonSupplementProductFilter.IsAccessoryOrApparel(name))
+                    continue;
+
+                if (OtherBrandPrefixes.Any(b => name.StartsWith(b, StringComparison.OrdinalIgnoreCase)))
                     continue;
 
                 var imgNode = node.SelectSingleNode(".//img");

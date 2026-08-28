@@ -64,7 +64,7 @@ public static partial class ProductAttributeParser
         // "gain" ayrı eklendi: "gainer" ile eşleşmeyen "HIQ Gain Deluxe" gibi
         // ürünler var. Karbonhidrat/kütle kaynakları da (maltodextrin,
         // dextrose, Vitargo, Cream of Rice, Carbopure) bu kategoriye eklendi.
-        ("kilo-hacim", ["gainer", "gain", "mass", "kilo", "hacim", "maltodextrin", "dextrose", "vitargo", "cream of rice", "carbopure"]),
+        ("kilo-hacim", ["gainer", "gain", "mass", "kilo", "hacim", "maltodextrin", "dextrose", "vitargo", "cream of rice", "carbopure", "pirinç unu", "muscle rice"]),
         // Kapsamlı kategori taraması (2026-08-17): vitamin/mineral kategorisinin
         // kendi açıklaması zaten geniş bir yelpaze tanımlıyor ("multivitaminden
         // omega-3'e, magnezyumdan çinkoya") — bu ruhla, önceden hiç bir kategoriye
@@ -74,8 +74,8 @@ public static partial class ProductAttributeParser
         // "spirulina" (tanınmış bir süperfood takviyesi) de eklendi.
         // Markalı/özel karışım isimleri (GH-UP, Smash Pro, T-Prime vb.) BİLİNÇLİ
         // OLARAK eklenmedi — isimden çıkarım değil tahmin olurdu.
-        ("vitamin", ["vitamin", "mineral", "magnesium", "magnezyum", "zinc", "cinko", "omega", "multivitamin", "biotin", "coenzyme", "ginkgo", "glutathione", "hyaluronic", "inulin", "milk thistle", "panax", "ginseng", "psyllium", "rhodiola", "saw palmetto", "selenium", "tribulus", "zma", "glucosamine", "chondroitin", "nmn", "tudca", "ester-c", "5-htp", "b-complex", "lion's mane", "maca", "iron", "chromium", "glucoflex", "curcumin", "spirulina"]),
-        ("saglikli-atistirmaliklar", ["bar", "cookie", "kurabiye", "atistirmalik", "rice cake", "pirinc"]),
+        ("vitamin", ["vitamin", "mineral", "magnesium", "magnezyum", "zinc", "cinko", "omega", "multivitamin", "biotin", "d3k2", "coenzyme", "ginkgo", "glutathione", "hyaluronic", "inulin", "milk thistle", "panax", "ginseng", "psyllium", "rhodiola", "saw palmetto", "selenium", "tribulus", "zma", "glucosamine", "chondroitin", "nmn", "tudca", "ester-c", "5-htp", "b-complex", "lion's mane", "maca", "iron", "chromium", "glucoflex", "curcumin", "spirulina"]),
+        ("saglikli-atistirmaliklar", ["bar", "cookie", "kurabiye", "atistirmalik", "rice cake", "pirinc", "fıstık ezmesi", "fıstığı ezmesi", "peanut butter", "ekmek"]),
     ];
 
     public static string? ExtractSize(string productName)
