@@ -5,6 +5,7 @@ using IndirimTakip.Infrastructure.Deals;
 using IndirimTakip.Infrastructure.Scraping;
 using IndirimTakip.Infrastructure.Scraping.Hardline;
 using IndirimTakip.Infrastructure.Scraping.Hiq;
+using IndirimTakip.Infrastructure.Scraping.BigJoy;
 using IndirimTakip.Infrastructure.Scraping.ProteinOcean;
 using IndirimTakip.Infrastructure.Scraping.Ssn;
 using IndirimTakip.Infrastructure.Scraping.Torq;
@@ -74,6 +75,13 @@ public static class DependencyInjection
             client.BaseAddress = new Uri("https://api.myikas.com/");
         });
         services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<YesilmarkaScraper>());
+
+        services.AddHttpClient<BigJoyScraper>(client =>
+        {
+            client.BaseAddress = new Uri("https://www.bigjoy.com.tr/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
+        });
+        services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<BigJoyScraper>());
 
         // Arama motorlarına sayfa değişikliği bildirimi (Bing/Yandex/Seznam).
         services.AddHttpClient<IndexNowClient>(client =>
