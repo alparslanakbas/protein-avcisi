@@ -33,6 +33,18 @@ internal sealed class IkasProduct
 
     [JsonPropertyName("variants")]
     public List<IkasVariant> Variants { get; set; } = [];
+
+    // Yalnızca Yeşilmarka sorgusu bu alanı istiyor (karma katalogda spor
+    // ürünlerini ayırmak için); ProteinOcean sorgusunda hiç yer almadığı
+    // için orada null kalıyor.
+    [JsonPropertyName("categories")]
+    public List<IkasCategory>? Categories { get; set; }
+}
+
+internal sealed class IkasCategory
+{
+    [JsonPropertyName("name")]
+    public string? Name { get; set; }
 }
 
 internal sealed class IkasMetaData

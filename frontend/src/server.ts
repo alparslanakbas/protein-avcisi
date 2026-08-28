@@ -78,6 +78,10 @@ interface BrandCategoryPair {
 // Sayfanın kendisi yine erişilebilir, sadece taranmaya sunulmuyor.
 const MIN_PRODUCTS_FOR_SITEMAP = 3;
 
+/** Marka karşılaştırma sayfası için markanın toplam ürün eşiği: kategori
+ *  ortalamasının anlamlı olabilmesi için gereken en az ürün sayısı. */
+const MIN_PRODUCTS_FOR_COMPARISON = 20;
+
 // sitemap.xml ürün sayısına göre büyüyor, statik dosya olamaz — ham veriyi
 // backend'den (/api/products/sitemap) çekip burada XML'e çeviriyoruz. Bu
 // sunucu zaten kendi public origin'ini (req üzerinden) bildiği için domain'i
@@ -167,8 +171,24 @@ app.get('/sitemap.xml', async (req, res) => {
     // Marka karşılaştırma sayfaları — tüm marka ikilileri, alfabetik
     // sırayla (brand-comparison-page.ts'teki canonical URL mantığıyla
     // aynı) tek bir kanonik URL üretiliyor.
+    //
+    // Yalnızca yeterince ürünü olan markalar: bu sayfalar kategori bazında
+    // ORTALAMA fiyat karşılaştırıyor ve bir markanın o kategoride tek ürünü
+    // varsa, o tek ürünün fiyatı "marka ortalaması" diye sunulur — istatistik
+    // gibi görünen ama istatistik olmayan bir sayı. Eşiğin altındaki markanın
+    // sayfası yine çalışıyor, sadece taranmaya sunulmuyor (ürün incelemesi
+    // sayfalarındaki "ince içeriği sitemap'e koyma" kararıyla aynı mantık).
+    const productCountByBrand = new Map<string, number>();
+    for (const pair of brandCategoryPairs) {
+      const key = pair.brandName.toLowerCase();
+      productCountByBrand.set(key, (productCountByBrand.get(key) ?? 0) + pair.productCount);
+    }
+
     const comparisonPairs: string[] = [];
-    const sortedBrands = [...filters.brands].map((b) => b.toLowerCase()).sort();
+    const sortedBrands = [...filters.brands]
+      .map((b) => b.toLowerCase())
+      .filter((b) => (productCountByBrand.get(b) ?? 0) >= MIN_PRODUCTS_FOR_COMPARISON)
+      .sort();
     for (let i = 0; i < sortedBrands.length; i++) {
       for (let j = i + 1; j < sortedBrands.length; j++) {
         comparisonPairs.push(`${sortedBrands[i]}-vs-${sortedBrands[j]}`);

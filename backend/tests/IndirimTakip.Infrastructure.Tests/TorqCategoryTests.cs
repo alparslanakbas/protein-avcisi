@@ -38,3 +38,21 @@ public class TorqCategoryTests
         Assert.False(NonSupplementProductFilter.IsAccessoryOrApparel(name));
     }
 }
+
+// Yeşilmarka karma katalog: kozmetik bakım/seyahat setlerini spor
+// kategorisine koymuş, süzgeç bunları yakalamalı — ama "seti" tek kelime
+// olarak kullanılamaz, gerçek takviye adlarının içinde geçiyor.
+public class KozmetikSetFiltresiTests
+{
+    [Theory]
+    [InlineData("Kokusuz Bakım Seti (İhrama Uygun Hac ve Umre Seyahat Seti)")]
+    [InlineData("Seyahat Seti")]
+    public void KozmetikSetleriEleniyor(string name)
+        => Assert.True(IndirimTakip.Infrastructure.Scraping.NonSupplementProductFilter.IsAccessoryOrApparel(name));
+
+    [Theory]
+    [InlineData("Kuersetin Karamuk Ekstresi (Berberin) Çinko 30 Kapsül")]
+    [InlineData("Whey Protein Tozu - Aromasız")]
+    public void GercekTakviyelerElenmiyor(string name)
+        => Assert.False(IndirimTakip.Infrastructure.Scraping.NonSupplementProductFilter.IsAccessoryOrApparel(name));
+}

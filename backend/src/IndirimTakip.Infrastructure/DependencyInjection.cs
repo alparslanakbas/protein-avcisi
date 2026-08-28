@@ -9,6 +9,7 @@ using IndirimTakip.Infrastructure.Scraping.ProteinOcean;
 using IndirimTakip.Infrastructure.Scraping.Ssn;
 using IndirimTakip.Infrastructure.Scraping.Torq;
 using IndirimTakip.Infrastructure.Scraping.West;
+using IndirimTakip.Infrastructure.Scraping.Yesilmarka;
 using IndirimTakip.Infrastructure.Subscribers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -67,6 +68,12 @@ public static class DependencyInjection
             client.BaseAddress = new Uri("https://api.myikas.com/");
         });
         services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<ProteinOceanScraper>());
+
+        services.AddHttpClient<YesilmarkaScraper>(client =>
+        {
+            client.BaseAddress = new Uri("https://api.myikas.com/");
+        });
+        services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<YesilmarkaScraper>());
 
         // Arama motorlarına sayfa değişikliği bildirimi (Bing/Yandex/Seznam).
         services.AddHttpClient<IndexNowClient>(client =>
