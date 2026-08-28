@@ -234,10 +234,10 @@ body {
   transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
 
-[data-tone="violet"] { --pa-tone: #7968f2; }
+[data-tone="violet"] { --pa-tone: #8e7ff5; }
 [data-tone="mint"] { --pa-tone: #1ea775; }
-[data-tone="blue"] { --pa-tone: #397be8; }
-[data-tone="indigo"] { --pa-tone: #6f5ed8; }
+[data-tone="blue"] { --pa-tone: #568fed; }
+[data-tone="indigo"] { --pa-tone: #8c7ee0; }
 [data-tone="cyan"] { --pa-tone: #1b9fc5; }
 [data-tone="rose"] { --pa-tone: #ec5572; }
 [data-tone="orange"] { --pa-tone: #e88338; }
