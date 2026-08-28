@@ -654,6 +654,26 @@ app.MapGet("/api/dev/click-report", async (AppDbContext db, CancellationToken ct
     return Results.Ok(report);
 }).RequireAdminKey(adminApiKey);
 
+// Site haritasındaki TÜM adresleri arama motorlarına bildirir (IndexNow).
+// Normal akışta yalnızca yeni ürünler bildiriliyor; bu uç ilk kurulum ve
+// toplu yeniden bildirim için. Bing sitemap'i almasına rağmen siteyi hiç
+// dizinlemediği için (2026-08-28 ölçümü) ilk toplu bildirim gerekiyordu.
+app.MapPost("/api/dev/indexnow/submit-all", async (
+    DealsQueryService deals, IndexNowClient indexNow, IConfiguration config, CancellationToken ct) =>
+{
+    if (!indexNow.IsEnabled)
+        return Results.BadRequest(new { message = "IndexNow devre dışı ya da anahtar tanımlı değil." });
+
+    var frontendBaseUrl = (config["FrontendBaseUrl"] ?? "https://www.proteinavcisi.com.tr").TrimEnd('/');
+    var entries = await deals.GetSitemapEntriesAsync(ct);
+
+    var urls = new List<string> { frontendBaseUrl };
+    urls.AddRange(entries.Select(e => $"{frontendBaseUrl}/urun/{e.Id}/{Slugifier.Slugify(e.Name)}"));
+
+    var sent = await indexNow.SubmitAsync(urls, ct);
+    return Results.Ok(new { submitted = sent, total = urls.Count });
+}).RequireAdminKey(adminApiKey);
+
 // E-posta kapasitesi raporu. Sağlayıcının günlük kotası bültenle transactional
 // mailler (onay, fiyat alarmı, favori kurtarma) arasında paylaşıldığı için,
 // kota sessizce dolduğunda yeni bir abone onay mailini hiç alamaz — dışarıdan

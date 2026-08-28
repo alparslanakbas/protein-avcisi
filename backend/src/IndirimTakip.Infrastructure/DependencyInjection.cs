@@ -52,6 +52,12 @@ public static class DependencyInjection
         });
         services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<ProteinOceanScraper>());
 
+        // Arama motorlarına sayfa değişikliği bildirimi (Bing/Yandex/Seznam).
+        services.AddHttpClient<IndexNowClient>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(20);
+        });
+
         services.AddScoped<ScrapeIngestionService>();
         services.AddScoped<ProductDetailBackfillService>();
         services.AddScoped<DealsQueryService>();

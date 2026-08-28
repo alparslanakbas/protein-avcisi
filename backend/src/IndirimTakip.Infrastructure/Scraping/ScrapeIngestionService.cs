@@ -2,10 +2,15 @@ using IndirimTakip.Core.Entities;
 using IndirimTakip.Core.Scraping;
 using IndirimTakip.Infrastructure.Subscribers;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 
 namespace IndirimTakip.Infrastructure.Scraping;
 
-public class ScrapeIngestionService(AppDbContext db, ProductWatchNotifier watchNotifier)
+public class ScrapeIngestionService(
+    AppDbContext db,
+    ProductWatchNotifier watchNotifier,
+    IndexNowClient indexNow,
+    IConfiguration configuration)
 {
     public async Task<int> IngestAsync(IBrandScraper scraper, CancellationToken cancellationToken = default)
     {
@@ -24,6 +29,11 @@ public class ScrapeIngestionService(AppDbContext db, ProductWatchNotifier watchN
             .ToDictionaryAsync(p => p.Url, cancellationToken);
 
         var touchedProducts = new List<Product>();
+        // Yalnızca bu taramada İLK KEZ görülen ürünler — IndexNow'a yeni
+        // adresleri bildirmek için. Protokol, değişmeyen adresleri tekrar
+        // tekrar göndermemeyi şart koşuyor; fiyat değişimi adresi
+        // değiştirmediği için burada yalnızca yeni ürünler toplanıyor.
+        var newProducts = new List<Product>();
 
         foreach (var scraped in scrapedProducts)
         {
@@ -55,6 +65,7 @@ public class ScrapeIngestionService(AppDbContext db, ProductWatchNotifier watchN
                     ProteinPerServingGrams = scraped.ProteinPerServingGrams,
                 };
                 db.Products.Add(product);
+                newProducts.Add(product);
             }
             else
             {
@@ -104,6 +115,17 @@ public class ScrapeIngestionService(AppDbContext db, ProductWatchNotifier watchN
         // "Haber Ver" bildirimleri — yeni ürünlerin Id'si de ancak
         // SaveChangesAsync sonrası kesinleşiyor, bu yüzden burada.
         await watchNotifier.CheckAndNotifyAsync(touchedProducts.Select(p => p.Id).ToList(), cancellationToken);
+
+        // Yeni ürün adreslerini arama motorlarına bildir. Ürün kimliği de
+        // ancak kayıt sonrası kesinleştiği için burada.
+        if (newProducts.Count > 0 && indexNow.IsEnabled)
+        {
+            var frontendBaseUrl = (configuration["FrontendBaseUrl"] ?? "https://www.proteinavcisi.com.tr").TrimEnd('/');
+            var urls = newProducts
+                .Select(p => $"{frontendBaseUrl}/urun/{p.Id}/{Slugifier.Slugify(p.Name)}")
+                .ToList();
+            await indexNow.SubmitAsync(urls, cancellationToken);
+        }
 
         return scrapedProducts.Count;
     }
