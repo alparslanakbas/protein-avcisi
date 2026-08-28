@@ -7,6 +7,7 @@ import {
 import express from 'express';
 import { join } from 'node:path';
 
+import { brandSlug } from './app/core/brand-slug';
 import { API_BASE_URL } from './app/core/api.config';
 import { slugify } from './app/core/slugify';
 import { BODY_CALCULATORS } from './app/core/body-calculators';
@@ -180,13 +181,13 @@ app.get('/sitemap.xml', async (req, res) => {
     // sayfalarındaki "ince içeriği sitemap'e koyma" kararıyla aynı mantık).
     const productCountByBrand = new Map<string, number>();
     for (const pair of brandCategoryPairs) {
-      const key = pair.brandName.toLowerCase();
+      const key = brandSlug(pair.brandName);
       productCountByBrand.set(key, (productCountByBrand.get(key) ?? 0) + pair.productCount);
     }
 
     const comparisonPairs: string[] = [];
     const sortedBrands = [...filters.brands]
-      .map((b) => b.toLowerCase())
+      .map((b) => brandSlug(b))
       .filter((b) => (productCountByBrand.get(b) ?? 0) >= MIN_PRODUCTS_FOR_COMPARISON)
       .sort();
     for (let i = 0; i < sortedBrands.length; i++) {

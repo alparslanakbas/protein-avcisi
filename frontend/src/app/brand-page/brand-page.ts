@@ -7,6 +7,7 @@ import { buildBrandCategoryFaqs, buildBrandFaqs } from '../core/brand-faqs';
 import { buildBreadcrumbJsonLd } from '../core/breadcrumb';
 import { BrandStats } from '../core/brand-stats.model';
 import { CategoryPriceStats } from '../core/category-price-stats.model';
+import { brandSlug } from '../core/brand-slug';
 import { CATEGORY_LABELS } from '../core/category-labels';
 import { ComparisonService } from '../core/comparison.service';
 import { Coupon } from '../core/coupon.model';
@@ -507,8 +508,10 @@ export class BrandPage implements OnInit {
   // aynı sırada) — aksi halde aynı içeriğe iki farklı URL'den erişilebilir
   // olurdu (duplicate content riski).
   protected comparisonPairSlug(otherBrand: string): string {
-    const current = this.brandName().toLowerCase();
-    const other = otherBrand.toLowerCase();
+    // Boşluk içeren marka adları ("Torq Nutrition") adrese olduğu gibi
+    // konulunca sitemap'e %20 taşıyan adresler giriyordu; slug tire kullanıyor.
+    const current = brandSlug(this.brandName());
+    const other = brandSlug(otherBrand);
     return [current, other].sort().join('-vs-');
   }
 }

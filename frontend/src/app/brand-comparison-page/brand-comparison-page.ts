@@ -4,6 +4,8 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { BrandComparison } from '../core/brand-comparison.model';
 import { BrandComparisonService } from '../core/brand-comparison.service';
+import { resolveBrandFromSlug } from '../core/brand-slug';
+import { DealsService } from '../core/deals.service';
 import { CATEGORY_LABELS } from '../core/category-labels';
 import { PageMetaService } from '../core/page-meta.service';
 import { SiteHeader } from '../site-header/site-header';
@@ -17,6 +19,7 @@ export class BrandComparisonPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly comparisonService = inject(BrandComparisonService);
+  private readonly dealsService = inject(DealsService);
   private readonly pageMeta = inject(PageMetaService);
 
   protected readonly comparison = signal<BrandComparison | null>(null);
@@ -39,7 +42,22 @@ export class BrandComparisonPage implements OnInit {
     }
 
     this.pairSlug.set(pair);
-    this.comparisonService.compare(parts[0], parts[1]).subscribe({
+
+    // Adresteki parça bir slug ("torq-nutrition"); API gerçek marka adını
+    // bekliyor. Marka listesinden eşleştiriliyor, bulunamazsa parça olduğu
+    // gibi gönderiliyor — boşluklu eski adresler böyle çalışmaya devam ediyor.
+    this.dealsService.getFilterOptions().subscribe({
+      next: (filters) => {
+        const brand1 = resolveBrandFromSlug(parts[0], filters.brands) ?? parts[0];
+        const brand2 = resolveBrandFromSlug(parts[1], filters.brands) ?? parts[1];
+        this.compareBrands(brand1, brand2);
+      },
+      error: () => this.compareBrands(parts[0], parts[1]),
+    });
+  }
+
+  private compareBrands(brand1: string, brand2: string): void {
+    this.comparisonService.compare(brand1, brand2).subscribe({
       next: (result) => {
         this.comparison.set(result);
         this.setMeta(result);
