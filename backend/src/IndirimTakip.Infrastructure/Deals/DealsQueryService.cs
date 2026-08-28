@@ -48,7 +48,11 @@ public partial class DealsQueryService(AppDbContext db)
             row.Product.NutritionJson,
             row.Product.ProteinPerServingGrams,
             row.BrandName, latest.Price, referencePrice,
-            Math.Round((referencePrice - latest.Price) / referencePrice * 100, 1),
+            // Referans fiyat sıfır olabiliyor (fiyatı girilmemiş bir ürün);
+            // hemen aşağıdaki mağaza indirimi satırı bunu zaten koruyordu ama
+            // burası korumasızdı ve fiyata göre sıralandığında o ürün başa
+            // geldiği için tüm liste sıfıra bölme hatasıyla düşüyordu.
+            referencePrice > 0 ? Math.Round((referencePrice - latest.Price) / referencePrice * 100, 1) : 0m,
             latest.StoreOldPrice,
             latest.StoreOldPrice is decimal storeOld && storeOld > 0
                 ? Math.Round((storeOld - latest.Price) / storeOld * 100, 1)
@@ -653,10 +657,15 @@ public partial class DealsQueryService(AppDbContext db)
 
     public async Task<FilterOptionsDto> GetFilterOptionsAsync(CancellationToken cancellationToken = default)
     {
+        // Distinct: aynı ada sahip iki marka kaydı oluşabiliyor. Bu, iki
+        // taramanın aynı anda çalışıp ikisinin de "marka yok, oluştur"
+        // demesinden kaynaklanıyor (kalıcı çözüm ada benzersiz indeks olurdu).
+        // Kullanıcı arayüzünde aynı marka iki çip olarak görünmemeli.
         var brands = await db.Brands
             .AsNoTracking()
             .Where(b => b.IsActive)
             .Select(b => b.Name)
+            .Distinct()
             .OrderBy(n => n)
             .ToListAsync(cancellationToken);
 
