@@ -8,6 +8,7 @@ using IndirimTakip.Infrastructure.Scraping.Hiq;
 using IndirimTakip.Infrastructure.Scraping.ProteinOcean;
 using IndirimTakip.Infrastructure.Scraping.Ssn;
 using IndirimTakip.Infrastructure.Scraping.Torq;
+using IndirimTakip.Infrastructure.Scraping.West;
 using IndirimTakip.Infrastructure.Subscribers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -46,6 +47,13 @@ public static class DependencyInjection
             client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
         });
         services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<TorqScraper>());
+
+        services.AddHttpClient<WestNutritionScraper>(client =>
+        {
+            client.BaseAddress = new Uri("https://www.westnutrition.com.tr/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
+        });
+        services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<WestNutritionScraper>());
 
         services.AddHttpClient<HardlineScraper>(client =>
         {
