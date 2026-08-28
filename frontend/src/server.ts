@@ -126,7 +126,7 @@ app.get('/sitemap.xml', async (req, res) => {
     const brandUrls = filters.brands
       .map(
         (brand) =>
-          `<url><loc>${origin}/marka/${brand.toLowerCase()}/indirim-kodu</loc><changefreq>daily</changefreq><priority>0.9</priority></url>`,
+          `<url><loc>${origin}/marka/${brandSlug(brand)}/indirim-kodu</loc><changefreq>daily</changefreq><priority>0.9</priority></url>`,
       )
       .join('');
 
@@ -137,7 +137,7 @@ app.get('/sitemap.xml', async (req, res) => {
       .filter((pair) => pair.productCount >= MIN_PRODUCTS_FOR_SITEMAP)
       .map(
         (pair) =>
-          `<url><loc>${origin}/marka/${pair.brandName.toLowerCase()}/${pair.category}</loc><changefreq>daily</changefreq><priority>0.7</priority></url>`,
+          `<url><loc>${origin}/marka/${brandSlug(pair.brandName)}/${pair.category}</loc><changefreq>daily</changefreq><priority>0.7</priority></url>`,
       )
       .join('');
 

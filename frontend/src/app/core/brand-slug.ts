@@ -1,3 +1,5 @@
+import { slugify } from './slugify';
+
 /**
  * Marka adını adres parçasına çevirir.
  *
@@ -5,12 +7,13 @@
  * konulunca sitemap'e `%20` taşıyan adresler giriyordu. Boşluk yerine tire
  * kullanmak hem alışılmış hem de okunur bir adres veriyor.
  *
- * Türkçe karakterler BİLİNÇLİ olarak korunuyor: mevcut markaların hiçbirinde
- * yok, ama olsaydı slugify etmek eski adresleri bozardı. Gerekirse ayrıca
- * ele alınır.
+ * Ürün adreslerinde kullanılan slugify'ın aynısı: Türkçe karakterler de
+ * çevriliyor, "Yeşilmarka" adresi "yesilmarka" oluyor. Mevcut dört markanın
+ * adresi değişmiyor (zaten tek kelime ve ASCII), yani dizindeki adresler
+ * etkilenmiyor.
  */
 export function brandSlug(brandName: string): string {
-  return brandName.trim().toLowerCase().replace(/\s+/g, '-');
+  return slugify(brandName);
 }
 
 /**

@@ -7,7 +7,7 @@ import { buildBrandCategoryFaqs, buildBrandFaqs } from '../core/brand-faqs';
 import { buildBreadcrumbJsonLd } from '../core/breadcrumb';
 import { BrandStats } from '../core/brand-stats.model';
 import { CategoryPriceStats } from '../core/category-price-stats.model';
-import { brandSlug } from '../core/brand-slug';
+import { brandSlug, resolveBrandFromSlug } from '../core/brand-slug';
 import { CATEGORY_LABELS } from '../core/category-labels';
 import { ComparisonService } from '../core/comparison.service';
 import { Coupon } from '../core/coupon.model';
@@ -191,7 +191,10 @@ export class BrandPage implements OnInit {
 
     this.dealsService.getFilterOptions().subscribe({
       next: (options) => {
-        const match = options.brands.find((b) => b.toLowerCase() === slug.toLowerCase());
+        // Adres bir slug ("torq-nutrition", "yesilmarka"); marka adına eşleştiriliyor.
+        // resolveBrandFromSlug girdiyi de slug'a çevirdiği için boşluklu ve
+        // Türkçe karakterli eski adresler de çözülmeye devam ediyor.
+        const match = resolveBrandFromSlug(slug, options.brands);
         if (!match) {
           // Soft-404 yerine gerçek yönlendirme — geçersiz bir marka slug'ı
           // arama motorlarına 200 + "bulunamadı" metniyle değil, / adresine
@@ -381,7 +384,7 @@ export class BrandPage implements OnInit {
 
   private setMeta(brand: string): void {
     const category = this.fixedCategory();
-    const brandSlug = brand.toLowerCase();
+    const brandSlugValue = brandSlug(brand);
 
     // Kesişim sayfası ("Hardline Protein Tozu Fiyatları") ile marka indirim
     // kodu sayfası tamamen farklı arama niyetlerini hedefliyor — başlık,
@@ -391,15 +394,15 @@ export class BrandPage implements OnInit {
       this.pageMeta.set({
         title: `${brand} ${label} Fiyatları ve İndirimleri 2026 | ProteinAvcısı`,
         description: `${brand} markasının ${label.toLocaleLowerCase('tr')} ürünleri, güncel fiyatları ve gerçek fiyat geçmişine dayanan doğrulanmış indirimleri tek sayfada.`,
-        canonicalPath: `/marka/${brandSlug}/${category}`,
+        canonicalPath: `/marka/${brandSlugValue}/${category}`,
       });
       this.breadcrumbEl = upsertJsonLdScript(
         this.document,
         this.breadcrumbEl,
         buildBreadcrumbJsonLd(this.document, [
           { name: 'Ana Sayfa', path: '/' },
-          { name: brand, path: `/marka/${brandSlug}/indirim-kodu` },
-          { name: label, path: `/marka/${brandSlug}/${category}` },
+          { name: brand, path: `/marka/${brandSlugValue}/indirim-kodu` },
+          { name: label, path: `/marka/${brandSlugValue}/${category}` },
         ]),
       );
       return;
@@ -411,14 +414,14 @@ export class BrandPage implements OnInit {
     this.pageMeta.set({
       title,
       description,
-      canonicalPath: `/marka/${brandSlug}/indirim-kodu`,
+      canonicalPath: `/marka/${brandSlugValue}/indirim-kodu`,
     });
     this.breadcrumbEl = upsertJsonLdScript(
       this.document,
       this.breadcrumbEl,
       buildBreadcrumbJsonLd(this.document, [
         { name: 'Ana Sayfa', path: '/' },
-        { name: brand, path: `/marka/${brandSlug}/indirim-kodu` },
+        { name: brand, path: `/marka/${brandSlugValue}/indirim-kodu` },
       ]),
     );
   }

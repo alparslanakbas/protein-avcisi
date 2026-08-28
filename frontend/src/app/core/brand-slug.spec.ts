@@ -9,6 +9,10 @@ describe('brandSlug', () => {
     expect(brandSlug('West Nutrition')).toBe('west-nutrition');
   });
 
+  it('Türkçe karakterleri çevirir', () => {
+    expect(brandSlug('Yeşilmarka')).toBe('yesilmarka');
+  });
+
   it('tek kelimeli markalarda adres değişmiyor', () => {
     // Bu adresler zaten dizinde; slug'a geçiş onları bozmamalı.
     expect(brandSlug('Hardline')).toBe('hardline');
@@ -23,8 +27,9 @@ describe('resolveBrandFromSlug', () => {
   });
 
   // Bir süre sitemap'te boşluklu adresler yer aldı, kırılmamalılar.
-  it('boşluklu eski adresleri de çözer', () => {
+  it('boşluklu ve Türkçe karakterli eski adresleri de çözer', () => {
     expect(resolveBrandFromSlug('torq nutrition', BRANDS)).toBe('Torq Nutrition');
+    expect(resolveBrandFromSlug('yeşilmarka', BRANDS)).toBe('Yeşilmarka');
   });
 
   it('bilinmeyen markada null döner', () => {
