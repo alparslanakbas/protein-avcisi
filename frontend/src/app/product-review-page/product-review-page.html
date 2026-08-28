@@ -46,10 +46,29 @@
             @if (pricePerServing(); as pps) {
               <span>Servis başı: {{ pps | number: '1.2-2' }} ₺</span>
             }
+            @if (proteinRatio(d); as ratio) {
+              <span>Porsiyonun %{{ ratio }}'i protein</span>
+            }
+            @if (proteinCostPerServing30g(d); as pc) {
+              <span>{{ proteinReferenceGrams }} g protein: {{ pc | number: '1.2-2' }} ₺</span>
+            }
             <span>Son kontrol: {{ lastChecked() }}</span>
           </div>
         </div>
       </div>
+
+      <!-- Porsiyon verisi bu üründe varsa, o verinin NEREDEN geldiğini
+           söylüyoruz. Rakiplerden biri porsiyonu bilmediğinde standart 30 g
+           varsayıp maliyeti onun üzerinden gösteriyor; bizim ölçülerimiz
+           markanın kendi beyanına dayanıyor ve beyan yoksa alan boş kalıyor.
+           Bunu yapıyorduk ama hiçbir yerde söylemiyorduk. -->
+      @if (d.servingSizeGrams) {
+        <p class="mt-3 text-xs leading-5 text-[var(--noc-neutral-500)]">
+          Servis başı ve protein maliyeti, {{ d.brandName }} markasının bu ürün için beyan ettiği
+          {{ d.servingSizeGrams }} gramlık porsiyona göre hesaplandı — standart bir porsiyon varsaymıyoruz.
+          Marka porsiyon bilgisi vermediğinde bu alanları boş bırakıyoruz.
+        </p>
+      }
 
       <!-- Kategorisinde nasıl konumlanıyor -->
       @if (categoryPricePosition(); as pos) {

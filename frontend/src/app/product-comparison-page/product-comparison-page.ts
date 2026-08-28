@@ -10,6 +10,7 @@ import { ComparisonService } from '../core/comparison.service';
 import { Deal } from '../core/deal.model';
 import { DealsService } from '../core/deals.service';
 import { displayName } from '../core/display-name';
+import { PROTEIN_REFERENCE_GRAMS, proteinRatioPercent, proteinReferenceCost } from '../core/value-metrics';
 import { PageMetaService } from '../core/page-meta.service';
 import { PricePoint } from '../core/price-history.model';
 import { PriceHistoryService } from '../core/price-history.service';
@@ -27,6 +28,11 @@ interface ComparedProduct {
   points: PricePoint[];
   servings: number | null;
   pricePerServing: number | null;
+  // Porsiyonun yüzde kaçı protein ve sabit 25 g proteinin maliyeti —
+  // paket boyutundan arındırılmış, iki ürünü doğrudan kıyaslayan ölçüler
+  // (bkz. core/value-metrics.ts).
+  proteinRatio: number | null;
+  proteinCost: number | null;
 }
 
 // İki ürünü yan yana karşılaştıran sayfa. Verinin TAMAMI taze çekiliyor —
@@ -68,6 +74,10 @@ export class ProductComparisonPage implements OnInit {
     this.betterIndex((p) => p.pricePerServing, 'min'),
   );
   protected readonly biggerPackageIndex = computed(() => this.betterIndex((p) => p.servings, 'max'));
+  // Protein oranında YÜKSEK, sabit protein maliyetinde DÜŞÜK olan iyidir.
+  protected readonly denserProteinIndex = computed(() => this.betterIndex((p) => p.proteinRatio, 'max'));
+  protected readonly cheaperProteinIndex = computed(() => this.betterIndex((p) => p.proteinCost, 'min'));
+  protected readonly proteinReferenceGrams = PROTEIN_REFERENCE_GRAMS;
 
   // Her iki ürünün besin değeri tablosunu (varsa) tek bir satır listesine
   // birleştiriyor — sıra, A ürününün kendi tablosundaki sırayı korur, B'de
@@ -211,6 +221,8 @@ export class ProductComparisonPage implements OnInit {
       points,
       servings,
       pricePerServing: servings && servings >= 1 ? deal.currentPrice / servings : null,
+      proteinRatio: proteinRatioPercent(deal),
+      proteinCost: proteinReferenceCost(deal),
     };
   }
 

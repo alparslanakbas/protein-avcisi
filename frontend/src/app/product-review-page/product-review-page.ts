@@ -18,6 +18,7 @@ import { PricePoint } from '../core/price-history.model';
 import { PriceHistoryService } from '../core/price-history.service';
 import { formatRelativeTime } from '../core/relative-time';
 import { slugify } from '../core/slugify';
+import { PROTEIN_REFERENCE_GRAMS, proteinRatioPercent, proteinReferenceCost } from '../core/value-metrics';
 import { buildAreaPath, buildLinePath, toCoordinates } from '../core/spark-chart';
 import { SiteHeader } from '../site-header/site-header';
 
@@ -192,13 +193,19 @@ export class ProductReviewPage implements OnInit {
     return servings && servings >= 1 ? deal.currentPrice / servings : null;
   }
 
-  // "30 g protein maliyeti" — markanın beyan ettiği porsiyon başı protein
-  // miktarı (ProteinPerServingGrams) varsa gerçek bir orantıyla hesaplanıyor,
-  // yoksa null (tahmin YOK, satır "—" gösterir).
+  // Sabit miktarda proteinin maliyeti. Hesap artık paylaşılan modülde
+  // (core/value-metrics.ts) — karşılaştırma sayfası da aynı fonksiyonu
+  // kullanıyor, böylece iki sayfa aynı ürün için farklı rakam gösteremiyor.
+  protected readonly proteinReferenceGrams = PROTEIN_REFERENCE_GRAMS;
+
   protected proteinCostPerServing30g(deal: Deal): number | null {
-    const perServing = this.pricePerServingFor(deal);
-    if (!perServing || !deal.proteinPerServingGrams || deal.proteinPerServingGrams <= 0) return null;
-    return (perServing / deal.proteinPerServingGrams) * 30;
+    return proteinReferenceCost(deal);
+  }
+
+  // Porsiyonun yüzde kaçı protein — "ödediğin paranın ne kadarı etken
+  // maddeye gidiyor" sorusunun cevabı.
+  protected proteinRatio(deal: Deal): number | null {
+    return proteinRatioPercent(deal);
   }
 
   // "Servis başına en uygun" tablosu (bestValueInCategory) boş kaldığında

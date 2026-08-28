@@ -74,6 +74,45 @@
               }
             </tr>
 
+            <!-- Paket boyutundan ve porsiyon farkından arındırılmış iki ölçü:
+                 asıl "hangisi daha iyi değer" sorusunu bunlar cevaplıyor.
+                 Marka besin değeri paylaşmıyorsa "—" kalıyor, tahmin yok. -->
+            <tr class="border-b border-[var(--noc-divider)]">
+              <th class="px-3 py-3 text-left text-xs font-normal text-[var(--noc-neutral-500)] sm:px-4">
+                {{ proteinReferenceGrams }} g protein maliyeti
+              </th>
+              @for (item of products(); track item.deal.productId; let i = $index) {
+                <td class="px-3 py-3 sm:px-4">
+                  @if (item.proteinCost) {
+                    <span class="font-medium" [class.text-[var(--noc-accent)]]="cheaperProteinIndex() === i">
+                      {{ item.proteinCost | number: '1.2-2' }} ₺
+                    </span>
+                    @if (cheaperProteinIndex() === i) {
+                      <span class="ml-1 text-[11px] text-[var(--noc-accent)]">daha uygun</span>
+                    }
+                  } @else {
+                    <span class="text-[var(--noc-neutral-500)]">—</span>
+                  }
+                </td>
+              }
+            </tr>
+
+            <tr class="border-b border-[var(--noc-divider)]">
+              <th class="px-3 py-3 text-left text-xs font-normal text-[var(--noc-neutral-500)] sm:px-4">Porsiyonun protein oranı</th>
+              @for (item of products(); track item.deal.productId; let i = $index) {
+                <td class="px-3 py-3 sm:px-4">
+                  @if (item.proteinRatio) {
+                    <span [class.text-[var(--noc-accent)]]="denserProteinIndex() === i">%{{ item.proteinRatio }}</span>
+                    <span class="ml-1 text-[11px] text-[var(--noc-neutral-500)]">
+                      ({{ item.deal.proteinPerServingGrams }} g / {{ item.deal.servingSizeGrams }} g)
+                    </span>
+                  } @else {
+                    <span class="text-[var(--noc-neutral-500)]">—</span>
+                  }
+                </td>
+              }
+            </tr>
+
             <tr class="border-b border-[var(--noc-divider)]">
               <th class="px-3 py-3 text-left text-xs font-normal text-[var(--noc-neutral-500)] sm:px-4">Paket</th>
               @for (item of products(); track item.deal.productId) {
