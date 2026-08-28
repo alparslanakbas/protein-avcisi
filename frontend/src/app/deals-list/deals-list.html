@@ -256,18 +256,20 @@
       }
 
       @if (articles().length > 0) {
-        <section class="mt-14">
-          <div class="mb-5 flex items-end justify-between gap-4"><div><span class="text-xs font-bold uppercase tracking-[0.1em] text-[var(--noc-accent)]">Satın almadan önce</span><h2 class="pa-section-title mt-1">Kısa ve dürüst rehberler</h2></div><a routerLink="/rehber" class="text-sm font-semibold text-[var(--noc-accent)]">Tüm rehberler <i class="ph ph-arrow-right ml-1" aria-hidden="true"></i></a></div>
-          <div class="grid gap-4 md:grid-cols-3">
-            @for (article of articles(); track article.id) {
-              <a [routerLink]="['/rehber', article.slug]" class="pa-card group p-5 transition-transform hover:-translate-y-0.5 hover:shadow-[var(--noc-shadow-md)]">
-                <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[var(--noc-accent-100)] text-[var(--noc-accent)]"><i class="ph ph-book-open-text text-xl" aria-hidden="true"></i></span>
-                <h3 class="mt-5 text-[17px] font-bold leading-tight group-hover:text-[var(--noc-accent)]">{{ article.title }}</h3>
-                <p class="mt-2 line-clamp-3 text-sm leading-6 pa-muted">{{ article.summary }}</p>
-              </a>
-            }
-          </div>
-        </section>
+        @defer (hydrate on viewport) {
+          <section class="mt-14">
+            <div class="mb-5 flex items-end justify-between gap-4"><div><span class="text-xs font-bold uppercase tracking-[0.1em] text-[var(--noc-accent)]">Satın almadan önce</span><h2 class="pa-section-title mt-1">Kısa ve dürüst rehberler</h2></div><a routerLink="/rehber" class="text-sm font-semibold text-[var(--noc-accent)]">Tüm rehberler <i class="ph ph-arrow-right ml-1" aria-hidden="true"></i></a></div>
+            <div class="grid gap-4 md:grid-cols-3">
+              @for (article of articles(); track article.id) {
+                <a [routerLink]="['/rehber', article.slug]" class="pa-card group p-5 transition-transform hover:-translate-y-0.5 hover:shadow-[var(--noc-shadow-md)]">
+                  <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[var(--noc-accent-100)] text-[var(--noc-accent)]"><i class="ph ph-book-open-text text-xl" aria-hidden="true"></i></span>
+                  <h3 class="mt-5 text-[17px] font-bold leading-tight group-hover:text-[var(--noc-accent)]">{{ article.title }}</h3>
+                  <p class="mt-2 line-clamp-3 text-sm leading-6 pa-muted">{{ article.summary }}</p>
+                </a>
+              }
+            </div>
+          </section>
+        }
       }
 
       <!-- "Uygulama olarak yükle" ipucu. `canInstall` yalnızca tarayıcının
@@ -276,38 +278,44 @@
            Safari'de bu event hiç ateşlenmediği için orada otomatik olarak
            hiç çıkmaz. -->
       @if (pwaInstall.canInstall()) {
-        <section class="pa-card mt-14 flex items-center gap-4 p-5">
-          <span class="hidden h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--noc-accent-100)] text-[var(--noc-accent)] sm:inline-flex"><i class="ph ph-device-mobile text-2xl" aria-hidden="true"></i></span>
-          <p class="flex-1 text-sm leading-6 pa-muted">Bu siteyi telefonuna uygulama gibi ekleyip ana ekrandan hızlıca açabilirsin.</p>
-          <button type="button" (click)="pwaInstall.promptInstall()" class="pa-primary-button h-10 shrink-0 px-4 text-sm">Yükle</button>
-          <button type="button" title="Kapat" aria-label="Kapat" (click)="pwaInstall.dismiss()" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--noc-neutral-500)] hover:bg-[color-mix(in_srgb,var(--noc-text)_7%,transparent)]"><i class="ph ph-x text-base" aria-hidden="true"></i></button>
+        @defer (hydrate on viewport) {
+          <section class="pa-card mt-14 flex items-center gap-4 p-5">
+            <span class="hidden h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--noc-accent-100)] text-[var(--noc-accent)] sm:inline-flex"><i class="ph ph-device-mobile text-2xl" aria-hidden="true"></i></span>
+            <p class="flex-1 text-sm leading-6 pa-muted">Bu siteyi telefonuna uygulama gibi ekleyip ana ekrandan hızlıca açabilirsin.</p>
+            <button type="button" (click)="pwaInstall.promptInstall()" class="pa-primary-button h-10 shrink-0 px-4 text-sm">Yükle</button>
+            <button type="button" title="Kapat" aria-label="Kapat" (click)="pwaInstall.dismiss()" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--noc-neutral-500)] hover:bg-[color-mix(in_srgb,var(--noc-text)_7%,transparent)]"><i class="ph ph-x text-base" aria-hidden="true"></i></button>
+          </section>
+        }
+      }
+
+      @defer (hydrate on viewport) {
+        <section id="alarm" class="relative mt-14 overflow-hidden rounded-[18px] bg-[var(--noc-section)] px-6 py-9 text-white sm:px-10">
+          <div class="relative z-10 max-w-xl">
+            <span class="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/10"><i class="ph ph-bell-ringing text-2xl text-[#a89dff]" aria-hidden="true"></i></span>
+            <h2 class="mt-5 text-[28px] font-bold tracking-[-0.035em]">Fiyat düşünce ilk sen bil.</h2>
+            <p class="mt-2 text-sm leading-6 text-[#c8cce0]">Takip listendeki ürün 30 günün en düşüğüne indiğinde e-posta gönderelim. Bildirim sıklığını kontrol altında tutuyoruz.</p>
+            <div class="mt-5 flex max-w-md flex-wrap gap-2">
+              <label class="min-w-[220px] flex-1"><span class="sr-only">E-posta adresin</span><input type="email" placeholder="E-posta adresin" [ngModel]="alarmEmail()" (ngModelChange)="alarmEmail.set($event)" class="h-11 w-full rounded-[9px] border border-white/15 bg-white/10 px-3 text-sm text-white placeholder:text-white/50 focus:border-[#9b8cff] focus:outline-none" /></label>
+              <button type="button" [disabled]="alarmSubmitting()" (click)="onAlarmSubmit()" class="pa-primary-button h-11 px-5 text-sm disabled:opacity-60">{{ alarmSubmitting() ? 'Kaydediliyor...' : 'Alarmı kur' }}</button>
+            </div>
+            @if (alarmStatusMessage(); as message) { <p class="mt-2 text-sm text-white">{{ message }}</p> }
+          </div>
         </section>
       }
 
-      <section id="alarm" class="relative mt-14 overflow-hidden rounded-[18px] bg-[var(--noc-section)] px-6 py-9 text-white sm:px-10">
-        <div class="relative z-10 max-w-xl">
-          <span class="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/10"><i class="ph ph-bell-ringing text-2xl text-[#a89dff]" aria-hidden="true"></i></span>
-          <h2 class="mt-5 text-[28px] font-bold tracking-[-0.035em]">Fiyat düşünce ilk sen bil.</h2>
-          <p class="mt-2 text-sm leading-6 text-[#c8cce0]">Takip listendeki ürün 30 günün en düşüğüne indiğinde e-posta gönderelim. Bildirim sıklığını kontrol altında tutuyoruz.</p>
-          <div class="mt-5 flex max-w-md flex-wrap gap-2">
-            <label class="min-w-[220px] flex-1"><span class="sr-only">E-posta adresin</span><input type="email" placeholder="E-posta adresin" [ngModel]="alarmEmail()" (ngModelChange)="alarmEmail.set($event)" class="h-11 w-full rounded-[9px] border border-white/15 bg-white/10 px-3 text-sm text-white placeholder:text-white/50 focus:border-[#9b8cff] focus:outline-none" /></label>
-            <button type="button" [disabled]="alarmSubmitting()" (click)="onAlarmSubmit()" class="pa-primary-button h-11 px-5 text-sm disabled:opacity-60">{{ alarmSubmitting() ? 'Kaydediliyor...' : 'Alarmı kur' }}</button>
+      @defer (hydrate on viewport) {
+        <section class="mx-auto mt-14 max-w-3xl">
+          <div class="text-center"><span class="text-xs font-bold uppercase tracking-[0.1em] text-[var(--noc-accent)]">Şeffaflık</span><h2 class="pa-section-title mt-1">Sık sorulan sorular</h2></div>
+          <div class="mt-6 space-y-2">
+            @for (item of faqItems; track item.question) {
+              <details class="pa-card group px-5 py-4">
+                <summary class="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold">{{ item.question }}<i class="ph ph-caret-down shrink-0 text-[var(--noc-accent)] transition-transform group-open:rotate-180" aria-hidden="true"></i></summary>
+                <p class="mt-3 text-sm leading-6 pa-muted">{{ item.answer }}</p>
+              </details>
+            }
           </div>
-          @if (alarmStatusMessage(); as message) { <p class="mt-2 text-sm text-white">{{ message }}</p> }
-        </div>
-      </section>
-
-      <section class="mx-auto mt-14 max-w-3xl">
-        <div class="text-center"><span class="text-xs font-bold uppercase tracking-[0.1em] text-[var(--noc-accent)]">Şeffaflık</span><h2 class="pa-section-title mt-1">Sık sorulan sorular</h2></div>
-        <div class="mt-6 space-y-2">
-          @for (item of faqItems; track item.question) {
-            <details class="pa-card group px-5 py-4">
-              <summary class="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold">{{ item.question }}<i class="ph ph-caret-down shrink-0 text-[var(--noc-accent)] transition-transform group-open:rotate-180" aria-hidden="true"></i></summary>
-              <p class="mt-3 text-sm leading-6 pa-muted">{{ item.answer }}</p>
-            </details>
-          }
-        </div>
-      </section>
+        </section>
+      }
     </main>
   }
 
