@@ -20,7 +20,14 @@ public class ScrapeIngestionService(
         // Markalar ada göre önbelleğe alınıyor: çok markalı bir kaynakta
         // (bayi kataloğu) ürün başına marka çözmek gerekiyor ve her ürün için
         // ayrı sorgu atmak yüzlerce gidiş-geliş demek olurdu.
-        var brandsByName = await db.Brands.ToDictionaryAsync(b => b.Name, cancellationToken);
+        // Aynı ada sahip birden fazla marka kaydı olabiliyor (iki tarama aynı
+        // anda çalışıp ikisi de "marka yok, oluştur" dediğinde oluşuyor), bu
+        // yüzden doğrudan sözlüğe çevrilmiyor: aynı ad ikinci kez gelirse
+        // ArgumentException fırlatır ve tüm tarama düşerdi. İlk kayıt esas
+        // alınıyor; yinelenen kayıtlar zaten listelerde tekilleştiriliyor.
+        var brandsByName = new Dictionary<string, Brand>();
+        foreach (var existingBrand in await db.Brands.ToListAsync(cancellationToken))
+            brandsByName.TryAdd(existingBrand.Name, existingBrand);
 
         Brand ResolveBrand(string name)
         {
