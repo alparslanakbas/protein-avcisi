@@ -1,39 +1,146 @@
 <div class="noc-shell min-h-screen bg-[var(--noc-bg)] text-[var(--noc-text)]">
   <app-site-header />
 
-  <main class="mx-auto max-w-[900px] px-[28px] py-[22px]">
-    <h1 class="text-[38px] font-medium tracking-[-0.03em] sm:text-[42px]">Spor Takviyesi Rehberi</h1>
-    <p class="mt-2 max-w-xl text-[15px] text-[var(--noc-neutral-300)]">
-      Spor takviyesi alırken nelere dikkat etmen gerektiğini anlatan, gerçek/tarafsız bilgi yazıları.
-    </p>
+  <main class="pa-guide-hub-main">
+    <section class="pa-guide-hub-intro">
+      <div class="pa-guide-hub-heading">
+        <nav class="pa-guide-breadcrumb">
+          <a routerLink="/">Ana Sayfa</a> / Rehber
+        </nav>
+        <h1>Spor Takviyesi Rehberi</h1>
+        <p>Nereden başlayacağını bilmiyorsan hedefini seç.</p>
+
+        <label class="pa-guide-search">
+          <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
+          <span class="sr-only">Rehberlerde ara</span>
+          <input
+            type="search"
+            placeholder="Kreatin, protein tozu, kullanım..."
+            [value]="searchQuery()"
+            (input)="setSearchQuery($any($event.target).value)"
+          />
+          @if (hasSearch()) {
+            <button type="button" aria-label="Aramayı temizle" (click)="clearSearch()">
+              <i class="ph ph-x" aria-hidden="true"></i>
+            </button>
+          }
+        </label>
+      </div>
+
+      <aside class="pa-guide-utilities" aria-label="Rehberle ilgili araçlar">
+        <a routerLink="/hesaplama" data-tone="violet">
+          <span class="pa-guide-icon-well" aria-hidden="true"><i class="ph ph-calculator"></i></span>
+          <span><strong>Hesaplama araçları</strong><small>Doz ve ihtiyaç hesaplamalarına git.</small></span>
+          <i class="ph ph-arrow-right" aria-hidden="true"></i>
+        </a>
+        <a routerLink="/kategoriler" data-tone="mint">
+          <span class="pa-guide-icon-well" aria-hidden="true"><i class="ph ph-squares-four"></i></span>
+          <span><strong>Takviye kategorileri</strong><small>Tüm takviye kategorilerini keşfet.</small></span>
+          <i class="ph ph-arrow-right" aria-hidden="true"></i>
+        </a>
+      </aside>
+    </section>
 
     @if (loading()) {
-      <div class="py-24 text-center text-[var(--noc-neutral-500)]">Yükleniyor...</div>
+      <div class="pa-guide-state">Yükleniyor...</div>
     } @else if (loadError()) {
-      <div class="mx-auto mt-8 max-w-md rounded-[8px] bg-[var(--noc-surface)] px-6 py-8 text-center">Rehber yazıları yüklenemedi. Lütfen daha sonra tekrar dene.</div>
+      <div class="pa-guide-state">Rehber yazıları yüklenemedi. Lütfen daha sonra tekrar dene.</div>
     } @else if (articles().length === 0) {
-      <div class="mx-auto mt-8 max-w-md rounded-[8px] bg-[var(--noc-surface)] px-6 py-10 text-center text-[var(--noc-neutral-500)]">Henüz bir rehber yazısı yok, yakında eklenecek.</div>
-    } @else {
-      <div class="mt-8 divide-y divide-[var(--noc-divider)]">
-        @for (article of articles(); track article.slug; let i = $index) {
-          <a [routerLink]="['/rehber', article.slug]" class="flex items-start gap-4 py-4 hover:bg-[color-mix(in_srgb,var(--noc-text)_4%,transparent)]">
-            <span class="text-lg font-medium text-[var(--noc-neutral-500)]">{{ i + 1 < 10 ? '0' + (i + 1) : i + 1 }}</span>
-            <div class="min-w-0 flex-1">
-              <h2 class="text-[17px] font-medium leading-tight">{{ article.title }}</h2>
-              <p class="mt-1 line-clamp-2 text-[13px] text-[var(--noc-neutral-500)]">{{ article.summary }}</p>
-            </div>
-            @if (article.coverImageUrl) {
-              <div class="hidden h-16 w-24 shrink-0 overflow-hidden rounded-[8px] bg-[color-mix(in_srgb,var(--noc-text)_5%,transparent)] sm:block">
-                <img [src]="article.coverImageUrl" [alt]="article.title" loading="lazy" class="h-full w-full object-cover" />
-              </div>
-            }
-          </a>
-        }
-      </div>
-    }
+      <div class="pa-guide-state">Henüz bir rehber yazısı yok, yakında eklenecek.</div>
+    } @else if (hasSearch()) {
+      <section class="pa-guide-section pa-guide-search-results" aria-live="polite">
+        <div class="pa-guide-section-heading">
+          <div>
+            <h2>Arama sonuçları</h2>
+            <p>{{ filteredArticles().length }} rehber bulundu.</p>
+          </div>
+          <button type="button" (click)="clearSearch()">Tüm rehberleri göster</button>
+        </div>
 
-    <div class="mt-10 text-center">
-      <a routerLink="/" class="text-sm font-medium text-[var(--noc-accent)]">← Ana sayfaya dön</a>
-    </div>
+        @if (filteredArticles().length === 0) {
+          <div class="pa-guide-state pa-guide-empty">
+            <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
+            Bu aramayla eşleşen bir rehber bulunamadı.
+          </div>
+        } @else {
+          <div class="pa-guide-search-result-list">
+            @for (article of filteredArticles(); track article.slug) {
+              <a [routerLink]="['/rehber', article.slug]" [attr.data-tone]="articleTone(article)">
+                <span class="pa-guide-icon-well" aria-hidden="true"><i [class]="'ph ' + articleIconClass(article)"></i></span>
+                <span class="pa-guide-search-result-copy"><strong>{{ article.title }}</strong><small>{{ article.summary }}</small></span>
+                <span class="pa-guide-search-result-date">{{ formatArticleDate(article.publishedAt) }}</span>
+                <i class="ph ph-arrow-right" aria-hidden="true"></i>
+              </a>
+            }
+          </div>
+        }
+      </section>
+    } @else {
+      <section class="pa-guide-section">
+        <div class="pa-guide-section-heading">
+          <div>
+            <h2>Başlangıç rotaları</h2>
+            <p>Amacına en uygun okuma rotasını seç ve doğru yerden başla.</p>
+          </div>
+        </div>
+
+        <div class="pa-guide-path-grid">
+          @for (path of learningPaths(); track path.title; let i = $index) {
+            <article class="pa-guide-path-card" [attr.data-tone]="path.tone">
+              <div class="pa-guide-path-title">
+                <span class="pa-guide-icon-well" aria-hidden="true"><i [class]="'ph ' + path.iconClass"></i></span>
+                <div><h3>{{ i + 1 }}. {{ path.title }}</h3><p>{{ path.description }}</p></div>
+              </div>
+
+              <div class="pa-guide-path-links">
+                @for (article of path.articles; track article.slug) {
+                  <a [routerLink]="['/rehber', article.slug]">
+                    <span class="pa-guide-mini-icon" aria-hidden="true"><i class="ph ph-file-text"></i></span>
+                    <span>{{ article.title }}</span>
+                    <i class="ph ph-arrow-right" aria-hidden="true"></i>
+                  </a>
+                }
+              </div>
+            </article>
+          }
+        </div>
+      </section>
+
+      <section class="pa-guide-section">
+        <div class="pa-guide-section-heading"><div><h2>Son eklenen rehberler</h2></div></div>
+        <div class="pa-guide-recent-list">
+          @for (article of featuredArticles(); track article.slug; let i = $index) {
+            <a [routerLink]="['/rehber', article.slug]" [class.is-featured]="i === 0" [attr.data-tone]="articleTone(article)">
+              <span class="pa-guide-icon-well" aria-hidden="true"><i [class]="'ph ' + articleIconClass(article)"></i></span>
+              <span class="pa-guide-recent-copy"><strong>{{ article.title }}</strong><small>{{ article.summary }}</small></span>
+              <span class="pa-guide-recent-date"><i class="ph ph-calendar-blank" aria-hidden="true"></i>{{ formatArticleDate(article.publishedAt) }}</span>
+              <i class="ph ph-arrow-right" aria-hidden="true"></i>
+            </a>
+          }
+        </div>
+      </section>
+
+      <section class="pa-guide-section">
+        <div class="pa-guide-section-heading"><div><h2>Tüm konular</h2><p>Rehberdeki tüm konuları incele.</p></div></div>
+        <div class="pa-guide-topic-grid">
+          @for (column of topicColumns(); track $index) {
+            <div class="pa-guide-topic-column">
+              @for (article of column; track article.slug) {
+                <a [routerLink]="['/rehber', article.slug]" [attr.data-tone]="articleTone(article)">
+                  <span class="pa-guide-mini-icon" aria-hidden="true"><i [class]="'ph ' + articleIconClass(article)"></i></span>
+                  <span>{{ article.title }}</span>
+                  <i class="ph ph-arrow-right" aria-hidden="true"></i>
+                </a>
+              }
+            </div>
+          }
+        </div>
+      </section>
+
+      <aside class="pa-guide-disclaimer">
+        <i class="ph ph-info" aria-hidden="true"></i>
+        <p><strong>Bilgilendirme:</strong> Rehber içerikleri genel bilgilendirme amaçlıdır; kişiye özel tıbbi tavsiye değildir.</p>
+      </aside>
+    }
   </main>
 </div>

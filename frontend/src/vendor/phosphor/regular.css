@@ -42,6 +42,7 @@
 .ph.ph-bookmark-simple:before { content: "\e0ea"; }
 .ph.ph-bowl-food:before { content: "\eaa4"; }
 .ph.ph-calculator:before { content: "\e538"; }
+.ph.ph-calendar-blank:before { content: "\e10a"; }
 .ph.ph-caret-down:before { content: "\e136"; }
 .ph.ph-caret-left:before { content: "\e138"; }
 .ph.ph-caret-right:before { content: "\e13a"; }
@@ -55,6 +56,7 @@
 .ph.ph-drop-half:before { content: "\e566"; }
 .ph.ph-drop-half-bottom:before { content: "\eb40"; }
 .ph.ph-envelope-simple:before { content: "\e218"; }
+.ph.ph-file-text:before { content: "\e23a"; }
 .ph.ph-fire:before { content: "\e242"; }
 .ph.ph-funnel:before { content: "\e266"; }
 .ph.ph-gauge:before { content: "\e628"; }
@@ -73,6 +75,7 @@
 .ph.ph-shield-check:before { content: "\e40c"; }
 .ph.ph-shield-plus:before { content: "\e706"; }
 .ph.ph-squares-four:before { content: "\e464"; }
+.ph.ph-star:before { content: "\e46a"; }
 .ph.ph-sun:before { content: "\e472"; }
 .ph.ph-tag:before { content: "\e478"; }
 .ph.ph-trash:before { content: "\e4a6"; }
