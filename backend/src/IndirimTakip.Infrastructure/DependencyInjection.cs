@@ -84,12 +84,20 @@ public static class DependencyInjection
         });
         services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<BigJoyScraper>());
 
-        services.AddHttpClient<SupplementlerScraper>(client =>
-        {
-            client.BaseAddress = new Uri("https://www.supplementler.com/");
-            client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
-        });
-        services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<SupplementlerScraper>());
+        // Supplementler DEVRE DIŞI — kod hazır ve doğrulandı (545 ürün, 29
+        // marka) ama sunucudan siteye erişilemiyor: site Cloudflare bot
+        // koruması arkasında ve veri merkezi IP'lerini 403 ile engelliyor
+        // (ana sayfa dahil her istek). Geliştirme makinesinden çalışıyor,
+        // üretimden çalışmıyor. Bot korumasını aşmak seçenek değil; doğru
+        // yol siteden izin/veri akışı istemek. İzin gelirse aşağıdaki iki
+        // satırı geri açmak yeterli.
+        //
+        // services.AddHttpClient<SupplementlerScraper>(client =>
+        // {
+        //     client.BaseAddress = new Uri("https://www.supplementler.com/");
+        //     client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
+        // });
+        // services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<SupplementlerScraper>());
 
         // Arama motorlarına sayfa değişikliği bildirimi (Bing/Yandex/Seznam).
         services.AddHttpClient<IndexNowClient>(client =>
