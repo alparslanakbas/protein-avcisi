@@ -8,7 +8,12 @@ import { API_BASE_URL } from './api.config';
 export class SubscribeService {
   private readonly http = inject(HttpClient);
 
-  subscribe(email: string): Observable<{ message: string }> {
-    return this.http.post<{ message: string }>(`${API_BASE_URL}/api/subscribe`, { email });
+  /**
+   * `website` bir bal küpü: form içinde gizli duruyor, gerçek kullanıcı hiç
+   * görmüyor ve boş gönderiyor. Otomatik doldurma yapan botlar dolduruyor;
+   * sunucu dolu gelen isteği sessizce yok sayıyor.
+   */
+  subscribe(email: string, website = ''): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${API_BASE_URL}/api/subscribe`, { email, website });
   }
 }

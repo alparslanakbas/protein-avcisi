@@ -5,7 +5,13 @@ using Microsoft.Extensions.Logging;
 
 namespace IndirimTakip.Infrastructure.Subscribers;
 
-public record SubscribeRequest(string Email);
+public record SubscribeRequest(
+    string Email,
+    // Bal küpü: formda gizli duran, gerçek kullanıcının hiç görmediği bir
+    // alan. Otomatik doldurma yapan botlar burayı da doldurur; dolu gelen
+    // istek sessizce yok sayılıyor (hata döndürmüyoruz ki bot hangi
+    // ölçütte elendiğini öğrenmesin).
+    string? Website = null);
 
 // Double opt-in zorunlu (İYS/KVKK gereği) — abone olma isteği direkt
 // aktifleştirmiyor, onay linkine tıklanana kadar IsConfirmed=false

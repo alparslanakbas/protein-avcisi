@@ -13,6 +13,10 @@ export class NewsletterSignup {
   private readonly subscribeService = inject(SubscribeService);
 
   protected readonly email = signal('');
+
+  /** Bal küpü — şablonda gizli, gerçek kullanıcı doldurmaz. */
+
+  protected readonly website = signal('');
   protected readonly submitting = signal(false);
   protected readonly statusMessage = signal<string | null>(null);
   protected readonly statusIsError = signal(false);
@@ -24,7 +28,7 @@ export class NewsletterSignup {
     this.submitting.set(true);
     this.statusMessage.set(null);
 
-    this.subscribeService.subscribe(value).subscribe({
+    this.subscribeService.subscribe(value, this.website()).subscribe({
       next: (result) => {
         this.statusMessage.set(result.message);
         this.statusIsError.set(false);

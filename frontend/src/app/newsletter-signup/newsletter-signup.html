@@ -3,6 +3,21 @@
     Öne Çıkan İndirimlerden Haberdar Ol
   </p>
   <form (ngSubmit)="onSubscribe()" class="flex gap-2">
+    <!-- Bal küpü: ekran okuyuculardan ve klavye gezinmesinden de gizli, yani
+         gerçek kullanıcı hiçbir şekilde karşılaşmıyor. Botlar formdaki her
+         alanı doldurduğu için dolu gelmesi isteğin otomatik olduğunu
+         gösteriyor. display:none yerine konum kaydırma kullanılıyor: bazı
+         botlar gizli alanları atlıyor. -->
+    <input
+      type="text"
+      name="website"
+      autocomplete="off"
+      tabindex="-1"
+      aria-hidden="true"
+      [ngModel]="website()"
+      (ngModelChange)="website.set($event)"
+      class="absolute left-[-9999px] h-0 w-0 opacity-0"
+    />
     <input
       type="email"
       name="email"

@@ -578,10 +578,26 @@ app.MapPost("/api/products/{id:int}/vote", async (int id, VoteRequest request, A
 
 // E-posta bülteni: double opt-in zorunlu (İYS/KVKK gereği) — bu endpoint
 // hiçbir aboneyi doğrudan aktifleştirmiyor, sadece onay maili tetikliyor.
-app.MapPost("/api/subscribe", async (SubscribeRequest request, SubscriberService subscribers, HttpContext http, CancellationToken ct) =>
+app.MapPost("/api/subscribe", async (SubscribeRequest request, SubscriberService subscribers,
+    EmailAddressValidator emailValidator, HttpContext http, CancellationToken ct) =>
 {
+    // Bal küpü dolu geldiyse istek bir bot tarafından yapılmış demektir.
+    // Hata döndürmüyoruz: bot hangi ölçütte elendiğini öğrenmemeli, ayrıca
+    // gerçek bir kullanıcı bu dalı hiç görmüyor.
+    if (!string.IsNullOrWhiteSpace(request.Website))
+    {
+        app.Logger.LogInformation("Bal küpü doldurulmuş abonelik isteği yok sayıldı: {Ip}",
+            RequestLoggingExtensions.GetClientIp(http));
+        return Results.Ok(new { message = "E-postanı kontrol et, onay bağlantısı gönderdik." });
+    }
+
     if (!IsValidEmail(request.Email))
         return Results.BadRequest(new { message = "Geçerli bir e-posta adresi girin." });
+
+    // Alan adı gerçekten var mı: uydurma adreslere onay postası göndermek hem
+    // kotadan yiyor hem geri dönen postalar gönderen itibarını düşürüyor.
+    if (!await emailValidator.IsDeliverableAsync(request.Email, ct))
+        return Results.BadRequest(new { message = "Bu e-posta adresine ulaşılamıyor, kontrol eder misin?" });
 
     var confirmBaseUrl = $"{http.Request.Scheme}://{http.Request.Host}";
     var sent = await subscribers.SubscribeAsync(request, confirmBaseUrl, ct);
