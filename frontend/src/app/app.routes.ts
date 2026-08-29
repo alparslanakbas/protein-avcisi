@@ -58,6 +58,10 @@ export const routes: Routes = [
     loadComponent: () => import('./about-page/about-page').then((m) => m.AboutPage),
   },
   {
+    path: 'iletisim',
+    loadComponent: () => import('./contact-page/contact-page').then((m) => m.ContactPage),
+  },
+  {
     path: 'sozluk',
     loadComponent: () => import('./glossary-page/glossary-page').then((m) => m.GlossaryPage),
   },

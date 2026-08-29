@@ -161,6 +161,7 @@ app.get('/sitemap.xml', async (req, res) => {
       `<url><loc>${origin}/cerez-politikasi</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>` +
       `<url><loc>${origin}/nasil-calisiyoruz</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>` +
       `<url><loc>${origin}/hakkimizda</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>` +
+      `<url><loc>${origin}/iletisim</loc><changefreq>monthly</changefreq><priority>0.4</priority></url>` +
       `<url><loc>${origin}/sozluk</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>` +
       // Hesaplama araçları — her biri kendi aramasını hedefliyor
       // ("kreatin dozu hesaplama" gibi), index sayfası da dahil.
