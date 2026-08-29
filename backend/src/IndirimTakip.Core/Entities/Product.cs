@@ -56,6 +56,22 @@ public class Product
     // aynı ürünleri sonsuza kadar tekrar denerdi.
     public DateTimeOffset? NutritionCheckedAt { get; set; }
 
+    // Sayfanın İÇERİĞİNİN en son ne zaman gerçekten değiştiği — sitemap'teki
+    // <lastmod> bunu kullanıyor.
+    //
+    // Neden ayrı bir alan: önce son tarama zamanı (PriceHistory.ScrapedAt)
+    // kullanılıyordu, ama tarama 6 saatte bir TÜM katalogu ölçtüğü için
+    // sitemap'teki 1639 adresin 1591'i aynı damgayı taşıyordu. Google
+    // lastmod'u yalnızca tutarlı biçimde doğruysa dikkate alıyor; "1600
+    // sayfam aynı anda değişti" diyen bir sitede sinyali tamamen yok
+    // sayıyor. Sonuç: hangi sayfanın taranmaya değer olduğuna dair elinde
+    // hiçbir ipucu kalmıyordu (bkz. "Keşfedildi - dizine eklenmedi").
+    //
+    // Burası YALNIZCA gerçek bir değişiklikte güncelleniyor: fiyat gerçekten
+    // değiştiyse, ya da isim/kategori/besin değeri/açıklama/puan değiştiyse.
+    // Fiyatın aynı değerde yeniden ölçülmesi bir değişiklik DEĞİL.
+    public DateTimeOffset? ContentUpdatedAt { get; set; }
+
     // Markanın KENDİ sitesinde gösterdiği yıldız ortalaması ve kaç kişinin
     // puanladığı. Bizim değerlendirmemiz değil, markanın müşterilerinin —
     // arayüzde de bu şekilde etiketleniyor.

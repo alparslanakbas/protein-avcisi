@@ -45,6 +45,22 @@ public class ScrapeIngestionService(
         // yalnızca taranan adreslere bakıyor, tek markalı scraper'larda
         // davranış değişmiyor.
         var scrapedUrls = scrapedProducts.Select(sp => sp.Url).Distinct().ToList();
+
+        // Son kaydedilen fiyat — <lastmod> için "içerik gerçekten değişti mi"
+        // kararında kullanılıyor. Korelasyonlu alt sorgu + FirstOrDefault
+        // kalıbı bu projede EF Core'un sorunsuz çevirdiği, kanıtlanmış yol
+        // (bkz. DealsQueryService'teki DealRow notu).
+        var lastPrices = await db.Products
+            .Where(p => scrapedUrls.Contains(p.Url))
+            .Select(p => new
+            {
+                p.Id,
+                LastPrice = (decimal?)p.PriceHistories
+                    .OrderByDescending(ph => ph.ScrapedAt)
+                    .Select(ph => ph.Price)
+                    .FirstOrDefault(),
+            })
+            .ToDictionaryAsync(x => x.Id, x => x.LastPrice, cancellationToken);
         var existingProducts = await db.Products
             .Where(p => scrapedUrls.Contains(p.Url))
             .ToDictionaryAsync(p => p.Url, cancellationToken);
@@ -85,11 +101,29 @@ public class ScrapeIngestionService(
                     NutritionJson = scraped.NutritionJson,
                     ProteinPerServingGrams = scraped.ProteinPerServingGrams,
                 };
+                product.ContentUpdatedAt = DateTimeOffset.UtcNow;
                 db.Products.Add(product);
                 newProducts.Add(product);
             }
             else
             {
+                // İçerik gerçekten değişti mi? Fiyatın aynı değerde yeniden
+                // ölçülmesi değişiklik SAYILMAZ — sitemap'teki <lastmod>
+                // buna bağlı ve her taramada tüm katalogu "değişti" diye
+                // işaretlemek Google'ın sinyali tamamen yok saymasına yol
+                // açıyordu.
+                lastPrices.TryGetValue(product.Id, out var previousPrice);
+                var meaningfulChange =
+                    previousPrice != scraped.Price
+                    || product.Name != scraped.Name
+                    || product.Category != category
+                    || product.Size != size
+                    || (scraped.Description is not null && product.Description != scraped.Description)
+                    || (scraped.NutritionJson is not null && product.NutritionJson != scraped.NutritionJson);
+
+                if (meaningfulChange)
+                    product.ContentUpdatedAt = DateTimeOffset.UtcNow;
+
                 product.Name = scraped.Name;
                 product.ImageUrl = scraped.ImageUrl;
                 product.Category = category;

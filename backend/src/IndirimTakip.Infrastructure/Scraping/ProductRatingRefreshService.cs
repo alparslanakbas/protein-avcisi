@@ -71,6 +71,11 @@ public class ProductRatingRefreshService(
                 // önüne geçmesin.
                 if (value is not null && count >= AggregateRatingParser.MinimumMeaningfulRatingCount)
                 {
+                    // Puan gerçekten değiştiyse sayfanın içeriği değişmiş
+                    // demektir; sitemap'teki <lastmod> bunu da yansıtmalı.
+                    if (product.RatingValue != value || product.RatingCount != count)
+                        product.ContentUpdatedAt = DateTimeOffset.UtcNow;
+
                     product.RatingValue = value;
                     product.RatingCount = count;
                     updated++;

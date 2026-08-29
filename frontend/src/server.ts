@@ -53,7 +53,9 @@ const angularApp = new AngularNodeAppEngine();
 interface SitemapEntry {
   id: number;
   name: string;
-  lastScrapedAt: string;
+  // İçeriğin son gerçekten değiştiği an (son tarama DEĞİL) — bkz.
+  // Product.ContentUpdatedAt.
+  lastModifiedAt: string;
   hasReviewContent: boolean;
 }
 
@@ -109,7 +111,7 @@ app.get('/sitemap.xml', async (req, res) => {
     const productUrls = products
       .map(
         (p) =>
-          `<url><loc>${origin}/urun/${p.id}/${slugify(p.name)}</loc><lastmod>${new Date(p.lastScrapedAt).toISOString()}</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>`,
+          `<url><loc>${origin}/urun/${p.id}/${slugify(p.name)}</loc><lastmod>${new Date(p.lastModifiedAt).toISOString()}</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>`,
       )
       .join('');
 
@@ -121,7 +123,7 @@ app.get('/sitemap.xml', async (req, res) => {
       .filter((p) => p.hasReviewContent)
       .map(
         (p) =>
-          `<url><loc>${origin}/urun-inceleme/${p.id}/${slugify(p.name)}</loc><lastmod>${new Date(p.lastScrapedAt).toISOString()}</lastmod><changefreq>weekly</changefreq><priority>0.6</priority></url>`,
+          `<url><loc>${origin}/urun-inceleme/${p.id}/${slugify(p.name)}</loc><lastmod>${new Date(p.lastModifiedAt).toISOString()}</lastmod><changefreq>weekly</changefreq><priority>0.6</priority></url>`,
       )
       .join('');
 

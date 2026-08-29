@@ -631,7 +631,12 @@ public partial class DealsQueryService(AppDbContext db)
             select new SitemapEntryDto(
                 p.Id,
                 p.Name,
-                p.PriceHistories.OrderByDescending(ph => ph.ScrapedAt).Select(ph => ph.ScrapedAt).FirstOrDefault(),
+                // <lastmod> için son TARAMA değil, içeriğin son gerçekten
+                // değiştiği an. Tarama 6 saatte bir tüm katalogu ölçtüğü için
+                // eskiden bütün adresler aynı damgayı taşıyordu ve Google
+                // sinyali yok sayıyordu (bkz. Product.ContentUpdatedAt).
+                p.ContentUpdatedAt
+                    ?? p.PriceHistories.OrderByDescending(ph => ph.ScrapedAt).Select(ph => ph.ScrapedAt).FirstOrDefault(),
                 p.Description != null || p.NutritionJson != null))
             .AsNoTracking()
             .ToListAsync(cancellationToken);
