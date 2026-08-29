@@ -20,3 +20,8 @@ jobs:
             git pull
             docker compose build
             docker compose up -d
+            # Caddyfile bind-mount olduğu için "up -d" onu yeniden yüklemiyor:
+            # dosya değişse bile container'ın tanımı değişmediğinden Docker
+            # yeniden oluşturmuyor ve Caddy bellekteki eski yapılandırmayla
+            # devam ediyor. Kesintisiz yeniden yükleme bunu kapatıyor.
+            docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile
