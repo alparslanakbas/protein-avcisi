@@ -1,0 +1,56 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "backend", "backend", "{1AE8ACA6-933B-BF2A-3671-3E2EAC007D16}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{0F9113EE-888A-26D2-68B0-4A7D0A2A8745}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IndirimTakip.Api", "backend\src\IndirimTakip.Api\IndirimTakip.Api.csproj", "{EC407732-53DC-1E12-8AF8-7FEC9E0336A6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IndirimTakip.Core", "backend\src\IndirimTakip.Core\IndirimTakip.Core.csproj", "{CA551379-AC65-A71E-7F56-AA9711326781}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IndirimTakip.Infrastructure", "backend\src\IndirimTakip.Infrastructure\IndirimTakip.Infrastructure.csproj", "{96746DFB-504D-1C3E-F738-E60A84E54BE7}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{F57642F3-C37C-D174-720E-6A6AAD5BEE22}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IndirimTakip.Infrastructure.Tests", "backend\tests\IndirimTakip.Infrastructure.Tests\IndirimTakip.Infrastructure.Tests.csproj", "{1BF0FF2D-2E57-EF25-24CE-4A62B0EB143C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{EC407732-53DC-1E12-8AF8-7FEC9E0336A6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EC407732-53DC-1E12-8AF8-7FEC9E0336A6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EC407732-53DC-1E12-8AF8-7FEC9E0336A6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EC407732-53DC-1E12-8AF8-7FEC9E0336A6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CA551379-AC65-A71E-7F56-AA9711326781}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CA551379-AC65-A71E-7F56-AA9711326781}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CA551379-AC65-A71E-7F56-AA9711326781}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CA551379-AC65-A71E-7F56-AA9711326781}.Release|Any CPU.Build.0 = Release|Any CPU
+		{96746DFB-504D-1C3E-F738-E60A84E54BE7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{96746DFB-504D-1C3E-F738-E60A84E54BE7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{96746DFB-504D-1C3E-F738-E60A84E54BE7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{96746DFB-504D-1C3E-F738-E60A84E54BE7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1BF0FF2D-2E57-EF25-24CE-4A62B0EB143C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1BF0FF2D-2E57-EF25-24CE-4A62B0EB143C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1BF0FF2D-2E57-EF25-24CE-4A62B0EB143C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1BF0FF2D-2E57-EF25-24CE-4A62B0EB143C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{0F9113EE-888A-26D2-68B0-4A7D0A2A8745} = {1AE8ACA6-933B-BF2A-3671-3E2EAC007D16}
+		{EC407732-53DC-1E12-8AF8-7FEC9E0336A6} = {0F9113EE-888A-26D2-68B0-4A7D0A2A8745}
+		{CA551379-AC65-A71E-7F56-AA9711326781} = {0F9113EE-888A-26D2-68B0-4A7D0A2A8745}
+		{96746DFB-504D-1C3E-F738-E60A84E54BE7} = {0F9113EE-888A-26D2-68B0-4A7D0A2A8745}
+		{F57642F3-C37C-D174-720E-6A6AAD5BEE22} = {1AE8ACA6-933B-BF2A-3671-3E2EAC007D16}
+		{1BF0FF2D-2E57-EF25-24CE-4A62B0EB143C} = {F57642F3-C37C-D174-720E-6A6AAD5BEE22}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {5EDE3264-BBEE-4A1E-9A5F-2D4316FDFA45}
+	EndGlobalSection
+EndGlobal
