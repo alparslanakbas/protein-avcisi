@@ -143,6 +143,15 @@
         }
       }
 
+      @if (narrative().length > 0) {
+        <div class="mt-5 border-t border-[var(--noc-divider)] pt-4">
+          <h3 class="mb-2 text-sm font-medium">Fiyat Analizi</h3>
+          @for (paragraph of narrative(); track paragraph) {
+            <p class="mb-2 text-xs leading-relaxed text-[var(--noc-neutral-300)] last:mb-0">{{ paragraph }}</p>
+          }
+        </div>
+      }
+
       @if (productFacts().length > 0) {
         <div class="mt-5 border-t border-[var(--noc-divider)] pt-4">
           <h3 class="mb-3 text-sm font-medium">Bu Ürün Hakkında Ne Ölçtük?</h3>

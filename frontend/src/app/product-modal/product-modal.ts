@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
 import { buildProductFacts } from '../core/product-facts';
+import { buildProductNarrative } from '../core/product-narrative';
 import { canonicalOrigin } from '../core/canonical-link';
 import { Deal } from '../core/deal.model';
 import { displayName } from '../core/display-name';
@@ -184,6 +185,13 @@ export class ProductModal {
   // Gerekçe için core/product-facts.ts'teki nota bak.
   protected readonly productFacts = computed(() =>
     buildProductFacts(this.deal(), this.discountEventCount()),
+  );
+
+  // Kendi ölçümlerimizden üretilen anlatı. Bilgi listesi taranabilirlik için
+  // duruyor; bu bölüm ise sayfanın ayırt edici metnini sağlıyor (bkz.
+  // core/product-narrative.ts'teki gerekçe).
+  protected readonly narrative = computed(() =>
+    buildProductNarrative(this.deal(), this.discountEventCount()),
   );
 
   constructor() {

@@ -128,8 +128,17 @@
         }
       </div>
     </nav>
+  }
 
-    <main id="urunler" class="pa-container py-7">
+  <!-- <main> KOŞULSUZ: önceden showFullHomepageContent() bloğunun içindeydi ve
+       bir ürün seçiliyken (yani SSR'da ürün sayfasında) o blok gizlendiği için
+       sayfada hiç main landmark'ı kalmıyordu. Google ana içeriği tekrarlayan
+       çerçeveden (nav/footer) ayırmak için semantik yapıya bakıyor; landmark
+       yokken en kalabalık sayfa tipimiz "çoğunlukla şablon" gibi görünüyordu.
+       Ürün modalı da buranın içinde: fixed konumlu olduğu için DOM'daki yeri
+       görünümü etkilemiyor, ama artık main'in içeriği oluyor. -->
+  <main id="urunler" class="pa-container py-7">
+    @if (showFullHomepageContent()) {
       @if (coupons().length > 0) {
         <section class="mb-5 flex flex-wrap items-center gap-2" aria-labelledby="coupon-title">
           <h2 id="coupon-title" class="mr-1 text-xs font-bold uppercase tracking-[0.08em] text-[var(--noc-neutral-600)]">Doğrulanmış kuponlar</h2>
@@ -322,12 +331,11 @@
           </div>
         </section>
       }
-    </main>
-  }
+    }
 
-  @if (selectedDeal(); as deal) {
-    <app-product-modal [deal]="deal" (closed)="closeDeal()" />
-  } @else if (productLoadError()) {
+    @if (selectedDeal(); as deal) {
+      <app-product-modal [deal]="deal" (closed)="closeDeal()" />
+    } @else if (productLoadError()) {
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4">
       <div class="pa-card max-w-md p-7 text-center">
         <i class="ph ph-warning-circle text-3xl text-[var(--pa-danger)]" aria-hidden="true"></i>
@@ -335,7 +343,8 @@
         <a routerLink="/" class="pa-primary-button mt-5 px-4 py-2 text-sm">Ana sayfaya dön</a>
       </div>
     </div>
-  }
+    }
+  </main>
 
   @if (showScrollTop()) {
     <button type="button" title="Yukarı çık" (click)="scrollToTop()" class="pa-icon-button fixed bottom-[86px] right-5 z-30 h-11 w-11 border border-[var(--noc-divider)] bg-[var(--noc-card)] text-[var(--noc-accent)] shadow-[var(--noc-shadow-md)] sm:bottom-6"><i class="ph ph-arrow-up text-xl" aria-hidden="true"></i></button>
