@@ -5,7 +5,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
-import { buildProductFacts } from '../core/product-facts';
+import { buildProductFacts, buildProductJsonLdDescription } from '../core/product-facts';
 import { buildBreadcrumbJsonLd } from '../core/breadcrumb';
 import { canonicalOrigin } from '../core/canonical-link';
 import { CATEGORY_LABELS } from '../core/category-labels';
@@ -331,12 +331,23 @@ export class ProductReviewPage implements OnInit {
       sku: String(deal.productId),
       ...(deal.imageUrl ? { image: deal.imageUrl } : {}),
       brand: { '@type': 'Brand', name: deal.brandName },
+      description: buildProductJsonLdDescription(deal),
       offers: {
         '@type': 'Offer',
         url: `${origin}/urun/${deal.productId}/${slug}`,
         priceCurrency: 'TRY',
         price: deal.currentPrice.toFixed(2),
       },
+      ...(deal.ratingValue !== null && deal.ratingCount !== null
+        ? {
+            aggregateRating: {
+              '@type': 'AggregateRating',
+              ratingValue: deal.ratingValue,
+              reviewCount: deal.ratingCount,
+              bestRating: 5,
+            },
+          }
+        : {}),
       ...(this.nutritionRows().length > 0
         ? {
             additionalProperty: this.nutritionRows().map((r) => ({

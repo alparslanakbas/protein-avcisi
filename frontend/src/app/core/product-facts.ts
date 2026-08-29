@@ -33,6 +33,11 @@ const priceFormatter = new Intl.NumberFormat('tr-TR', {
   maximumFractionDigits: 2,
 });
 
+const ratingFormatter = new Intl.NumberFormat('tr-TR', {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 2,
+});
+
 function formatPrice(value: number): string {
   return `${priceFormatter.format(value)} ₺`;
 }
@@ -124,6 +129,16 @@ export function buildProductFacts(deal: Deal, discountEventCount?: number): Prod
     });
   }
 
+  // Markanın kendi sitesindeki müşteri puanı. Bizim ölçümümüz değil, bu
+  // yüzden etiketi markanın adıyla başlıyor — hemen aşağıdaki mağaza
+  // indirimi satırıyla aynı "markanın beyanı" grubunda.
+  if (deal.ratingValue !== null && deal.ratingCount !== null) {
+    facts.push({
+      label: `${deal.brandName} sitesindeki müşteri puanı`,
+      value: `5 üzerinden ${ratingFormatter.format(deal.ratingValue)} (${deal.ratingCount} değerlendirme)`,
+    });
+  }
+
   if (deal.storeOldPrice !== null && deal.storeDiscountPercent !== null) {
     facts.push({
       label: `${deal.brandName} kendi sitesinde ne diyor`,
@@ -136,4 +151,36 @@ export function buildProductFacts(deal: Deal, discountEventCount?: number): Prod
   }
 
   return facts;
+}
+
+/**
+ * Ürün sayfasının schema.org `description` alanı.
+ *
+ * Google Search Console "description alanı eksik" uyarısı veriyordu. Metin
+ * markanın tanıtım yazısından DEĞİL, kendi ölçümlerimizden kuruluyor —
+ * başkasının pazarlama metnini yeniden yayınlamama kararıyla tutarlı
+ * (bkz. yukarıdaki not). Her üründe farklı çıkıyor çünkü sayılar farklı.
+ */
+export function buildProductJsonLdDescription(deal: Deal): string {
+  const parts: string[] = [];
+
+  const category = deal.category ? (CATEGORY_LABELS[deal.category] ?? deal.category) : null;
+  parts.push(
+    category
+      ? `${deal.brandName} markasının ${category} kategorisindeki ürünü.`
+      : `${deal.brandName} markasının ürünü.`,
+  );
+
+  if (deal.size) parts.push(`Paket: ${deal.size}.`);
+  if (deal.servingSizeGrams !== null) parts.push(`Porsiyon: ${deal.servingSizeGrams} g.`);
+  if (deal.proteinPerServingGrams !== null) {
+    parts.push(`Porsiyon başına ${deal.proteinPerServingGrams} g protein.`);
+  }
+
+  const perServing = pricePerServing(deal);
+  if (perServing !== null) parts.push(`Servis başına ${formatPrice(perServing)}.`);
+
+  parts.push('Fiyat geçmişi ProteinAvcısı tarafından düzenli olarak ölçülüyor.');
+
+  return parts.join(' ');
 }

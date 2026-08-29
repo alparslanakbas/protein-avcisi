@@ -5,6 +5,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
+import { buildProductJsonLdDescription } from '../core/product-facts';
 import { ArticleSummary } from '../core/article.model';
 import { ArticlesService } from '../core/articles.service';
 import { canonicalOrigin } from '../core/canonical-link';
@@ -343,12 +344,29 @@ export class DealsList implements OnInit {
         sku: String(deal.productId),
         ...(deal.imageUrl ? { image: deal.imageUrl } : {}),
         brand: { '@type': 'Brand', name: deal.brandName },
+        // GSC "description alanı eksik" diyordu. Metin markanın tanıtım
+        // yazısından değil kendi ölçümlerimizden üretiliyor.
+        description: buildProductJsonLdDescription(deal),
         offers: {
           '@type': 'Offer',
           url: `${canonicalOrigin(this.document)}${canonicalProductPath}`,
           priceCurrency: 'TRY',
           price: deal.currentPrice.toFixed(2),
         },
+        // Markanın kendi sitesindeki müşteri puanı. YALNIZCA veri gerçekten
+        // varsa ekleniyor ve sayfada da görünür durumda (bilgi listesinde,
+        // markanın adıyla etiketli) — Google, işaretlemedeki puanın sayfada
+        // gösterilmesini şart koşuyor.
+        ...(deal.ratingValue !== null && deal.ratingCount !== null
+          ? {
+              aggregateRating: {
+                '@type': 'AggregateRating',
+                ratingValue: deal.ratingValue,
+                reviewCount: deal.ratingCount,
+                bestRating: 5,
+              },
+            }
+          : {}),
       };
 
       this.structuredDataEl = upsertJsonLdScript(this.document, this.structuredDataEl, jsonLd);
