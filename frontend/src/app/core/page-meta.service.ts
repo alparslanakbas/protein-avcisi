@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Meta, Title } from '@angular/platform-browser';
 
 import { canonicalOrigin, setCanonicalLink } from './canonical-link';
+import { clampDescription, clampTitle } from './meta-description';
 
 export interface PageMetaOptions {
   title: string;
@@ -46,19 +47,32 @@ export class PageMetaService {
   set(options: PageMetaOptions): void {
     const origin = canonicalOrigin(this.document);
     const ogImage = options.ogImage ?? `${origin}/og-image.png`;
+    // ogTitle bilinçli olarak KIRPILMIYOR: paylaşım kartları (WhatsApp,
+    // X, Facebook) arama sonucundan daha uzun başlık gösterebiliyor ve
+    // orada fiyat bilgisinin görünmesi isteniyor.
     const ogTitle = options.ogTitle ?? options.title;
 
-    this.titleService.setTitle(options.title);
-    this.metaService.updateTag({ name: 'description', content: options.description });
+    // Tek noktadan güvenlik ağı: her sayfanın kendi şablonunu tek tek
+    // düzeltmek yerine burada sınırlıyoruz — ileride eklenen sayfalar da
+    // otomatik korunuyor. Ürün ve inceleme sayfaları ayrıca buildPageTitle
+    // kullanıyor; o, marka kuyruğunu koruyacak şekilde daha akıllı davranıyor.
+    // Denetimde başlıklar 118, açıklamalar 238 karaktere kadar çıkıyordu;
+    // Google ikisini de kesiyor, aşırı uzun başlıkta ise başlığı tamamen
+    // kendi yeniden yazıyor.
+    const title = clampTitle(options.title);
+    const description = clampDescription(options.description);
+
+    this.titleService.setTitle(title);
+    this.metaService.updateTag({ name: 'description', content: description });
     this.metaService.updateTag({ property: 'og:title', content: ogTitle });
-    this.metaService.updateTag({ property: 'og:description', content: options.description });
+    this.metaService.updateTag({ property: 'og:description', content: description });
     this.metaService.updateTag({ property: 'og:type', content: options.ogType ?? 'website' });
     this.metaService.updateTag({ property: 'og:image', content: ogImage });
     this.metaService.updateTag({ property: 'og:url', content: `${origin}${options.canonicalPath}` });
     this.metaService.updateTag({ property: 'og:locale', content: 'tr_TR' });
     this.metaService.updateTag({ property: 'og:site_name', content: 'Protein Avcısı' });
     this.metaService.updateTag({ name: 'twitter:title', content: ogTitle });
-    this.metaService.updateTag({ name: 'twitter:description', content: options.description });
+    this.metaService.updateTag({ name: 'twitter:description', content: description });
     this.metaService.updateTag({ name: 'twitter:image', content: ogImage });
 
     if (options.noIndex) {

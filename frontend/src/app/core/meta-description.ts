@@ -72,3 +72,46 @@ function extractIntro(raw: string | null | undefined, productName: string): stri
   if (intro.length <= 120) return intro;
   return intro.slice(0, 117).replace(/\s+\S*$/, '') + '…';
 }
+
+/**
+ * Arama sonucunda kırpılmayan bir başlık üretir.
+ *
+ * Google başlığı ~60-70 karakterde kesiyor. Daha da önemlisi: aşırı uzun
+ * başlıklarda Google başlığı tamamen kendi yeniden yazıyor, yani kontrolü
+ * kaybediyoruz. Denetimde 37 sayfanın 7'si 70 karakteri aşıyordu; en uzunu
+ * 118 karakterdi (uzun ürün adları yüzünden).
+ *
+ * Öncelik sırası: (1) ürün adı tam sığıyorsa marka kuyruğuyla birlikte
+ * kullan, (2) sığmıyorsa marka kuyruğunu at, (3) ürün adı tek başına bile
+ * uzunsa kelime sınırından kırp. Ürün adı her zaman başta kalıyor çünkü
+ * aramada görünen ve tıklamayı belirleyen kısım orası.
+ */
+export function buildPageTitle(subject: string, suffix: string, tail: string): string {
+  const MAX = 65;
+  const full = `${subject} ${suffix} | ${tail}`;
+  if (full.length <= MAX) return full;
+
+  const withoutTail = `${subject} ${suffix}`;
+  if (withoutTail.length <= MAX) return withoutTail;
+
+  // Kelime ortasından kesmemek için son boşluğa kadar geri git.
+  const room = MAX - suffix.length - 2;
+  const trimmed = subject.slice(0, Math.max(20, room)).replace(/\s+\S*$/, '');
+  return `${trimmed}… ${suffix}`;
+}
+
+/** Meta açıklamayı Google'ın kestiği sınırın altında tutar. */
+export function clampDescription(text: string, max = 155): string {
+  if (text.length <= max) return text;
+  return text.slice(0, max).replace(/\s+\S*$/, '') + '…';
+}
+
+/**
+ * Başlığı arama sonucunda kırpılmayacak uzunlukta tutar. Kelime ortasından
+ * kesmez. `buildPageTitle`'ın aksine yapıyı bilmediği için marka kuyruğunu
+ * koruyamaz — bu yüzden yalnızca son çare güvenlik ağı olarak kullanılıyor.
+ */
+export function clampTitle(text: string, max = 65): string {
+  if (text.length <= max) return text;
+  return text.slice(0, max).replace(/\s+\S*$/, '') + '…';
+}

@@ -27,7 +27,7 @@ import { PwaInstallService } from '../core/pwa-install.service';
 import { formatRelativeTime } from '../core/relative-time';
 import { slugify } from '../core/slugify';
 import { productPath } from '../core/product-link';
-import { buildProductDescription } from '../core/meta-description';
+import { buildPageTitle, buildProductDescription } from '../core/meta-description';
 import { buildAreaPath, buildLinePath, toCoordinates } from '../core/spark-chart';
 import { SubscribeService } from '../core/subscribe.service';
 import { ThemePreference, ThemeService } from '../core/theme.service';
@@ -298,7 +298,9 @@ export class DealsList implements OnInit {
       // sadece description'da ve JSON-LD Offer.price'ta kalıyor. Paylaşım
       // kartında (WhatsApp/Twitter) fiyatlı görünmesi hâlâ isteniyor —
       // ogTitle ayrı tutuluyor.
-      const title = `${displayedName} Fiyatı ve Fiyat Geçmişi | ${deal.brandName}`;
+      // Uzun ürün adlarında başlık 118 karaktere kadar çıkıyordu; Google o
+      // uzunlukta başlığı tamamen kendi yeniden yazıyor (bkz. buildPageTitle).
+      const title = buildPageTitle(displayedName, 'Fiyatı ve Fiyat Geçmişi', deal.brandName);
       const ogTitle = `${displayedName} Fiyatı: ${priceText} | ${deal.brandName} — ProteinAvcısı`;
       // Açıklama artık markanın kendi ürün metninden besleniyor (bkz.
       // core/meta-description.ts) — arama sonucunda ürünün ne olduğunu

@@ -5,6 +5,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
+import { buildPageTitle, clampDescription } from '../core/meta-description';
 import { buildProductFacts, buildProductJsonLdDescription } from '../core/product-facts';
 import { buildBreadcrumbJsonLd } from '../core/breadcrumb';
 import { canonicalOrigin } from '../core/canonical-link';
@@ -312,8 +313,12 @@ export class ProductReviewPage implements OnInit {
     // Yıl bilinçli olarak title'da YOK — hardcode "2026" 2027'de tüm
     // title'ları bakımsız/yalan gösterirdi, Google zaten tarihi lastmod/
     // yayın tarihinden okuyor (dış kod incelemesinde bulundu).
-    const title = `${name} İncelemesi | ${deal.brandName}`;
-    const description = `${name} için gerçek fiyat geçmişi, besin değeri ve kategori karşılaştırmasına dayanan bağımsız inceleme. ProteinAvcısı, marka beyanına değil kendi verisine güvenir.`;
+    const title = buildPageTitle(name, 'İncelemesi', deal.brandName);
+    // Google ~155 karakterde kesiyor; kuyruktaki jenerik cümle zaten
+    // görünmüyordu (denetimde 238 karaktere kadar çıkan örnek vardı).
+    const description = clampDescription(
+      `${name} için gerçek fiyat geçmişi, besin değeri ve kategori karşılaştırmasına dayanan bağımsız inceleme.`,
+    );
 
     this.pageMeta.set({
       title,
