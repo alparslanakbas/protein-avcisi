@@ -48,6 +48,13 @@ describe('servingsInPackage', () => {
     expect(servingsInPackage(deal({ size: '900 Gr', servingSizeGrams: 30 }))).toBe(30);
   });
 
+  it('kilogramla verilen paketi de grama çevirir', () => {
+    // Backend bunu zaten yapıyordu, frontend yalnızca "Gr" tanıyordu —
+    // kg ile satılan her ürün sessizce hesap dışında kalıyordu.
+    expect(servingsInPackage(deal({ size: '2 Kg', servingSizeGrams: 30 }))).toBeCloseTo(66.67, 1);
+    expect(servingsInPackage(deal({ size: '1,5 kg', servingSizeGrams: 30 }))).toBe(50);
+  });
+
   it('paket ağırlığı okunamıyorsa null döner', () => {
     // ProteinOcean gibi bazı markalarda paket bilgisi hiç gelmiyor.
     expect(servingsInPackage(deal({ size: null }))).toBeNull();

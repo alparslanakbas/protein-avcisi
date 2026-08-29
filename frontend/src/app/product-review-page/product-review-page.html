@@ -95,18 +95,33 @@
         }
       </div>
 
-      <!-- Ürün açıklaması — veri yoksa dürüst not (kullanıcı isteğiyle: sessizce
-           boş bırakmıyoruz, neden bilgi olmadığını açıkça söylüyoruz). -->
-      <h2 class="mt-[45px] text-[20px] font-medium">{{ d.brandName }} Ne Diyor?</h2>
-      <div class="mt-3 rounded-[14px] bg-[var(--noc-card)] p-4 shadow-[var(--noc-shadow-sm)]">
-        @if (d.description) {
-          @for (paragraph of d.description.split('\n\n'); track paragraph) {
-            <p class="mb-2 text-sm leading-relaxed text-[var(--noc-neutral-300)] last:mb-0">{{ paragraph }}</p>
-          }
+      <!-- Markanın kendi tanıtım metni bilinçli olarak yayınlanmıyor: başkasının
+           pazarlama yazısını birebir yeniden yayınlamak bize ait bir içerik değil.
+           Metni çekmeye devam ediyoruz (porsiyon/besin değeri ondan çıkıyor), sadece
+           göstermiyoruz. Yerine tamamen kendi ölçümümüzden türeyen liste geliyor. -->
+      <h2 class="mt-[45px] text-[20px] font-medium">Bu Ürün Hakkında Ne Ölçtük?</h2>
+      <p class="mt-2 text-sm text-[var(--noc-neutral-500)]">
+        Bu tablodaki her satır bizim kendi verimizden geliyor: {{ d.brandName }} sitesinden
+        düzenli olarak topladığımız fiyat geçmişi ve ürün etiketindeki sayılar. Markanın
+        tanıtım metnini burada yeniden yayınlamıyoruz.
+      </p>
+      <div class="mt-3 overflow-hidden rounded-[14px] bg-[var(--noc-card)] shadow-[var(--noc-shadow-sm)]">
+        @if (productFacts().length > 0) {
+          <table class="w-full text-sm">
+            <tbody>
+              @for (fact of productFacts(); track fact.label; let isLast = $last) {
+                <tr [class.border-b]="!isLast" class="border-[var(--noc-divider)]">
+                  <th scope="row" class="px-4 py-2.5 text-left font-normal text-[var(--noc-neutral-500)]">
+                    {{ fact.label }}
+                  </th>
+                  <td class="px-4 py-2.5 text-right font-medium">{{ fact.value }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
         } @else {
-          <p class="text-sm text-[var(--noc-neutral-500)]">
-            {{ d.brandName }}, bu ürün için bir açıklama metni paylaşmıyor — bu yüzden burada gösteremiyoruz.
-            Uydurma bir açıklama yazmak yerine bu bilgiyi olduğu gibi eksik bırakıyoruz.
+          <p class="p-4 text-sm text-[var(--noc-neutral-500)]">
+            Bu ürün için henüz ölçülebilir bir veri birikmedi.
           </p>
         }
       </div>

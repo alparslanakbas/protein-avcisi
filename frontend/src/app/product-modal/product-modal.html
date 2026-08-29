@@ -143,12 +143,21 @@
         }
       }
 
-      @if (descriptionParagraphs().length > 0) {
+      @if (productFacts().length > 0) {
         <div class="mt-5 border-t border-[var(--noc-divider)] pt-4">
-          <h3 class="mb-2 text-sm font-medium">Ürün Hakkında</h3>
-          @for (paragraph of descriptionParagraphs(); track paragraph) {
-            <p class="mb-2 text-xs leading-relaxed text-[var(--noc-neutral-500)] last:mb-0">{{ paragraph }}</p>
-          }
+          <h3 class="mb-1 text-sm font-medium">Bu Ürün Hakkında Ne Ölçtük?</h3>
+          <p class="mb-3 text-xs text-[var(--noc-neutral-500)]">
+            Aşağıdaki bilgiler markanın tanıtım metninden değil, bizim topladığımız fiyat
+            geçmişinden ve etiket verisinden çıkarıldı.
+          </p>
+          <dl class="grid gap-1.5">
+            @for (fact of productFacts(); track fact.label) {
+              <div class="flex justify-between gap-4 text-xs">
+                <dt class="shrink-0 text-[var(--noc-neutral-500)]">{{ fact.label }}</dt>
+                <dd class="text-right font-medium text-[var(--noc-neutral-300)]">{{ fact.value }}</dd>
+              </div>
+            }
+          </dl>
         </div>
       }
 

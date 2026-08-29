@@ -5,6 +5,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
+import { buildProductFacts } from '../core/product-facts';
 import { buildBreadcrumbJsonLd } from '../core/breadcrumb';
 import { canonicalOrigin } from '../core/canonical-link';
 import { CATEGORY_LABELS } from '../core/category-labels';
@@ -61,6 +62,13 @@ export class ProductReviewPage implements OnInit {
   protected readonly loading = signal(true);
   protected readonly loadError = signal(false);
   protected readonly deal = signal<Deal | null>(null);
+
+  // Markanın tanıtım metninin yerini alan, tamamen kendi verimizden türeyen
+  // bilgi listesi — gerekçe için core/product-facts.ts'teki nota bak.
+  protected readonly productFacts = computed(() => {
+    const deal = this.deal();
+    return deal ? buildProductFacts(deal) : [];
+  });
   protected readonly points = signal<PricePoint[]>([]);
   protected readonly categoryStats = signal<CategoryPriceStats | null>(null);
   protected readonly similarProducts = signal<Deal[]>([]);

@@ -3,6 +3,7 @@ import { Component, PLATFORM_ID, computed, effect, inject, input, output, signal
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
+import { buildProductFacts } from '../core/product-facts';
 import { canonicalOrigin } from '../core/canonical-link';
 import { Deal } from '../core/deal.model';
 import { displayName } from '../core/display-name';
@@ -178,13 +179,12 @@ export class ProductModal {
     return count;
   });
 
-  // Backend'de "\n\n" ile ayrılmış bölümler (Açıklama/İçindekiler/Kullanım
-  // Talimatı gibi) geliyor — her birini ayrı paragraf olarak basıyoruz.
-  // Sadece marka gerçekten açıklama sağladıysa dolu (şimdilik HIQ).
-  protected readonly descriptionParagraphs = computed(() => {
-    const description = this.deal().description;
-    return description ? description.split('\n\n').filter(Boolean) : [];
-  });
+  // Markanın kendi açıklama metni artık BURADA GÖSTERİLMİYOR — yerine
+  // tamamen kendi ölçümlerimizden türeyen bir bilgi listesi basılıyor.
+  // Gerekçe için core/product-facts.ts'teki nota bak.
+  protected readonly productFacts = computed(() =>
+    buildProductFacts(this.deal(), this.discountEventCount()),
+  );
 
   constructor() {
     effect(() => {

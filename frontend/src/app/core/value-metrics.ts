@@ -25,12 +25,18 @@ import { Deal } from './deal.model';
 export const PROTEIN_REFERENCE_GRAMS = 30;
 
 /** Paket etiketinden gram cinsinden ağırlık ("900 Gr" → 900). */
+// Backend'deki `DealsQueryService.ParsePackageGrams` ile AYNI kuralı
+// uygulamak zorunda: aksi halde aynı ürün hesaplayıcıda (backend) servis
+// maliyeti gösterip ürün sayfasında (frontend) göstermiyor. Daha önce
+// burada yalnızca "Gr" tanınıyordu, kilogramla satılan paketlerin tamamı
+// sessizce hesap dışında kalıyordu.
 function parsePackageGrams(size: string | null): number | null {
   if (!size) return null;
-  const match = /^(\d+(?:[.,]\d+)?)\s*Gr$/i.exec(size.trim());
+  const match = /^(\d+(?:[.,]\d+)?)\s*(gr|kg)$/i.exec(size.trim());
   if (!match) return null;
-  const grams = Number(match[1].replace(',', '.'));
-  return grams > 0 ? grams : null;
+  const value = Number(match[1].replace(',', '.'));
+  if (!(value > 0)) return null;
+  return match[2].toLowerCase() === 'kg' ? value * 1000 : value;
 }
 
 /**
