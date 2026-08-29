@@ -378,6 +378,27 @@ app.use((req, res, next) => {
     .then(async (response) => {
       if (!response) return next();
 
+      // Angular, render sırasındaki router.navigate() çağrılarını 302
+      // (geçici) yönlendirmeye çeviriyor. Kanonik yönlendirmelerimiz ise
+      // KALICI: bir ürünün doğru adresi her zaman slug'lı hâli, donmuş bir
+      // kayıt da kalıcı olarak yerine geçen kayda işaret ediyor. 302,
+      // Google'a "eski adresi dizinde tut, kontrol etmeye devam et" dediği
+      // için bu sayfalar "Yönlendirmeli sayfa" kutusunda birikiyor ve
+      // doğrulama tekrar tekrar başarısız oluyordu.
+      //
+      // Yalnızca ürün adresine giden yönlendirmeler 301'e çevriliyor.
+      // Ana sayfaya düşenler KAPSAM DIŞI: onlar "böyle bir ürün yok"
+      // durumunun karşılığı, kalıcı bir taşınma değil — 301 demek
+      // Google'a "bu ürün artık ana sayfadır" demek olurdu.
+      const location = response.headers.get('location');
+      if (response.status === 302 && location && new URL(location, 'https://x').pathname.startsWith('/urun/')) {
+        response = new Response(response.body, {
+          status: 301,
+          statusText: 'Moved Permanently',
+          headers: response.headers,
+        });
+      }
+
       const contentType = response.headers.get('content-type') ?? '';
       const setsCookie = response.headers.has('set-cookie');
       const cacheable =
