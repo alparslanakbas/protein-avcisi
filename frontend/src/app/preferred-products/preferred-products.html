@@ -1,0 +1,75 @@
+<section
+  class="pa-preferred"
+  aria-labelledby="preferred-products-title"
+  (mouseenter)="pauseAutoSlide()"
+  (mouseleave)="resumeAutoSlide()"
+  (focusin)="pauseAutoSlide()"
+  (focusout)="resumeAutoSlide()"
+  (pointerdown)="pauseAutoSlide()"
+  (pointerup)="resumeAutoSlide()"
+>
+  <div class="pa-preferred-head">
+    <div>
+      <p class="pa-preferred-kicker"><i class="ph-fill ph-sparkle" aria-hidden="true"></i> Topluluk keşfi</p>
+      <h2 id="preferred-products-title">Kullanıcıların tercih ettikleri</h2>
+      <p>Hedefine göre öne çıkan ürünleri keşfet.</p>
+    </div>
+
+    <div class="pa-preferred-tabs" role="tablist" aria-label="Ürün hedefi">
+      @for (tab of tabs; track tab.id) {
+        <button
+          type="button"
+          role="tab"
+          [attr.aria-selected]="selectedGroup() === tab.id"
+          [class.is-active]="selectedGroup() === tab.id"
+          (click)="selectGroup(tab.id)"
+        >{{ tab.label }}</button>
+      }
+    </div>
+  </div>
+
+  <div class="pa-preferred-carousel">
+    <button type="button" class="pa-preferred-arrow is-previous" aria-label="Önceki ürünler" (click)="scroll(-1)">
+      <i class="ph ph-caret-left" aria-hidden="true"></i>
+    </button>
+
+    <div #rail class="pa-preferred-rail" tabindex="0" aria-label="Tercih edilen ürünler, yatay kaydırılabilir">
+      @for (product of visibleProducts(); track product.productId; let index = $index) {
+        <a
+          [routerLink]="productPath(product)"
+          queryParamsHandling="preserve"
+          class="pa-preferred-card"
+          role="group"
+          [attr.aria-label]="(index + 1) + '. ürün: ' + displayName(product.productName)"
+        >
+          <span class="pa-preferred-image">
+            @if (product.imageUrl) {
+              <img [src]="product.imageUrl" [alt]="displayName(product.productName)" loading="lazy" />
+            } @else {
+              <i class="ph ph-package" aria-hidden="true"></i>
+            }
+          </span>
+
+          <span class="pa-preferred-copy">
+            <small>{{ product.brandName }}</small>
+            <strong>{{ displayName(product.productName) }}</strong>
+            <span class="pa-preferred-price">{{ product.currentPrice | number: '1.2-2' }} ₺</span>
+          </span>
+
+          <span class="pa-preferred-open" aria-hidden="true"><i class="ph ph-arrow-up-right"></i></span>
+        </a>
+      } @empty {
+        <div class="pa-preferred-empty">
+          <i class="ph ph-package" aria-hidden="true"></i>
+          <span>Bu hedef için gösterilecek ürün bulunamadı.</span>
+        </div>
+      }
+    </div>
+
+    <button type="button" class="pa-preferred-arrow is-next" aria-label="Sonraki ürünler" (click)="scroll(1)">
+      <i class="ph ph-caret-right" aria-hidden="true"></i>
+    </button>
+  </div>
+
+  <p class="pa-preferred-hint"><i class="ph ph-hand-swipe-left" aria-hidden="true"></i> Kaydırarak daha fazlasını keşfet</p>
+</section>

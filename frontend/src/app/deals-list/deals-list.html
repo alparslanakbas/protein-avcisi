@@ -180,6 +180,10 @@
         </div>
       }
 
+      @if (preferredProductCandidates().length > 0) {
+        <app-preferred-products [products]="preferredProductCandidates()" />
+      }
+
       @if (loading()) {
         <div class="pa-product-loading space-y-3" aria-label="Ürünler yükleniyor">
           @for (item of [1, 2, 3]; track item) { <div class="pa-card pa-skeleton h-[146px]"></div> }

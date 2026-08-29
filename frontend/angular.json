@@ -34,7 +34,13 @@
             "server": "src/main.server.ts",
             "outputMode": "server",
             "security": {
-              "allowedHosts": []
+              "allowedHosts": [
+                "www.proteinavcisi.com.tr",
+                "proteinavcisi.com.tr",
+                "protein-avcisi.onrender.com",
+                "localhost",
+                "127.0.0.1"
+              ]
             },
             "ssr": {
               "entry": "src/server.ts"

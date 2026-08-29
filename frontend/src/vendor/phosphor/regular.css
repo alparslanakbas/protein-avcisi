@@ -36,6 +36,7 @@
 .ph.ph-arrow-right:before { content: "\e06c"; }
 .ph.ph-arrow-square-out:before { content: "\e5de"; }
 .ph.ph-arrow-up:before { content: "\e08e"; }
+.ph.ph-arrow-up-right:before { content: "\e092"; }
 .ph.ph-barbell:before { content: "\e0b6"; }
 .ph.ph-bell-ringing:before { content: "\e5e8"; }
 .ph.ph-book-open-text:before { content: "\e8f2"; }
@@ -60,6 +61,7 @@
 .ph.ph-fire:before { content: "\e242"; }
 .ph.ph-funnel:before { content: "\e266"; }
 .ph.ph-gauge:before { content: "\e628"; }
+.ph.ph-hand-swipe-left:before { content: "\ec94"; }
 .ph.ph-heartbeat:before { content: "\e2ac"; }
 .ph.ph-house:before { content: "\e2c2"; }
 .ph.ph-info:before { content: "\e2ce"; }
@@ -68,12 +70,14 @@
 .ph.ph-lightning:before { content: "\e2de"; }
 .ph.ph-magnifying-glass:before { content: "\e30c"; }
 .ph.ph-moon:before { content: "\e330"; }
+.ph.ph-package:before { content: "\e390"; }
 .ph.ph-pill:before { content: "\e700"; }
 .ph.ph-scales:before { content: "\e750"; }
 .ph.ph-seal-check:before { content: "\e606"; }
 .ph.ph-share-network:before { content: "\e408"; }
 .ph.ph-shield-check:before { content: "\e40c"; }
 .ph.ph-shield-plus:before { content: "\e706"; }
+.ph.ph-sparkle:before { content: "\e6a2"; }
 .ph.ph-squares-four:before { content: "\e464"; }
 .ph.ph-star:before { content: "\e46a"; }
 .ph.ph-sun:before { content: "\e472"; }

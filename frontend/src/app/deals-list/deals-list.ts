@@ -32,6 +32,7 @@ import { SubscribeService } from '../core/subscribe.service';
 import { ThemePreference, ThemeService } from '../core/theme.service';
 import { ProductCardSparkline } from '../product-card-sparkline/product-card-sparkline';
 import { ProductModal } from '../product-modal/product-modal';
+import { PreferredProducts } from '../preferred-products/preferred-products';
 
 type ViewMode = 'deals' | 'all' | 'store';
 
@@ -90,7 +91,7 @@ const FAQ_ITEMS: { question: string; answer: string }[] = [
 
 @Component({
   selector: 'app-deals-list',
-  imports: [DecimalPipe, FormsModule, ProductCardSparkline, ProductModal, RouterLink],
+  imports: [DecimalPipe, FormsModule, PreferredProducts, ProductCardSparkline, ProductModal, RouterLink],
   templateUrl: './deals-list.html',
 })
 export class DealsList implements OnInit {
@@ -194,6 +195,12 @@ export class DealsList implements OnInit {
   protected readonly hasActiveFilters = signal(false);
 
   protected readonly coupons = signal<Coupon[]>([]);
+
+  // Gerçek tercih metriği backend'e eklenene kadar bu bant mevcut ürün
+  // kataloğundan deterministik olarak karıştırılmış bir aday havuzu kullanır.
+  // Ayrı signal olması, liste sekmeleri/filtreleri değişirken keşif bandının
+  // içeriğinin zıplamamasını sağlar.
+  protected readonly preferredProductCandidates = signal<Deal[]>([]);
 
   // Sayfa aşağı kaydırılınca sağ altta çıkan "yukarı çık" butonu için.
   protected readonly showScrollTop = signal(false);
@@ -365,6 +372,10 @@ export class DealsList implements OnInit {
       this.availableCategories.set(options.categories);
     });
     this.couponsService.getCoupons().subscribe((coupons) => this.coupons.set(coupons));
+    this.dealsService.getAllProducts({ page: 1, pageSize: 60 }).subscribe({
+      next: (result) => this.preferredProductCandidates.set(result.items),
+      error: () => this.preferredProductCandidates.set([]),
+    });
     // pageSize:1 — sadece toplam sayıyı okumak için, tüm ürünleri çekmeye gerek yok.
     this.dealsService.getAllProducts({ pageSize: 1 }).subscribe((result) => this.siteProductCount.set(result.totalCount));
     this.dealsService.getStats().subscribe((stats) => this.stats.set(stats));
