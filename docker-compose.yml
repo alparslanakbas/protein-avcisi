@@ -42,7 +42,11 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
+      # Tek dosya DEĞİL, dizin bağlanıyor: tek dosyalık bind-mount
+      # inode'a bağlanıyor ve "git pull" dosyayı yenisiyle değiştirdiği
+      # için container eski içeriği görmeye devam ediyordu — yapılandırma
+      # değişiklikleri container yeniden oluşturulmadan hiç ulaşmıyordu.
+      - ./caddy:/etc/caddy
       - caddy_data:/data
       - caddy_config:/config
     depends_on:

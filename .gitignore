@@ -30,3 +30,12 @@ RAKIP-ANALIZ.md
 .vscode/
 testsprite_tests/tmp/
 testsprite_tests/tmp/config.json
+
+# Tasarım denetimi sırasında üretilen geçici kanıt görüntüleri ve editör
+# eklentisi ayarları — diskte kalıyor ama depoya girmiyor.
+.continue/
+design-qa.md
+design-qa-*.png
+design-audit-*/
+design-qa-directory/
+indirim-takip-sistemi.sln
