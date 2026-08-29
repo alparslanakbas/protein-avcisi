@@ -310,6 +310,62 @@ public partial class DealsQueryService(AppDbContext db)
             .ToList();
     }
 
+    // Ana sayfadaki "Kullanıcıların tercih ettikleri" bandı için.
+    //
+    // Sıralama GERÇEK kullanıcı davranışından geliyor, iki sinyalden:
+    //   1. Favori (yıldız) sayısı — doğrudan "bu ürünü takip ediyorum" beyanı,
+    //      en güçlü tercih sinyali, bu yüzden birincil kriter.
+    //   2. Mağazaya gitme tıklaması — favori kadar güçlü değil ama satın alma
+    //      niyeti taşıyor ve ÇOK daha geniş bir tabana yayılmış durumda.
+    //
+    // İkisinin birlikte kullanılmasının sebebi ölçek farkı: favori verisi
+    // henüz çok yeni (bugün tek haneli), tek başına kullanılsa band neredeyse
+    // boş kalırdı. Tıklama ise 500'ün üzerinde üründe var. Favori sayısı
+    // arttıkça birincil kriter doğal olarak öne geçiyor, bu metodu değiştirmeye
+    // gerek kalmıyor.
+    //
+    // Uydurma bir "popülerlik" skoru YOK — iki alan da gerçek sayaç.
+    public async Task<IReadOnlyList<DealDto>> GetPreferredProductsAsync(
+        int count, int referenceWindowDays = 30, CancellationToken cancellationToken = default)
+    {
+        var referenceSince = DateTimeOffset.UtcNow.AddDays(-referenceWindowDays);
+        var staleSince = DateTimeOffset.UtcNow - StaleThreshold;
+
+        var rows = await (
+            from p in db.Products
+            join b in db.Brands on p.BrandId equals b.Id
+            where b.IsActive
+            select new
+            {
+                Product = p,
+                BrandName = b.Name,
+                FavoriteCount = db.ProductFavorites.Count(f => f.ProductId == p.Id),
+                Latest = p.PriceHistories.OrderByDescending(ph => ph.ScrapedAt).FirstOrDefault(),
+                ReferencePrice = p.PriceHistories
+                    .Where(ph => ph.ScrapedAt >= referenceSince)
+                    .Max(ph => (decimal?)ph.Price),
+                ThirtyDayLowPrice = p.PriceHistories
+                    .Where(ph => ph.ScrapedAt >= referenceSince)
+                    .Min(ph => (decimal?)ph.Price),
+            })
+            // Donmuş kayıtlar burada da gizleniyor: bandın amacı "şu an ilgi
+            // gören ürünler", artık takip edilmeyen bir ürünü öne çıkarmak
+            // yanıltıcı olurdu.
+            .Where(r => r.Latest != null && r.Latest.ScrapedAt >= staleSince)
+            .Where(r => r.FavoriteCount > 0 || r.Product.ClickCount > 0)
+            .OrderByDescending(r => r.FavoriteCount)
+            .ThenByDescending(r => r.Product.ClickCount)
+            .Take(count)
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+        return rows
+            .Where(r => r.ReferencePrice != null && r.ThirtyDayLowPrice != null)
+            .Select(r => new DealRow(r.Product, r.BrandName, r.Latest!, r.ReferencePrice!.Value, r.ThirtyDayLowPrice!.Value))
+            .Select(MapToDealDto)
+            .ToList();
+    }
+
     // Marka karşılaştırma sayfaları (/karsilastir/x-vs-y) için — kategori
     // bazında ortalama güncel fiyat karşılaştırması. Statik/elle yazılan
     // bir içerik değil, her istekte canlı veriden hesaplanıyor — yeni bir

@@ -372,8 +372,8 @@ export class DealsList implements OnInit {
       this.availableCategories.set(options.categories);
     });
     this.couponsService.getCoupons().subscribe((coupons) => this.coupons.set(coupons));
-    this.dealsService.getAllProducts({ page: 1, pageSize: 60 }).subscribe({
-      next: (result) => this.preferredProductCandidates.set(result.items),
+    this.dealsService.getPreferredProducts(60).subscribe({
+      next: (products) => this.preferredProductCandidates.set(products),
       error: () => this.preferredProductCandidates.set([]),
     });
     // pageSize:1 — sadece toplam sayıyı okumak için, tüm ürünleri çekmeye gerek yok.

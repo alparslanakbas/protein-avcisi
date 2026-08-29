@@ -337,6 +337,17 @@ app.MapGet("/api/stats", async (DealsQueryService deals, CancellationToken ct) =
     return Results.Ok(result);
 }).CacheOutput(PublicDataCachePolicy);
 
+// Ana sayfadaki "Kullanıcıların tercih ettikleri" bandı — sıralama gerçek
+// favori ve tıklama sayaçlarından geliyor (bkz. GetPreferredProductsAsync).
+app.MapGet("/api/preferred-products", async (DealsQueryService deals, int? count, CancellationToken ct) =>
+{
+    // Band kategori sekmeleriyle daraltılabildiği için istemci geniş bir
+    // havuz istiyor; üst sınır kötüye kullanıma karşı sabit.
+    var take = Math.Clamp(count ?? 60, 1, 100);
+    var result = await deals.GetPreferredProductsAsync(take, cancellationToken: ct);
+    return Results.Ok(result);
+}).CacheOutput(PublicDataCachePolicy);
+
 // Marka sayfasındaki "bu markaya genel bakış" bölümü için — kendi verimize
 // dayanan, kopyalanmamış özgün içerik (bkz. DealsQueryService.GetBrandStatsAsync).
 // category verilirse istatistikler markanın yalnızca o kategorideki

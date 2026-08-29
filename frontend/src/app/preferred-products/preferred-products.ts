@@ -32,22 +32,6 @@ const PREFERENCE_TABS: readonly PreferenceTab[] = [
   { id: 'weight', label: 'Kilo Kontrolü', categories: ['yag-yakici', 'l-carnitine-cla', 'kilo-hacim'] },
 ];
 
-/**
- * Backend'de gerçek tercih sıralaması hazırlanana kadar aday ürünleri her gün
- * farklı, fakat SSR ve tarayıcıda aynı kalacak şekilde dağıtır. Math.random()
- * hydration sırasında sunucu ve tarayıcı sırasını farklılaştıracağı için
- * ürün id'si + Türkiye tarihinden deterministik bir skor üretiyoruz.
- */
-function dailyProductScore(productId: number, dayKey: string): number {
-  let hash = 2166136261;
-  const input = `${dayKey}:${productId}`;
-  for (let i = 0; i < input.length; i += 1) {
-    hash ^= input.charCodeAt(i);
-    hash = Math.imul(hash, 16777619);
-  }
-  return hash >>> 0;
-}
-
 @Component({
   selector: 'app-preferred-products',
   imports: [DecimalPipe, RouterLink],
@@ -64,24 +48,19 @@ export class PreferredProducts {
 
   private readonly destroyRef = inject(DestroyRef);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
-  private readonly dailyShuffleKey = new Intl.DateTimeFormat('en-CA', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    timeZone: 'Europe/Istanbul',
-  }).format(new Date());
   private autoSlideHandle: ReturnType<typeof setInterval> | null = null;
   private paused = false;
 
+  // Sunucudan gelen sıra ZATEN tercih sıralaması (favori sayısı, sonra
+  // mağazaya gitme tıklaması — bkz. DealsQueryService.GetPreferredProductsAsync).
+  // Burada yeniden sıralamıyoruz; sekme yalnızca kategoriye göre daraltıyor.
   protected readonly visibleProducts = computed(() => {
     const activeTab = PREFERENCE_TABS.find((tab) => tab.id === this.selectedGroup()) ?? PREFERENCE_TABS[0];
     const candidates = activeTab.categories.length === 0
       ? this.products()
       : this.products().filter((product) => product.category && activeTab.categories.includes(product.category));
 
-    return [...candidates]
-      .sort((left, right) => dailyProductScore(left.productId, this.dailyShuffleKey) - dailyProductScore(right.productId, this.dailyShuffleKey))
-      .slice(0, 12);
+    return candidates.slice(0, 12);
   });
 
   constructor() {

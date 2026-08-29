@@ -57,6 +57,15 @@ export class DealsService {
     return this.http.get<HomepageStats>(`${API_BASE_URL}/api/stats`);
   }
 
+  // Ana sayfadaki "Kullanıcıların tercih ettikleri" bandı. Sıralama
+  // sunucuda gerçek favori ve tıklama sayaçlarından hesaplanıyor; istemci
+  // bu sırayı olduğu gibi koruyor.
+  getPreferredProducts(count = 60): Observable<Deal[]> {
+    return this.http.get<Deal[]>(`${API_BASE_URL}/api/preferred-products`, {
+      params: new HttpParams().set('count', count),
+    });
+  }
+
   // Marka sayfasındaki "bu markaya genel bakış" bölümü için — kendi
   // verimize dayanan özgün istatistik, markanın kopyalanmış tarihçesi
   // yerine (bkz. CLAUDE.md "marka sayfaları" tartışması).
