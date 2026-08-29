@@ -189,6 +189,12 @@ public partial class DealsQueryService(AppDbContext db)
             "name_desc" => relevanceOrdered.ThenByDescending(r => r.Product.Name),
             "price_asc" => relevanceOrdered.ThenBy(r => r.Latest!.Price).ThenBy(r => r.Product.Name),
             "price_desc" => relevanceOrdered.ThenByDescending(r => r.Latest!.Price).ThenBy(r => r.Product.Name),
+            // Ürünün eklenme sırası: Id artan bir kimlik olduğu için
+            // takibe alınma sırasını birebir veriyor. Ayrı bir tarih
+            // alanı tutmaya gerek yok — ürün kaydı yalnızca ilk
+            // taramada oluşuyor, sonraki taramalar onu güncelliyor.
+            "newest" => relevanceOrdered.ThenByDescending(r => r.Product.Id),
+            "oldest" => relevanceOrdered.ThenBy(r => r.Product.Id),
             _ => onlyStoreDiscounted
                 ? relevanceOrdered.ThenByDescending(r => (r.Latest!.StoreOldPrice!.Value - r.Latest.Price) / r.Latest.StoreOldPrice.Value).ThenBy(r => r.Product.Name)
                 // Referans fiyat 0 olabiliyor (bir marka ürünü 0 TL ile listelerse):

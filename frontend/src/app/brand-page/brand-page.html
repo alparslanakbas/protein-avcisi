@@ -132,6 +132,8 @@
           <label for="sortBy">Sırala:</label>
           <select id="sortBy" [ngModel]="sortBy()" (ngModelChange)="onSortChange($event)" class="rounded-[6px] border border-[var(--noc-divider)] bg-[var(--noc-surface)] px-2 py-1 text-xs text-[var(--noc-text)]">
             <option value="">Varsayılan (İndirim Oranı)</option>
+            <option value="newest">Son Eklenenler</option>
+            <option value="oldest">İlk Eklenenler</option>
             <option value="price_asc">Fiyat: Düşükten Yükseğe</option>
             <option value="price_desc">Fiyat: Yüksekten Düşüğe</option>
             <option value="name_asc">İsim: A-Z</option>
