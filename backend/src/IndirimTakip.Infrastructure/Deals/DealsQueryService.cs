@@ -36,6 +36,10 @@ public partial class DealsQueryService(AppDbContext db)
     // "artık güncellenmiyor" bilgisini saklamak yanıltıcı olurdu.
     private static readonly TimeSpan StaleThreshold = TimeSpan.FromHours(48);
 
+    // Vitrine girmek için gereken en düşük ortalama. Amaç "beğenilen ürünler"
+    // göstermek; 3,2 ortalamalı bir ürünü öne çıkarmak bandın anlamını bozardı.
+    private const decimal MinimumRatingValue = 4.0m;
+
     private static DealDto MapToDealDto(DealRow row)
     {
         var latest = row.Latest;
@@ -58,7 +62,11 @@ public partial class DealsQueryService(AppDbContext db)
                 ? Math.Round((storeOld - latest.Price) / storeOld * 100, 1)
                 : null,
             latest.ScrapedAt,
-            latest.Price <= row.ThirtyDayLowPrice && row.ThirtyDayLowPrice < referencePrice);
+            latest.Price <= row.ThirtyDayLowPrice && row.ThirtyDayLowPrice < referencePrice,
+            IsStale: false,
+            ReplacementProductId: null,
+            RatingValue: row.Product.RatingValue,
+            RatingCount: row.Product.RatingCount);
     }
 
     public async Task<PagedResult<DealDto>> GetDealsAsync(
@@ -312,19 +320,19 @@ public partial class DealsQueryService(AppDbContext db)
 
     // Ana sayfadaki "Kullanıcıların tercih ettikleri" bandı için.
     //
-    // Sıralama GERÇEK kullanıcı davranışından geliyor, iki sinyalden:
-    //   1. Favori (yıldız) sayısı — doğrudan "bu ürünü takip ediyorum" beyanı,
-    //      en güçlü tercih sinyali, bu yüzden birincil kriter.
-    //   2. Mağazaya gitme tıklaması — favori kadar güçlü değil ama satın alma
-    //      niyeti taşıyor ve ÇOK daha geniş bir tabana yayılmış durumda.
+    // Sıralama markaların KENDİ sitelerindeki müşteri puanlarından geliyor —
+    // bizim favori sayacımızdan değil. İki kriter birlikte:
+    //   1. Eşik: yalnızca ortalaması yüksek ürünler (MinimumRatingValue).
+    //   2. Sıra: kaç kişinin puanladığı (çok puanlanan önce).
     //
-    // İkisinin birlikte kullanılmasının sebebi ölçek farkı: favori verisi
-    // henüz çok yeni (bugün tek haneli), tek başına kullanılsa band neredeyse
-    // boş kalırdı. Tıklama ise 500'ün üzerinde üründe var. Favori sayısı
-    // arttıkça birincil kriter doğal olarak öne geçiyor, bu metodu değiştirmeye
-    // gerek kalmıyor.
+    // Neden puan tek başına sıralamıyor: puanlar markalar arası KIYASLANABİLİR
+    // DEĞİL. Her marka farklı bir yorum sistemi kullanıyor ve yorum bırakma
+    // koşulları farklı; "3 yorumdan 5,0" ile "2114 yorumdan 4,89"u yan yana
+    // koyup ilkini üste almak yanıltıcı olurdu. Yorum sayısı ise ham bir
+    // büyüklük — kaç kişinin gerçekten deneyip görüş bildirdiğini gösteriyor.
     //
-    // Uydurma bir "popülerlik" skoru YOK — iki alan da gerçek sayaç.
+    // Puanı olmayan ürünler listeye hiç girmiyor: uydurma bir varsayılan
+    // puan üretmiyoruz. Şu an yalnızca yorum toplayan markalarda veri var.
     public async Task<IReadOnlyList<DealDto>> GetPreferredProductsAsync(
         int count, int referenceWindowDays = 30, CancellationToken cancellationToken = default)
     {
@@ -335,11 +343,12 @@ public partial class DealsQueryService(AppDbContext db)
             from p in db.Products
             join b in db.Brands on p.BrandId equals b.Id
             where b.IsActive
+                && p.RatingValue >= MinimumRatingValue
+                && p.RatingCount != null
             select new
             {
                 Product = p,
                 BrandName = b.Name,
-                FavoriteCount = db.ProductFavorites.Count(f => f.ProductId == p.Id),
                 Latest = p.PriceHistories.OrderByDescending(ph => ph.ScrapedAt).FirstOrDefault(),
                 ReferencePrice = p.PriceHistories
                     .Where(ph => ph.ScrapedAt >= referenceSince)
@@ -348,22 +357,67 @@ public partial class DealsQueryService(AppDbContext db)
                     .Where(ph => ph.ScrapedAt >= referenceSince)
                     .Min(ph => (decimal?)ph.Price),
             })
-            // Donmuş kayıtlar burada da gizleniyor: bandın amacı "şu an ilgi
-            // gören ürünler", artık takip edilmeyen bir ürünü öne çıkarmak
-            // yanıltıcı olurdu.
+            // Donmuş kayıtlar burada da gizleniyor: artık takip edilmeyen bir
+            // ürünü "öne çıkan" diye göstermek yanıltıcı olurdu.
             .Where(r => r.Latest != null && r.Latest.ScrapedAt >= staleSince)
-            .Where(r => r.FavoriteCount > 0 || r.Product.ClickCount > 0)
-            .OrderByDescending(r => r.FavoriteCount)
-            .ThenByDescending(r => r.Product.ClickCount)
-            .Take(count)
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
-        return rows
+        // Aşağıdaki şekillendirme bellekte yapılıyor: puanlı ürün sayısı
+        // küçük (birkaç yüz), ve gruplama/marka kotası SQL'de okunaksız
+        // pencere fonksiyonları gerektirirdi. Bu dosyada zaten kurulu olan
+        // "sorguyu materialize et, sonra şekillendir" kalıbı (bkz. DealRow
+        // yorumu) burada da geçerli.
+        var shaped = rows
             .Where(r => r.ReferencePrice != null && r.ThirtyDayLowPrice != null)
-            .Select(r => new DealRow(r.Product, r.BrandName, r.Latest!, r.ReferencePrice!.Value, r.ThirtyDayLowPrice!.Value))
-            .Select(MapToDealDto)
+            // Aynı ürünün boy/aroma varyantları markanın yorum havuzunu
+            // PAYLAŞIYOR: HIQ High Pro+'ın 300g/510g/900g/2Kg kayıtlarının
+            // dördü de "3022 yorum" gösteriyor. Hepsini basmak vitrini aynı
+            // ürünün dört kopyasıyla dolduruyordu. Marka + yorum sayısı ikilisi
+            // bu varyantları güvenilir biçimde grupluyor; her gruptan en ucuz
+            // olanı alıyoruz (ziyaretçi için en kullanışlı giriş noktası).
+            .GroupBy(r => (r.Product.BrandId, r.Product.RatingCount))
+            .Select(g => g.OrderBy(r => r.Latest!.Price).First())
+            .OrderByDescending(r => r.Product.RatingCount)
+            .ThenByDescending(r => r.Product.RatingValue)
             .ToList();
+
+        // Markalar arasında DÖNÜŞÜMLÜ seçim. Sıralı doldurma denendi ve
+        // yetmedi: yorum sayıları markalar arasında büyüklük olarak çok farklı
+        // (HIQ binlerce, Torq onlarca), bu yüzden listenin başı tamamen tek
+        // markadan oluşuyordu — band yatay bir şerit olduğu için ziyaretçi
+        // zaten yalnızca ilk birkaç kartı görüyor ve hepsi aynı markaydı.
+        //
+        // Dönüşümlü seçim, listenin HANGİ noktasından kesilirse kesilsin
+        // marka çeşitliliğini koruyor. Markalar kendi en çok yorumlanan
+        // ürünlerine göre sıraya giriyor, her turda her markadan bir ürün
+        // alınıyor. Bu bir gösterim kuralı — veriye dair bir iddia değil,
+        // her kart kendi puanını ve yorum sayısını olduğu gibi gösteriyor.
+        var byBrand = shaped
+            .GroupBy(r => r.Product.BrandId)
+            .Select(g => g.ToList())
+            .OrderByDescending(g => g[0].Product.RatingCount)
+            .ToList();
+
+        var selected = new List<DealRow>();
+        for (var round = 0; selected.Count < count; round++)
+        {
+            var addedThisRound = false;
+            foreach (var brandProducts in byBrand)
+            {
+                if (selected.Count >= count) break;
+                if (round >= brandProducts.Count) continue;
+
+                var r = brandProducts[round];
+                selected.Add(new DealRow(r.Product, r.BrandName, r.Latest!, r.ReferencePrice!.Value, r.ThirtyDayLowPrice!.Value));
+                addedThisRound = true;
+            }
+
+            // Bütün markaların ürünleri tükendi.
+            if (!addedThisRound) break;
+        }
+
+        return selected.Select(MapToDealDto).ToList();
     }
 
     // Marka karşılaştırma sayfaları (/karsilastir/x-vs-y) için — kategori

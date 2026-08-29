@@ -56,5 +56,22 @@ public class Product
     // aynı ürünleri sonsuza kadar tekrar denerdi.
     public DateTimeOffset? NutritionCheckedAt { get; set; }
 
+    // Markanın KENDİ sitesinde gösterdiği yıldız ortalaması ve kaç kişinin
+    // puanladığı. Bizim değerlendirmemiz değil, markanın müşterilerinin —
+    // arayüzde de bu şekilde etiketleniyor.
+    //
+    // Markalar arası kıyaslanabilir DEĞİL: her marka farklı bir yorum
+    // sistemi kullanıyor ve hepsinde yorum bırakma koşulu farklı. Bu yüzden
+    // sıralamada tek başına puan değil, yorum sayısıyla birlikte kullanılıyor.
+    // Yalnızca 4 markada veri var (HIQ, Torq, Yeşilmarka, Hardline);
+    // diğerleri yorum toplamıyor, onlarda null kalıyor.
+    public decimal? RatingValue { get; set; }
+    public int? RatingCount { get; set; }
+
+    // Puan zamanla DEĞİŞİYOR (açıklama ve besin değerinin aksine), bu yüzden
+    // "bir kez çekildi, bitti" damgası değil, tazeleme sırası belirleyen bir
+    // alan: en eski kontrol edilen ürünler önce yenileniyor.
+    public DateTimeOffset? RatingCheckedAt { get; set; }
+
     public ICollection<PriceHistory> PriceHistories { get; set; } = new List<PriceHistory>();
 }

@@ -105,6 +105,16 @@ public static class DependencyInjection
             client.Timeout = TimeSpan.FromSeconds(20);
         });
 
+        // Puan tazeleme, markaya özel bir scraper'a bağlı değil: tüm markalar
+        // puanı ürün sayfasında aynı schema.org alanlarıyla verdiği için tek
+        // bir genel istemci yetiyor (bkz. ProductRatingRefreshService).
+        services.AddHttpClient(ProductRatingRefreshService.RatingHttpClientName, client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(30);
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
+        });
+        services.AddScoped<ProductRatingRefreshService>();
+
         services.AddScoped<ScrapeIngestionService>();
         services.AddScoped<ProductDetailBackfillService>();
         services.AddScoped<DealsQueryService>();
@@ -113,6 +123,7 @@ public static class DependencyInjection
         services.AddScoped<ArticleService>();
         services.AddHostedService<ScrapingBackgroundService>();
         services.AddHostedService<DescriptionBackfillBackgroundService>();
+        services.AddHostedService<RatingRefreshBackgroundService>();
 
         services.AddHttpClient<IEmailSender, BrevoEmailSender>(client =>
         {

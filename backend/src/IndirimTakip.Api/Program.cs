@@ -658,6 +658,15 @@ app.MapPost("/api/dev/backfill-descriptions", async (ProductDetailBackfillServic
     return Results.Ok(new { updatedCount = updated });
 }).RequireAdminKey(adminApiKey);
 
+// Markaların sitelerindeki yıldız ortalamasını elle tazelemek için. Asıl
+// mekanizma RatingRefreshBackgroundService (6 saatte bir, en eski kontrol
+// edilenlerden başlayarak); bu uç ilk doldurma ve anlık kontrol için.
+app.MapPost("/api/dev/refresh-ratings", async (ProductRatingRefreshService ratings, int? max, CancellationToken ct) =>
+{
+    var updated = await ratings.RefreshAsync(max, ct);
+    return Results.Ok(new { updatedCount = updated });
+}).RequireAdminKey(adminApiKey);
+
 // Porsiyon (servis) büyüklüğü çıkarımı, açıklamalar DB'ye yazıldıktan SONRA
 // eklendi — bu endpoint, zaten kayıtlı açıklamaları yeniden okuyup eksik
 // ServingSizeGrams'ları tek seferde dolduruyor. Markalara hiç istek atmıyor

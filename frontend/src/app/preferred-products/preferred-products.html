@@ -12,7 +12,7 @@
     <div>
       <p class="pa-preferred-kicker"><i class="ph-fill ph-sparkle" aria-hidden="true"></i> Topluluk keşfi</p>
       <h2 id="preferred-products-title">Kullanıcıların tercih ettikleri</h2>
-      <p>Hedefine göre öne çıkan ürünleri keşfet.</p>
+      <p>Markaların kendi sitelerinde en çok değerlendirilen ve en beğenilen ürünler.</p>
     </div>
 
     <div class="pa-preferred-tabs" role="tablist" aria-label="Ürün hedefi">
@@ -53,6 +53,18 @@
           <span class="pa-preferred-copy">
             <small>{{ product.brandName }}</small>
             <strong>{{ displayName(product.productName) }}</strong>
+            @if (product.ratingValue !== null && product.ratingCount !== null) {
+              <!-- Markanın kendi sitesindeki müşteri puanı — bizim
+                   değerlendirmemiz değil, başlıkta da böyle belirtiliyor. -->
+              <span
+                class="pa-preferred-rating"
+                [title]="product.brandName + ' sitesindeki müşteri puanı: 5 üzerinden ' + (product.ratingValue | number: '1.1-2') + ', ' + product.ratingCount + ' değerlendirme'"
+              >
+                <i class="ph-fill ph-star" aria-hidden="true"></i>
+                <span>{{ product.ratingValue | number: '1.1-2' }}</span>
+                <small>({{ product.ratingCount }})</small>
+              </span>
+            }
             <span class="pa-preferred-price">{{ product.currentPrice | number: '1.2-2' }} ₺</span>
           </span>
 

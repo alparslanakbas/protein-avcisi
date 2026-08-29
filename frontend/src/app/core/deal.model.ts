@@ -28,6 +28,12 @@ export interface Deal {
   isAtThirtyDayLow: boolean;
   // Yalnızca tekil ürün ucundan gelir; listelerde donmuş kayıtlar zaten
   // gizlendiği için orada hep varsayılan değerdedir.
+  // Markanın KENDİ sitesindeki müşteri puanı — bizim değerlendirmemiz değil,
+  // arayüzde de öyle etiketleniyor. Yalnızca yorum toplayan markalarda dolu.
+  // Markalar arası kıyaslanabilir değil: her biri farklı bir yorum sistemi
+  // kullanıyor, bu yüzden sıralama puana değil yorum sayısına dayanıyor.
+  ratingValue: number | null;
+  ratingCount: number | null;
   isStale?: boolean;
   replacementProductId?: number | null;
 }

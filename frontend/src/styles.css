@@ -1823,6 +1823,30 @@ app-preferred-products {
   -webkit-line-clamp: 2;
 }
 
+/* Markanın kendi sitesindeki müşteri puanı. Fiyattan görsel olarak ayrı
+   duruyor (daha küçük, sönük) — bizim ölçtüğümüz bir değer değil. */
+.pa-preferred-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  color: var(--noc-neutral-300);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.pa-preferred-rating i {
+  color: #f2b93b;
+  font-size: 13px;
+}
+
+.pa-preferred-rating small {
+  color: var(--noc-neutral-500);
+  font-size: 11px;
+  font-weight: 500;
+}
+
 .pa-preferred-price {
   margin-top: auto;
   padding-top: 6px;

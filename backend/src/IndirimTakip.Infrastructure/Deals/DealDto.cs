@@ -48,4 +48,10 @@ public record DealDto(
     // Aynı marka + aynı isimli güncel kayıt. Marka çoğu zaman ürünü silmiyor,
     // yalnızca adresini değiştiriyor; bu durumda eski adres yeni kayda
     // yönlendirilmeli ki iki sayfa birbiriyle çakışmasın.
-    int? ReplacementProductId = null);
+    int? ReplacementProductId = null,
+    // Markanın KENDİ sitesindeki yıldız ortalaması ve puanlayan sayısı —
+    // bizim değerlendirmemiz değil. Arayüzde de bu şekilde etiketleniyor.
+    // Yalnızca yorum toplayan markalarda dolu; markalar arası kıyaslanabilir
+    // değil (her biri farklı bir yorum sistemi kullanıyor).
+    decimal? RatingValue = null,
+    int? RatingCount = null);
