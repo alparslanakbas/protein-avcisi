@@ -1,4 +1,14 @@
-www.proteinavcisi.com.tr, proteinavcisi.com.tr {
+# Kök domain kanonik adrese kalıcı olarak yönlendiriliyor.
+# Önceden ikisi de doğrudan frontend'e proxy'leniyordu; bu, server.ts'teki
+# "kanonik host dışı isteklere noindex" korumasının kök domaine de
+# uygulanmasına yol açıyordu — yani gerçek adresimiz arama motorlarına ve
+# AdSense tarayıcısına "Disallow: /" veriyordu. Yönlendirme, korumayı
+# yalnızca gerçekten yabancı hostlara bırakıyor.
+proteinavcisi.com.tr {
+	redir https://www.proteinavcisi.com.tr{uri} permanent
+}
+
+www.proteinavcisi.com.tr {
 	reverse_proxy frontend:4000
 }
 
