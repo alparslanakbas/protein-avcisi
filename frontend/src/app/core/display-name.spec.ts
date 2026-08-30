@@ -26,6 +26,14 @@ describe('displayName', () => {
 
   it('bağlaçları küçük bırakır', () => {
     expect(displayName('CREATINE VE BCAA PAKETİ')).toBe('Creatine ve BCAA Paketi');
+    expect(displayName('CREAM OF RICE')).toBe('Cream of Rice');
+  });
+
+  it('bağlaca benzeyen ama bağlaç olmayan kısa tokenları korur', () => {
+    // "VITAMIN A"nın "Vitamin a" olmaması için "a"/"in"/"on" bilinçli
+    // olarak bağlaç listesinde tutulmuyor.
+    expect(displayName('VITAMIN A')).toBe('Vitamin A');
+    expect(displayName('VITAMIN D3 K2')).toBe('Vitamin D3 K2');
   });
 
   it('zaten Title Case olan isimlerde değişiklik yapmaz (idempotent)', () => {

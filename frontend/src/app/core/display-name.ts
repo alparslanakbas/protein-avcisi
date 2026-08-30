@@ -36,7 +36,18 @@ const ACRONYMS = new Set([
   'NOX', 'PRE', 'ISO', 'GR', 'ML', 'KG', 'L', 'PLUS',
 ]);
 
-const LOWERCASE_WORDS = new Set(['ve', 'ile', 'ya', 'da', 'de']);
+// Başlık içinde küçük kalması gereken bağlaçlar. İngilizce olanlar
+// katalogda gerçekten geçtiği için eklendi ("CREAM OF RICE" → "Cream of
+// Rice"); "in", "on", "a" bilinçli olarak DIŞARIDA — "VITAMIN A"yı
+// "Vitamin a" yapar, "ON" ise bir marka kısaltması olabilir.
+//
+// Bu liste kelimenin konumuna bakmıyor: ürün adı bir bağlaçla başlarsa
+// küçük harfle başlar. Katalogda böyle bir ad yok (ölçüldü) ve Türkçe
+// bağlaçlarda da aynı davranış uzun süredir sorunsuz.
+const LOWERCASE_WORDS = new Set([
+  've', 'ile', 'ya', 'da', 'de',
+  'of', 'the', 'and', 'for', 'with',
+]);
 
 // Türkçe'ye özgü harf TAŞIMAYAN ama yine de Türkçe olan kelimeler —
 // tek ayırt edici işaretleri sondaki/içteki noktasız "ı". Bu liste
