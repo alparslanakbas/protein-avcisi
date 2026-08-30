@@ -18,13 +18,16 @@
         <div class="h-[220px] animate-pulse rounded-[18px] bg-[var(--noc-surface)] lg:h-[360px]"></div>
         <div class="h-[430px] animate-pulse rounded-[18px] bg-[var(--noc-surface)]"></div>
       </section>
-    } @else if (loadError()) {
-      <section class="mx-auto mt-9 max-w-[560px] rounded-[18px] border border-[var(--noc-divider)] bg-[var(--noc-surface)] px-8 py-9 text-center max-sm:px-5">
+    } @else if (loadError(); as err) {
+      <section class="mx-auto mt-9 max-w-[560px] rounded-[18px] border border-[var(--noc-divider)] bg-[var(--noc-surface)] px-8 py-9 text-center max-sm:px-5" role="status">
         <span class="mx-auto grid h-11 w-11 place-items-center rounded-[13px] bg-[color-mix(in_srgb,var(--noc-accent)_16%,transparent)] text-xl text-[var(--noc-accent)]" aria-hidden="true"><i class="ph ph-warning-circle"></i></span>
-        <p class="mt-5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--noc-neutral-500)]">Bağlantı sorunu</p>
-        <h2 class="mt-2 text-[21px] font-semibold tracking-[-0.02em]">Takip listen yüklenemedi</h2>
-        <p class="mt-2 text-[13px] leading-6 text-[var(--noc-neutral-500)]">Fiyat bilgilerine şu anda ulaşamıyoruz. Kısa bir süre sonra yeniden deneyebilirsin.</p>
+        <p class="mt-5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--noc-neutral-500)]">{{ err.label }}</p>
+        <h2 class="mt-2 text-[21px] font-semibold tracking-[-0.02em]">{{ err.title }}</h2>
+        <p class="mt-2 text-[13px] leading-6 text-[var(--noc-neutral-500)]">{{ err.message }}</p>
         <button type="button" class="pa-favorites-primary mx-auto" (click)="retryLoad()"><i class="ph ph-arrow-clockwise" aria-hidden="true"></i> Yeniden dene</button>
+        @if (err.code) {
+          <p class="mt-4 text-[10.5px] text-[var(--noc-neutral-500)] opacity-70">Sorun devam ederse bize şu kodu iletebilirsin: {{ err.code }}</p>
+        }
       </section>
     } @else if (!hasToken()) {
       <section class="mt-9 grid gap-4 md:grid-cols-2">
