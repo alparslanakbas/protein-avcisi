@@ -34,8 +34,14 @@ services:
       timeout: 5s
       retries: 5
       start_period: 20s
+    # DİKKAT: Postgres 18 imajı veri dizini kuralını değiştirdi. Eskiden
+    # /var/lib/postgresql/data bağlanırdı; 18+ sürümde veri sürüme özel bir
+    # alt dizine (/var/lib/postgresql/18/docker) yazılıyor ve mount bir üst
+    # seviyeye yapılmalı. Eski yol bağlanırsa konteyner "yanlış yerde veri
+    # var" deyip hiç açılmıyor. Bu kural pg_upgrade'in mount sınırına
+    # takılmadan çalışabilmesi için konuldu.
     volumes:
-      - pg_data:/var/lib/postgresql/data
+      - pg_data:/var/lib/postgresql
 
   backend:
     build: ./backend
