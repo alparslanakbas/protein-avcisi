@@ -399,7 +399,7 @@ export class DealsList implements OnInit {
     // pageSize:1 — sadece toplam sayıyı okumak için, tüm ürünleri çekmeye gerek yok.
     this.dealsService.getAllProducts({ pageSize: 1 }).subscribe((result) => this.siteProductCount.set(result.totalCount));
     this.dealsService.getStats().subscribe((stats) => this.stats.set(stats));
-    this.favoritesService.list().subscribe();
+    this.favoritesService.ensureCount();
     this.articlesService.getArticles().subscribe((articles) => this.articles.set(articles.slice(0, 3)));
     this.loadHeroDeal();
     // İlk yükleme bilinçli olarak BURADA DEĞİL, aşağıdaki queryParamMap

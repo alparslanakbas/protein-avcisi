@@ -91,7 +91,7 @@ export class SiteHeader implements OnInit {
         })),
       );
     });
-    this.favoritesService.list().subscribe();
+    this.favoritesService.ensureCount();
   }
 
   protected toggleCategories(): void {

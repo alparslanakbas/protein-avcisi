@@ -1,6 +1,6 @@
 import { DecimalPipe, isPlatformBrowser } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnInit, PLATFORM_ID, computed, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, PLATFORM_ID, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Meta } from '@angular/platform-browser';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -17,13 +17,17 @@ import { formatRelativeTime } from '../core/relative-time';
 import { ProductModal } from '../product-modal/product-modal';
 import { SiteHeader } from '../site-header/site-header';
 
+// Hız sınırına takılınca kaç kez sessizce tekrar denenecek. İkiden fazlası
+// anlamsız: sorun geçici değilse kullanıcıya durumu göstermek daha dürüst.
+const MAX_AUTO_RETRY = 2;
+
 @Component({
   selector: 'app-favorites-page',
   imports: [DecimalPipe, RouterLink, ProductModal, SiteHeader, FormsModule],
   templateUrl: './favorites-page.html',
   styleUrl: './favorites-page.css',
 })
-export class FavoritesPage implements OnInit {
+export class FavoritesPage implements OnInit, OnDestroy {
   protected readonly displayName = displayName;
   private readonly favoritesService = inject(FavoritesService);
   private readonly router = inject(Router);
@@ -33,6 +37,9 @@ export class FavoritesPage implements OnInit {
   private readonly priceHistoryService = inject(PriceHistoryService);
   private readonly dealsService = inject(DealsService);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+
+  private autoRetryCount = 0;
+  private retryTimer: ReturnType<typeof setTimeout> | null = null;
 
   protected readonly favorites = signal<Deal[]>([]);
   protected readonly loading = signal(true);
@@ -129,6 +136,7 @@ export class FavoritesPage implements OnInit {
         this.favorites.set(deals);
         this.loadError.set(false);
         this.loading.set(false);
+        this.autoRetryCount = 0;
       },
       error: (error: unknown) => {
         if (error instanceof HttpErrorResponse && error.status === 404) {
@@ -141,6 +149,24 @@ export class FavoritesPage implements OnInit {
           this.loading.set(false);
           return;
         }
+
+        // 429 = hız sınırı (Cloudflare). Kalıcı bir arıza DEĞİL, birkaç
+        // saniye içinde kendiliğinden geçiyor; "Bağlantı sorunu" ekranı
+        // göstermek yanıltıcı olurdu. Yükleniyor durumunda kalıp kısa bir
+        // süre sonra sessizce tekrar deniyoruz.
+        //
+        // Retry-After başlığı çapraz kökenli yanıtta JS'ye açık olmayabilir
+        // (Access-Control-Expose-Headers'a bağlı), bu yüzden okunamazsa
+        // gözlenen değere (10 sn) düşülüyor.
+        if (error instanceof HttpErrorResponse && error.status === 429 && this.autoRetryCount < MAX_AUTO_RETRY) {
+          this.autoRetryCount++;
+          const retryAfter = Number(error.headers?.get('Retry-After'));
+          const waitMs = (Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : 10) * 1000;
+          this.clearRetryTimer();
+          this.retryTimer = setTimeout(() => this.loadFavorites(), waitMs);
+          return;
+        }
+
         this.loadError.set(true);
         this.loading.set(false);
       },
@@ -148,7 +174,23 @@ export class FavoritesPage implements OnInit {
   }
 
   protected retryLoad(): void {
+    // Kullanıcı bilinçli olarak bastıysa otomatik tekrar hakkı sıfırlanıyor.
+    this.autoRetryCount = 0;
+    this.clearRetryTimer();
     this.loadFavorites();
+  }
+
+  private clearRetryTimer(): void {
+    if (this.retryTimer !== null) {
+      clearTimeout(this.retryTimer);
+      this.retryTimer = null;
+    }
+  }
+
+  // Sayfadan ayrılınca bekleyen tekrar denemesi iptal ediliyor; yoksa
+  // kullanıcı başka bir sayfadayken gereksiz bir istek gidiyor.
+  ngOnDestroy(): void {
+    this.clearRetryTimer();
   }
 
   // Listeyi yalnızca bu tarayıcıdan ayırır — sunucudaki favoriler duruyor,

@@ -40,6 +40,9 @@ export class FavoritesService {
   signOut(): void {
     if (this.isBrowser) localStorage.removeItem(TOKEN_KEY);
     this.count.set(0);
+    // Bayrak da sıfırlanmalı: kullanıcı listesini kurtarma bağlantısıyla geri
+    // aldığında sayacın yeniden çekilebilmesi gerekiyor.
+    this.countLoaded = false;
   }
 
   saveToken(token: string | null): void {
@@ -89,7 +92,44 @@ export class FavoritesService {
     return this.http.post<{ message: string }>(`${API_BASE_URL}/api/favorites/recover`, { email });
   }
 
+  // Rozeti gösteren üç bileşen (site-header, mobile-tab-bar ve ana sayfadaki
+  // deals-list) daha önce HER BİRİ ayrı ayrı list() çağırıyordu. Sayaç servis
+  // seviyesinde paylaşılıyordu ama İSTEK paylaşılmıyordu: tek bir sayfa
+  // açılışında üç istek gidiyor, birkaç gezinme + bir favori eklemede on
+  // isteği geçiyor ve Cloudflare'in hız sınırı 429 döndürüyordu. Kullanıcıya
+  // bu "Bağlantı sorunu / Takip listen yüklenemedi" ekranı olarak yansıyor,
+  // Retry-After 10 saniye olduğu için de "bir geliyor bir gelmiyor" şeklinde
+  // görünüyordu.
+  //
+  // Artık sayaç uygulama başına bir kez çekiliyor.
+  private countLoaded = false;
+
+  ensureCount(): void {
+    // Sunucuda token okunamıyor (localStorage yok); SSR'da istek atmanın
+    // anlamı yok.
+    if (!this.isBrowser) return;
+
+    if (!this.getToken()) {
+      this.count.set(0);
+      return;
+    }
+
+    if (this.countLoaded) return;
+
+    // Bayrak subscribe'dan ÖNCE, senkron olarak set ediliyor. Üç bileşenin
+    // ngOnInit'i aynı tick içinde çalışıyor; sonraya bırakılsaydı üçü de
+    // "henüz yüklenmedi" görüp yine üç istek atardı.
+    this.countLoaded = true;
+    this.list().subscribe({
+      // Başarısızsa bayrağı geri al ki bir sonraki gezinmede tekrar denensin.
+      error: () => {
+        this.countLoaded = false;
+      },
+    });
+  }
+
   private refreshCount(): void {
-    this.list().subscribe();
+    this.countLoaded = false;
+    this.ensureCount();
   }
 }

@@ -20,6 +20,6 @@ export class MobileTabBar implements OnInit {
   protected readonly favoritesCount = this.favoritesService.count;
 
   ngOnInit(): void {
-    this.favoritesService.list().subscribe();
+    this.favoritesService.ensureCount();
   }
 }
