@@ -6,17 +6,30 @@
 // JSON-LD name) kullanılıyor — URL slug'ı hâlâ orijinal productName'den
 // (slugify ile) üretiliyor, burası hiç etkilemiyor.
 //
-// tr-TR locale'i bilinçli kullanılıyor (toLocaleUpperCase/LowerCase) —
-// düz .toUpperCase()/.toLowerCase() İngilizce kurallarla çalışıp "İ"/"I"
-// harflerini yanlış eşler (backend'de ProductAttributeParser'da daha önce
-// yaşanan aynı sınıf hata, bkz. CLAUDE.md "tr-TR ToLower bug'ı"). AMA ürün
-// isimleri Türkçe VE İngilizce kelimeleri karışık taşıyor ("Tanışma Paketi"
-// yanında "Creatine", "Isolate", "Whey" gibi İngilizce teknik terimler) —
-// tr-TR kuralı İngilizce bir kelimedeki büyük "I" harfini "ı"ya çevirip
-// "CREATINE"yi "creatıne" yapardı (yanlış). Bunun için bilinen İngilizce
-// teknik terimler ayrı bir listede tutulup onlar için düz (locale
-// bağımsız) küçültme/büyütme kullanılıyor — geri kalan (varsayılan Türkçe)
-// kelimeler tr-TR kuralıyla işleniyor.
+// HANGİ KELİMEYE HANGİ KÜLTÜR KURALI UYGULANIR
+//
+// Türkçe'de büyük "I" küçülünce noktasız "ı" olur; İngilizce'de "i". Ürün
+// isimleri iki dili karışık taşıdığı için tek bir kural her ikisini birden
+// doğru veremiyor. Sorun, hangisinin VARSAYILAN olacağı.
+//
+// Önce tr-TR varsayılandı ve İngilizce terimler bir istisna listesinde
+// tutuluyordu. Katalog büyüdükçe liste geride kaldı: canlıdaki 1748 sayfa
+// ölçüldüğünde ~200 sayfada "Proteın", "Bıgwhey", "Hyaluronıc Acıd",
+// "Magnesıum", "Vıtamın" gibi bozuk yazımlar çıktı. Bunlar kozmetik
+// değildi — "protein bar" arayan birinin sorgusu "Proteın" ile
+// eşleşmiyor ve aynı metin schema.org `name` alanına da gidiyor.
+//
+// Bu yüzden varsayılan TERS ÇEVRİLDİ: kelimede Türkçe'ye özgü bir harf
+// (ç ğ ö ş ü İ) yoksa İngilizce varsayılıp kültürden bağımsız küçültme
+// yapılıyor. Ölçüm bunun neden doğru taraf olduğunu gösteriyor —
+// katalogdaki 98 riskli kelimenin 90'ı İngilizce, yalnızca 8'i Türkçe.
+// İngilizce terim çeşitliliği her yeni ürünle büyüyor; Türkçe'de "I"
+// içeren kelime havuzu ise küçük ve sabit, o yüzden istisna listesini
+// taşıması gereken taraf o.
+//
+// Yan fayda: markaların "EKONOMIK", "MIKRONIZE", "KREATIN" gibi noktalı
+// İ yerine I yazdığı kelimeler de artık doğru çıkıyor ("Ekonomik"),
+// eskiden "Ekonomık" oluyordu.
 
 const ACRONYMS = new Set([
   'HIQ', 'SSN', 'BCAA', 'EAA', 'WPC', 'WPI', 'WPH', 'CLA', 'ZMA', 'GI',
@@ -25,17 +38,22 @@ const ACRONYMS = new Set([
 
 const LOWERCASE_WORDS = new Set(['ve', 'ile', 'ya', 'da', 'de']);
 
-// Sık geçen İngilizce takviye terimleri — "I" harfi tr-TR kuralıyla yanlış
-// (ı yerine i olması gerekirken) küçülen kelimeler. Liste tam kapsayıcı
-// olmak zorunda değil (amaç mükemmel dilbilgisi değil, ALL CAPS'tan
-// kurtulmak) — yeni bir kelime bu listede yoksa tr-TR'ye düşer, en kötü
-// ihtimalle "Creatıne" gibi kozmetik bir sapma olur, anlam bozulmaz.
-const ENGLISH_TERMS = new Set([
-  'CREATINE', 'ISOLATE', 'WHEY', 'FUSION', 'GAINER', 'MATRIX', 'COMPLEX',
-  'MICRONIZED', 'HYDROLYZED', 'CONCENTRATE', 'GLUTAMINE', 'ARGININE',
-  'CITRULLINE', 'TAURINE', 'CARNITINE', 'CAFFEINE', 'NIACIN', 'MIX',
-  'CROSSFIT', 'FIT', 'FITNESS',
+// Türkçe'ye özgü harf TAŞIMAYAN ama yine de Türkçe olan kelimeler —
+// tek ayırt edici işaretleri sondaki/içteki noktasız "ı". Bu liste
+// katalogdaki 1005 ürün adı taranarak çıkarıldı, tahminle değil: ALL-CAPS
+// gelen, "I" içeren ve Türkçe harf taşımayan 98 kelimeden Türkçe olanlar
+// bunlar. Yeni bir marka eklendiğinde listeye eklenmesi gerekebilir; eksik
+// kalırsa hata sınırlı ve görünür olur ("Aromali" gibi), sessizce yanlış
+// bir dile kaymaz.
+const TURKISH_ONLY_WORDS = new Set([
+  'YAPILANMASI', 'YIL', 'BAHARATI', 'FISTIK', 'AROMALI', 'FINDIK',
+  'SARIMSAK', 'KREMASI',
 ]);
+
+// Türkçe'ye özgü harfler. Biri bile geçiyorsa kelime Türkçe'dir ve
+// tr-TR kuralı uygulanır. ("ı" büyük halde "I" olduğu için burada yok —
+// zaten ALL-CAPS kelimelerde görünmez.)
+const TURKISH_LETTERS = /[ÇĞİÖŞÜ]/;
 
 function formatWord(word: string): string {
   const upper = word.toLocaleUpperCase('tr-TR');
@@ -45,8 +63,8 @@ function formatWord(word: string): string {
   // gereksiz yere değiştirmez.
   if (word !== upper) return word;
 
-  const isEnglish = ENGLISH_TERMS.has(upper);
-  const lower = isEnglish ? word.toLowerCase() : word.toLocaleLowerCase('tr-TR');
+  const isTurkish = TURKISH_LETTERS.test(upper) || TURKISH_ONLY_WORDS.has(upper);
+  const lower = isTurkish ? word.toLocaleLowerCase('tr-TR') : word.toLowerCase();
 
   if (LOWERCASE_WORDS.has(lower)) return lower;
   if (ACRONYMS.has(upper)) return upper;
@@ -56,7 +74,7 @@ function formatWord(word: string): string {
   // olduğu gibi bırakıyoruz.
   if (word.length <= 2) return word;
 
-  const firstUpper = isEnglish ? lower.charAt(0).toUpperCase() : lower.charAt(0).toLocaleUpperCase('tr-TR');
+  const firstUpper = isTurkish ? lower.charAt(0).toLocaleUpperCase('tr-TR') : lower.charAt(0).toUpperCase();
   return firstUpper + lower.slice(1);
 }
 
