@@ -150,6 +150,20 @@ export function buildProductFacts(deal: Deal, discountEventCount?: number): Prod
     facts.push({ label: 'Aroma', value: deal.flavor });
   }
 
+  // Yalnızca stok bilgisi VEREN kaynaklarda gösteriliyor. `=== false`
+  // kontrolü zorunlu: null "bu marka stok bilgisi vermiyor" demek, "stokta
+  // yok" değil. Sekiz kaynaktan üçü bu bilgiyi veriyor.
+  //
+  // Stokta olmayan ürün listeden çıkarılmıyor — fiyat geçmişi kesintisiz
+  // kalsın diye taranmaya devam ediyor — ama kullanıcı boşuna mağazaya
+  // gitmesin diye burada da açıkça söyleniyor.
+  if (deal.inStock === false) {
+    facts.push({
+      label: 'Stok durumu',
+      value: `Son kontrolümüzde ${deal.brandName} sitesinde tükenmişti. Fiyatını izlemeye devam ediyoruz.`,
+    });
+  }
+
   return facts;
 }
 

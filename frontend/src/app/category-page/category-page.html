@@ -132,6 +132,9 @@
                   </td>
                   <td class="px-[16.8px] py-[11.2px] text-[var(--noc-neutral-500)]">
                     {{ deal.size }}{{ deal.size && deal.flavor ? ' · ' : '' }}{{ deal.flavor }}
+                    @if (deal.inStock === false) {
+                      <span class="pa-outofstock-badge">Tükendi</span>
+                    }
                   </td>
                   <td class="px-[16.8px] py-[11.2px] text-right">
                     <div class="font-medium">{{ deal.currentPrice | number: '1.2-2' }} ₺</div>

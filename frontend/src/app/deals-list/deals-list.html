@@ -221,6 +221,9 @@
                 } @else if (deal.storeDiscountPercent && deal.storeDiscountPercent > 0) {
                   <span class="pa-campaign-badge">{{ storeDiscountBadge(deal) }} mağaza kampanyası</span>
                 }
+                @if (deal.inStock === false) {
+                  <span class="pa-outofstock-badge">Tükendi</span>
+                }
                 <a [routerLink]="productPath(deal)" queryParamsHandling="preserve" class="mt-2 block w-full text-left">
                   <h2 [title]="displayName(deal.productName)" class="line-clamp-2 text-[16px] font-semibold leading-tight tracking-[-0.012em]">{{ displayName(deal.productName) }}</h2>
                   <p class="mt-1 text-xs text-[var(--noc-neutral-500)]">{{ deal.brandName }}{{ deal.size ? ' · ' + deal.size : '' }}{{ deal.flavor ? ' · ' + deal.flavor : '' }}</p>

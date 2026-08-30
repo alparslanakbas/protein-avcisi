@@ -6,6 +6,13 @@ export interface Deal {
   category: string | null;
   size: string | null;
   flavor: string | null;
+  // Son taramada mağazada satın alınabilir miydi?
+  //
+  // null = "bu kaynak stok bilgisi vermiyor", false ile KARIŞTIRILMAMALI.
+  // Sekiz kaynaktan üçü (HIQ, ProteinOcean, Yeşilmarka) bu bilgiyi veriyor;
+  // diğerlerinde hiçbir rozet gösterilmemeli. Bilinmeyeni "stokta var"
+  // saymak uydurma veri olurdu.
+  inStock: boolean | null;
   servingSizeGrams: number | null;
   // Paketten kaç servis çıktığı — markanın doğrudan beyanı (şimdilik
   // yalnızca ProteinOcean; o markada paket gramajı hiç gelmiyor).

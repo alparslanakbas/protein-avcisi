@@ -251,6 +251,10 @@
                 <span class="text-xs text-[var(--noc-neutral-500)]">{{ deal.size }}{{ deal.size && deal.flavor ? ' · ' : '' }}{{ deal.flavor }}</span>
               }
 
+              @if (deal.inStock === false) {
+                <span class="pa-outofstock-badge">Tükendi</span>
+              }
+
               <app-product-card-sparkline [points]="sparklineFor(deal.productId)" />
 
               <div class="mt-auto flex items-end justify-between gap-2 pt-1">

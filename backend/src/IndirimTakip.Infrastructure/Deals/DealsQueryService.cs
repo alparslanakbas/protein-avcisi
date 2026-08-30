@@ -66,7 +66,8 @@ public partial class DealsQueryService(AppDbContext db)
             IsStale: false,
             ReplacementProductId: null,
             RatingValue: row.Product.RatingValue,
-            RatingCount: row.Product.RatingCount);
+            RatingCount: row.Product.RatingCount,
+            InStock: row.Product.InStock);
     }
 
     public async Task<PagedResult<DealDto>> GetDealsAsync(

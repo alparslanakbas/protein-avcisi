@@ -132,6 +132,7 @@ public class ScrapeIngestionService(
                     Category = category,
                     Size = size,
                     Flavor = flavor,
+                    InStock = scraped.InStock,
                     // Porsiyon: önce scraper'ın yapısal olarak verdiği değer
                     // (HIQ'nun besin tablosu — en güvenilir kaynak), o yoksa
                     // markanın açıklama metninden çıkarım.
@@ -169,7 +170,13 @@ public class ScrapeIngestionService(
                     || product.Category != category
                     || product.Size != size
                     || (scraped.Description is not null && product.Description != scraped.Description)
-                    || (scraped.NutritionJson is not null && product.NutritionJson != scraped.NutritionJson);
+                    || (scraped.NutritionJson is not null && product.NutritionJson != scraped.NutritionJson)
+                    // Stok durumu değişimi de gerçek bir içerik değişimi:
+                    // sayfada "Tükendi" rozeti belirip kayboluyor. Bu, her
+                    // taramada tüm katalogu "değişti" işaretleyen eski
+                    // davranıştan farklı — ürün başına nadir gerçekleşiyor,
+                    // dolayısıyla lastmod sinyalini bozmuyor.
+                    || product.InStock != scraped.InStock;
 
                 if (meaningfulChange)
                     product.ContentUpdatedAt = DateTimeOffset.UtcNow;
@@ -179,6 +186,7 @@ public class ScrapeIngestionService(
                 product.Category = category;
                 product.Size = size;
                 product.Flavor = flavor;
+                product.InStock = scraped.InStock;
                 // Açıklamayı henüz çekmeyen scraper'lar (SSN/Hardline) scraped.Description
                 // hiç göndermiyor — bu durumda var olan değeri SIFIRLAMIYORUZ. Açıklama
                 // çeken markalarda (HIQ) ise her taramada güncel tutuluyor.

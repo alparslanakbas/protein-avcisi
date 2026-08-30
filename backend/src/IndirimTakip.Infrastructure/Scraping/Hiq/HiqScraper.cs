@@ -32,9 +32,18 @@ public partial class HiqScraper(HttpClient httpClient) : IBrandScraper
 
             foreach (var product in response.Products)
             {
-                var variant = product.Variants.Find(v => v.Available);
+                // Stokta olan varyant varsa o, yoksa ilki. Ürün artık taramadan
+                // DÜŞMÜYOR: eskiden hiçbir varyant stokta değilse ürün komple
+                // atlanıyordu ve fiyat geçmişinde günlerce boşluk oluşuyordu.
+                // Stok geri geldiğinde seri kopuk kalıyor, bu da sitenin
+                // "kesintisiz gerçek fiyat geçmişi" iddiasını zayıflatıyordu.
+                // (HIQ Creatine Creapure 250g'de gerçekten yaşandı: 27
+                // Ağustos'ta stok bitti, kayıt o tarihte dondu.)
+                var variant = product.Variants.Find(v => v.Available) ?? product.Variants.FirstOrDefault();
                 if (variant is null)
                     continue;
+
+                var inStock = product.Variants.Any(v => v.Available);
 
                 // Site kapsamı spor takviyesi/protein — HIQ mağazasında tişört/
                 // hoodie ("type:wearable") ve shaker/ekipman ("type:equipment")
@@ -59,7 +68,8 @@ public partial class HiqScraper(HttpClient httpClient) : IBrandScraper
                     StoreOldPrice: variant.CompareAtPrice > variant.Price ? variant.CompareAtPrice : null,
                     Description: ExtractDescription(product.BodyHtml),
                     NutritionJson: nutritionJson,
-                    ProteinPerServingGrams: NutritionParser.ExtractProteinGrams(nutritionJson)));
+                    ProteinPerServingGrams: NutritionParser.ExtractProteinGrams(nutritionJson),
+                    InStock: inStock));
             }
 
             if (response.Products.Count < 250)

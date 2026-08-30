@@ -103,6 +103,11 @@ public class YesilmarkaScraper(HttpClient httpClient) : IBrandScraper
                 if (price <= 0)
                     continue;
 
+                // Stok bilgisi kaynakta var, o yüzden kaydediliyor: ürün stokta
+                // değilken de taranmaya devam ediyor (fiyat geçmişi kesintisiz
+                // kalsın diye) ama arayüzde "Tükendi" rozetiyle gösteriliyor.
+                var inStock = product.Variants.Any(v => v.Stocks.Sum(s => s.StockCount) > 0);
+
                 var image = variant.Images.Find(i => i.IsMain) ?? variant.Images.FirstOrDefault();
 
                 products.Add(new ScrapedProduct(
@@ -112,7 +117,8 @@ public class YesilmarkaScraper(HttpClient httpClient) : IBrandScraper
                         ? null
                         : $"https://cdn.myikas.com/images/{MerchantId}/{image.Id}/1080/{image.FileName}.webp",
                     Category: null,
-                    Price: price));
+                    Price: price,
+                    InStock: inStock));
             }
 
             receivedCount += results.Count;

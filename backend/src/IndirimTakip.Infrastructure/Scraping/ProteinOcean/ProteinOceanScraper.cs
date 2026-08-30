@@ -83,6 +83,11 @@ public partial class ProteinOceanScraper(HttpClient httpClient) : IBrandScraper,
                 if (NonSupplementProductFilter.IsAccessoryOrApparel(product.Name))
                     continue;
 
+                // Stok bilgisi kaynakta var, o yüzden kaydediliyor: ürün stokta
+                // değilken de taranmaya devam ediyor (fiyat geçmişi kesintisiz
+                // kalsın diye) ama arayüzde "Tükendi" rozetiyle gösteriliyor.
+                var inStock = product.Variants.Any(v => v.Stocks.Sum(s => s.StockCount) > 0);
+
                 var image = variant.Images.Find(i => i.IsMain) ?? variant.Images.FirstOrDefault();
 
                 products.Add(new ScrapedProduct(
@@ -93,7 +98,8 @@ public partial class ProteinOceanScraper(HttpClient httpClient) : IBrandScraper,
                         : $"https://cdn.myikas.com/images/{MerchantId}/{image.Id}/1080/{image.FileName}.webp",
                     Category: null,
                     Price: variant.Prices[0].SellPrice,
-                    ServingsPerPackage: ExtractServingsPerPackage(variant)));
+                    ServingsPerPackage: ExtractServingsPerPackage(variant),
+                    InStock: inStock));
             }
 
             receivedCount += results.Count;

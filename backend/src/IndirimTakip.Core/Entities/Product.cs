@@ -12,6 +12,16 @@ public class Product
     public string? Category { get; set; }
     public string? Size { get; set; }
     public string? Flavor { get; set; }
+
+    // Son taramada mağazada satın alınabilir miydi?
+    //
+    // NULL = "bu kaynak stok bilgisi vermiyor" demek, "stokta yok" DEĞİL.
+    // Sekiz kaynaktan üçü (HIQ, ProteinOcean, Yeşilmarka) bu bilgiyi
+    // veriyor; diğerlerinde alan boş kalır ve arayüzde hiçbir rozet
+    // gösterilmez. Üç durumlu olması bilinçli: bilinmeyeni "stokta var"
+    // saymak uydurma veri olurdu.
+    public bool? InStock { get; set; }
+
     public int ClickCount { get; set; }
 
     // Ürün sayfasındaki "Bu bilgi faydalı mıydı?" oyu — basit bir güven

@@ -2061,7 +2061,8 @@ app-preferred-products {
 }
 
 .pa-positive-badge,
-.pa-campaign-badge {
+.pa-campaign-badge,
+.pa-outofstock-badge {
   display: inline-flex;
   align-items: center;
   border-radius: 999px;
@@ -2075,6 +2076,16 @@ app-preferred-products {
   border: 1px solid color-mix(in srgb, var(--pa-positive) 30%, transparent);
   background: var(--pa-positive-bg);
   color: var(--pa-positive);
+}
+
+/* "Tükendi" rozeti bilinçli olarak NÖTR: ne olumlu (yeşil) ne kampanya
+   (kehribar). Ürün listelerden çıkarılmıyor — fiyat geçmişi kesintisiz
+   kalsın diye taranmaya devam ediyor — ama kullanıcı boşuna mağazaya
+   gitmesin diye açıkça işaretleniyor. */
+.pa-outofstock-badge {
+  border: 1px solid var(--noc-divider);
+  background: color-mix(in srgb, var(--noc-neutral-500) 12%, transparent);
+  color: var(--noc-neutral-500);
 }
 
 .pa-campaign-badge {

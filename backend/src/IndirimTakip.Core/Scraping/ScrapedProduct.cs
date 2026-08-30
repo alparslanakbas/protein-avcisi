@@ -33,4 +33,17 @@ public record ScrapedProduct(
     // kaynakta (bir bayi kataloğu) her ürün kendi markasını taşıyor: ürün
     // "Supplementler" değil "Optimum Nutrition" markası altında görünmeli,
     // mağaza bağlantısı ise ürünün satıldığı yere gitmeli.
-    string? BrandName = null);
+    string? BrandName = null,
+    // Ürün şu anda mağazada satın alınabilir mi?
+    //
+    // NULL = "bilmiyoruz" ve false ile KARIŞTIRILMAMALI. Sekiz kaynaktan
+    // yalnızca üçü (HIQ, ProteinOcean, Yeşilmarka) stok bilgisi veriyor;
+    // diğerlerinde alan boş bırakılır ve kullanıcıya hiçbir rozet
+    // gösterilmez. Bilinmeyeni "stokta var" saymak uydurma veriyle aynı
+    // kapıya çıkardı.
+    //
+    // Stokta olmayan ürün artık taramadan DÜŞMÜYOR. HIQ'da düşüyordu ve
+    // ürünün fiyat geçmişinde günlerce boşluk oluşuyordu; stok geri
+    // geldiğinde seri kopuk kalıyordu. Sitenin iddiası kesintisiz gerçek
+    // fiyat geçmişi olduğu için bu boşluk doğrudan o iddiayı zayıflatıyordu.
+    bool? InStock = null);

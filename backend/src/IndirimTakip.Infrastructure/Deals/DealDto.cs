@@ -54,4 +54,12 @@ public record DealDto(
     // Yalnızca yorum toplayan markalarda dolu; markalar arası kıyaslanabilir
     // değil (her biri farklı bir yorum sistemi kullanıyor).
     decimal? RatingValue = null,
-    int? RatingCount = null);
+    int? RatingCount = null,
+    // Son taramada mağazada satın alınabilir miydi?
+    //
+    // NULL = "bu kaynak stok bilgisi vermiyor", false ile karıştırılmamalı.
+    // Sekiz kaynaktan üçü bu bilgiyi veriyor; diğerlerinde arayüz hiçbir
+    // rozet göstermiyor. Stokta olmayan ürün listelerden ÇIKARILMIYOR:
+    // fiyat geçmişi kesintisiz kalsın diye taranmaya devam ediyor ve
+    // "Tükendi" rozetiyle gösteriliyor.
+    bool? InStock = null);
