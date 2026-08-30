@@ -9,7 +9,7 @@
         <p class="mt-4 max-w-xl text-base leading-7 text-[var(--noc-neutral-300)]">Kaydettiğin ürünlerdeki güncel fiyat sinyalleri.</p>
       </div>
       @if (!loading() && hasToken() && favorites().length > 0) {
-        <span class="inline-flex items-center gap-2 rounded-full border border-[#35cc848c] px-3 py-2 text-[11px] font-semibold text-[#45d491]"><i class="ph ph-broadcast" aria-hidden="true"></i> {{ opportunityCount() }} üründe fiyat sinyali</span>
+        <span class="inline-flex items-center gap-2 rounded-full border border-[color-mix(in_srgb,var(--pa-positive)_45%,transparent)] px-3 py-2 text-[11px] font-semibold text-[var(--pa-positive)]"><i class="ph ph-broadcast" aria-hidden="true"></i> {{ opportunityCount() }} üründe fiyat sinyali</span>
       }
     </header>
 

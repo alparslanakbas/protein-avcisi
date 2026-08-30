@@ -61,9 +61,18 @@ export class FavoritesPage implements OnInit {
   protected readonly recoverStatusMessage = signal<string | null>(null);
 
   ngOnInit(): void {
+    // Başlık ve açıklama "Takip listem" demeli: sayfanın h1'i, üst menü,
+    // footer ve mobil sekme çubuğu bu adı kullanıyor. Tasarım turunda kavram
+    // yeniden adlandırıldı ama meta tarafı "Favorilerim"de kalmıştı — arama
+    // sonucunda kullanıcının sitede gördüğünden başka bir isim çıkıyordu.
+    //
+    // ADRES bilinçli olarak /favorilerim kalıyor: dışarıda verilmiş
+    // bağlantılar ve e-postadaki kurtarma linki bu adrese işaret ediyor,
+    // değiştirmenin SEO/kullanıcı tarafında hiçbir karşılığı yok (sayfa
+    // zaten noindex).
     this.pageMeta.set({
-      title: 'Favorilerim | ProteinAvcısı',
-      description: 'Favorilerine eklediğin ürünlerin güncel fiyatlarını buradan takip et.',
+      title: 'Takip listem | ProteinAvcısı',
+      description: 'Takip listene eklediğin ürünlerin güncel fiyatlarını ve fiyat düşüşlerini buradan izle.',
       canonicalPath: '/favorilerim',
     });
     // Kişiye özel içerik (localStorage token'ına bağlı) — arama motoru
