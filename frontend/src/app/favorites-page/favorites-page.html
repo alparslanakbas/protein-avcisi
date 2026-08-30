@@ -1,111 +1,140 @@
 <div class="noc-shell min-h-screen bg-[var(--noc-bg)] text-[var(--noc-text)]">
   <app-site-header />
 
-  <main class="mx-auto max-w-[1280px] px-[28px] py-[22px]">
-    <h1 class="text-[38px] font-medium tracking-[-0.03em] sm:text-[42px]">Takip listem</h1>
-    <p class="mt-2 max-w-xl text-[15px] text-[var(--noc-neutral-300)]">
-      Ürün sayfasındaki "Favorilere Ekle" ile kaydettiğin ürünlerin güncel fiyatları burada.
-    </p>
+  <main class="mx-auto max-w-[1228px] px-6 py-[66px] max-sm:py-[46px]">
+    <header class="flex flex-wrap items-end justify-between gap-6">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--noc-accent)]">Fırsat akışı</p>
+        <h1 class="mt-4 text-[38px] font-semibold leading-[1.08] tracking-[-0.04em] sm:text-[52px]">Takip listem</h1>
+        <p class="mt-4 max-w-xl text-base leading-7 text-[var(--noc-neutral-300)]">Kaydettiğin ürünlerdeki güncel fiyat sinyalleri.</p>
+      </div>
+      @if (!loading() && hasToken() && favorites().length > 0) {
+        <span class="inline-flex items-center gap-2 rounded-full border border-[#35cc848c] px-3 py-2 text-[11px] font-semibold text-[#45d491]"><i class="ph ph-broadcast" aria-hidden="true"></i> {{ opportunityCount() }} üründe fiyat sinyali</span>
+      }
+    </header>
 
     @if (loading()) {
-      <div class="py-24 text-center text-[var(--noc-neutral-500)]">Yükleniyor...</div>
+      <section class="mt-9 grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)]" aria-label="Takip listesi yükleniyor" aria-busy="true">
+        <div class="h-[220px] animate-pulse rounded-[18px] bg-[var(--noc-surface)] lg:h-[360px]"></div>
+        <div class="h-[430px] animate-pulse rounded-[18px] bg-[var(--noc-surface)]"></div>
+      </section>
     } @else if (loadError()) {
-      <div class="mx-auto mt-8 max-w-md rounded-[8px] bg-[var(--noc-surface)] px-6 py-8 text-center">Favoriler yüklenemedi. Lütfen daha sonra tekrar dene.</div>
+      <section class="mx-auto mt-9 max-w-[560px] rounded-[18px] border border-[var(--noc-divider)] bg-[var(--noc-surface)] px-8 py-9 text-center max-sm:px-5">
+        <span class="mx-auto grid h-11 w-11 place-items-center rounded-[13px] bg-[color-mix(in_srgb,var(--noc-accent)_16%,transparent)] text-xl text-[var(--noc-accent)]" aria-hidden="true"><i class="ph ph-warning-circle"></i></span>
+        <p class="mt-5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--noc-neutral-500)]">Bağlantı sorunu</p>
+        <h2 class="mt-2 text-[21px] font-semibold tracking-[-0.02em]">Takip listen yüklenemedi</h2>
+        <p class="mt-2 text-[13px] leading-6 text-[var(--noc-neutral-500)]">Fiyat bilgilerine şu anda ulaşamıyoruz. Kısa bir süre sonra yeniden deneyebilirsin.</p>
+        <button type="button" class="pa-favorites-primary mx-auto" (click)="retryLoad()"><i class="ph ph-arrow-clockwise" aria-hidden="true"></i> Yeniden dene</button>
+      </section>
     } @else if (!hasToken()) {
-      <div class="mx-auto mt-8 max-w-md rounded-[8px] bg-[var(--noc-surface)] px-6 py-10 text-center text-[var(--noc-neutral-500)]">
-        Henüz favori eklemedin. Bir ürünü açıp "Favorilere Ekle"ye tıkladığında burada göreceksin.
-        <a routerLink="/" class="mt-2 block w-full text-sm font-medium text-[var(--noc-accent)]">Ürünlere göz at</a>
+      <section class="mt-9 grid gap-4 md:grid-cols-2">
+        <article class="rounded-[18px] border border-[var(--noc-divider)] bg-[var(--noc-surface)] p-8 max-sm:p-6">
+          <span class="grid h-11 w-11 place-items-center rounded-[13px] bg-[color-mix(in_srgb,var(--noc-accent)_16%,transparent)] text-xl text-[var(--noc-accent)]" aria-hidden="true"><i class="ph ph-bookmark-simple"></i></span>
+          <p class="mt-5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--noc-neutral-500)]">Listen henüz boş</p>
+          <h2 class="mt-2 text-[21px] font-semibold tracking-[-0.02em]">Takip etmek istediğin ürünleri kaydet</h2>
+          <p class="mt-2 text-[13px] leading-6 text-[var(--noc-neutral-500)]">Bir ürünün detayını açıp “Favorilere Ekle”ye dokunduğunda güncel fiyatını burada izleyebilirsin.</p>
+          <a routerLink="/" class="pa-favorites-primary"><i class="ph ph-plus" aria-hidden="true"></i> Ürünlere göz at</a>
+        </article>
 
-        <div class="mt-6 border-t border-[var(--noc-divider)] pt-6 text-left">
-          <p class="text-center text-xs text-[var(--noc-neutral-500)]">
-            Daha önce favori eklediysen ama bu cihazda/tarayıcıda göremiyorsan, e-postana bir link gönderelim.
-            Birden fazla tarayıcı kullanıyorsan (ör. hem Chrome hem Edge), gelen linke her birinden ayrı tıklaman gerekir.
-          </p>
-          <form (ngSubmit)="submitRecover()" class="mt-3 flex gap-2">
-            <input
-              type="email"
-              name="recoverEmail"
-              required
-              placeholder="E-posta adresin"
-              [ngModel]="recoverEmail()"
-              (ngModelChange)="recoverEmail.set($event)"
-              class="min-w-0 flex-1 rounded-[8px] border border-[var(--noc-divider)] bg-[var(--noc-card)] px-3 py-1.5 text-xs text-[var(--noc-text)] placeholder:text-[var(--noc-neutral-500)] focus:border-[var(--noc-accent)] focus:outline-none"
-            />
-            <button
-              type="submit"
-              [disabled]="recoverSubmitting()"
-              class="shrink-0 rounded-[8px] border border-[var(--noc-accent)] px-4 py-1.5 text-xs font-medium text-[var(--noc-accent)] transition-colors hover:bg-[color-mix(in_srgb,var(--noc-accent)_12%,transparent)] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {{ recoverSubmitting() ? 'Gönderiliyor...' : 'Linki gönder' }}
-            </button>
+        <article class="rounded-[18px] border border-[var(--noc-divider)] bg-[var(--noc-surface)] p-8 max-sm:p-6">
+          <span class="grid h-11 w-11 place-items-center rounded-[13px] bg-[color-mix(in_srgb,var(--noc-accent)_16%,transparent)] text-xl text-[var(--noc-accent)]" aria-hidden="true"><i class="ph ph-envelope-simple"></i></span>
+          <p class="mt-5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--noc-neutral-500)]">Daha önce liste oluşturdun mu?</p>
+          <h2 class="mt-2 text-[21px] font-semibold tracking-[-0.02em]">Listeni bu cihazda aç</h2>
+          <p class="mt-2 text-[13px] leading-6 text-[var(--noc-neutral-500)]">E-postana güvenli bir bağlantı gönderelim. Birden fazla tarayıcı kullanıyorsan bağlantıyı her birinde ayrı açmalısın.</p>
+          <form (ngSubmit)="submitRecover()" class="mt-5">
+            <label for="recover-email" class="mb-2 block text-[11px] font-semibold">E-posta adresin</label>
+            <div class="flex gap-2 max-sm:grid">
+              <input class="h-10 min-w-0 flex-1 rounded-[9px] border border-[var(--noc-divider)] bg-[var(--noc-bg)] px-3 text-xs text-[var(--noc-text)] outline-none focus:border-[var(--noc-accent)]" id="recover-email" type="email" name="recoverEmail" required autocomplete="email" placeholder="ornek&#64;eposta.com" [ngModel]="recoverEmail()" (ngModelChange)="recoverEmail.set($event)" />
+              <button class="h-10 rounded-[9px] bg-[var(--noc-accent)] px-4 text-[11px] font-semibold text-white disabled:opacity-60" type="submit" [disabled]="recoverSubmitting()">{{ recoverSubmitting() ? 'Gönderiliyor...' : 'Bağlantı gönder' }}</button>
+            </div>
           </form>
           @if (recoverStatusMessage(); as message) {
-            <p class="mt-2 text-center text-xs text-[var(--noc-neutral-500)]">{{ message }}</p>
+            <p class="mt-2 text-[11px] text-[var(--noc-neutral-500)]" role="status">{{ message }}</p>
           }
-        </div>
-      </div>
+        </article>
+      </section>
     } @else if (favorites().length === 0) {
-      <div class="mx-auto mt-8 max-w-md rounded-[8px] bg-[var(--noc-surface)] px-6 py-10 text-center text-[var(--noc-neutral-500)]">
-        Henüz favori eklemedin. Bir ürünü açıp "Favorilere Ekle"ye tıkladığında burada göreceksin.
-        <a routerLink="/" class="mt-2 block w-full text-sm font-medium text-[var(--noc-accent)]">Ürünlere göz at</a>
-      </div>
+      <section class="mx-auto mt-9 max-w-[560px] rounded-[18px] border border-[var(--noc-divider)] bg-[var(--noc-surface)] px-8 py-9 text-center max-sm:px-5">
+        <span class="mx-auto grid h-11 w-11 place-items-center rounded-[13px] bg-[color-mix(in_srgb,var(--noc-accent)_16%,transparent)] text-xl text-[var(--noc-accent)]" aria-hidden="true"><i class="ph ph-bookmark-simple"></i></span>
+        <p class="mt-5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--noc-neutral-500)]">Bu cihazdaki listen</p>
+        <h2 class="mt-2 text-[21px] font-semibold tracking-[-0.02em]">Henüz takip edilen ürün yok</h2>
+        <p class="mt-2 text-[13px] leading-6 text-[var(--noc-neutral-500)]">Beğendiğin bir ürünü kaydet; güncel fiyatı ve fırsat sinyalleri burada görünmeye başlasın.</p>
+        <a routerLink="/" class="pa-favorites-primary mx-auto"><i class="ph ph-plus" aria-hidden="true"></i> Ürün takip et</a>
+        <button type="button" class="mt-4 text-[11px] text-[var(--noc-neutral-500)] underline" (click)="signOut()">Bu cihazdan çıkış yap</button>
+      </section>
     } @else {
-      <div class="mt-6 flex flex-wrap items-center justify-between gap-3">
-        <p class="text-sm text-[var(--noc-neutral-500)]">{{ favorites().length }} ürün izliyorsun.</p>
-        <button type="button" (click)="signOut()" class="text-xs font-medium text-[var(--noc-neutral-500)] underline underline-offset-2 hover:text-[var(--noc-accent)]">
-          Bu cihazdan çıkış yap
-        </button>
-      </div>
-      <p class="mt-1 text-xs leading-5 text-[var(--noc-neutral-600)]">
-        Bu liste bu tarayıcıya kayıtlı, e-posta adresine değil. Ortak kullanılan bir cihazdaysan çıkış yapabilirsin;
-        favorilerin silinmez, e-postana göndereceğimiz bağlantıyla istediğin zaman geri dönersin.
-      </p>
-      <div class="mt-3 divide-y divide-[var(--noc-divider)] rounded-[14px] bg-[var(--noc-card)] shadow-[var(--noc-shadow-sm)]">
-        @for (deal of favorites(); track deal.productId) {
-          <div class="flex flex-wrap items-center gap-3 p-[11.2px] sm:flex-nowrap">
-            <a [href]="productPath(deal)" (click)="onProductClick($event, deal)" tabindex="-1" aria-hidden="true" class="block h-16 w-16 shrink-0 rounded-[8px] bg-[color-mix(in_srgb,var(--noc-text)_5%,transparent)]">
-              @if (deal.imageUrl) {
-                <img [src]="deal.imageUrl" [alt]="displayName(deal.productName)" loading="lazy" class="h-full w-full object-contain p-1.5" />
-              }
-            </a>
-            <a [href]="productPath(deal)" (click)="onProductClick($event, deal)" class="block min-w-0 flex-1 text-left sm:w-[300px] sm:flex-none">
-              <div class="text-[10px] uppercase tracking-[0.08em] text-[var(--noc-accent)]">{{ deal.brandName }}</div>
-              <div [title]="displayName(deal.productName)" class="line-clamp-2 text-[15px] font-medium leading-tight">{{ displayName(deal.productName) }}</div>
-            </a>
-            <div class="ml-auto text-right">
-              <div class="text-[15px] font-medium">{{ deal.currentPrice | number: '1.2-2' }} ₺</div>
-              @if (deal.discountPercent > 0) {
-                <div class="text-xs text-[var(--noc-accent)]">-%{{ deal.discountPercent }}</div>
-              } @else if (deal.isAtThirtyDayLow) {
-                <div class="text-xs text-[var(--noc-neutral-500)]">30 günün en düşüğü</div>
-              }
-            </div>
-            <span class="hidden text-xs text-[var(--noc-neutral-500)] sm:inline">{{ lastCheckedText(deal) }}</span>
-            <a
-              [href]="goToStoreUrl(deal.productId)"
-              target="_blank"
-              rel="nofollow sponsored noopener"
-              class="inline-flex items-center justify-center rounded-[6px] border border-[var(--noc-accent)] px-3 py-1.5 text-xs font-medium text-[var(--noc-accent)] hover:bg-[color-mix(in_srgb,var(--noc-accent)_12%,transparent)]"
-            >
-              Mağazaya git
-            </a>
-            <button
-              type="button"
-              title="Favorilerden çıkar"
-              (click)="removeFavorite(deal)"
-              class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[var(--noc-neutral-500)] hover:bg-[color-mix(in_srgb,var(--noc-text)_7%,transparent)] hover:text-[var(--noc-text)]"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-3.5 w-3.5">
-                <path stroke-linecap="round" d="M6 6l12 12M18 6L6 18" />
-              </svg>
-            </button>
+      <section class="mt-9 grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
+        <aside class="self-start rounded-[18px] border border-[var(--noc-divider)] bg-[var(--noc-surface)] p-6">
+          <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--noc-neutral-500)]">Bugünkü görünüm</p>
+          <div class="mt-3 text-[38px] font-bold tracking-[-0.05em]">{{ opportunityCount() }} / {{ favorites().length }}</div>
+          <p class="mt-2 text-xs leading-5 text-[var(--noc-neutral-500)]">
+            {{ opportunityCount() }} ürün indirimde veya 30 günlük en düşük fiyatında.
+          </p>
+          <div class="mt-5 h-[7px] overflow-hidden rounded-full bg-[var(--noc-divider)]" role="img" [attr.aria-label]="'Takip edilen ürünlerin yüzde ' + opportunityRate() + ' kadarı fiyat sinyali taşıyor'">
+            <span class="block h-full rounded-full bg-[linear-gradient(90deg,var(--noc-accent),#42d593)]" [style.width.%]="opportunityRate()"></span>
           </div>
-        }
-      </div>
+          <dl class="mt-5 border-t border-[var(--noc-divider)] pt-3 text-[11px]">
+            <div class="my-2 flex justify-between text-[var(--noc-neutral-500)]"><dt>İndirimde</dt><dd class="font-semibold text-[var(--noc-text)]">{{ discountedCount() }} ürün</dd></div>
+            <div class="my-2 flex justify-between text-[var(--noc-neutral-500)]"><dt>30 günün dibi</dt><dd class="font-semibold text-[var(--noc-text)]">{{ lowCount() }} ürün</dd></div>
+            <div class="my-2 flex justify-between text-[var(--noc-neutral-500)]"><dt>Normal fiyat</dt><dd class="font-semibold text-[var(--noc-text)]">{{ normalCount() }} ürün</dd></div>
+          </dl>
+          <a routerLink="/" class="pa-favorites-primary"><i class="ph ph-plus" aria-hidden="true"></i> Yeni ürün takip et</a>
+          <button type="button" class="pa-favorites-secondary" (click)="signOut()"><i class="ph ph-sign-out" aria-hidden="true"></i> Bu cihazdan çık</button>
+        </aside>
+
+        <div class="min-w-0">
+          <section class="overflow-hidden rounded-[18px] border border-[var(--noc-divider)] bg-[var(--noc-surface)]" aria-label="Takip edilen ürünlerin güncel fiyatları">
+            <header class="flex items-center justify-between border-b border-[var(--noc-divider)] px-5 py-[19px]">
+              <h2 class="text-base font-semibold">Güncel fiyat sinyalleri</h2>
+              <span class="text-[11px] text-[var(--noc-neutral-500)]">{{ favorites().length }} ürün</span>
+            </header>
+            @for (deal of favorites(); track deal.productId) {
+              <article class="pa-favorites-row">
+                <span class="pa-favorites-row-signal" [class.pa-favorites-row-signal-muted]="deal.discountPercent <= 0 && !deal.isAtThirtyDayLow" aria-hidden="true">
+                  <i [class]="deal.discountPercent > 0 || deal.isAtThirtyDayLow ? 'ph ph-trend-down' : 'ph ph-minus'"></i>
+                </span>
+                <a [href]="productPath(deal)" (click)="onProductClick($event, deal)" tabindex="-1" aria-hidden="true" class="pa-favorites-image-link">
+                  @if (deal.imageUrl) {
+                    <img [src]="deal.imageUrl" [alt]="displayName(deal.productName)" loading="lazy" />
+                  }
+                </a>
+                <a [href]="productPath(deal)" (click)="onProductClick($event, deal)" class="pa-favorites-product">
+                  <h3>{{ displayName(deal.productName) }}</h3>
+                  <p>{{ deal.brandName }} · {{ lastCheckedText(deal) }}</p>
+                  @if (deal.isAtThirtyDayLow) {
+                    <span>30 günün en düşük fiyatı</span>
+                  } @else if (deal.discountPercent > 0) {
+                    <span>İndirimde</span>
+                  }
+                </a>
+                <div class="pa-favorites-price">
+                  <strong>{{ deal.currentPrice | number: '1.2-2' }} ₺</strong>
+                  @if (deal.discountPercent > 0) {
+                    <span>-%{{ deal.discountPercent }}</span>
+                  } @else {
+                    <span class="pa-favorites-price-neutral">Güncel fiyat</span>
+                  }
+                </div>
+                <div class="pa-favorites-row-actions">
+                  <a [href]="goToStoreUrl(deal.productId)" target="_blank" rel="nofollow sponsored noopener">Mağazaya git</a>
+                  <button type="button" title="Favorilerden çıkar" [attr.aria-label]="displayName(deal.productName) + ' ürününü favorilerden çıkar'" (click)="removeFavorite(deal)">
+                    <i class="ph ph-x" aria-hidden="true"></i>
+                  </button>
+                </div>
+              </article>
+            }
+          </section>
+
+          <div class="mt-3 flex items-center gap-2 rounded-[13px] border border-[color-mix(in_srgb,var(--noc-accent)_35%,var(--noc-divider))] bg-[color-mix(in_srgb,var(--noc-accent)_7%,transparent)] px-4 py-3 text-[11px] leading-5 text-[var(--noc-neutral-500)] max-sm:items-start">
+            <i class="ph ph-info text-[var(--noc-accent)]" aria-hidden="true"></i>
+            <p>Liste bu tarayıcıya bağlıdır. Ortak cihazdaysan çıkış yapabilir, e-posta bağlantısıyla daha sonra geri dönebilirsin.</p>
+          </div>
+        </div>
+      </section>
     }
 
     <div class="mt-10 text-center">
-      <a routerLink="/" class="text-sm font-medium text-[var(--noc-accent)]">← Ana sayfaya dön</a>
+      <a routerLink="/" class="text-sm font-medium text-[var(--noc-accent)] hover:underline">← Ana sayfaya dön</a>
     </div>
 
     @if (selectedDeal(); as deal) {

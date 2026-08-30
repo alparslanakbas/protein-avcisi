@@ -33,6 +33,7 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+.ph.ph-arrow-clockwise:before { content: "\e036"; }
 .ph.ph-arrow-right:before { content: "\e06c"; }
 .ph.ph-arrow-square-out:before { content: "\e5de"; }
 .ph.ph-arrow-up:before { content: "\e08e"; }
@@ -42,6 +43,7 @@
 .ph.ph-book-open-text:before { content: "\e8f2"; }
 .ph.ph-bookmark-simple:before { content: "\e0ea"; }
 .ph.ph-bowl-food:before { content: "\eaa4"; }
+.ph.ph-broadcast:before { content: "\e0f2"; }
 .ph.ph-calculator:before { content: "\e538"; }
 .ph.ph-calendar-blank:before { content: "\e10a"; }
 .ph.ph-caret-down:before { content: "\e136"; }
@@ -73,15 +75,18 @@
 .ph.ph-lightning:before { content: "\e2de"; }
 .ph.ph-magnifying-glass:before { content: "\e30c"; }
 .ph.ph-megaphone-simple:before { content: "\e642"; }
+.ph.ph-minus:before { content: "\e32a"; }
 .ph.ph-minus-circle:before { content: "\e32c"; }
 .ph.ph-moon:before { content: "\e330"; }
 .ph.ph-package:before { content: "\e390"; }
 .ph.ph-pill:before { content: "\e700"; }
+.ph.ph-plus:before { content: "\e3d4"; }
 .ph.ph-scales:before { content: "\e750"; }
 .ph.ph-seal-check:before { content: "\e606"; }
 .ph.ph-share-network:before { content: "\e408"; }
 .ph.ph-shield-check:before { content: "\e40c"; }
 .ph.ph-shield-plus:before { content: "\e706"; }
+.ph.ph-sign-out:before { content: "\e42a"; }
 .ph.ph-sparkle:before { content: "\e6a2"; }
 .ph.ph-squares-four:before { content: "\e464"; }
 .ph.ph-star:before { content: "\e46a"; }
@@ -90,6 +95,7 @@
 .ph.ph-tag:before { content: "\e478"; }
 .ph.ph-ticket:before { content: "\e490"; }
 .ph.ph-trash:before { content: "\e4a6"; }
+.ph.ph-trend-down:before { content: "\e4ac"; }
 .ph.ph-warning-circle:before { content: "\e4e2"; }
 .ph.ph-waves:before { content: "\e6de"; }
 .ph.ph-x:before { content: "\e4f6"; }

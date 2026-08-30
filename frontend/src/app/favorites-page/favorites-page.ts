@@ -1,5 +1,5 @@
 import { DecimalPipe, isPlatformBrowser } from '@angular/common';
-import { Component, OnInit, PLATFORM_ID, inject, signal } from '@angular/core';
+import { Component, OnInit, PLATFORM_ID, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Meta } from '@angular/platform-browser';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -20,6 +20,7 @@ import { SiteHeader } from '../site-header/site-header';
   selector: 'app-favorites-page',
   imports: [DecimalPipe, RouterLink, ProductModal, SiteHeader, FormsModule],
   templateUrl: './favorites-page.html',
+  styleUrl: './favorites-page.css',
 })
 export class FavoritesPage implements OnInit {
   protected readonly displayName = displayName;
@@ -36,6 +37,16 @@ export class FavoritesPage implements OnInit {
   protected readonly loading = signal(true);
   protected readonly loadError = signal(false);
   protected readonly hasToken = signal(false);
+  protected readonly discountedCount = computed(() => this.favorites().filter((deal) => deal.discountPercent > 0).length);
+  protected readonly lowCount = computed(() => this.favorites().filter((deal) => deal.isAtThirtyDayLow).length);
+  protected readonly opportunityCount = computed(
+    () => this.favorites().filter((deal) => deal.discountPercent > 0 || deal.isAtThirtyDayLow).length,
+  );
+  protected readonly normalCount = computed(() => this.favorites().length - this.opportunityCount());
+  protected readonly opportunityRate = computed(() => {
+    const total = this.favorites().length;
+    return total === 0 ? 0 : Math.round((this.opportunityCount() / total) * 100);
+  });
 
   // bkz. category-page.ts'teki aynı gerekçe.
   protected readonly selectedDeal = signal<Deal | null>(null);
@@ -102,9 +113,11 @@ export class FavoritesPage implements OnInit {
 
   private loadFavorites(): void {
     this.loading.set(true);
+    this.loadError.set(false);
     this.favoritesService.list().subscribe({
       next: (deals) => {
         this.favorites.set(deals);
+        this.loadError.set(false);
         this.loading.set(false);
       },
       error: () => {
@@ -112,6 +125,10 @@ export class FavoritesPage implements OnInit {
         this.loading.set(false);
       },
     });
+  }
+
+  protected retryLoad(): void {
+    this.loadFavorites();
   }
 
   // Listeyi yalnızca bu tarayıcıdan ayırır — sunucudaki favoriler duruyor,
