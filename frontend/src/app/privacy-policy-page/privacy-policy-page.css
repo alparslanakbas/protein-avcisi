@@ -1,0 +1,258 @@
+:host {
+  display: block;
+}
+
+.pa-privacy-main {
+  width: min(1180px, calc(100% - 48px));
+  margin-inline: auto;
+  padding: 72px 0 80px;
+}
+
+.pa-privacy-hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 48px;
+}
+
+.pa-privacy-update {
+  flex: 0 0 255px;
+  padding: 22px 24px;
+  border: 1px solid var(--noc-divider);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--noc-surface) 88%, transparent);
+}
+
+.pa-privacy-update span,
+.pa-privacy-update strong {
+  display: block;
+}
+
+.pa-privacy-update span {
+  color: var(--noc-neutral-500);
+  font-size: 12px;
+}
+
+.pa-privacy-update strong {
+  margin-top: 5px;
+  font-size: 15px;
+}
+
+.pa-privacy-update p {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--noc-divider);
+  color: #54c68b;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.pa-privacy-update i {
+  font-size: 16px;
+}
+
+.pa-privacy-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-top: 54px;
+}
+
+.pa-privacy-summary article {
+  min-height: 178px;
+  padding: 22px;
+  border: 1px solid var(--noc-divider);
+  border-radius: 18px;
+  background: var(--noc-surface);
+}
+
+.pa-privacy-summary-icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--noc-accent) 14%, transparent);
+  color: var(--noc-accent);
+  font-size: 19px;
+}
+
+.pa-privacy-summary h2 {
+  margin-top: 18px;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.pa-privacy-summary p {
+  margin-top: 7px;
+  color: var(--noc-neutral-500);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.pa-privacy-document {
+  display: grid;
+  grid-template-columns: 205px minmax(0, 1fr);
+  gap: 38px;
+  margin-top: 70px;
+}
+
+.pa-privacy-toc {
+  position: sticky;
+  top: 94px;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 0 4px 18px;
+  border-left: 1px solid var(--noc-divider);
+}
+
+.pa-privacy-toc strong {
+  margin-bottom: 7px;
+  font-size: 11px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.pa-privacy-toc a {
+  color: var(--noc-neutral-500);
+  font-size: 13px;
+  transition: color .18s ease;
+}
+
+.pa-privacy-toc a:hover {
+  color: var(--noc-accent);
+}
+
+.pa-privacy-sections {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.pa-privacy-section {
+  scroll-margin-top: 100px;
+  padding: 30px;
+  border: 1px solid var(--noc-divider);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--noc-surface) 72%, transparent);
+}
+
+.pa-privacy-section-wide {
+  grid-column: 1 / -1;
+}
+
+.pa-privacy-section-number {
+  color: var(--noc-accent);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .1em;
+}
+
+.pa-privacy-section h2 {
+  margin-top: 10px;
+  font-size: 19px;
+  font-weight: 650;
+  letter-spacing: -.02em;
+}
+
+.pa-privacy-section p,
+.pa-privacy-section li {
+  color: var(--noc-neutral-300);
+  font-size: 13px;
+  line-height: 1.75;
+}
+
+.pa-privacy-section h2 + p,
+.pa-privacy-section h2 + ul {
+  margin-top: 14px;
+}
+
+.pa-privacy-section ul {
+  display: grid;
+  gap: 11px;
+  padding-left: 18px;
+  list-style: disc;
+}
+
+.pa-privacy-section ul + p {
+  margin-top: 15px;
+}
+
+.pa-privacy-section strong {
+  color: var(--noc-text);
+  font-weight: 600;
+}
+
+.pa-privacy-section a,
+.pa-privacy-home-link a {
+  color: var(--noc-accent);
+  font-weight: 600;
+}
+
+.pa-privacy-section a:hover,
+.pa-privacy-home-link a:hover {
+  text-decoration: underline;
+}
+
+.pa-privacy-home-link {
+  margin-top: 44px;
+  text-align: center;
+  font-size: 13px;
+}
+
+@media (max-width: 900px) {
+  .pa-privacy-summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .pa-privacy-document {
+    grid-template-columns: 1fr;
+  }
+
+  .pa-privacy-toc {
+    position: static;
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .pa-privacy-main {
+    width: min(100% - 32px, 1180px);
+    padding: 46px 0 60px;
+  }
+
+  .pa-privacy-hero {
+    display: grid;
+    gap: 28px;
+  }
+
+  .pa-privacy-update {
+    width: 100%;
+  }
+
+  .pa-privacy-summary {
+    grid-template-columns: 1fr;
+    margin-top: 36px;
+  }
+
+  .pa-privacy-summary article {
+    min-height: auto;
+  }
+
+  .pa-privacy-document {
+    margin-top: 48px;
+  }
+
+  .pa-privacy-sections {
+    grid-template-columns: 1fr;
+  }
+
+  .pa-privacy-section {
+    padding: 24px 21px;
+  }
+}

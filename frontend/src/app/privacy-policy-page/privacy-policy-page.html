@@ -1,85 +1,135 @@
 <div class="noc-shell min-h-screen bg-[var(--noc-bg)] text-[var(--noc-text)]">
   <app-site-header />
 
-  <main class="mx-auto max-w-[720px] px-[28px] py-[22px]">
-    <h1 class="text-[32px] font-medium tracking-[-0.03em] sm:text-[36px]">Gizlilik Politikası</h1>
-    <p class="mt-2 text-xs text-[var(--noc-neutral-500)]">Son güncelleme: 14 Ağustos 2026</p>
-
-    <div class="mt-8 space-y-8 text-sm leading-relaxed text-[var(--noc-neutral-300)]">
-      <section>
-        <h2 class="mb-2 text-base font-medium text-[var(--noc-text)]">Veri Sorumlusu</h2>
-        <p>
-          ProteinAvcısı (proteinavcisi.com.tr), bu sitede topladığı veriler için 6698 sayılı Kişisel
-          Verilerin Korunması Kanunu (KVKK) kapsamında veri sorumlusudur. Sorularınız için
-          <a href="mailto:destek@proteinavcisi.com.tr" class="font-medium text-[var(--noc-accent)] hover:underline">destek&#64;proteinavcisi.com.tr</a>
-          adresinden bize ulaşabilirsiniz.
+  <main class="pa-privacy-main">
+    <header class="pa-privacy-hero">
+      <div class="max-w-[690px]">
+        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--noc-accent)]">Şeffaflık</p>
+        <h1 class="mt-4 text-[38px] font-semibold leading-[1.08] tracking-[-0.04em] sm:text-[52px]">Gizlilik Politikası</h1>
+        <p class="mt-5 max-w-[640px] text-base leading-7 text-[var(--noc-neutral-300)] sm:text-lg">
+          Hangi verileri neden tuttuğumuzu, nerede kullandığımızı ve kontrolün sende nasıl kaldığını açıkça anlatıyoruz.
         </p>
-      </section>
+      </div>
 
-      <section>
-        <h2 class="mb-2 text-base font-medium text-[var(--noc-text)]">Hangi Verileri Topluyoruz</h2>
-        <ul class="list-disc space-y-2 pl-5">
-          <li>
-            <strong class="text-[var(--noc-text)]">E-posta bülteni:</strong> abone olduğunda
-            e-posta adresini ve abonelik tarihini saklıyoruz. Onay linkine tıklamadan (double opt-in)
-            hiçbir e-posta göndermiyoruz.
-          </li>
-          <li>
-            <strong class="text-[var(--noc-text)]">"Haber Ver" bildirimi:</strong> bir ürünü
-            takibe aldığında e-posta adresini o ürünle ilişkili olarak saklıyoruz; fiyat düşünce tek
-            seferlik bir bildirim gönderip kaydı kapatıyoruz.
-          </li>
-          <li>
-            <strong class="text-[var(--noc-text)]">Tema tercihi:</strong> açık/koyu mod
-            seçimin yalnızca tarayıcının yerel depolamasında (localStorage) tutulur, bize hiç
-            gönderilmez.
-          </li>
-          <li>
-            <strong class="text-[var(--noc-text)]">Tıklama sayacı:</strong> "Mağazaya Git"
-            linkine tıklama sayısını ürün başına, kişiye bağlı olmayan bir sayaç olarak tutuyoruz.
-          </li>
-        </ul>
-        <p class="mt-3">
-          Şu an sitede reklam veya ziyaretçi analitiği (Google Analytics, AdSense vb.) bulunmuyor.
-          İleride eklenirse bu sayfa güncellenecek ve devreye girmeden önce açık onayın istenecek —
-          detaylar için <a routerLink="/cerez-politikasi" class="font-medium text-[var(--noc-accent)] hover:underline">Çerez Politikası</a>.
-        </p>
-      </section>
+      <aside class="pa-privacy-update" aria-label="Politika güncellik bilgisi">
+        <span>Son güncelleme</span>
+        <strong>14 Ağustos 2026</strong>
+        <p><i class="ph ph-check-circle" aria-hidden="true"></i> Güncel politika</p>
+      </aside>
+    </header>
 
-      <section>
-        <h2 class="mb-2 text-base font-medium text-[var(--noc-text)]">Verileri Nasıl Kullanıyoruz</h2>
-        <p>
-          E-posta adresini yalnızca abone olduğun bülteni ve/veya izlediğin ürünle ilgili fiyat düşüş
-          bildirimini göndermek için kullanıyoruz. E-posta gönderimi için Brevo (Sendinblue) adlı bir
-          transactional e-posta servisi kullanıyoruz; adresin bu servise iletilir, başka bir üçüncü
-          tarafla paylaşılmaz, satılmaz.
-        </p>
-      </section>
+    <section class="pa-privacy-summary" aria-label="Gizlilik politikasının hızlı özeti">
+      <article>
+        <span class="pa-privacy-summary-icon" aria-hidden="true"><i class="ph ph-envelope-simple"></i></span>
+        <h2>E-posta</h2>
+        <p>Bülten ve fiyat bildirimi için, açık onayınla saklanır.</p>
+      </article>
+      <article>
+        <span class="pa-privacy-summary-icon" aria-hidden="true"><i class="ph ph-moon"></i></span>
+        <h2>Tema tercihi</h2>
+        <p>Yalnız cihazında kalır; bize gönderilmez.</p>
+      </article>
+      <article>
+        <span class="pa-privacy-summary-icon" aria-hidden="true"><i class="ph ph-chart-line-up"></i></span>
+        <h2>Tıklama sayacı</h2>
+        <p>Kişiye bağlı olmadan ürün bazında tutulur.</p>
+      </article>
+      <article>
+        <span class="pa-privacy-summary-icon" aria-hidden="true"><i class="ph ph-eye-slash"></i></span>
+        <h2>Reklam &amp; analiz</h2>
+        <p>Şu anda reklam veya ziyaretçi analitiği bulunmuyor.</p>
+      </article>
+    </section>
 
-      <section>
-        <h2 class="mb-2 text-base font-medium text-[var(--noc-text)]">Veri Saklama ve Silme</h2>
-        <p>
-          Abonelik verilerini, sen abonelikten çıkana veya silinmesini talep edene kadar saklarız.
-          Her bülten/bildirim e-postasında bir "abonelikten çık" linki bulunur; tıkladığında kaydın
-          hemen pasifleşir. Verilerinin tamamen silinmesini istersen destek&#64;proteinavcisi.com.tr
-          üzerinden bize yazman yeterli.
-        </p>
-      </section>
+    <section class="pa-privacy-document">
+      <nav class="pa-privacy-toc" aria-label="Gizlilik politikası bölümleri">
+        <strong>Bu sayfada</strong>
+        <a href="#veri-sorumlusu">Veri sorumlusu</a>
+        <a href="#toplanan-veriler">Toplanan veriler</a>
+        <a href="#veri-kullanimi">Verilerin kullanımı</a>
+        <a href="#saklama-silme">Saklama ve silme</a>
+        <a href="#kvkk-haklari">KVKK hakların</a>
+      </nav>
 
-      <section>
-        <h2 class="mb-2 text-base font-medium text-[var(--noc-text)]">KVKK Kapsamındaki Hakların</h2>
-        <p>
-          KVKK madde 11 uyarınca; verilerinin işlenip işlenmediğini öğrenme, işlenmişse buna ilişkin
-          bilgi talep etme, verilerinin düzeltilmesini veya silinmesini isteme ve bu işlemlerin
-          üçüncü kişilere bildirilmesini isteme hakkına sahipsin. Bu talepleri
-          <a href="mailto:destek@proteinavcisi.com.tr" class="font-medium text-[var(--noc-accent)] hover:underline">destek&#64;proteinavcisi.com.tr</a>
-          adresine iletebilirsin.
-        </p>
-      </section>
-    </div>
+      <div class="pa-privacy-sections">
+        <section id="veri-sorumlusu" class="pa-privacy-section pa-privacy-section-wide">
+          <span class="pa-privacy-section-number">01</span>
+          <h2>Veri Sorumlusu</h2>
+          <p>
+            ProteinAvcısı (proteinavcisi.com.tr), bu sitede topladığı veriler için 6698 sayılı Kişisel
+            Verilerin Korunması Kanunu (KVKK) kapsamında veri sorumlusudur. Sorularınız için
+            <a href="mailto:destek@proteinavcisi.com.tr">destek&#64;proteinavcisi.com.tr</a>
+            adresinden bize ulaşabilirsiniz.
+          </p>
+        </section>
 
-    <div class="mt-10 text-center">
-      <a routerLink="/" class="text-sm font-medium text-[var(--noc-accent)]">← Ana sayfaya dön</a>
+        <section id="toplanan-veriler" class="pa-privacy-section">
+          <span class="pa-privacy-section-number">02</span>
+          <h2>Hangi Verileri Topluyoruz</h2>
+          <ul>
+            <li>
+              <strong>E-posta bülteni:</strong> Abone olduğunda e-posta adresini ve abonelik tarihini
+              saklıyoruz. Onay linkine tıklamadan (double opt-in) hiçbir e-posta göndermiyoruz.
+            </li>
+            <li>
+              <strong>“Haber Ver” bildirimi:</strong> Bir ürünü takibe aldığında e-posta adresini o
+              ürünle ilişkili olarak saklıyoruz; fiyat düşünce tek seferlik bir bildirim gönderip kaydı kapatıyoruz.
+            </li>
+            <li>
+              <strong>Tema tercihi:</strong> Açık/koyu mod seçimin yalnızca tarayıcının yerel
+              depolamasında (localStorage) tutulur, bize hiç gönderilmez.
+            </li>
+            <li>
+              <strong>Tıklama sayacı:</strong> “Mağazaya Git” linkine tıklama sayısını ürün başına,
+              kişiye bağlı olmayan bir sayaç olarak tutuyoruz.
+            </li>
+          </ul>
+          <p>
+            Şu an sitede reklam veya ziyaretçi analitiği (Google Analytics, AdSense vb.) bulunmuyor.
+            İleride eklenirse bu sayfa güncellenecek ve devreye girmeden önce açık onayın istenecek —
+            detaylar için <a routerLink="/cerez-politikasi">Çerez Politikası</a>.
+          </p>
+        </section>
+
+        <section id="veri-kullanimi" class="pa-privacy-section">
+          <span class="pa-privacy-section-number">03</span>
+          <h2>Verileri Nasıl Kullanıyoruz</h2>
+          <p>
+            E-posta adresini yalnızca abone olduğun bülteni ve/veya izlediğin ürünle ilgili fiyat düşüş
+            bildirimini göndermek için kullanıyoruz. E-posta gönderimi için bir e-posta hizmet
+            sağlayıcısından yararlanıyoruz; adresin yalnızca bu amaçla bu hizmet sağlayıcısına iletilir,
+            başka bir üçüncü tarafla paylaşılmaz veya satılmaz.
+          </p>
+        </section>
+
+        <section id="saklama-silme" class="pa-privacy-section">
+          <span class="pa-privacy-section-number">04</span>
+          <h2>Veri Saklama ve Silme</h2>
+          <p>
+            Abonelik verilerini, sen abonelikten çıkana veya silinmesini talep edene kadar saklarız.
+            Her bülten/bildirim e-postasında bir “abonelikten çık” linki bulunur; tıkladığında kaydın
+            hemen pasifleşir. Verilerinin tamamen silinmesini istersen
+            <a href="mailto:destek@proteinavcisi.com.tr">destek&#64;proteinavcisi.com.tr</a>
+            üzerinden bize yazman yeterli.
+          </p>
+        </section>
+
+        <section id="kvkk-haklari" class="pa-privacy-section">
+          <span class="pa-privacy-section-number">05</span>
+          <h2>KVKK Kapsamındaki Hakların</h2>
+          <p>
+            KVKK madde 11 uyarınca; verilerinin işlenip işlenmediğini öğrenme, işlenmişse buna ilişkin
+            bilgi talep etme, verilerinin düzeltilmesini veya silinmesini isteme ve bu işlemlerin
+            üçüncü kişilere bildirilmesini isteme hakkına sahipsin. Bu talepleri
+            <a href="mailto:destek@proteinavcisi.com.tr">destek&#64;proteinavcisi.com.tr</a>
+            adresine iletebilirsin.
+          </p>
+        </section>
+      </div>
+    </section>
+
+    <div class="pa-privacy-home-link">
+      <a routerLink="/">← Ana sayfaya dön</a>
     </div>
   </main>
 </div>

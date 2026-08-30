@@ -8,6 +8,7 @@ import { SiteHeader } from '../site-header/site-header';
   selector: 'app-privacy-policy-page',
   imports: [RouterLink, SiteHeader],
   templateUrl: './privacy-policy-page.html',
+  styleUrl: './privacy-policy-page.css',
 })
 export class PrivacyPolicyPage implements OnInit {
   private readonly pageMeta = inject(PageMetaService);
