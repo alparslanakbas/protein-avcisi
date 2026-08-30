@@ -1,64 +1,70 @@
-<div class="noc-shell min-h-screen bg-[var(--noc-bg)] text-[var(--noc-text)]">
+<div class="noc-shell bg-[var(--noc-bg)] text-[var(--noc-text)]">
   <app-site-header />
 
-  <main class="mx-auto max-w-[720px] px-[28px] py-[22px]">
-    <h1 class="text-[32px] font-medium tracking-[-0.03em] sm:text-[36px]">Hakkımızda</h1>
-    <p class="mt-3 text-[15px] text-[var(--noc-neutral-300)]">
-      ProteinAvcısı'nın arkasında kim var, neden kuruldu.
-    </p>
+  <main class="pa-about-main">
+    <section class="pa-about-hero" aria-labelledby="about-title">
+      <div class="pa-about-copy">
+        <p class="pa-about-pill"><span aria-hidden="true"></span>Bağımsız fiyat takibi</p>
+        <h1 id="about-title">İndirimi etiketten değil, geçmişten okuyoruz.</h1>
+        <p class="pa-about-lead">
+          ProteinAvcısı; spor takviyesi fiyatlarını düzenli izleyen, gerçek düşüşleri kendi fiyat geçmişine göre
+          ayıran bağımsız bir platformdur.
+        </p>
+      </div>
 
-    <div class="mt-8 space-y-8 text-sm leading-relaxed text-[var(--noc-neutral-300)]">
-      <section>
-        <h2 class="mb-2 text-base font-medium text-[var(--noc-text)]">Kurucu</h2>
-        <p>
-          ProteinAvcısı, {{ founder.name }} tarafından kuruldu ve geliştiriliyor. Yazılım geliştirici olarak,
-          spor takviyesi markalarının sitede gösterdiği "eski fiyat / yeni fiyat" etiketlerine güvenmek yerine
-          gerçek fiyat geçmişine bakılarak indirim tespit eden bağımsız bir platform ihtiyacından yola çıktı.
-        </p>
-        <p class="mt-3">
-          <a
-            [href]="founder.linkedInUrl"
-            target="_blank"
-            rel="noopener nofollow"
-            class="font-medium text-[var(--noc-accent)] hover:underline"
-          >LinkedIn profili →</a>
-          <span class="mx-2">·</span>
-          <a
-            [href]="founder.blogUrl"
-            target="_blank"
-            rel="noopener nofollow"
-            class="font-medium text-[var(--noc-accent)] hover:underline"
-          >Kişisel blog →</a>
-        </p>
-      </section>
+      <aside class="pa-about-founder" aria-labelledby="founder-title">
+        <div class="pa-about-portrait">
+          <img
+            src="/images/founder-portrait.jpg"
+            [alt]="founder.name"
+            width="512"
+            height="512"
+            fetchpriority="high"
+          />
+        </div>
 
-      <section>
-        <h2 class="mb-2 text-base font-medium text-[var(--noc-text)]">Neden ProteinAvcısı?</h2>
-        <p>
-          Türkiye'de spor takviyesi alışverişi yapan biri, markanın sitesinde gördüğü "%20 indirim" etiketinin
-          gerçek bir düşüş mü yoksa sadece bir pazarlama kalıbı mı olduğunu bilemiyor. ProteinAvcısı, markaların
-          fiyatlarını düzenli olarak otomatik takip edip kendi geçmişine dayanan bir referans oluşturarak bu
-          soruyu cevaplamayı hedefliyor — ne bir markayla iş birliği yaparak ne de sıralamayı satın alınabilir
-          hale getirerek.
+        <h2 id="founder-title">{{ founder.name }}</h2>
+        <p class="pa-about-role">Kurucu ve geliştirici</p>
+        <p class="pa-about-founder-story">
+          “İndirim” etiketine güvenmek yerine fiyatın geçmişine bakabilmek için ProteinAvcısı'nı kurdu.
         </p>
-      </section>
 
-      <section>
-        <h2 class="mb-2 text-base font-medium text-[var(--noc-text)]">Nasıl çalıştığımızı merak ediyorsan</h2>
-        <p>
-          Fiyatları nasıl topladığımızı, "gerçek indirim"i nasıl hesapladığımızı ve hangi verileri bilinçli
-          olarak göstermediğimizi ayrı bir sayfada adım adım anlatıyoruz.
-        </p>
-        <p class="mt-3">
-          <a routerLink="/nasil-calisiyoruz" class="font-medium text-[var(--noc-accent)] hover:underline">
-            Nasıl Çalışıyoruz? →
+        <nav class="pa-about-profile-links" aria-label="Kurucu bağlantıları">
+          <a [href]="founder.linkedInUrl" target="_blank" rel="noopener nofollow">
+            LinkedIn <span aria-hidden="true">↗</span>
           </a>
-        </p>
-      </section>
-    </div>
+          <a [href]="founder.blogUrl" target="_blank" rel="noopener nofollow">
+            Kişisel blog <span aria-hidden="true">↗</span>
+          </a>
+        </nav>
+      </aside>
+    </section>
 
-    <div class="mt-10 text-center">
-      <a routerLink="/" class="text-sm font-medium text-[var(--noc-accent)]">← Ana sayfaya dön</a>
+    <section class="pa-about-principles" aria-label="ProteinAvcısı'nın amacı ve ilkeleri">
+      <article>
+        <span class="pa-about-icon" aria-hidden="true"><i class="ph ph-scales"></i></span>
+        <h2>Neden buradayız?</h2>
+        <p>Pazarlama etiketleri ile gerçek fiyat düşüşlerini birbirinden ayırmayı kolaylaştırmak için.</p>
+      </article>
+
+      <article>
+        <span class="pa-about-icon" aria-hidden="true"><i class="ph ph-chart-line-up"></i></span>
+        <h2>Nasıl karar veriyoruz?</h2>
+        <p>Güncel fiyatı, ürünün düzenli olarak kaydettiğimiz fiyat geçmişiyle karşılaştırarak.</p>
+      </article>
+
+      <article>
+        <span class="pa-about-icon" aria-hidden="true"><i class="ph ph-shield-check"></i></span>
+        <h2>Neye söz veriyoruz?</h2>
+        <p>Ticari ilişkilerin sıralamayı etkilememesine ve eksik bilginin tahmin edilmemesine.</p>
+      </article>
+    </section>
+
+    <div class="pa-about-cta">
+      <a routerLink="/nasil-calisiyoruz">
+        Nasıl çalıştığımızı gör
+        <i class="ph ph-arrow-right" aria-hidden="true"></i>
+      </a>
     </div>
   </main>
 </div>

@@ -11,6 +11,7 @@ import { SiteHeader } from '../site-header/site-header';
   selector: 'app-about-page',
   imports: [RouterLink, SiteHeader],
   templateUrl: './about-page.html',
+  styleUrl: './about-page.css',
 })
 export class AboutPage implements OnInit {
   private readonly pageMeta = inject(PageMetaService);
