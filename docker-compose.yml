@@ -24,10 +24,16 @@ services:
       - POSTGRES_USER=protein
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_INITDB_ARGS=--encoding=UTF8 --locale-provider=builtin --builtin-locale=C.UTF-8
-    # Port host'a AÇILMIYOR: veritabanına yalnızca compose ağı üzerinden,
-    # servis adıyla (db:5432) erişiliyor. Dışarıdan doğrudan erişim yok.
     expose:
       - "5432"
+    # Port YALNIZCA VM'in loopback arayüzüne bağlanıyor — "0.0.0.0:5432"
+    # DEĞİL. Yani veritabanı internetten erişilebilir değil; yalnızca VM'e
+    # SSH ile girebilen biri ulaşabiliyor. Yerel geliştirme buraya SSH
+    # tüneliyle bağlanıyor (ssh -L 5433:127.0.0.1:5432).
+    #
+    # Bu ayrım kritik: "5432:5432" yazılsaydı Postgres tüm dünyaya açılırdı.
+    ports:
+      - "127.0.0.1:5432:5432"
     # Docker varsayılan olarak SIGTERM gönderiyor; Postgres bunu "smart
     # shutdown" sayıp açık istemcileri bekliyor, süre dolunca SIGKILL
     # geliyor ve açılışta kurtarma gerekiyor. SIGINT "fast shutdown" demek.
