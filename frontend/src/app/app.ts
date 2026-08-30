@@ -125,7 +125,14 @@ export class App implements OnInit {
         // Markalar" bağlantıları ya da kategori sayfasındaki "Diğer
         // Kategoriler" aynı component'te kaldığı için sayfa değişse bile
         // kaydırma konumu olduğu yerde duruyordu. Yol da karşılaştırılıyor.
-        const path = this.router.url.split('?')[0];
+        // Fragment de kesiliyor ('#' dahil), yalnızca '?' değil: router.url
+        // fragment'i içeriyor, dolayısıyla sayfa içi bir bölüm bağlantısına
+        // (#kvkk-haklari gibi) tıklamak burada "farklı sayfaya geçildi" gibi
+        // görünüyordu ve aşağıdaki scrollTo(0,0) tarayıcının az önce yaptığı
+        // bölüme kaydırmayı geri alıyordu. Kullanıcı bunu "ilk tıklama yukarı
+        // atıyor, ikinci tıklama doğru yere götürüyor" olarak yaşadı —
+        // ikincide yol artık değişmediği için sıfırlama çalışmıyordu.
+        const path = this.router.url.split(/[?#]/)[0];
         const changed = current !== this.lastLeafComponent || path !== this.lastPath;
         // Tek istisna ürün modalı: ana sayfada modal açılıp kapanması '/' ile
         // '/urun/...' arasında gerçek bir yol değişimi olarak görünüyor ama
