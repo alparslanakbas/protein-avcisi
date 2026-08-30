@@ -1,0 +1,253 @@
+:host {
+  display: block;
+}
+
+.pa-cookie-main {
+  width: min(1180px, calc(100% - 48px));
+  margin-inline: auto;
+  padding: 66px 0 80px;
+}
+
+.pa-cookie-hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 40px;
+}
+
+.pa-cookie-date {
+  padding: 9px 13px;
+  border: 1px solid var(--noc-divider);
+  border-radius: 999px;
+  color: var(--noc-neutral-500);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.pa-cookie-layout {
+  display: grid;
+  grid-template-columns: 1.08fr .92fr;
+  gap: 16px;
+  margin-top: 36px;
+}
+
+.pa-cookie-control,
+.pa-cookie-card {
+  border: 1px solid var(--noc-divider);
+  border-radius: 18px;
+  background: var(--noc-surface);
+}
+
+.pa-cookie-control {
+  align-self: start;
+  padding: 28px;
+}
+
+.pa-cookie-control-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 23px;
+  border-bottom: 1px solid var(--noc-divider);
+}
+
+.pa-cookie-label {
+  color: var(--noc-neutral-500);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+
+.pa-cookie-control-head h2 {
+  margin-top: 6px;
+  font-size: 20px;
+  font-weight: 650;
+}
+
+.pa-cookie-safe {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, #26b875 18%, transparent);
+  color: #4bd595;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.pa-cookie-setting {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 15px;
+  min-height: 88px;
+  border-bottom: 1px solid var(--noc-divider);
+}
+
+.pa-cookie-setting:last-child {
+  border-bottom: 0;
+}
+
+.pa-cookie-icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--noc-accent) 17%, transparent);
+  color: var(--noc-accent);
+  font-size: 19px;
+}
+
+.pa-cookie-setting h3 {
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.pa-cookie-setting p {
+  margin-top: 5px;
+  color: var(--noc-neutral-500);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.pa-cookie-local,
+.pa-cookie-disabled {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.pa-cookie-local {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--noc-accent);
+}
+
+.pa-cookie-disabled {
+  color: var(--noc-neutral-500);
+}
+
+.pa-cookie-details {
+  display: grid;
+  gap: 14px;
+}
+
+.pa-cookie-card {
+  padding: 24px 26px;
+}
+
+.pa-cookie-card h2 {
+  margin-top: 14px;
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -.02em;
+}
+
+.pa-cookie-card p {
+  margin-top: 10px;
+  color: var(--noc-neutral-300);
+  font-size: 12.5px;
+  line-height: 1.65;
+}
+
+.pa-cookie-flow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 17px;
+}
+
+.pa-cookie-flow li {
+  padding: 12px;
+  border: 1px solid var(--noc-divider);
+  border-radius: 11px;
+  color: var(--noc-neutral-300);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.pa-cookie-flow span {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--noc-accent);
+  font-weight: 700;
+}
+
+.pa-cookie-contact a,
+.pa-cookie-home-link a {
+  color: var(--noc-accent);
+  font-weight: 600;
+}
+
+.pa-cookie-contact a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 14px 16px 0 0;
+  font-size: 12px;
+}
+
+.pa-cookie-contact a:hover,
+.pa-cookie-home-link a:hover {
+  text-decoration: underline;
+}
+
+.pa-cookie-home-link {
+  margin-top: 42px;
+  text-align: center;
+  font-size: 13px;
+}
+
+@media (max-width: 900px) {
+  .pa-cookie-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .pa-cookie-main {
+    width: min(100% - 32px, 1180px);
+    padding: 46px 0 60px;
+  }
+
+  .pa-cookie-hero {
+    display: grid;
+    gap: 24px;
+  }
+
+  .pa-cookie-date {
+    width: max-content;
+  }
+
+  .pa-cookie-layout {
+    margin-top: 30px;
+  }
+
+  .pa-cookie-control {
+    padding: 21px;
+  }
+
+  .pa-cookie-control-head {
+    align-items: flex-start;
+  }
+
+  .pa-cookie-setting {
+    grid-template-columns: 40px minmax(0, 1fr);
+    padding: 16px 0;
+  }
+
+  .pa-cookie-setting > :last-child {
+    grid-column: 2;
+  }
+
+  .pa-cookie-flow {
+    grid-template-columns: 1fr;
+  }
+}

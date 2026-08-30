@@ -8,6 +8,7 @@ import { SiteHeader } from '../site-header/site-header';
   selector: 'app-cookie-policy-page',
   imports: [RouterLink, SiteHeader],
   templateUrl: './cookie-policy-page.html',
+  styleUrl: './cookie-policy-page.css',
 })
 export class CookiePolicyPage implements OnInit {
   private readonly pageMeta = inject(PageMetaService);

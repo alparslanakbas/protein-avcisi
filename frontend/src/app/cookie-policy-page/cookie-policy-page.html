@@ -1,58 +1,109 @@
 <div class="noc-shell min-h-screen bg-[var(--noc-bg)] text-[var(--noc-text)]">
   <app-site-header />
 
-  <main class="mx-auto max-w-[720px] px-[28px] py-[22px]">
-    <h1 class="text-[32px] font-medium tracking-[-0.03em] sm:text-[36px]">Çerez Politikası</h1>
-    <p class="mt-2 text-xs text-[var(--noc-neutral-500)]">Son güncelleme: 14 Ağustos 2026</p>
+  <main class="pa-cookie-main">
+    <header class="pa-cookie-hero">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--noc-accent)]">Gizlilik merkezi</p>
+        <h1 class="mt-4 text-[38px] font-semibold leading-[1.08] tracking-[-0.04em] sm:text-[52px]">Çerez tercihlerin</h1>
+        <p class="mt-4 text-base leading-7 text-[var(--noc-neutral-300)] sm:text-lg">Sade, görünür ve senin kontrolünde.</p>
+      </div>
+      <span class="pa-cookie-date">Güncellendi · 14 Ağustos 2026</span>
+    </header>
 
-    <div class="mt-8 space-y-8 text-sm leading-relaxed text-[var(--noc-neutral-300)]">
-      <section>
-        <h2 class="mb-2 text-base font-medium text-[var(--noc-text)]">Şu An Çerez Kullanmıyoruz</h2>
-        <p>
-          ProteinAvcısı şu anda reklam, ziyaretçi analitiği veya izleme amaçlı hiçbir çerez
-          kullanmıyor. Sitede yalnızca bir tarayıcı yerel depolama (localStorage) girişi bulunuyor:
-          açık/koyu tema tercihin. Bu bilgi cihazından dışarı hiç çıkmaz, sunucularımıza
-          gönderilmez.
-        </p>
-      </section>
+    <section class="pa-cookie-layout">
+      <article class="pa-cookie-control">
+        <header class="pa-cookie-control-head">
+          <div>
+            <span class="pa-cookie-label">Bu cihaz</span>
+            <h2>Tercih özeti</h2>
+          </div>
+          <span class="pa-cookie-safe"><i class="ph ph-shield-check" aria-hidden="true"></i> Takip kapalı</span>
+        </header>
 
-      <section>
-        <h2 class="mb-2 text-base font-medium text-[var(--noc-text)]">İleride Ne Değişebilir</h2>
-        <p>
-          Sitenin gelir modelinin bir parçası olarak ileride reklam (ör. Google AdSense) veya
-          ziyaretçi analitiği (ör. Google Analytics) ekleyebiliriz. Bu servisler devreye
-          girdiğinde üçüncü taraf çerezleri kullanabilirler. Bu değişiklik yapılmadan önce:
-        </p>
-        <ul class="mt-2 list-disc space-y-1 pl-5">
-          <li>bu sayfa güncel çerez listesiyle yeniden yazılacak,</li>
-          <li>sitenin altındaki bilgilendirme çubuğu gerçek bir onay isteğine dönüşecek,</li>
-          <li>"Reddet" seçeneği bu tür script'lerin yüklenmesini gerçekten engelleyecek.</li>
-        </ul>
-      </section>
+        <div class="pa-cookie-setting">
+          <span class="pa-cookie-icon" aria-hidden="true"><i class="ph ph-moon"></i></span>
+          <div>
+            <h3>Tema tercihi</h3>
+            <p>Açık/koyu mod seçimini cihazında hatırlar.</p>
+          </div>
+          <span class="pa-cookie-local"><i class="ph ph-check-circle" aria-hidden="true"></i> Yerel kayıt</span>
+        </div>
 
-      <section>
-        <h2 class="mb-2 text-base font-medium text-[var(--noc-text)]">Tercihini Değiştirmek</h2>
-        <p>
-          Sayfanın altındaki çubuktan verdiğin "Kabul Et" / "Reddet" tercihi tarayıcının yerel
-          depolamasında saklanır. Tarayıcı verilerini temizlersen çubuk tekrar görünür ve
-          tercihini yeniden belirleyebilirsin.
-        </p>
-      </section>
+        <div class="pa-cookie-setting">
+          <span class="pa-cookie-icon" aria-hidden="true"><i class="ph ph-check-circle"></i></span>
+          <div>
+            <h3>Çerez onayı tercihi</h3>
+            <p>Bilgilendirme çubuğundaki seçimini yerel olarak saklar.</p>
+          </div>
+          <span class="pa-cookie-local"><i class="ph ph-check-circle" aria-hidden="true"></i> Yerel kayıt</span>
+        </div>
 
-      <section>
-        <h2 class="mb-2 text-base font-medium text-[var(--noc-text)]">Sorular</h2>
-        <p>
-          Çerez politikamızla ilgili sorularını
-          <a href="mailto:destek@proteinavcisi.com.tr" class="font-medium text-[var(--noc-accent)] hover:underline">destek&#64;proteinavcisi.com.tr</a>
-          adresine iletebilirsin. Kişisel verilerinle ilgili genel bilgi için
-          <a routerLink="/gizlilik-politikasi" class="font-medium text-[var(--noc-accent)] hover:underline">Gizlilik Politikası</a>
-          sayfasına bakabilirsin.
-        </p>
-      </section>
-    </div>
+        <div class="pa-cookie-setting">
+          <span class="pa-cookie-icon" aria-hidden="true"><i class="ph ph-chart-line-up"></i></span>
+          <div>
+            <h3>Ziyaretçi analitiği</h3>
+            <p>Şu anda kullanılmıyor.</p>
+          </div>
+          <span class="pa-cookie-disabled">Devre dışı</span>
+        </div>
 
-    <div class="mt-10 text-center">
-      <a routerLink="/" class="text-sm font-medium text-[var(--noc-accent)]">← Ana sayfaya dön</a>
+        <div class="pa-cookie-setting">
+          <span class="pa-cookie-icon" aria-hidden="true"><i class="ph ph-megaphone-simple"></i></span>
+          <div>
+            <h3>Reklam çerezleri</h3>
+            <p>Şu anda kullanılmıyor.</p>
+          </div>
+          <span class="pa-cookie-disabled">Devre dışı</span>
+        </div>
+      </article>
+
+      <div class="pa-cookie-details">
+        <article class="pa-cookie-card">
+          <span class="pa-cookie-icon" aria-hidden="true"><i class="ph ph-info"></i></span>
+          <h2>Şu an çerez kullanmıyoruz</h2>
+          <p>
+            ProteinAvcısı şu anda reklam, ziyaretçi analitiği veya izleme amaçlı hiçbir çerez
+            kullanmıyor. Yalnızca açık/koyu tema ve çerez onayı tercihlerin tarayıcının yerel
+            depolamasında (localStorage) tutulur. Bu bilgiler cihazından dışarı çıkmaz ve
+            sunucularımıza gönderilmez.
+          </p>
+        </article>
+
+        <article class="pa-cookie-card">
+          <span class="pa-cookie-label">Bir gün servis eklenirse</span>
+          <h2>Önce bilgilendirir, sonra seçimini sorarız</h2>
+          <p>
+            Sitenin gelir modelinin bir parçası olarak ileride reklam veya ziyaretçi analitiği
+            ekleyebiliriz. Bu servisler üçüncü taraf çerezleri kullanabilir. Değişiklik yapılmadan önce:
+          </p>
+          <ol class="pa-cookie-flow">
+            <li><span>1</span> Politika ve çerez listesi güncellenir</li>
+            <li><span>2</span> Açık onayın istenir</li>
+            <li><span>3</span> “Reddet” ilgili script’leri engeller</li>
+          </ol>
+        </article>
+
+        <article class="pa-cookie-card">
+          <span class="pa-cookie-label">Tercihini değiştirmek</span>
+          <h2>Seçimini yeniden yapabilirsin</h2>
+          <p>
+            Sayfanın altındaki çubuktan verdiğin “Kabul Et” veya “Reddet” tercihi cihazında saklanır.
+            Tarayıcı verilerini temizlediğinde çubuk yeniden görünür ve tercihini tekrar belirleyebilirsin.
+          </p>
+        </article>
+
+        <article class="pa-cookie-card pa-cookie-contact">
+          <span class="pa-cookie-label">Bir sorun mu var?</span>
+          <h2>Bizimle iletişime geç</h2>
+          <a href="mailto:destek@proteinavcisi.com.tr"><i class="ph ph-envelope-simple" aria-hidden="true"></i> destek&#64;proteinavcisi.com.tr</a>
+          <a routerLink="/gizlilik-politikasi"><i class="ph ph-shield-check" aria-hidden="true"></i> Gizlilik Politikası</a>
+        </article>
+      </div>
+    </section>
+
+    <div class="pa-cookie-home-link">
+      <a routerLink="/">← Ana sayfaya dön</a>
     </div>
   </main>
 </div>
