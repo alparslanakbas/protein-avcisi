@@ -1,4 +1,42 @@
 services:
+  # Veritabanı Neon'dan (yönetilen, serverless) buraya taşındı. Neon'un
+  # ücretsiz planı compute-SAATİ faturalandırıyor: veritabanı "uyanık"
+  # durduğu her saat sayılıyor, sorgu sayısı değil. SSR bir site + arama
+  # motoru botları + izleme pingi yüzünden endpoint pratikte hiç uyumuyordu,
+  # bu da 100 CU-saatlik aylık kotayı döngü bitmeden tüketiyordu. Veri 24 MB;
+  # bu boyut için serverless'ın esnekliğine ihtiyaç yok, VM'de zaten boşta
+  # duran kaynak var.
+  #
+  # initdb argümanları Neon'daki ayarla BİREBİR aynı olmak zorunda:
+  # locale provider "builtin", locale "C.UTF-8", kodlama UTF8. Farklı bir
+  # collation ile kurulsaydı metin sıralaması ve index düzeni sessizce
+  # değişirdi (Türkçe içerikte fark eder).
+  db:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=indirim_takip
+      - POSTGRES_USER=protein
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_INITDB_ARGS=--encoding=UTF8 --locale-provider=builtin --builtin-locale=C.UTF-8
+    # Port host'a AÇILMIYOR: veritabanına yalnızca compose ağı üzerinden,
+    # servis adıyla (db:5432) erişiliyor. Dışarıdan doğrudan erişim yok.
+    expose:
+      - "5432"
+    # Docker varsayılan olarak SIGTERM gönderiyor; Postgres bunu "smart
+    # shutdown" sayıp açık istemcileri bekliyor, süre dolunca SIGKILL
+    # geliyor ve açılışta kurtarma gerekiyor. SIGINT "fast shutdown" demek.
+    stop_signal: SIGINT
+    stop_grace_period: 30s
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U protein -d indirim_takip"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
   backend:
     build: ./backend
     restart: unless-stopped
@@ -23,6 +61,13 @@ services:
       - DescriptionBackfill__Enabled=true
     expose:
       - "8080"
+    # Backend açılışta EF migration çalıştırıyor; veritabanı hazır değilken
+    # başlarsa hata verir. Deploy workflow'u backend'i "--no-deps" ile
+    # yenilediği için bu koşul orada devreye girmiyor (db zaten sürekli
+    # ayakta, her deploy'da gereksizce yeniden başlatılmasın diye böyle).
+    depends_on:
+      db:
+        condition: service_healthy
 
   frontend:
     build: ./frontend
@@ -56,3 +101,4 @@ services:
 volumes:
   caddy_data:
   caddy_config:
+  pg_data:
