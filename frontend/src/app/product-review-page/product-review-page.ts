@@ -5,6 +5,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
+import { dedupeSameDaySamePrice, hoverAlign, nearestPointIndex, tooltipDateLabel } from '../core/chart-hover';
 import { buildPageTitle, clampDescription } from '../core/meta-description';
 import { buildProductFacts, buildProductJsonLdDescription } from '../core/product-facts';
 import { buildBreadcrumbJsonLd } from '../core/breadcrumb';
@@ -137,7 +138,9 @@ export class ProductReviewPage implements OnInit {
     }).subscribe({
       next: ({ deal, history }) => {
         this.deal.set(deal);
-        this.points.set(history.points);
+        // Aynı gün + aynı fiyat tekrarlarını ele — yoksa hover art arda
+        // aynı tarihi gösteriyor (modalda yaşanan hatanın aynısı).
+        this.points.set(dedupeSameDaySamePrice(history.points));
         this.setMeta(deal);
         this.loading.set(false);
 
@@ -281,11 +284,58 @@ export class ProductReviewPage implements OnInit {
     return buildAreaPath(this.coordinates(), CHART.height);
   }
 
-  private coordinates() {
+  private coordinates(): [number, number][] {
     const pts = this.points();
     if (pts.length === 0) return [];
     const prices = pts.map((p) => p.price);
     return toCoordinates(pts, Math.min(...prices), Math.max(...prices), CHART);
+  }
+
+  // --- Grafik etkileşimi ---
+  // Önceden bu sayfada grafik yalnızca çizgiydi; üzerine gelince hiçbir bilgi
+  // vermiyordu. Hesaplar core/chart-hover.ts'te paylaşılıyor — ürün modalında
+  // aynı mantık üç ayrı üretim hatası vermişti, ikinci bir kopya o hataların
+  // geri gelmesini garanti ederdi.
+  protected readonly hoverIndex = signal<number | null>(null);
+
+  protected readonly hoverInfo = computed(() => {
+    const idx = this.hoverIndex();
+    if (idx === null) return null;
+    const coords = this.coordinates();
+    const pts = this.points();
+    if (idx >= coords.length || idx >= pts.length) return null;
+
+    const [x, y] = coords[idx];
+    return {
+      x,
+      y,
+      align: hoverAlign(x, CHART.width),
+      price: pts[idx].price,
+      dateLabel: tooltipDateLabel(pts, idx),
+    };
+  });
+
+  protected onChartMouseMove(event: MouseEvent): void {
+    this.updateHover(event.currentTarget as SVGSVGElement, event.clientX);
+  }
+
+  protected onChartMouseLeave(): void {
+    this.hoverIndex.set(null);
+  }
+
+  // Mobilde mousemove tetiklenmiyor; parmağın grafiği kesintisiz takip etmesi
+  // için touch olaylarına ayrıca bağlanıyor. touchend'de bilinçli olarak
+  // sıfırlanmıyor — parmak kalkınca son değer görünür kalıyor.
+  protected onChartTouchMove(event: TouchEvent): void {
+    const touch = event.touches[0];
+    if (!touch) return;
+    // Grafik içindeyken sayfanın kaymasını engelle.
+    event.preventDefault();
+    this.updateHover(event.currentTarget as SVGSVGElement, touch.clientX);
+  }
+
+  private updateHover(svg: SVGSVGElement, clientX: number): void {
+    this.hoverIndex.set(nearestPointIndex(svg, clientX, this.coordinates(), CHART.width));
   }
 
   protected categoryLabel(slug: string | null): string {

@@ -5,11 +5,11 @@ import { of } from 'rxjs';
 
 import { ProductModal } from './product-modal';
 
-// Bu bileşenin grafik yardımcı metotları (dedupe, eksen etiketleri, tooltip)
-// bu oturumda üç kez gerçek prod bug'ı vermişti (aynı gün tekrar eden
-// etiketler, kenar etiketlerinin taşması, aynı gün/fiyat noktalarının
-// hover'da tekrar tekrar görünmesi) — regresyon testleri bilinçli olarak
-// buraya odaklandı. Metotlar `points` parametresi alıp saf hesaplama
+// Bu bileşenin grafik yardımcı metotları bu oturumda üç kez gerçek prod
+// bug'ı vermişti — regresyon testleri bilinçli olarak buraya odaklandı.
+// Hover/dedupe/tooltip hesapları inceleme sayfasıyla paylaşıldığı için
+// core/chart-hover.ts'e taşındı; testleri de core/chart-hover.spec.ts'te.
+// Buradaki metotlar `points` parametresi alıp saf hesaplama
 // yaptığı için `deal` input'unu hiç set etmeden (ve detectChanges hiç
 // çağırmadan, constructor'daki effect()'lerin tetiklenmesini önleyerek)
 // doğrudan çağrılabiliyor — HTTP/route mock'una gerek yok.
@@ -27,36 +27,6 @@ describe('ProductModal - fiyat grafiği yardımcı fonksiyonları', () => {
       ],
     });
     component = TestBed.createComponent(ProductModal).componentInstance;
-  });
-
-  describe('dedupeSameDaySamePrice', () => {
-    it('aynı gün + aynı fiyatlı ardışık noktaları tek noktaya indirir', () => {
-      const points = [
-        { price: 339.15, scrapedAt: '2026-08-10T08:00:00Z' },
-        { price: 339.15, scrapedAt: '2026-08-10T14:00:00Z' },
-        { price: 399.0, scrapedAt: '2026-08-11T08:00:00Z' },
-        { price: 399.0, scrapedAt: '2026-08-12T08:00:00Z' },
-      ];
-
-      const result = component.dedupeSameDaySamePrice(points);
-
-      expect(result).toEqual([
-        { price: 339.15, scrapedAt: '2026-08-10T14:00:00Z' },
-        { price: 399.0, scrapedAt: '2026-08-11T08:00:00Z' },
-        { price: 399.0, scrapedAt: '2026-08-12T08:00:00Z' },
-      ]);
-    });
-
-    it('aynı gün ama farklı fiyatlı noktaları koruyor (gerçek bir gün-içi değişiklik)', () => {
-      const points = [
-        { price: 100, scrapedAt: '2026-08-10T08:00:00Z' },
-        { price: 90, scrapedAt: '2026-08-10T14:00:00Z' },
-      ];
-
-      const result = component.dedupeSameDaySamePrice(points);
-
-      expect(result.length).toBe(2);
-    });
   });
 
   describe('buildXAxisLabels', () => {
@@ -109,24 +79,4 @@ describe('ProductModal - fiyat grafiği yardımcı fonksiyonları', () => {
     });
   });
 
-  describe('tooltipDateLabel', () => {
-    it('aynı gün tek nokta varsa sadece tarih gösterir (saat yok)', () => {
-      const points = [{ price: 100, scrapedAt: '2026-08-11T08:00:00Z' }];
-
-      const label = component.tooltipDateLabel(points, 0);
-
-      expect(label).not.toMatch(/\d{2}:\d{2}$/);
-    });
-
-    it('aynı gün birden fazla nokta varsa hangi an değiştiği belli olsun diye saat ekler', () => {
-      const points = [
-        { price: 100, scrapedAt: '2026-08-11T08:00:00Z' },
-        { price: 90, scrapedAt: '2026-08-11T20:00:00Z' },
-      ];
-
-      const label = component.tooltipDateLabel(points, 1);
-
-      expect(label).toMatch(/\d{2}:\d{2}$/);
-    });
-  });
 });

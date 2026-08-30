@@ -84,10 +84,40 @@
       <h2 class="mt-[45px] text-[20px] font-medium">Son {{ historyDays }} günün fiyat geçmişi</h2>
       <div class="mt-3 rounded-[14px] bg-[var(--noc-card)] p-4 shadow-[var(--noc-shadow-sm)]">
         @if (points().length > 1) {
-          <svg [attr.viewBox]="'0 0 ' + chart.width + ' ' + chart.height" class="h-[160px] w-full" preserveAspectRatio="none">
-            <path [attr.d]="chartArea()" fill="var(--noc-accent)" opacity="0.14" />
-            <path [attr.d]="chartPath()" fill="none" stroke="var(--noc-accent)" stroke-width="2" />
-          </svg>
+          <div class="relative">
+            <svg
+              [attr.viewBox]="'0 0 ' + chart.width + ' ' + chart.height"
+              class="h-[160px] w-full touch-none cursor-crosshair"
+              preserveAspectRatio="none"
+              (mousemove)="onChartMouseMove($event)"
+              (mouseleave)="onChartMouseLeave()"
+              (touchstart)="onChartTouchMove($event)"
+              (touchmove)="onChartTouchMove($event)"
+            >
+              <path [attr.d]="chartArea()" fill="var(--noc-accent)" opacity="0.14" />
+              <path [attr.d]="chartPath()" fill="none" stroke="var(--noc-accent)" stroke-width="2" />
+
+              @if (hoverInfo(); as hover) {
+                <line
+                  [attr.x1]="hover.x" y1="0" [attr.x2]="hover.x" [attr.y2]="chart.height"
+                  stroke="var(--noc-accent)" stroke-width="1" stroke-dasharray="4 3"
+                />
+                <circle [attr.cx]="hover.x" [attr.cy]="hover.y" r="4.5" fill="var(--noc-accent)" />
+              }
+            </svg>
+
+            @if (hoverInfo(); as hover) {
+              <div
+                class="pointer-events-none absolute -translate-y-[calc(100%+8px)] whitespace-nowrap rounded-[8px] bg-[var(--noc-card)] px-2 py-1 text-center shadow-[var(--noc-shadow-md)]"
+                [class]="hover.align === 'left' ? 'translate-x-0' : hover.align === 'right' ? '-translate-x-full' : '-translate-x-1/2'"
+                [style.left.%]="(hover.x / chart.width) * 100"
+                [style.top.%]="(hover.y / chart.height) * 100"
+              >
+                <div class="text-[10px] text-[var(--noc-neutral-500)]">{{ hover.dateLabel }}</div>
+                <div class="text-xs font-medium">{{ hover.price | number: '1.2-2' }} ₺</div>
+              </div>
+            }
+          </div>
         } @else {
           <div class="py-8 text-center text-xs text-[var(--noc-neutral-500)]">
             Bu ürün için henüz yeterli fiyat geçmişi birikmedi.

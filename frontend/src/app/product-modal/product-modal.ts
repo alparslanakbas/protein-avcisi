@@ -3,6 +3,7 @@ import { Component, PLATFORM_ID, computed, effect, inject, input, output, signal
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
+import { dedupeSameDaySamePrice, hoverAlign, nearestPointIndex, tooltipDateLabel } from '../core/chart-hover';
 import { buildProductFacts } from '../core/product-facts';
 import { buildProductNarrative } from '../core/product-narrative';
 import { canonicalOrigin } from '../core/canonical-link';
@@ -146,14 +147,14 @@ export class ProductModal {
     // ortalı hizalama tooltip'in yarısını taşırıp kırpılmasına yol açıyordu
     // (modal overflow-y-auto olduğu için overflow-x da örtük kısıtlanıyor).
     // Kenara yakınsa hizalamayı o yöne kaydırıyoruz.
-    const align: 'left' | 'center' | 'right' = x < CHART_WIDTH * 0.12 ? 'left' : x > CHART_WIDTH * 0.88 ? 'right' : 'center';
+    const align = hoverAlign(x, CHART_WIDTH);
 
     return {
       x,
       y,
       align,
       price: pts[idx].price,
-      dateLabel: this.tooltipDateLabel(pts, idx),
+      dateLabel: tooltipDateLabel(pts, idx),
     };
   });
 
@@ -351,23 +352,8 @@ export class ProductModal {
   }
 
   private updateHoverFromClientX(svg: SVGSVGElement, clientX: number): void {
-    const coords = this.coordinates();
-    if (coords.length === 0) return;
-
-    const rect = svg.getBoundingClientRect();
-    const scaleX = CHART_WIDTH / rect.width;
-    const svgX = (clientX - rect.left) * scaleX;
-
-    let nearestIndex = 0;
-    let nearestDist = Infinity;
-    coords.forEach(([x], i) => {
-      const dist = Math.abs(x - svgX);
-      if (dist < nearestDist) {
-        nearestDist = dist;
-        nearestIndex = i;
-      }
-    });
-    this.hoverIndex.set(nearestIndex);
+    const idx = nearestPointIndex(svg, clientX, this.coordinates(), CHART_WIDTH);
+    if (idx !== null) this.hoverIndex.set(idx);
   }
 
   private load(productId: number, days: number): void {
@@ -376,7 +362,7 @@ export class ProductModal {
 
     this.priceHistoryService.get(productId, days).subscribe({
       next: (history) => {
-        this.points.set(this.dedupeSameDaySamePrice(history.points));
+        this.points.set(dedupeSameDaySamePrice(history.points));
         this.minPrice.set(history.minPrice);
         this.maxPrice.set(history.maxPrice);
         this.currentPrice.set(history.currentPrice);
@@ -401,30 +387,6 @@ export class ProductModal {
   // Aynı gün içinde (dedupe sonrası) başka bir nokta daha kaldıysa, bu
   // gerçek bir gün-içi fiyat değişikliği demektir — sadece tarih göstermek
   // hangi nokta hangi an olduğunu ayırt ettirmiyor, saat de ekleniyor.
-  private tooltipDateLabel(points: PricePoint[], idx: number): string {
-    const day = axisDateFormatter.format(new Date(points[idx].scrapedAt));
-    const sameDayCount = points.filter((p) => axisDateFormatter.format(new Date(p.scrapedAt)) === day).length;
-    const formatter = sameDayCount > 1 ? tooltipDateTimeFormatter : tooltipDateFormatter;
-    return formatter.format(new Date(points[idx].scrapedAt));
-  }
-
-  private dedupeSameDaySamePrice(points: PricePoint[]): PricePoint[] {
-    const result: PricePoint[] = [];
-
-    for (const point of points) {
-      const prev = result[result.length - 1];
-      const sameDay = prev && axisDateFormatter.format(new Date(prev.scrapedAt)) === axisDateFormatter.format(new Date(point.scrapedAt));
-
-      if (prev && sameDay && prev.price === point.price) {
-        result[result.length - 1] = point;
-      } else {
-        result.push(point);
-      }
-    }
-
-    return result;
-  }
-
   private buildXAxisLabels(points: PricePoint[]): { x: number; label: string }[] {
     if (points.length === 0) return [];
 
