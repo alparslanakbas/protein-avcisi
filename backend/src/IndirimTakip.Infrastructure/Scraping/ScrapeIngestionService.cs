@@ -45,6 +45,11 @@ public class ScrapeIngestionService(
         // yalnızca taranan adreslere bakıyor, tek markalı scraper'larda
         // davranış değişmiyor.
         var scrapedUrls = scrapedProducts.Select(sp => sp.Url).Distinct().ToList();
+        // Bu taramada hangi adresin birden fazla ürüne (varyanta) karşılık
+        // geldiği — aşağıda eşleştirme stratejisini seçmek için gerekiyor.
+        var scrapedCountByUrl = scrapedProducts
+            .GroupBy(sp => sp.Url)
+            .ToDictionary(g => g.Key, g => g.Count());
 
         // Son kaydedilen fiyat — <lastmod> için "içerik gerçekten değişti mi"
         // kararında kullanılıyor. Korelasyonlu alt sorgu + FirstOrDefault
@@ -61,9 +66,25 @@ public class ScrapeIngestionService(
                     .FirstOrDefault(),
             })
             .ToDictionaryAsync(x => x.Id, x => x.LastPrice, cancellationToken);
-        var existingProducts = await db.Products
-            .Where(p => scrapedUrls.Contains(p.Url))
-            .ToDictionaryAsync(p => p.Url, cancellationToken);
+        // Adres BENZERSİZ DEĞİL: Yeşilmarka'nın mağaza API'sinde her aroma ayrı
+        // bir ürün kaydı (kendi stoğu ve fiyatı var) ama hepsi aynı sayfa
+        // slug'ını paylaşıyor — "Whey Protein Tozu - Ananas" ile "- Elma" aynı
+        // /whey-protein adresine çıkıyor. Burada doğrudan ToDictionary(p => p.Url)
+        // kullanılıyordu ve ikinci taramadan itibaren "An item with the same key
+        // has already been added" ile markanın TÜM taraması iptal oluyordu
+        // (Yeşilmarka 28 Ağustos'tan 30 Ağustos'a kadar hiç veri üretmedi).
+        //
+        // Sözlük yerine adres başına liste tutuluyor. Tek kayıtlı adreslerde
+        // davranış AYNEN eskisi gibi (isim değişikliği yerinde güncelleniyor);
+        // yalnızca aynı adreste birden fazla kayıt varsa isimle ayrıştırılıyor.
+        // Bu ayrım önemli: her zaman isimle eşleştirmek, markanın bir ürünü
+        // yeniden adlandırdığı durumda eski satırı öksüz bırakıp yenisini
+        // oluştururdu.
+        var existingByUrl = (await db.Products
+                .Where(p => scrapedUrls.Contains(p.Url))
+                .ToListAsync(cancellationToken))
+            .GroupBy(p => p.Url)
+            .ToDictionary(g => g.Key, g => g.ToList());
 
         var touchedProducts = new List<Product>();
         // Yalnızca bu taramada İLK KEZ görülen ürünler — IndexNow'a yeni
@@ -80,7 +101,27 @@ public class ScrapeIngestionService(
             var size = ProductAttributeParser.ExtractSize(scraped.Name);
             var flavor = ProductAttributeParser.ExtractFlavor(scraped.Name);
 
-            if (!existingProducts.TryGetValue(scraped.Url, out var product))
+            Product? product = null;
+            if (existingByUrl.TryGetValue(scraped.Url, out var sameUrlProducts))
+            {
+                // Adres bu markada gerçekten tekil mi? Hem veritabanında hem bu
+                // taramada tek karşılığı varsa eski davranış korunuyor: adresle
+                // eşleştir, böylece marka ürünü yeniden adlandırdığında satır
+                // öksüz kalmadan yerinde güncellenir.
+                //
+                // İki taraftan biri bile çoğulsa isimle eşleştirmek ZORUNLU.
+                // Yalnızca veritabanı tarafına bakmak yetmezdi: adres ilk kez
+                // çoğullaştığında (DB'de 1 satır, taramada 2 varyant) her iki
+                // varyant da aynı satıra yazar, biri diğerini sessizce ezerdi.
+                var tekil = sameUrlProducts.Count == 1
+                    && scrapedCountByUrl.GetValueOrDefault(scraped.Url) == 1;
+
+                product = tekil
+                    ? sameUrlProducts[0]
+                    : sameUrlProducts.Find(p => p.Name == scraped.Name);
+            }
+
+            if (product is null)
             {
                 product = new Product
                 {
@@ -104,6 +145,15 @@ public class ScrapeIngestionService(
                 product.ContentUpdatedAt = DateTimeOffset.UtcNow;
                 db.Products.Add(product);
                 newProducts.Add(product);
+
+                // Yeni kayıt aramaya da giriyor: aynı tarama içinde aynı
+                // (adres, isim) ikinci kez gelirse ikinci bir satır açılmasın.
+                // Mevcut çift kayıtlar tam olarak böyle oluşmuştu — ilk turda
+                // hiçbiri veritabanında yoktu, hepsi "yeni" sayıldı.
+                if (existingByUrl.TryGetValue(scraped.Url, out var bucket))
+                    bucket.Add(product);
+                else
+                    existingByUrl[scraped.Url] = [product];
             }
             else
             {
