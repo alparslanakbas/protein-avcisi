@@ -12,7 +12,12 @@ services:
   # collation ile kurulsaydı metin sıralaması ve index düzeni sessizce
   # değişirdi (Türkçe içerikte fark eder).
   db:
-    image: postgres:18-alpine
+    # alpine DEĞİL, bilinçli tercih: musl libc'de locale desteği sınırlı,
+    # "C.UTF-8" bir libc locale'i olarak bulunmuyor ve initdb sessizce
+    # imajın varsayılanına (en_US.utf8) düşüyor. Bu, taşınan veriyle farklı
+    # bir metin sıralama davranışı demek olurdu. Debian tabanlı imajda
+    # C.UTF-8 mevcut.
+    image: postgres:18
     restart: unless-stopped
     environment:
       - POSTGRES_DB=indirim_takip
