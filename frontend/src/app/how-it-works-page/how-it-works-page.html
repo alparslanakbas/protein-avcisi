@@ -1,76 +1,130 @@
-<div class="noc-shell min-h-screen bg-[var(--noc-bg)] text-[var(--noc-text)]">
+<div class="noc-shell bg-[var(--noc-bg)] text-[var(--noc-text)]">
   <app-site-header />
 
-  <main class="mx-auto max-w-[720px] px-[28px] py-[22px]">
-    <h1 class="text-[32px] font-medium tracking-[-0.03em] sm:text-[36px]">Nasıl Çalışıyoruz?</h1>
-    <p class="mt-3 text-[15px] text-[var(--noc-neutral-300)]">
-      ProteinAvcısı'nın arkasındaki mantığı adım adım, gizli bir şey bırakmadan anlatıyoruz.
-    </p>
+  <main class="pa-method-main">
+    <header class="pa-method-hero">
+      <p class="pa-method-eyebrow">Şeffaflık</p>
+      <h1>Nasıl Çalışıyoruz?</h1>
+      <p>Bir fiyatın fırsat sayılmasına kadar geçen yol.</p>
+    </header>
 
-    <div class="mt-8 space-y-8 text-sm leading-relaxed text-[var(--noc-neutral-300)]">
-      <section>
-        <h2 class="mb-2 text-base font-medium text-[var(--noc-text)]">1. Fiyatları nasıl topluyoruz</h2>
-        <p>
-          Takip ettiğimiz 4 markanın (HIQ, SSN, Hardline, ProteinOcean) sitelerini günde 4 kez otomatik olarak
-          tarıyoruz — her ürünün güncel fiyatını, markanın kendi sitesinden çekip kendi veritabanımıza
-          kaydediyoruz. Bu, insan eliyle değil bir yazılım tarafından, sabit bir program üzerinde çalışır.
-        </p>
-      </section>
+    <ol class="pa-method-flow" aria-label="Fiyat takip süreci">
+      <li class="pa-method-step">
+        <span class="pa-method-step-icon" aria-hidden="true">
+          <i class="ph ph-storefront"></i>
+        </span>
+        <span class="pa-method-step-index" aria-hidden="true">1</span>
+        <h2>Resmî marka siteleri</h2>
+        <p><strong>8 markadan</strong> güncel ürün fiyatlarını topluyoruz.</p>
+      </li>
 
-      <section>
-        <h2 class="mb-2 text-base font-medium text-[var(--noc-text)]">2. "Gerçek indirim" nasıl hesaplanıyor</h2>
-        <p>
-          Bir ürünün "İndirimdekiler" listesine girmesi için markanın kendi beyanına (mesela sitede yazan
-          "%20 indirim" etiketine) güvenmiyoruz — bunun yerine kendi topladığımız fiyat geçmişine bakıyoruz.
-          Bir ürünün <strong class="text-[var(--noc-text)]">son 30 gün içindeki en yüksek fiyatı</strong> referans fiyat olarak alınır; güncel
-          fiyat bu referans fiyattan düşükse, gerçek bir indirim olduğunu düşünüp listeye ekleriz. Referans
-          fiyattan düşük değilse, marka sitesinde "indirim" yazsa bile bizim listemizde görünmez.
-        </p>
-      </section>
+      <li class="pa-method-step">
+        <span class="pa-method-step-icon" aria-hidden="true">
+          <i class="ph ph-clock-counter-clockwise"></i>
+        </span>
+        <span class="pa-method-step-index" aria-hidden="true">2</span>
+        <h2>6 saatte bir toplama</h2>
+        <p>Fiyatları otomatik olarak yeniliyor ve geçmişe kaydediyoruz.</p>
+      </li>
 
-      <section>
-        <h2 class="mb-2 text-base font-medium text-[var(--noc-text)]">3. "Mağaza Kampanyaları" neden ayrı</h2>
-        <p>
-          Kendi referans fiyat sistemimiz henüz kısa süredir veri biriktiriyor, bu yüzden "İndirimdekiler"
-          listesi bazen boş görünebilir. Bunu tamamlamak için markaların kendi sitelerinde gösterdiği eski/yeni
-          fiyat farkını da ayrı bir "Mağaza Kampanyaları" başlığı altında gösteriyoruz — ama bunu bilinçli
-          olarak <strong class="text-[var(--noc-text)]">doğrulanmamış</strong> etiketiyle, farklı bir rozet rengiyle ayırıyoruz. İkisini
-          karıştırmıyoruz.
-        </p>
-      </section>
+      <li class="pa-method-step">
+        <span class="pa-method-step-icon" aria-hidden="true">
+          <i class="ph ph-chart-line-up"></i>
+        </span>
+        <span class="pa-method-step-index" aria-hidden="true">3</span>
+        <h2>30 günlük fiyat geçmişi</h2>
+        <p>Son 30 gündeki en yüksek fiyatı referans olarak alıyoruz.</p>
+      </li>
 
-      <section>
-        <h2 class="mb-2 text-base font-medium text-[var(--noc-text)]">4. Kupon kodları elle doğrulanıyor</h2>
-        <p>
-          Kupon kodlarını otomatik toplamıyoruz. Kodlar sık değiştiği ve süresi geçmiş bir kod göstermek
-          seni ödeme anında gerçekten yanıltacağı için, yalnızca kendimizin doğruladığı kodları yayınlıyoruz.
-        </p>
-      </section>
+      <li class="pa-method-step pa-method-step--active">
+        <span class="pa-method-step-icon" aria-hidden="true">
+          <i class="ph ph-shield-check"></i>
+        </span>
+        <span class="pa-method-step-index" aria-hidden="true">4</span>
+        <h2>Karar</h2>
+        <p>Güncel fiyatı kendi geçmişiyle karşılaştırıyoruz.</p>
+      </li>
+    </ol>
 
-      <section>
-        <h2 class="mb-2 text-base font-medium text-[var(--noc-text)]">5. Gelir modelimiz sıralamayı etkilemiyor</h2>
-        <p>
-          "Mağazaya Git" linkine tıklamalarını sayıyoruz — ileride bu linkler üzerinden markalarla
-          affiliate/komisyon anlaşmaları yapmayı planlıyoruz. Ama bu, hangi ürünün sana hangi sırada
-          gösterileceğini <strong class="text-[var(--noc-text)]">etkilemiyor</strong> — sıralama her zaman fiyata/indirim oranına dayanır,
-          hangi markanın bize komisyon ödediğine değil. Şu an sitede sponsorlu/öne çıkan ürün listelemesi yok;
-          ileride eklenirse açıkça "sponsorlu" etiketiyle ayrılacak.
-        </p>
-      </section>
+    <section class="pa-method-decision" aria-labelledby="decision-title">
+      <header class="pa-method-decision-head">
+        <span class="pa-method-decision-icon" aria-hidden="true">
+          <i class="ph ph-scales"></i>
+        </span>
+        <div>
+          <p class="pa-method-eyebrow">Karar noktası</p>
+          <h2 id="decision-title">Güncel fiyat referans fiyattan düşük mü?</h2>
+          <p>
+            Referans fiyat, ürünün son 30 gün içinde gördüğümüz en yüksek fiyatıdır. Markanın kendi indirim
+            etiketini bu hesaba katmayız.
+          </p>
+        </div>
+      </header>
 
-      <section>
-        <h2 class="mb-2 text-base font-medium text-[var(--noc-text)]">6. Bilerek göstermediğimiz şeyler</h2>
-        <p>
-          Elimizde güvenilir veri olmayan konularda tahmin yürütmüyoruz. Örnekler: stok durumu bilgisini
-          markaların hepsi güvenilir şekilde paylaşmadığı için hiçbir üründe "stokta var/yok" iddiasında
-          bulunmuyoruz. "Servis başı fiyat" bilgisini yalnızca markanın gerçek besin değeri tablosuna
-          ulaşabildiğimiz ürünlerde gösteriyoruz, geri kalanında uydurma bir rakam paylaşmıyoruz.
-        </p>
-      </section>
-    </div>
+      <div class="pa-method-outcomes">
+        <article class="pa-method-outcome pa-method-outcome--yes">
+          <span class="pa-method-answer">Evet</span>
+          <i class="ph ph-tag" aria-hidden="true"></i>
+          <h3>Gerçek indirim</h3>
+          <p>Ürün, kendi fiyat geçmişine göre gerçekten ucuzladıysa “İndirimdekiler” listesine girer.</p>
+        </article>
 
-    <div class="mt-10 text-center">
-      <a routerLink="/" class="text-sm font-medium text-[var(--noc-accent)]">← Ana sayfaya dön</a>
+        <article class="pa-method-outcome pa-method-outcome--no">
+          <span class="pa-method-answer">Hayır</span>
+          <i class="ph ph-minus-circle" aria-hidden="true"></i>
+          <h3>Gerçek indirim değil</h3>
+          <p>Marka sitesinde “indirim” yazsa bile referans fiyatın altına düşmeyen ürün bu listeye girmez.</p>
+        </article>
+      </div>
+
+      <aside class="pa-method-campaign-note">
+        <i class="ph ph-megaphone-simple" aria-hidden="true"></i>
+        <div>
+          <h3>Mağaza kampanyaları ayrı gösterilir</h3>
+          <p>
+            Markanın kendi sitesindeki eski/yeni fiyat farkı ayrı bir mağaza kampanyası olarak gösterilebilir;
+            bu beyanı <strong>doğrulanmamış</strong> etiketiyle gerçek indirimden ayırırız.
+          </p>
+        </div>
+      </aside>
+    </section>
+
+    <section class="pa-method-principles" aria-labelledby="principles-title">
+      <h2 id="principles-title">Değişmeyen ilkeler</h2>
+
+      <div class="pa-method-principle-grid">
+        <article>
+          <span aria-hidden="true"><i class="ph ph-ticket"></i></span>
+          <div>
+            <h3>Kuponlar elle doğrulanır</h3>
+            <p>Kuponları otomatik toplamıyor, yayınlamadan önce geçerliliğini kontrol ediyoruz.</p>
+          </div>
+        </article>
+
+        <article>
+          <span aria-hidden="true"><i class="ph ph-shield-check"></i></span>
+          <div>
+            <h3>Sıralama ticari ilişkiden etkilenmez</h3>
+            <p>Affiliate veya komisyon anlaşmaları ürünlerin sırasını değiştirmez.</p>
+          </div>
+        </article>
+
+        <article>
+          <span aria-hidden="true"><i class="ph ph-eye-slash"></i></span>
+          <div>
+            <h3>Eksik bilgi tahmin edilmez</h3>
+            <p>Stok ve servis başı fiyat gibi alanları yalnız güvenilir kaynak varsa gösteririz.</p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <div class="pa-method-cta">
+      <a routerLink="/">
+        <i class="ph ph-compass" aria-hidden="true"></i>
+        İndirimleri keşfet
+        <i class="ph ph-arrow-right" aria-hidden="true"></i>
+      </a>
     </div>
   </main>
 </div>

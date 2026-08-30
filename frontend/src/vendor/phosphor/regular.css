@@ -47,8 +47,10 @@
 .ph.ph-caret-down:before { content: "\e136"; }
 .ph.ph-caret-left:before { content: "\e138"; }
 .ph.ph-caret-right:before { content: "\e13a"; }
+.ph.ph-chart-line-up:before { content: "\e156"; }
 .ph.ph-check-circle:before { content: "\e184"; }
 .ph.ph-clock-counter-clockwise:before { content: "\e1a0"; }
+.ph.ph-compass:before { content: "\e1c8"; }
 .ph.ph-cookie:before { content: "\e6ca"; }
 .ph.ph-desktop:before { content: "\e560"; }
 .ph.ph-device-mobile:before { content: "\e1e0"; }
@@ -57,6 +59,7 @@
 .ph.ph-drop-half:before { content: "\e566"; }
 .ph.ph-drop-half-bottom:before { content: "\eb40"; }
 .ph.ph-envelope-simple:before { content: "\e218"; }
+.ph.ph-eye-slash:before { content: "\e224"; }
 .ph.ph-file-text:before { content: "\e23a"; }
 .ph.ph-fire:before { content: "\e242"; }
 .ph.ph-funnel:before { content: "\e266"; }
@@ -69,6 +72,8 @@
 .ph.ph-leaf:before { content: "\e2da"; }
 .ph.ph-lightning:before { content: "\e2de"; }
 .ph.ph-magnifying-glass:before { content: "\e30c"; }
+.ph.ph-megaphone-simple:before { content: "\e642"; }
+.ph.ph-minus-circle:before { content: "\e32c"; }
 .ph.ph-moon:before { content: "\e330"; }
 .ph.ph-package:before { content: "\e390"; }
 .ph.ph-pill:before { content: "\e700"; }
@@ -80,8 +85,10 @@
 .ph.ph-sparkle:before { content: "\e6a2"; }
 .ph.ph-squares-four:before { content: "\e464"; }
 .ph.ph-star:before { content: "\e46a"; }
+.ph.ph-storefront:before { content: "\e470"; }
 .ph.ph-sun:before { content: "\e472"; }
 .ph.ph-tag:before { content: "\e478"; }
+.ph.ph-ticket:before { content: "\e490"; }
 .ph.ph-trash:before { content: "\e4a6"; }
 .ph.ph-warning-circle:before { content: "\e4e2"; }
 .ph.ph-waves:before { content: "\e6de"; }

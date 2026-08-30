@@ -8,6 +8,7 @@ import { SiteHeader } from '../site-header/site-header';
   selector: 'app-how-it-works-page',
   imports: [RouterLink, SiteHeader],
   templateUrl: './how-it-works-page.html',
+  styleUrl: './how-it-works-page.css',
 })
 export class HowItWorksPage implements OnInit {
   private readonly pageMeta = inject(PageMetaService);
