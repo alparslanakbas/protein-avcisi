@@ -1,116 +1,71 @@
-<div class="noc-shell min-h-screen bg-[var(--noc-bg)] text-[var(--noc-text)]">
+<div class="noc-shell bg-[var(--noc-bg)] text-[var(--noc-text)]">
   <app-site-header />
 
-  <main class="mx-auto max-w-[720px] px-[28px] py-[22px]">
-    <h1 class="text-[32px] font-medium tracking-[-0.03em] sm:text-[36px]">İletişim</h1>
-    <p class="mt-3 text-[15px] text-[var(--noc-neutral-300)]">
-      Sorunu, düzeltmeni ya da teklifini doğrudan bize yazabilirsin.
-    </p>
+  <main class="pa-contact-main">
+    <header class="mx-auto max-w-[760px] text-center max-sm:text-left">
+      <p class="m-0 text-[11px] font-extrabold tracking-[.17em] text-[var(--noc-accent)] uppercase">İletişim</p>
+      <h1 class="my-3 text-[clamp(42px,4.5vw,54px)] leading-[1.02] font-bold tracking-[-.052em] text-[var(--noc-text)] max-sm:text-[39px]">Doğru konu, doğrudan doğru adrese.</h1>
+      <p class="mx-auto max-w-[650px] text-base leading-[1.6] text-[var(--noc-neutral-300)] max-sm:text-[15px]">Yanlış fiyat bildirimi, marka iş birliği veya kişisel veri talebi için bize doğrudan e-posta gönderebilirsin.</p>
+    </header>
 
-    <div class="mt-8 space-y-8 text-sm leading-relaxed text-[var(--noc-neutral-300)]">
-      <section
-        class="rounded-[14px] border border-[var(--noc-border)] bg-[var(--noc-surface)] p-5"
-      >
-        <h2 class="mb-2 text-base font-medium text-[var(--noc-text)]">E-posta</h2>
-        <p>
-          Her konu için tek bir adres kullanıyoruz:
-        </p>
-        <a
-          href="mailto:destek&#64;proteinavcisi.com.tr"
-          class="mt-3 inline-flex items-center gap-2 text-[15px] font-medium text-[var(--noc-accent)] hover:underline"
-        >
-          <i class="ph ph-envelope-simple" aria-hidden="true"></i>destek&#64;proteinavcisi.com.tr
-        </a>
-        <p class="mt-3">
-          Gelen e-postaları tek kişi okuyor, bu yüzden yanıt genellikle birkaç iş günü içinde
-          geliyor. Otomatik bir destek sistemi ya da çağrı merkezi yok — bunu baştan söylemek,
-          beklemede kalmandansa daha dürüst.
-        </p>
-      </section>
+    <section class="pa-contact-mail" aria-label="E-posta iletişim bilgileri">
+      <span class="pa-contact-mail-icon" aria-hidden="true"><i class="ph ph-envelope-simple"></i></span>
+      <div class="pa-contact-address">
+        <span>Tek iletişim adresimiz</span>
+        <a href="mailto:destek&#64;proteinavcisi.com.tr">destek&#64;proteinavcisi.com.tr</a>
+      </div>
+      <p><strong>Tek kişi okuyor</strong>Genellikle birkaç iş günü içinde yanıt</p>
+      <a class="pa-contact-primary" href="mailto:destek&#64;proteinavcisi.com.tr">
+        E-posta gönder <i class="ph ph-arrow-right" aria-hidden="true"></i>
+      </a>
+    </section>
 
-      <section>
-        <h2 class="mb-2 text-base font-medium text-[var(--noc-text)]">Yanlış bir fiyat mı gördün?</h2>
-        <p>
-          En çok işimize yarayan mesaj türü bu. Fiyatları markaların kendi sitelerinden otomatik
-          topluyoruz; bir marka sayfa yapısını değiştirdiğinde ya da bir ürünü farklı bir adrese
-          taşıdığında verimiz sessizce eskiyebiliyor.
-        </p>
-        <p class="mt-3">
-          Bildirirken ürünün ProteinAvcısı'ndaki bağlantısını ve markanın sitesinde gördüğün
-          gerçek fiyatı yazman yeterli. Böyle bir bildirim geldiğinde önce doğruluyor, sonra
-          gerekiyorsa toplama mantığını düzeltiyoruz.
-        </p>
-      </section>
+    <section class="pa-contact-topics" aria-labelledby="contact-topics-title">
+      <h2 id="contact-topics-title">Ne hakkında yazmak istiyorsun?</h2>
 
-      <section>
-        <h2 class="mb-2 text-base font-medium text-[var(--noc-text)]">Marka ve iş birliği</h2>
-        <p>
-          Markaysan ve takip listesine eklenmek istiyorsan yazabilirsin. Bir markayı eklemek için
-          izin gerekmiyor — fiyatlar zaten herkese açık — ama ürün akışı (feed) paylaşman hem
-          verinin doğruluğunu hem güncellenme sıklığını belirgin şekilde artırıyor.
-        </p>
-        <p class="mt-3">
-          Ortaklık (affiliate) programın varsa ya da reklam/sponsorluk konuşmak istiyorsan aynı
-          adres geçerli. Şunu peşinen belirtelim: ticari bir ilişki ürünlerin sıralamasını
-          değiştirmiyor. Sıralama her zaman fiyata ve bizim ölçtüğümüz fiyat geçmişine dayanıyor,
-          ödeme yapan markaya öncelik verilmiyor. Ayrıntısı
-          <a routerLink="/nasil-calisiyoruz" class="font-medium text-[var(--noc-accent)] hover:underline"
-            >Nasıl çalışıyoruz?</a
-          >
-          sayfasında.
-        </p>
-      </section>
+      <div class="pa-contact-grid">
+        <article class="pa-contact-topic">
+          <span class="pa-contact-topic-icon" aria-hidden="true"><i class="ph ph-chart-line-up"></i></span>
+          <h3>Yanlış fiyat bildir</h3>
+          <p>Ürün bağlantısını ve markanın sitesinde gördüğün gerçek fiyatı paylaş. Önce doğrulayıp sonra gerekiyorsa düzeltelim.</p>
+          <a href="mailto:destek&#64;proteinavcisi.com.tr?subject=Yanl%C4%B1%C5%9F%20fiyat%20bildirimi">
+            Bize e-posta gönder <i class="ph ph-arrow-right" aria-hidden="true"></i>
+          </a>
+        </article>
 
-      <section>
-        <h2 class="mb-2 text-base font-medium text-[var(--noc-text)]">Sipariş, kargo ve iade</h2>
-        <p>
-          Bu konularda ne yazık ki yardımcı olamıyoruz — ProteinAvcısı bir satış sitesi değil,
-          fiyat karşılaştırma sitesi. Hiçbir ürünü biz satmıyoruz, ödeme almıyoruz, kargo
-          göndermiyoruz. "Mağazaya git" bağlantısına tıkladığında markanın kendi sitesine
-          geçiyorsun ve alışveriş tamamen orada gerçekleşiyor.
-        </p>
-        <p class="mt-3">
-          Bu yüzden siparişin, kargon ya da iaden hakkındaki soruları alışverişi yaptığın markanın
-          müşteri hizmetlerine iletmen gerekiyor. Hangi markadan aldığını hatırlamıyorsan sipariş
-          onay e-postana bakabilirsin.
-        </p>
-      </section>
+        <article class="pa-contact-topic">
+          <span class="pa-contact-topic-icon" aria-hidden="true"><i class="ph ph-megaphone-simple"></i></span>
+          <h3>Marka ve iş birliği</h3>
+          <p>Ürün akışı, affiliate programı, reklam veya sponsorluk teklifleri için aynı adresi kullanabilirsin.</p>
+          <a href="mailto:destek&#64;proteinavcisi.com.tr?subject=Marka%20ve%20i%C5%9F%20birli%C4%9Fi">
+            İş birliğini konuşalım <i class="ph ph-arrow-right" aria-hidden="true"></i>
+          </a>
+        </article>
 
-      <section>
-        <h2 class="mb-2 text-base font-medium text-[var(--noc-text)]">Kişisel verilerin</h2>
-        <p>
-          Bültenden çıkmak için her e-postanın altındaki bağlantı yeterli, bize yazmana gerek yok.
-          KVKK kapsamındaki taleplerin (verine erişme, düzeltme veya silme) için aynı adrese
-          yazabilirsin; hangi verileri tuttuğumuz
-          <a
-            routerLink="/gizlilik-politikasi"
-            class="font-medium text-[var(--noc-accent)] hover:underline"
-            >Gizlilik Politikası</a
-          >
-          sayfasında tek tek yazılı.
-        </p>
-      </section>
+        <article class="pa-contact-topic pa-contact-topic--external">
+          <span class="pa-contact-topic-icon" aria-hidden="true"><i class="ph ph-package"></i></span>
+          <h3>Sipariş, kargo ve iade</h3>
+          <p>Ürünleri biz satmıyoruz. Bu konularda sipariş onayında gördüğün markanın müşteri hizmetleri yardımcı olabilir.</p>
+          <span class="pa-contact-route">Markayla iletişim kur</span>
+        </article>
 
-      <section>
-        <h2 class="mb-2 text-base font-medium text-[var(--noc-text)]">Site sahibi</h2>
-        <p>
-          ProteinAvcısı, {{ founder.name }} tarafından kuruldu ve geliştiriliyor. Arkasında bir
-          şirket ya da ekip değil, tek bir geliştirici var.
-        </p>
-        <p class="mt-3">
-          <a
-            [href]="founder.linkedInUrl"
-            target="_blank"
-            rel="noopener nofollow"
-            class="font-medium text-[var(--noc-accent)] hover:underline"
-            >LinkedIn →</a
-          >
-          <span class="mx-2">·</span>
-          <a routerLink="/hakkimizda" class="font-medium text-[var(--noc-accent)] hover:underline"
-            >Hakkımızda sayfası →</a
-          >
-        </p>
-      </section>
-    </div>
+        <article class="pa-contact-topic">
+          <span class="pa-contact-topic-icon" aria-hidden="true"><i class="ph ph-shield-check"></i></span>
+          <h3>KVKK talebi</h3>
+          <p>Verine erişme, düzeltme veya silme taleplerini aynı destek adresine iletebilirsin.</p>
+          <a href="mailto:destek&#64;proteinavcisi.com.tr?subject=KVKK%20talebi">
+            Talebini gönder <i class="ph ph-arrow-right" aria-hidden="true"></i>
+          </a>
+        </article>
+      </div>
+    </section>
+
+    <aside class="mt-[15px] flex items-center gap-6 rounded-[12px] border border-[var(--noc-divider)] bg-[var(--noc-surface)] px-4 py-[13px] max-sm:flex-col max-sm:items-start">
+      <p class="m-0 text-[11px] leading-[1.45] text-[var(--noc-neutral-500)]"><strong class="block text-xs text-[var(--noc-text)]">Tek geliştiricili, doğrudan iletişim</strong>Otomatik destek sistemi veya çağrı merkezi yok.</p>
+      <nav class="ml-auto flex gap-[18px] max-sm:ml-0 max-sm:flex-wrap" aria-label="İletişim hakkında ek bilgiler">
+        <a routerLink="/hakkimizda" class="whitespace-nowrap text-[11px] font-bold text-[var(--noc-accent)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--noc-accent)]">Hakkımızda <span aria-hidden="true">→</span></a>
+        <a routerLink="/gizlilik-politikasi" class="whitespace-nowrap text-[11px] font-bold text-[var(--noc-accent)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--noc-accent)]">Gizlilik Politikası <span aria-hidden="true">→</span></a>
+      </nav>
+    </aside>
   </main>
 </div>

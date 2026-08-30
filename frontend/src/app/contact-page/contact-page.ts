@@ -11,6 +11,7 @@ import { SiteHeader } from '../site-header/site-header';
   selector: 'app-contact-page',
   imports: [RouterLink, SiteHeader],
   templateUrl: './contact-page.html',
+  styleUrl: './contact-page.css',
 })
 export class ContactPage implements OnInit {
   private readonly pageMeta = inject(PageMetaService);
