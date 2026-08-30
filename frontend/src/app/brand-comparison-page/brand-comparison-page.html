@@ -16,11 +16,11 @@
       </div>
 
       <div class="mb-6 mt-6 grid grid-cols-2 gap-4">
-        <a [routerLink]="['/marka', c.brand1.toLowerCase(), 'indirim-kodu']" class="rounded-[14px] bg-[var(--noc-card)] p-4 text-center shadow-[var(--noc-shadow-sm)] hover:shadow-[var(--noc-shadow-md)]">
+        <a [routerLink]="['/marka', brandSlug(c.brand1), 'indirim-kodu']" class="rounded-[14px] bg-[var(--noc-card)] p-4 text-center shadow-[var(--noc-shadow-sm)] hover:shadow-[var(--noc-shadow-md)]">
           <div class="text-[15px] font-medium">{{ c.brand1 }}</div>
           <div class="mt-1 text-xs text-[var(--noc-neutral-500)]">{{ c.brand1TotalProducts }} ürün takip ediliyor</div>
         </a>
-        <a [routerLink]="['/marka', c.brand2.toLowerCase(), 'indirim-kodu']" class="rounded-[14px] bg-[var(--noc-card)] p-4 text-center shadow-[var(--noc-shadow-sm)] hover:shadow-[var(--noc-shadow-md)]">
+        <a [routerLink]="['/marka', brandSlug(c.brand2), 'indirim-kodu']" class="rounded-[14px] bg-[var(--noc-card)] p-4 text-center shadow-[var(--noc-shadow-sm)] hover:shadow-[var(--noc-shadow-md)]">
           <div class="text-[15px] font-medium">{{ c.brand2 }}</div>
           <div class="mt-1 text-xs text-[var(--noc-neutral-500)]">{{ c.brand2TotalProducts }} ürün takip ediliyor</div>
         </a>

@@ -16,7 +16,7 @@
         }
         <div>
           <a
-            [routerLink]="['/marka', deal().brandName.toLowerCase(), 'indirim-kodu']"
+            [routerLink]="['/marka', brandSlug(deal().brandName), 'indirim-kodu']"
             class="text-[10px] font-medium uppercase tracking-[0.08em] text-[var(--noc-accent)] hover:underline"
           >
             {{ deal().brandName }}

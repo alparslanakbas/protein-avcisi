@@ -4,7 +4,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { BrandComparison } from '../core/brand-comparison.model';
 import { BrandComparisonService } from '../core/brand-comparison.service';
-import { resolveBrandFromSlug } from '../core/brand-slug';
+import { brandSlug, resolveBrandFromSlug } from '../core/brand-slug';
 import { DealsService } from '../core/deals.service';
 import { CATEGORY_LABELS } from '../core/category-labels';
 import { PageMetaService } from '../core/page-meta.service';
@@ -16,6 +16,10 @@ import { SiteHeader } from '../site-header/site-header';
   templateUrl: './brand-comparison-page.html',
 })
 export class BrandComparisonPage implements OnInit {
+  // Adres üretimi tek yerden: toLowerCase() marka adındaki boşluğu ve
+  // Türkçe harfi adrese taşıyıp kanonikten sapan bir kopya üretiyordu.
+  protected readonly brandSlug = brandSlug;
+
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly comparisonService = inject(BrandComparisonService);

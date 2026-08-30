@@ -3,6 +3,7 @@ import { Component, PLATFORM_ID, computed, effect, inject, input, output, signal
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
+import { brandSlug } from '../core/brand-slug';
 import { dedupeSameDaySamePrice, hoverAlign, nearestPointIndex, tooltipDateLabel } from '../core/chart-hover';
 import { buildProductFacts } from '../core/product-facts';
 import { buildProductNarrative } from '../core/product-narrative';
@@ -67,6 +68,10 @@ const tooltipDateTimeFormatter = new Intl.DateTimeFormat('tr-TR', {
   templateUrl: './product-modal.html',
 })
 export class ProductModal {
+  // Marka bağlantısı için: toLowerCase() boşluklu/Türkçe harfli marka
+  // adlarını adrese olduğu gibi taşıyıp kanonikten sapan kopya üretiyordu.
+  protected readonly brandSlug = brandSlug;
+
   protected readonly displayName = displayName;
   private readonly priceHistoryService = inject(PriceHistoryService);
   private readonly watchService = inject(WatchService);

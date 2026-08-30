@@ -18,7 +18,7 @@
                  title/canonical ile aynı ifadeyi taşıyor. -->
             <nav class="mb-2 text-xs text-[var(--noc-neutral-500)]">
               <a routerLink="/" class="hover:text-[var(--noc-accent)]">Ana Sayfa</a> /
-              <a [routerLink]="['/marka', brandName().toLowerCase(), 'indirim-kodu']" class="hover:text-[var(--noc-accent)]">{{ brandName() }}</a> /
+              <a [routerLink]="['/marka', brandSlug(brandName()), 'indirim-kodu']" class="hover:text-[var(--noc-accent)]">{{ brandName() }}</a> /
               {{ fixedCategoryLabel() }}
             </nav>
             <h1 class="text-[38px] font-medium tracking-[-0.03em] sm:text-[42px]">{{ brandName() }} {{ fixedCategoryLabel() }} Fiyatları</h1>
@@ -311,7 +311,7 @@
           <div class="flex flex-wrap items-center justify-center gap-2">
             @for (item of brandCategories(); track item.slug) {
               <a
-                [routerLink]="['/marka', brandName().toLowerCase(), item.slug]"
+                [routerLink]="['/marka', brandSlug(brandName()), item.slug]"
                 class="rounded-[6px] border border-[var(--noc-divider)] px-2.5 py-1 text-xs text-[var(--noc-neutral-500)] hover:text-[var(--noc-accent)]"
               >
                 {{ brandName() }} {{ item.label }}
@@ -372,7 +372,7 @@
           <h2 class="mb-3 text-sm font-medium">Diğer Markalar</h2>
           <div class="flex flex-wrap items-center justify-center gap-2">
             @for (brand of otherBrands(); track brand) {
-              <a [routerLink]="['/marka', brand.toLowerCase(), 'indirim-kodu']" class="rounded-[6px] border border-[var(--noc-divider)] px-2.5 py-1 text-xs text-[var(--noc-neutral-500)] hover:text-[var(--noc-accent)]">{{ brand }} İndirim Kodu</a>
+              <a [routerLink]="['/marka', brandSlug(brand), 'indirim-kodu']" class="rounded-[6px] border border-[var(--noc-divider)] px-2.5 py-1 text-xs text-[var(--noc-neutral-500)] hover:text-[var(--noc-accent)]">{{ brand }} İndirim Kodu</a>
             }
           </div>
         </div>

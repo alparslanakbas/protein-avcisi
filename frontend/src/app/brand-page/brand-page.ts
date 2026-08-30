@@ -34,6 +34,10 @@ const SEARCH_DEBOUNCE_MS = 350;
   templateUrl: './brand-page.html',
 })
 export class BrandPage implements OnInit {
+  // Şablondaki marka bağlantıları için: toLowerCase() "Torq Nutrition"ı
+  // adrese boşlukla taşıyordu, kanonik ise brandSlug üretiyordu.
+  protected readonly brandSlug = brandSlug;
+
   protected readonly displayName = displayName;
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -208,7 +212,7 @@ export class BrandPage implements OnInit {
         // (yukarıdaki geçersiz-marka mantığının aynısı).
         if (categorySlug) {
           if (!options.categories.includes(categorySlug)) {
-            this.router.navigate(['/marka', slug.toLowerCase(), 'indirim-kodu']);
+            this.router.navigate(['/marka', brandSlug(slug), 'indirim-kodu']);
             return;
           }
           this.fixedCategory.set(categorySlug);

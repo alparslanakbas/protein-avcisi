@@ -3,6 +3,7 @@ import { Component, OnInit, PLATFORM_ID, computed, inject, signal } from '@angul
 import { ActivatedRouteSnapshot, NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
 
+import { brandSlug } from './core/brand-slug';
 import { canonicalOrigin } from './core/canonical-link';
 import { CATEGORY_LABELS } from './core/category-labels';
 import { DealsService } from './core/deals.service';
@@ -44,6 +45,11 @@ export class App implements OnInit {
   private lastPath: string | null = null;
 
   protected readonly currentYear = new Date().getFullYear();
+  // Marka adı boşluk ya da Türkçe harf taşıyabiliyor ("Torq Nutrition",
+  // "Yeşilmarka"); toLowerCase() bunları adrese olduğu gibi taşıyıp
+  // %20/%C5%9F içeren ikinci bir adres üretiyordu.
+  protected readonly brandSlug = brandSlug;
+
   protected readonly brands = signal<string[]>([]);
   protected readonly categories = signal<{ slug: string; label: string }[]>([]);
 

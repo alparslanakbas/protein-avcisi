@@ -296,7 +296,19 @@ app.get('/robots.txt', (req, res) => {
   // yönlendirme adresi aldı. Bunun yerine o uç, isteğe X-Robots-Tag: noindex
   // başlığı basıyor; botun bu başlığı görebilmesi için sayfayı çekebilmesi
   // gerekiyor, dolayısıyla taramayı engellememek DOĞRU davranış.
-  res.send(`User-agent: *\nAllow: /\n\nSitemap: ${CANONICAL_ORIGIN}/sitemap.xml\n`);
+  // /cdn-cgi/ Cloudflare'in kendi enjekte ettiği yol. Sayfadaki mailto:
+  // bağlantıları Cloudflare'in e-posta gizleme özelliğiyle
+  // /cdn-cgi/l/email-protection adresine çevriliyor; bot JavaScript
+  // çalıştırmadan bunu takip edince 404 alıyor — Bing Site Scan
+  // raporundaki tek 4xx hatası buydu.
+  //
+  // Burada Disallow DOĞRU araç, yukarıdaki /go/{id} durumundan farklı
+  // olarak: orada adres zaten dizine girmişti ve amaç onu düşürmekti
+  // (Disallow bunu yapamaz). Burada amaç botun bu yolu hiç istememesi,
+  // Disallow tam olarak bunu sağlıyor. Yol bizim içeriğimiz değil.
+  res.send(
+    `User-agent: *\nAllow: /\nDisallow: /cdn-cgi/\n\nSitemap: ${CANONICAL_ORIGIN}/sitemap.xml\n`,
+  );
 });
 
 /**
