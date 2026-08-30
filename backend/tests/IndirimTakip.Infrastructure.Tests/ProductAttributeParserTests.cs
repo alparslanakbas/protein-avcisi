@@ -93,6 +93,52 @@ public class ProductAttributeParserTests
         Assert.Equal(expectedFlavor, result);
     }
 
+    // Aşağıdaki vakaların TAMAMI canlı veriden alındı. Alan kullanıcıya
+    // "Aroma: ..." olarak gösteriliyor ve aramaya dahil, bu yüzden yanlış
+    // değer boş değerden kötü.
+    [Theory]
+    // Tire biçimi — Yeşilmarka'nın mağaza API'si aromayı ismin sonuna koyuyor.
+    [InlineData("BCAA 4:1:1 - Ananas", "Ananas")]
+    [InlineData("Whey Protein Tozu - Anamur Muzu", "Anamur Muzu")]
+    [InlineData("Whey Protein Tozu - Beyoğlu Çikolatası", "Beyoğlu Çikolatası")]
+    // Ünsüz yumuşaması: "çileği" gövdesi "çilek" ile başlamıyor.
+    [InlineData("Whey Protein Tozu - Ereğli Çileği", "Ereğli Çileği")]
+    // Noktasız ı: "AROMASIZ" invariant küçültmede "aromasiz" oluyor.
+    [InlineData("Whey Protein Tozu - Aromasız", "Aromasız")]
+    [InlineData("Whey Protein Tozu - Kakao/Vanilya", "Kakao/Vanilya")]
+    // Büyük noktalı İ invariant kültürde hiç küçülmüyor.
+    [InlineData("Ürün (ÇİLEK)", "ÇİLEK")]
+    // Markalar İngilizce yazım da kullanıyor.
+    [InlineData("Ürün (Creme Caramel)", "Creme Caramel")]
+    public void ExtractFlavor_gercek_aromalari_yakaliyor(string productName, string? expectedFlavor)
+    {
+        Assert.Equal(expectedFlavor, ProductAttributeParser.ExtractFlavor(productName));
+    }
+
+    [Theory]
+    // Miktar/porsiyon bilgisi — canlıda Flavor alanına yazılmış hâlleri.
+    [InlineData("Ürün (40 Servis)")]
+    [InlineData("Ürün (15 x 4 Doypacks)")]
+    [InlineData("Ürün (30 Saşe)")]
+    [InlineData("Ürün (1000 IU / 11,25 mcg)")]
+    [InlineData("Torq Ürün - 60 Servis")]
+    [InlineData("Ürün - 12 Adet")]
+    // Etken madde, aroma değil.
+    [InlineData("Ürün (Arginine)")]
+    [InlineData("Ürün (Collagen)")]
+    [InlineData("Ürün (Maca)")]
+    // Paket içeriği.
+    [InlineData("Ürün (EAA + HellFire Pre-Workout + Citrulline)")]
+    // Marka adı işareti.
+    [InlineData("Ürün (Creapure®)")]
+    // Aroma olmayan tire son eki.
+    [InlineData("Glutamine - Bitkisel Bazlı")]
+    [InlineData("Ürün - LARGE")]
+    public void ExtractFlavor_aroma_olmayanlari_reddediyor(string productName)
+    {
+        Assert.Null(ProductAttributeParser.ExtractFlavor(productName));
+    }
+
     [Fact]
     public void GetSearchSynonyms_kreatin_aramasi_creatine_i_de_iceriyor()
     {

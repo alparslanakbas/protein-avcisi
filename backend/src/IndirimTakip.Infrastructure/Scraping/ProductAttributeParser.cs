@@ -90,19 +90,124 @@ public static partial class ProductAttributeParser
         return $"{value} {unit}";
     }
 
+    // Aroma sözlüğü. "Parantez içini ya da tireden sonrasını aroma say" gibi
+    // biçimsel bir kural GERÇEK VERİYLE ELENDİ: canlıda dolu olan 80 Flavor
+    // değerinin 42'si aroma değildi — porsiyon/miktar ("40 Servis",
+    // "15 x 4 Doypacks", "1000 IU"), paket içeriği ("EAA + HellFire
+    // Pre-Workout") ve etken madde ("Arginine", "Collagen", "Maca") alana
+    // yazılmıştı. Bu alan kullanıcıya "Aroma: 40 Servis" olarak gösteriliyor
+    // ve DealsQueryService'te ARAMAYA da dahil, yani yanlış değer hem
+    // görünüyor hem eşleşiyordu.
+    //
+    // Bu yüzden kural tersine çevrildi: aday ancak bilinen bir aroma
+    // kelimesiyle eşleşirse kabul ediliyor. Bilinmeyen yeni bir aroma boş
+    // kalır — bilinçli takas, "uydurma veri yok" kuralıyla aynı yönde:
+    // yanlış göstermektense boş bırak.
+    //
+    // Liste uydurulmadı, canlı veriden çıkarıldı. İngilizce yazımlar da var
+    // çünkü markalar karışık kullanıyor (veride "Creme Caramel" bulundu).
+    private static readonly string[] FlavorWords =
+    [
+        "çikolata", "chocolate", "çilek", "strawberry", "muz", "banana",
+        "vanilya", "vanilla", "karamel", "caramel", "kivi", "ananas",
+        "pineapple", "limon", "lemon", "portakal", "orange", "mango",
+        "ahududu", "raspberry", "karpuz", "elma", "apple", "şeftali",
+        "peach", "böğürtlen", "coconut", "fındık", "hazelnut", "bisküvi",
+        "biscuit", "kurabiye", "cookie", "kola", "cheesecake", "tiramisu",
+        "kakao", "cocoa", "blueberry", "mandalina", "mandarin", "nar",
+        "vişne", "cherry", "dondurma", "frambuaz", "kavun", "kiraz",
+        "tropik", "tropical", "aromasiz", "naturel", "sade", "bal",
+        "tarçın", "fistik", "badem", "latte", "kahve", "coffee", "mocha",
+        "nane", "mint", "meyve", "krema", "cream", "yogurt", "yoğurt",
+    ];
+
+    // Birden fazla kelimeden oluşanlar ayrı: bunlar token eşleşmesiyle değil
+    // doğrudan aranıyor.
+    private static readonly string[] FlavorPhrases =
+    [
+        "hindistan cevizi", "yaban mersini", "orman meyve",
+    ];
+
+    /// <summary>
+    /// Türkçe ünsüz yumuşaması: ek alan kelimenin son sessizi değişiyor
+    /// (çilek → çileği, kitap → kitabı). Sadece "çilek" ile başlayanlara
+    /// bakılsaydı "Ereğli Çileği" elenirdi — Yeşilmarka'nın gerçek bir
+    /// ürünü. Bu yüzden her aroma kelimesinin yumuşamış gövdesi de
+    /// eşleştirmeye giriyor.
+    /// </summary>
+    private static string SoftenFinalConsonant(string word) => word.Length == 0 ? word : word[^1] switch
+    {
+        'k' => string.Concat(word.AsSpan(0, word.Length - 1), "ğ"),
+        'p' => string.Concat(word.AsSpan(0, word.Length - 1), "b"),
+        't' => string.Concat(word.AsSpan(0, word.Length - 1), "d"),
+        'ç' => string.Concat(word.AsSpan(0, word.Length - 1), "c"),
+        _ => word,
+    };
+
+    // Eşleştirmede kullanılan gövdeler: sözlüğün kendisi + yumuşamış hâlleri.
+    private static readonly string[] FlavorStems =
+        [.. FlavorWords.Concat(FlavorWords.Select(SoftenFinalConsonant)).Distinct()];
+
+    /// <summary>
+    /// Türkçe harf tuzağı için normalleştirme. "AROMASIZ" ToLowerInvariant
+    /// ile "aromasiz" oluyor ama sözlükteki "aromasız" noktasız ı taşıyor;
+    /// "ÇİLEK" ise noktalı İ yüzünden invariant kültürde hiç küçülmüyor.
+    /// Noktalı/noktasız ayrımı iki tarafta da siliniyor.
+    /// </summary>
+    private static string NormalizeForFlavorMatch(string value) =>
+        value.Replace('İ', 'i').Replace('I', 'i').Replace('ı', 'i').ToLowerInvariant();
+
     public static string? ExtractFlavor(string productName)
     {
         foreach (Match match in ParenthesesRegex().Matches(productName))
         {
             var content = match.Groups[1].Value.Trim();
-            // Boyut bilgisini taşıyan parantezleri ("60 Ml *18 Adet" gibi) aroma sanmayalım.
-            if (content.Length == 0 || SizeRegex().IsMatch(content))
-                continue;
+            if (LooksLikeFlavor(content))
+                return content;
+        }
 
-            return content;
+        // İkinci kaynak: " - Aroma" son eki. Yeşilmarka'nın mağaza API'si her
+        // aromayı ayrı ürün olarak döndürüyor ve aromayı ismin sonuna
+        // koyuyor ("BCAA 4:1:1 - Ananas"); parantez hiç kullanmıyor.
+        var lastDash = productName.LastIndexOf(" - ", StringComparison.Ordinal);
+        if (lastDash >= 0)
+        {
+            var tail = productName[(lastDash + 3)..].Trim();
+            if (LooksLikeFlavor(tail))
+                return tail;
         }
 
         return null;
+    }
+
+    private static bool LooksLikeFlavor(string candidate)
+    {
+        if (candidate.Length == 0)
+            return false;
+
+        // Rakam taşıyan aday neredeyse her zaman miktar/porsiyon bilgisidir.
+        // Canlı veride rakam içeren tek bir gerçek aroma yok.
+        if (candidate.Any(char.IsDigit))
+            return false;
+
+        // "+" paket içeriği, "®"/"™" marka adı işaretidir.
+        if (candidate.Contains('+') || candidate.Contains('®') || candidate.Contains('™'))
+            return false;
+
+        if (SizeRegex().IsMatch(candidate))
+            return false;
+
+        var normalized = NormalizeForFlavorMatch(candidate);
+
+        if (FlavorPhrases.Any(phrase => normalized.Contains(phrase, StringComparison.Ordinal)))
+            return true;
+
+        // Kelime bazlı eşleşme: "içeriyor mu" yerine "hangi kelimeyle
+        // BAŞLIYOR". Böylece Türkçe ekler yakalanıyor ("çilekli", "muzlu",
+        // "limonlu") ama kısa kelimeler ("bal", "nar") başka bir kelimenin
+        // ortasına denk gelip yanlış eşleşmiyor.
+        var tokens = normalized.Split([' ', '-', '/', ',', '.', '&', '(', ')', '*'], StringSplitOptions.RemoveEmptyEntries);
+        return tokens.Any(token => FlavorStems.Any(stem => token.StartsWith(stem, StringComparison.Ordinal)));
     }
 
     public static string? InferCategory(string productName)
