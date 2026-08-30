@@ -10,7 +10,7 @@ import { productPath, shouldHandleInApp } from '../core/product-link';
 import { DealsService } from '../core/deals.service';
 import { displayName } from '../core/display-name';
 import { FavoritesService } from '../core/favorites.service';
-import { friendlyErrorMessage } from '../core/friendly-error-message';
+import { LoadErrorInfo, describeLoadError, friendlyErrorMessage } from '../core/friendly-error-message';
 import { PageMetaService } from '../core/page-meta.service';
 import { PriceHistoryService } from '../core/price-history.service';
 import { formatRelativeTime } from '../core/relative-time';
@@ -20,63 +20,6 @@ import { SiteHeader } from '../site-header/site-header';
 // Hız sınırına takılınca kaç kez sessizce tekrar denenecek. İkiden fazlası
 // anlamsız: sorun geçici değilse kullanıcıya durumu göstermek daha dürüst.
 const MAX_AUTO_RETRY = 2;
-
-// Bu ekran şimdiye kadar birbirinden çok farklı üç sebebi tek bir "Bağlantı
-// sorunu" mesajıyla gösteriyordu: hız sınırı (429), sunucu hatası (5xx) ve
-// isteğin sunucuya hiç ulaşamaması. Kullanıcı açısından bunlar aynı şey
-// değil; üstelik eski metin ("Fiyat bilgilerine ulaşamıyoruz") listenin
-// KAYBOLDUĞU gibi okunabiliyordu. Bu yüzden her varyant, listenin sunucuda
-// durduğunu açıkça söylüyor.
-//
-// Kod (HTTP 429/504 gibi) küçük puntoyla gösteriliyor: kullanıcıyı
-// korkutmamalı ama sorun bildirildiğinde hangi durum olduğunu tahmin
-// etmek zorunda kalmayalım.
-interface LoadErrorInfo {
-  label: string;
-  title: string;
-  message: string;
-  code: string | null;
-}
-
-function describeLoadError(error: unknown): LoadErrorInfo {
-  const status = error instanceof HttpErrorResponse ? error.status : null;
-
-  if (status === 429) {
-    return {
-      label: 'Yoğunluk',
-      title: 'Biraz hızlı gittik',
-      message: 'Kısa sürede çok fazla istek gönderildi. Takip listen yerinde duruyor; birkaç saniye içinde kendiliğinden yeniden deneniyor.',
-      code: 'HTTP 429',
-    };
-  }
-
-  // Angular ağ seviyesindeki başarısızlıklarda (çevrimdışı, DNS, engelleyici
-  // eklenti) status olarak 0 veriyor — sunucu hiç yanıt vermemiş demek.
-  if (status === null || status === 0) {
-    return {
-      label: 'Bağlantı',
-      title: 'İnternete bağlanılamadı',
-      message: 'Takip listen sunucuda güvende. Bağlantını kontrol edip yeniden dene.',
-      code: null,
-    };
-  }
-
-  if (status >= 500) {
-    return {
-      label: 'Geçici aksaklık',
-      title: 'Sunucumuzda geçici bir sorun var',
-      message: 'Bu bizden kaynaklanıyor, takip listenden hiçbir şey kaybolmadı. Birazdan yeniden dener misin?',
-      code: `HTTP ${status}`,
-    };
-  }
-
-  return {
-    label: 'Beklenmedik durum',
-    title: 'Takip listen şu anda açılamadı',
-    message: 'Listen sunucuda duruyor. Yeniden denediğinde büyük ihtimalle açılacak.',
-    code: `HTTP ${status}`,
-  };
-}
 
 @Component({
   selector: 'app-favorites-page',

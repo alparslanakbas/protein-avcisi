@@ -1,6 +1,7 @@
 import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { Component, OnInit, PLATFORM_ID, computed, inject, signal } from '@angular/core';
 import { ActivatedRouteSnapshot, NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
+import { NavigationSnapshot, routePath, shouldResetScroll } from './core/scroll-reset';
 import { filter } from 'rxjs';
 
 import { brandSlug } from './core/brand-slug';
@@ -41,8 +42,8 @@ export class App implements OnInit {
   private readonly router = inject(Router);
   private readonly document = inject(DOCUMENT);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
-  private lastLeafComponent: unknown = undefined;
-  private lastPath: string | null = null;
+  // null = henüz hiç gezinme olmadı (bkz. shouldResetScroll).
+  private lastNavigation: NavigationSnapshot | null = null;
 
   protected readonly currentYear = new Date().getFullYear();
   // Marka adı boşluk ya da Türkçe harf taşıyabiliyor ("Torq Nutrition",
@@ -120,37 +121,18 @@ export class App implements OnInit {
     // route-reuse navigasyonlarına (modal aç/kapa) dokunmuyoruz.
     if (this.isBrowser) {
       this.router.events.pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd)).subscribe(() => {
-        const current = leafComponent(this.router.routerState.snapshot.root);
-        // Yalnızca component'e bakmak yetmiyordu: marka sayfasındaki "Diğer
-        // Markalar" bağlantıları ya da kategori sayfasındaki "Diğer
-        // Kategoriler" aynı component'te kaldığı için sayfa değişse bile
-        // kaydırma konumu olduğu yerde duruyordu. Yol da karşılaştırılıyor.
-        // Fragment de kesiliyor ('#' dahil), yalnızca '?' değil: router.url
-        // fragment'i içeriyor, dolayısıyla sayfa içi bir bölüm bağlantısına
-        // (#kvkk-haklari gibi) tıklamak burada "farklı sayfaya geçildi" gibi
-        // görünüyordu ve aşağıdaki scrollTo(0,0) tarayıcının az önce yaptığı
-        // bölüme kaydırmayı geri alıyordu. Kullanıcı bunu "ilk tıklama yukarı
-        // atıyor, ikinci tıklama doğru yere götürüyor" olarak yaşadı —
-        // ikincide yol artık değişmediği için sıfırlama çalışmıyordu.
-        const path = this.router.url.split(/[?#]/)[0];
-        const changed = current !== this.lastLeafComponent || path !== this.lastPath;
-        // Tek istisna ürün modalı: ana sayfada modal açılıp kapanması '/' ile
-        // '/urun/...' arasında gerçek bir yol değişimi olarak görünüyor ama
-        // aslında aynı sayfanın üstündeki bir katman (bkz.
-        // DealsRouteReuseStrategy). Burada kaydırırsak, sayfanın ortasındaki
-        // bir ürüne tıklayıp modalı kapatan kişi kendini en başta bulurdu.
-        // İstisna yalnızca aynı component içinde kalırken geçerli:
-        // ürün modalından marka sayfasına geçmek gerçek bir sayfa
-        // değişimi ve orada kaydırma sıfırlanmalı.
-        const sameComponent = current === this.lastLeafComponent;
-        const productModalNav =
-          sameComponent && (path.startsWith('/urun/') || (this.lastPath?.startsWith('/urun/') ?? false));
+        // Karar mantığı core/scroll-reset.ts'te, saf ve test edilebilir
+        // hâlde. Buradaki iş yalnızca durumu okuyup uygulamak.
+        const next: NavigationSnapshot = {
+          component: leafComponent(this.router.routerState.snapshot.root),
+          path: routePath(this.router.url),
+        };
 
-        if (changed && !productModalNav) {
+        if (shouldResetScroll(this.lastNavigation, next)) {
           window.scrollTo(0, 0);
         }
-        this.lastLeafComponent = current;
-        this.lastPath = path;
+
+        this.lastNavigation = next;
       });
     }
   }
