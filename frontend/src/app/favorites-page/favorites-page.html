@@ -33,7 +33,7 @@
           <p class="mt-5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--noc-neutral-500)]">Listen henüz boş</p>
           <h2 class="mt-2 text-[21px] font-semibold tracking-[-0.02em]">Takip etmek istediğin ürünleri kaydet</h2>
           <p class="mt-2 text-[13px] leading-6 text-[var(--noc-neutral-500)]">Bir ürünün detayını açıp “Favorilere Ekle”ye dokunduğunda güncel fiyatını burada izleyebilirsin.</p>
-          <a routerLink="/" class="pa-favorites-primary"><i class="ph ph-plus" aria-hidden="true"></i> Ürünlere göz at</a>
+          <a href="/" class="pa-favorites-primary"><i class="ph ph-plus" aria-hidden="true"></i> Ürünlere göz at</a>
         </article>
 
         <article class="rounded-[18px] border border-[var(--noc-divider)] bg-[var(--noc-surface)] p-8 max-sm:p-6">
@@ -59,7 +59,7 @@
         <p class="mt-5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--noc-neutral-500)]">Bu cihazdaki listen</p>
         <h2 class="mt-2 text-[21px] font-semibold tracking-[-0.02em]">Henüz takip edilen ürün yok</h2>
         <p class="mt-2 text-[13px] leading-6 text-[var(--noc-neutral-500)]">Beğendiğin bir ürünü kaydet; güncel fiyatı ve fırsat sinyalleri burada görünmeye başlasın.</p>
-        <a routerLink="/" class="pa-favorites-primary mx-auto"><i class="ph ph-plus" aria-hidden="true"></i> Ürün takip et</a>
+        <a href="/" class="pa-favorites-primary mx-auto"><i class="ph ph-plus" aria-hidden="true"></i> Ürün takip et</a>
         <button type="button" class="mt-4 text-[11px] text-[var(--noc-neutral-500)] underline" (click)="signOut()">Bu cihazdan çıkış yap</button>
       </section>
     } @else {
@@ -78,7 +78,7 @@
             <div class="my-2 flex justify-between text-[var(--noc-neutral-500)]"><dt>30 günün dibi</dt><dd class="font-semibold text-[var(--noc-text)]">{{ lowCount() }} ürün</dd></div>
             <div class="my-2 flex justify-between text-[var(--noc-neutral-500)]"><dt>Normal fiyat</dt><dd class="font-semibold text-[var(--noc-text)]">{{ normalCount() }} ürün</dd></div>
           </dl>
-          <a routerLink="/" class="pa-favorites-primary"><i class="ph ph-plus" aria-hidden="true"></i> Yeni ürün takip et</a>
+          <a href="/" class="pa-favorites-primary"><i class="ph ph-plus" aria-hidden="true"></i> Yeni ürün takip et</a>
           <button type="button" class="pa-favorites-secondary" (click)="signOut()"><i class="ph ph-sign-out" aria-hidden="true"></i> Bu cihazdan çık</button>
         </aside>
 

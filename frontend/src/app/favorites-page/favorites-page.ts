@@ -1,4 +1,5 @@
 import { DecimalPipe, isPlatformBrowser } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, PLATFORM_ID, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Meta } from '@angular/platform-browser';
@@ -120,7 +121,17 @@ export class FavoritesPage implements OnInit {
         this.loadError.set(false);
         this.loading.set(false);
       },
-      error: () => {
+      error: (error: unknown) => {
+        if (error instanceof HttpErrorResponse && error.status === 404) {
+          this.favoritesService.signOut();
+          this.hasToken.set(false);
+          this.favorites.set([]);
+          this.recoverStatusMessage.set(
+            'Bu cihazdaki liste bağlantısı artık geçerli değil. E-postanla listeni yeniden açabilirsin.',
+          );
+          this.loading.set(false);
+          return;
+        }
         this.loadError.set(true);
         this.loading.set(false);
       },
