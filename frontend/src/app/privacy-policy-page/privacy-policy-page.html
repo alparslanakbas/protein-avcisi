@@ -44,11 +44,18 @@
     <section class="pa-privacy-document">
       <nav class="pa-privacy-toc" aria-label="Gizlilik politikası bölümleri">
         <strong>Bu sayfada</strong>
-        <a href="#veri-sorumlusu">Veri sorumlusu</a>
-        <a href="#toplanan-veriler">Toplanan veriler</a>
-        <a href="#veri-kullanimi">Verilerin kullanımı</a>
-        <a href="#saklama-silme">Saklama ve silme</a>
-        <a href="#kvkk-haklari">KVKK hakların</a>
+        <!-- DİKKAT: adresler "#bolum" DEĞİL, yol dahil yazılmak zorunda.
+             HTML standardına göre yalnızca fragment içeren bir adres, sayfanın
+             kendi adresine değil <base href> değerine göre çözülür; Angular
+             index.html'e <base href="/"> koyduğu için "#saklama-silme"
+             ana sayfaya (/#saklama-silme) gidiyordu. Yolu yazınca tarayıcı
+             bunu aynı belge içinde fragment gezinmesi sayıyor: sayfa
+             yeniden yüklenmiyor, sadece ilgili bölüme kayıyor. -->
+        <a href="/gizlilik-politikasi#veri-sorumlusu">Veri sorumlusu</a>
+        <a href="/gizlilik-politikasi#toplanan-veriler">Toplanan veriler</a>
+        <a href="/gizlilik-politikasi#veri-kullanimi">Verilerin kullanımı</a>
+        <a href="/gizlilik-politikasi#saklama-silme">Saklama ve silme</a>
+        <a href="/gizlilik-politikasi#kvkk-haklari">KVKK hakların</a>
       </nav>
 
       <div class="pa-privacy-sections">
