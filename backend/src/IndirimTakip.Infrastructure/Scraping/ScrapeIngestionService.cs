@@ -97,7 +97,11 @@ public class ScrapeIngestionService(
         {
             // Marka kendi kategorisini vermiyorsa (HIQ/Hardline/ProteinOcean) isimden tahmin et
             // — arama kutusunun markadan bağımsız çalışması buna dayanıyor.
-            var category = scraped.Category ?? ProductAttributeParser.InferCategory(scraped.Name);
+            // Marka adı kategori çıkarımından ÇIKARILIYOR: bayi kaynakları
+            // ürün adına markayı da yazıyor ve "Proteinocean" içindeki
+            // "protein" tüm ürünleri protein tozu sanmaya yol açıyordu.
+            var brandForCategory = scraped.BrandName ?? scraper.BrandName;
+            var category = scraped.Category ?? ProductAttributeParser.InferCategory(scraped.Name, brandForCategory);
             var size = ProductAttributeParser.ExtractSize(scraped.Name);
             var flavor = ProductAttributeParser.ExtractFlavor(scraped.Name);
 

@@ -197,4 +197,28 @@ public class ProductAttributeParserTests
 
         Assert.Null(result);
     }
+
+    // Bayi kaynakları ürün adına markayı da yazıyor. Marka adı bir kategori
+    // anahtar kelimesi içerdiğinde ("Protein-ocean") tüm ürünleri yanlış
+    // kategoriye düşürüyordu — canlıda ProteinOcean'ın kreatini, omega'sı ve
+    // vitamini "protein tozu" olarak kaydedilmişti.
+    [Theory]
+    [InlineData("Proteinocean Creatine 300gr Kreatin Monohidrat", "Proteinocean", "kreatin")]
+    [InlineData("Proteinocean Omega 3 45 Kapsül Balık Yağı", "Proteinocean", "vitamin")]
+    [InlineData("Proteinocean Vitamin D3 60 Kapsül", "Proteinocean", "vitamin")]
+    public void InferCategory_marka_adini_kategori_sanmiyor(string productName, string brandName, string expected)
+    {
+        Assert.Equal(expected, ProductAttributeParser.InferCategory(productName, brandName));
+    }
+
+    [Theory]
+    // Marka çıkarılınca gerçek protein tozları YİNE protein tozu kalmalı.
+    [InlineData("Proteinocean Whey Protein Tozu 1000gr", "Proteinocean", "protein-tozu")]
+    [InlineData("BigJoy Big Whey Classic 2288gr", "BigJoy", "protein-tozu")]
+    // Marka bilinmiyorsa eski davranış korunuyor.
+    [InlineData("Whey Protein Tozu 1000gr", null, "protein-tozu")]
+    public void InferCategory_marka_cikarilinca_dogru_kategoriyi_koruyor(string productName, string? brandName, string expected)
+    {
+        Assert.Equal(expected, ProductAttributeParser.InferCategory(productName, brandName));
+    }
 }

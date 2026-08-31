@@ -210,8 +210,49 @@ public static partial class ProductAttributeParser
         return tokens.Any(token => FlavorStems.Any(stem => token.StartsWith(stem, StringComparison.Ordinal)));
     }
 
-    public static string? InferCategory(string productName)
+    /// <summary>
+    /// Marka adının ürün adı içindeki geçişlerini siler. Marka bilinmiyorsa
+    /// ad olduğu gibi döner.
+    ///
+    /// Not: karşılaştırma OrdinalIgnoreCase — ASCII marka adlarında ("BigJoy",
+    /// "Proteinocean") doğru çalışıyor. Türkçe harf içeren marka adlarında
+    /// (noktalı/noktasız i) eşleşmeyebilir; o markalarda bu sorun gözlenmedi,
+    /// gerekirse normalleştirme eklenir.
+    /// </summary>
+    private static string StripBrandName(string productName, string? brandName)
     {
+        if (string.IsNullOrWhiteSpace(brandName))
+            return productName;
+
+        var stripped = productName.Replace(brandName, " ", StringComparison.OrdinalIgnoreCase);
+
+        // Marka adı boşluksuz da yazılabiliyor ("Proteinocean" / "Protein Ocean").
+        var compact = brandName.Replace(" ", "", StringComparison.Ordinal);
+        if (compact.Length > 3 && compact.Length != brandName.Length)
+            stripped = stripped.Replace(compact, " ", StringComparison.OrdinalIgnoreCase);
+
+        // Adın tamamı markadan ibaretse çıkarım yapacak bir şey kalmıyor;
+        // orijinali döndürmek yanlış kategoriden iyidir.
+        return stripped.Trim().Length == 0 ? productName : stripped;
+    }
+
+    /// <summary>
+    /// Ürün adından kategori çıkarımı.
+    /// </summary>
+    /// <param name="brandName">
+    /// Biliniyorsa üretici markası; ad içinden ÇIKARILIYOR. Bayi kaynakları
+    /// ürün adına markayı da yazıyor ("Proteinocean Creatine 300gr Kreatin
+    /// Monohidrat") ve marka adı bir kategori anahtar kelimesi içeriyorsa
+    /// ürün yanlış kategoriye düşüyor: gerçek veride ProteinOcean'ın
+    /// kreatini, omega'sı ve vitamini "protein tozu" olarak kaydedilmişti,
+    /// çünkü "Protein-ocean" içindeki "protein" eşleşiyordu.
+    ///
+    /// Kategori ürünün NE OLDUĞUNDAN çıkarılmalı, kimin ürettiğinden değil.
+    /// </param>
+    public static string? InferCategory(string productName, string? brandName = null)
+    {
+        productName = StripBrandName(productName, brandName);
+
         // ToLowerInvariant bilinçli — tr-TR kültüründe büyük "I" küçülünce
         // noktasız "ı" oluyor ("CREATINE" -> "creatıne"), bu da aşağıdaki
         // İngilizce anahtar kelimelerle ("creatine" gibi) hiç eşleşmiyordu.

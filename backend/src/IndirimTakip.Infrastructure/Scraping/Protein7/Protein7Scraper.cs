@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using IndirimTakip.Core.Scraping;
+using Microsoft.Extensions.Logging;
 
 namespace IndirimTakip.Infrastructure.Scraping.Protein7;
 
@@ -24,7 +25,7 @@ namespace IndirimTakip.Infrastructure.Scraping.Protein7;
 /// Product bloğu YOK — şema JS içinde string olarak duruyor, bu yüzden JSON
 /// ayrıştırıcı değil hedefli regex kullanılıyor.
 /// </summary>
-public partial class Protein7Scraper(HttpClient httpClient) : IBrandScraper
+public partial class Protein7Scraper(HttpClient httpClient, ILogger<Protein7Scraper> logger) : IBrandScraper
 {
     // Ürünün kendi markası okunamazsa kullanılacak ad (mağazanın kendi
     // ürünleri de var: "Protein 7 Pill Box" gibi).
@@ -37,14 +38,23 @@ public partial class Protein7Scraper(HttpClient httpClient) : IBrandScraper
     private const string SellerName = "protein7.com";
     private const string ProductSitemapUrl = "https://protein7.com/xml/sitemap/product.xml";
 
-    // Nezaket beklemesi: ~900 istek atıyoruz, karşı sunucuyu yormamak ve
-    // engellenmemek için. Diğer scraper'lardaki 400-500 ms ile aynı düzen.
-    private static readonly TimeSpan DelayBetweenRequests = TimeSpan.FromMilliseconds(500);
+    // Nezaket beklemesi. İLK ÇALIŞTIRMADA 500 ms denendi ve 914 adresin
+    // yalnızca 466'sı geldi — geri kalanı sunucunun hız sınırına takıldı.
+    // Ölçüldü: 1 saniye aralıkla arka arkaya 8 istek sorunsuz. 900 istek ×
+    // 1 sn ≈ 15 dakika, günde bir çalışan bir tarama için sorun değil.
+    private static readonly TimeSpan DelayBetweenRequests = TimeSpan.FromSeconds(1);
+
+    // Başarısız oranı bunu aşarsa tarama HATA sayılıyor. Sebep: ürün başına
+    // hatalar yutuluyor (tek bozuk sayfa ~900 ürünlük taramayı düşürmemeli)
+    // ama bu, yarısı kaybolmuş bir taramanın "başarılı" görünmesine yol
+    // açtı. Sessiz veri kaybı, gürültülü hatadan çok daha tehlikeli.
+    private const double MaxFailureRatio = 0.2;
 
     public async Task<IReadOnlyList<ScrapedProduct>> ScrapeAsync(CancellationToken cancellationToken = default)
     {
         var urls = await FetchProductUrlsAsync(cancellationToken);
         var result = new List<ScrapedProduct>();
+        var failures = 0;
 
         foreach (var url in urls)
         {
@@ -59,11 +69,25 @@ public partial class Protein7Scraper(HttpClient httpClient) : IBrandScraper
             catch (Exception) when (!cancellationToken.IsCancellationRequested)
             {
                 // Tek bir ürün sayfasının hatası (404, zaman aşımı, bozuk HTML)
-                // ~900 ürünlük taramanın tamamını düşürmemeli.
+                // ~900 ürünlük taramanın tamamını düşürmemeli — ama sayılıyor.
+                failures++;
             }
 
             await Task.Delay(DelayBetweenRequests, cancellationToken);
         }
+
+        if (urls.Count > 0 && failures > urls.Count * MaxFailureRatio)
+        {
+            // Yarısı eksik bir katalogla sessizce devam etmek yerine hata ver:
+            // yutma servisi mevcut ürünleri silmiyor, dolayısıyla veri
+            // kaybolmuyor — ama sorun log'a düşüyor ve fark ediliyor.
+            throw new InvalidOperationException(
+                $"protein7: {urls.Count} adresin {failures} tanesi alınamadı, " +
+                "tarama güvenilir değil (hız sınırı olabilir).");
+        }
+
+        if (failures > 0)
+            logger.LogWarning("protein7: {Failures}/{Total} ürün sayfası alınamadı.", failures, urls.Count);
 
         return result;
     }
