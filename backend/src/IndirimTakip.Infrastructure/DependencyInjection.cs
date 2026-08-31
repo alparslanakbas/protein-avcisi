@@ -9,6 +9,7 @@ using IndirimTakip.Infrastructure.Scraping.BigJoy;
 using IndirimTakip.Infrastructure.Scraping.CommanderNutrition;
 using IndirimTakip.Infrastructure.Scraping.Protein7;
 using IndirimTakip.Infrastructure.Scraping.ProteinOcean;
+using IndirimTakip.Infrastructure.Scraping.Provitamin;
 using IndirimTakip.Infrastructure.Scraping.Ssn;
 using IndirimTakip.Infrastructure.Scraping.Supplementler;
 using IndirimTakip.Infrastructure.Scraping.Torq;
@@ -61,6 +62,16 @@ public static class DependencyInjection
             client.Timeout = TimeSpan.FromSeconds(30);
         });
         services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<Protein7Scraper>());
+
+        // Provitamin — Wix tabanlı çok markalı bayi. Ürün detayları sitemap
+        // adreslerinden tek tek okunduğu için günde bir çalışan kaynak.
+        services.AddHttpClient<ProvitaminScraper>(client =>
+        {
+            client.BaseAddress = new Uri("https://www.provitamin.com.tr/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
+        services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<ProvitaminScraper>());
 
         services.AddHttpClient<SsnScraper>(client =>
         {
