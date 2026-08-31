@@ -574,12 +574,42 @@ export class DealsList implements OnInit {
     this.syncPageQueryParam(1, false);
   }
 
+  // Marka ve kategori kutuları bir "filtre EKLE" tetikleyicisi: seçilenler
+  // aşağıda silinebilir çipler olarak gösteriliyor, kutunun kendisi seçimden
+  // sonra placeholder'a ("Tüm markalar") dönmeli.
+  //
+  // Eskiden bu şablonda [value]="''" ile yapılmaya çalışılıyordu ve İŞE
+  // YARAMIYORDU: bağlanan ifade hiç değişmediği için Angular ilk render'dan
+  // sonra bir daha uygulamıyor, kutu kullanıcının seçtiği değerde donup
+  // kalıyordu. Sonuç: "Filtreleri temizle" filtreyi gerçekten kaldırsa bile
+  // kutu hâlâ seçili markanın adını gösteriyordu (kullanıcı bildirdi).
+  // Değeri DOM üzerinde elle sıfırlamak, kutunun durum taşımadığını açıkça
+  // ifade ediyor.
+  protected onBrandSelect(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    const brand = select.value;
+    select.value = '';
+    if (brand) this.toggleBrand(brand);
+  }
+
+  protected onCategorySelect(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    const category = select.value;
+    select.value = '';
+    if (category) this.toggleCategory(category);
+  }
+
   protected clearFilters(): void {
     this.selectedBrands.set(new Set());
     this.selectedCategories.set(new Set());
     this.priceMin.set(null);
     this.priceMax.set(null);
     this.searchQuery.set('');
+    // Sıralama teknik olarak bir filtre değil (hasActiveFilters'a da dahil
+    // değil), ama kullanıcı "temizle" dediğinde listenin tümüyle varsayılan
+    // görünüme dönmesini bekliyor — sıralama kutusu eski seçimde kalırsa
+    // liste temizlenmemiş gibi duruyor.
+    this.sortBy.set('');
     this.currentPage.set(1);
     this.load();
     this.syncPageQueryParam(1, false);

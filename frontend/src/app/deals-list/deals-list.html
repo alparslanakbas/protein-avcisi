@@ -162,11 +162,11 @@
 
         <div class="ml-auto flex flex-wrap items-center gap-2">
           <button type="button" class="pa-secondary-button h-[42px] gap-2 px-3.5 text-sm" (click)="clearFilters()" [disabled]="!hasActiveFilters()"><i class="ph ph-funnel text-base" aria-hidden="true"></i>{{ hasActiveFilters() ? 'Filtreleri temizle' : 'Filtrele' }}</button>
-          <select aria-label="Markaya göre filtrele" class="pa-filter-control min-w-[150px] px-3 text-sm" (change)="toggleBrand($any($event.target).value)" [value]="''">
+          <select aria-label="Markaya göre filtrele" class="pa-filter-control min-w-[150px] px-3 text-sm" (change)="onBrandSelect($event)">
             <option value="">Tüm markalar</option>
             @for (brand of availableBrands(); track brand) { <option [value]="brand">{{ brand }}</option> }
           </select>
-          <select aria-label="Kategoriye göre filtrele" class="pa-filter-control min-w-[160px] px-3 text-sm" (change)="toggleCategory($any($event.target).value)" [value]="''">
+          <select aria-label="Kategoriye göre filtrele" class="pa-filter-control min-w-[160px] px-3 text-sm" (change)="onCategorySelect($event)">
             <option value="">Tüm kategoriler</option>
             @for (category of availableCategories(); track category) { <option [value]="category">{{ categoryLabel(category) }}</option> }
           </select>
