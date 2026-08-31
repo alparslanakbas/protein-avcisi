@@ -166,17 +166,20 @@
 
         <div class="ml-auto flex flex-wrap items-center gap-2">
           <button type="button" class="pa-secondary-button h-[42px] gap-2 px-3.5 text-sm" (click)="clearFilters()" [disabled]="!hasActiveFilters()"><i class="ph ph-funnel text-base" aria-hidden="true"></i>{{ hasActiveFilters() ? 'Filtreleri temizle' : 'Filtrele' }}</button>
-          <select aria-label="Markaya göre filtrele" class="pa-filter-control min-w-[150px] px-3 text-sm" (change)="onBrandSelect($event)">
+          <select aria-label="Markaya göre filtrele" class="pa-filter-control min-w-[150px] px-3 text-sm" [ngModel]="brandSelectValue()" (ngModelChange)="onBrandSelect($event)">
             <option value="">Tüm markalar</option>
+            @if (selectedBrands().size > 0) { <option [value]="brandSelectValue()">{{ selectedBrands().size }} marka seçili</option> }
             @for (brand of availableBrands(); track brand) { <option [value]="brand">{{ brand }}</option> }
           </select>
-          <select aria-label="Kategoriye göre filtrele" class="pa-filter-control min-w-[160px] px-3 text-sm" (change)="onCategorySelect($event)">
+          <select aria-label="Kategoriye göre filtrele" class="pa-filter-control min-w-[160px] px-3 text-sm" [ngModel]="categorySelectValue()" (ngModelChange)="onCategorySelect($event)">
             <option value="">Tüm kategoriler</option>
+            @if (selectedCategories().size > 0) { <option [value]="categorySelectValue()">{{ selectedCategories().size }} kategori seçili</option> }
             @for (category of availableCategories(); track category) { <option [value]="category">{{ categoryLabel(category) }}</option> }
           </select>
           @if (availableSellers().length > 0) {
-            <select aria-label="Satıcıya göre filtrele" class="pa-filter-control min-w-[170px] px-3 text-sm" (change)="onSellerSelect($event)">
+            <select aria-label="Satıcıya göre filtrele" class="pa-filter-control min-w-[170px] px-3 text-sm" [ngModel]="sellerSelectValue()" (ngModelChange)="onSellerSelect($event)">
               <option value="">Tüm satıcılar</option>
+              @if (selectedSellers().size > 0) { <option [value]="sellerSelectValue()">{{ selectedSellers().size }} satıcı seçili</option> }
               @for (seller of availableSellers(); track seller) { <option [value]="seller">{{ seller }}</option> }
             </select>
           }

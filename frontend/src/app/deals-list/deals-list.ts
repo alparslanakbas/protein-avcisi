@@ -5,6 +5,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
+import { filterSelectValue, readFilterSelection } from '../core/filter-select';
 import { buildProductJsonLdDescription } from '../core/product-facts';
 import { ArticleSummary } from '../core/article.model';
 import { ArticlesService } from '../core/articles.service';
@@ -40,6 +41,7 @@ type ViewMode = 'deals' | 'all' | 'store';
 const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
 const PAGE_SIZE = 24;
 const SEARCH_DEBOUNCE_MS = 350;
+
 
 // Hero kartındaki küçük fiyat grafiği — product-modal'ın tam boyutlu
 // grafiğinden çok daha küçük, kendi ölçüleri (Nocturne referansı: 280×90).
@@ -188,6 +190,12 @@ export class DealsList implements OnInit {
   protected readonly priceMin = signal<number | null>(null);
   protected readonly priceMax = signal<number | null>(null);
   protected readonly sortBy = signal<string>('');
+
+  // Kutuda gösterilecek değer: filtre yoksa placeholder ("Tüm markalar"),
+  // varsa durum seçeneği. Boş dizeye dönmek = "tümü" = o boyutu temizle.
+  protected readonly brandSelectValue = computed(() => filterSelectValue(this.selectedBrands().size));
+  protected readonly categorySelectValue = computed(() => filterSelectValue(this.selectedCategories().size));
+  protected readonly sellerSelectValue = computed(() => filterSelectValue(this.selectedSellers().size));
 
   protected readonly availableBrands = signal<string[]>([]);
   protected readonly availableCategories = signal<string[]>([]);
@@ -558,13 +566,10 @@ export class DealsList implements OnInit {
     this.syncPageQueryParam(1, false);
   }
 
-  // Marka/kategori kutularıyla aynı desen: kutu durum taşımıyor, seçimden
-  // sonra placeholder'a dönüyor (bkz. onBrandSelect'teki gerekçe).
-  protected onSellerSelect(event: Event): void {
-    const select = event.target as HTMLSelectElement;
-    const seller = select.value;
-    select.value = '';
-    if (seller) this.toggleSeller(seller);
+  protected onSellerSelect(value: string): void {
+    const selection = readFilterSelection(value);
+    if (selection.kind === 'toggle') this.toggleSeller(selection.value);
+    else if (selection.kind === 'clear') this.clearSellers();
   }
 
   protected toggleBrand(brand: string): void {
@@ -599,29 +604,40 @@ export class DealsList implements OnInit {
     this.syncPageQueryParam(1, false);
   }
 
-  // Marka ve kategori kutuları bir "filtre EKLE" tetikleyicisi: seçilenler
-  // aşağıda silinebilir çipler olarak gösteriliyor, kutunun kendisi seçimden
-  // sonra placeholder'a ("Tüm markalar") dönmeli.
-  //
-  // Eskiden bu şablonda [value]="''" ile yapılmaya çalışılıyordu ve İŞE
-  // YARAMIYORDU: bağlanan ifade hiç değişmediği için Angular ilk render'dan
-  // sonra bir daha uygulamıyor, kutu kullanıcının seçtiği değerde donup
-  // kalıyordu. Sonuç: "Filtreleri temizle" filtreyi gerçekten kaldırsa bile
-  // kutu hâlâ seçili markanın adını gösteriyordu (kullanıcı bildirdi).
-  // Değeri DOM üzerinde elle sıfırlamak, kutunun durum taşımadığını açıkça
-  // ifade ediyor.
-  protected onBrandSelect(event: Event): void {
-    const select = event.target as HTMLSelectElement;
-    const brand = select.value;
-    select.value = '';
-    if (brand) this.toggleBrand(brand);
+  protected onBrandSelect(value: string): void {
+    const selection = readFilterSelection(value);
+    if (selection.kind === 'toggle') this.toggleBrand(selection.value);
+    else if (selection.kind === 'clear') this.clearBrands();
   }
 
-  protected onCategorySelect(event: Event): void {
-    const select = event.target as HTMLSelectElement;
-    const category = select.value;
-    select.value = '';
-    if (category) this.toggleCategory(category);
+  protected onCategorySelect(value: string): void {
+    const selection = readFilterSelection(value);
+    if (selection.kind === 'toggle') this.toggleCategory(selection.value);
+    else if (selection.kind === 'clear') this.clearCategories();
+  }
+
+  private clearBrands(): void {
+    if (this.selectedBrands().size === 0) return;
+    this.selectedBrands.set(new Set());
+    this.afterFilterChange();
+  }
+
+  private clearCategories(): void {
+    if (this.selectedCategories().size === 0) return;
+    this.selectedCategories.set(new Set());
+    this.afterFilterChange();
+  }
+
+  private clearSellers(): void {
+    if (this.selectedSellers().size === 0) return;
+    this.selectedSellers.set(new Set());
+    this.afterFilterChange();
+  }
+
+  private afterFilterChange(): void {
+    this.currentPage.set(1);
+    this.load();
+    this.syncPageQueryParam(1, false);
   }
 
   protected clearFilters(): void {
