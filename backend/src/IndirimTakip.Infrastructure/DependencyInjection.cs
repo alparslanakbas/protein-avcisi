@@ -6,6 +6,7 @@ using IndirimTakip.Infrastructure.Scraping;
 using IndirimTakip.Infrastructure.Scraping.Hardline;
 using IndirimTakip.Infrastructure.Scraping.Hiq;
 using IndirimTakip.Infrastructure.Scraping.BigJoy;
+using IndirimTakip.Infrastructure.Scraping.CommanderNutrition;
 using IndirimTakip.Infrastructure.Scraping.ProteinOcean;
 using IndirimTakip.Infrastructure.Scraping.Ssn;
 using IndirimTakip.Infrastructure.Scraping.Supplementler;
@@ -36,6 +37,15 @@ public static class DependencyInjection
             client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
         });
         services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<HiqScraper>());
+
+        // Commander Nutrition — HIQ ile aynı Shopify products.json deseni.
+        // VM'den erişim test edildi (200), Cloudflare engeli yok.
+        services.AddHttpClient<CommanderNutritionScraper>(client =>
+        {
+            client.BaseAddress = new Uri("https://www.commandernutrition.com/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
+        });
+        services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<CommanderNutritionScraper>());
 
         services.AddHttpClient<SsnScraper>(client =>
         {

@@ -17,10 +17,19 @@ public static partial class NonSupplementProductFilter
 
     // Not: liste, kaçan ürünler bulundukça genişliyor — korse/eşofman/çanta
     // 28 Ağustos'ta eklendi (ilk temizlik turunda gözden kaçmışlardı).
+    //
+    // 31 Ağustos'ta gıda/çeşni grubu eklendi (basmati, himalaya tuzu, hardal,
+    // sriracha, sweet drops): Commander Nutrition katalogunda pirinç, tuz, sos
+    // ve sıvı tatlandırıcı da satılıyor — bunlar spor takviyesi değil.
+    //
+    // "pirinç"/"rice" BİLİNÇLİ OLARAK LİSTEDE YOK: "Cream of Rice" gerçek bir
+    // sporcu gıdası ve aynı katalogda mevcut ("Dr. Pan Rice Cream"). Genel
+    // kelime yerine yalnızca ayırt edici olanlar (basmati gibi) kullanılıyor —
+    // "performans"ın dışarıda bırakılmasıyla aynı gerekçe.
     // "performans" gibi genel kelimeler BİLİNÇLİ olarak yok: markaların gerçek
     // takviye paketleri de o kelimeyi taşıyor (ör. "orta-guc-performans").
     [GeneratedRegex(
-        @"\b(t-?shirt|sweatshirt|hoodie|şapka|beyzbol|pillbox|bileklik|havlu|buff|atlet|anahtarlık|maskot|huni|shaker|şort|korse|eşofman|esofman|çanta|canta|handbag|direnç band[a-zçğıöşü]*|direnc band[a-z]*|loop band[a-z]*|lifting strap[a-z]*|wrist wrap[a-z]*|ağırlık kemer[a-zçğıöşü]*|agirlik kemer[a-z]*|dip belt[a-z]*|eldiven[a-zçğıöşü]*|hap kutusu|bakım seti|bakim seti|seyahat seti)\b",
+        @"\b(t-?shirt|sweatshirt|hoodie|şapka|beyzbol|pillbox|bileklik|havlu|buff|atlet|anahtarlık|maskot|huni|shaker|şort|korse|eşofman|esofman|çanta|canta|handbag|direnç band[a-zçğıöşü]*|direnc band[a-z]*|loop band[a-z]*|lifting strap[a-z]*|wrist wrap[a-z]*|ağırlık kemer[a-zçğıöşü]*|agirlik kemer[a-z]*|dip belt[a-z]*|eldiven[a-zçğıöşü]*|hap kutusu|bakım seti|bakim seti|seyahat seti|basmati|himalaya tuzu|hardal|sriracha|sweet drops)\b",
         RegexOptions.IgnoreCase)]
     private static partial Regex AccessoryKeywordRegex();
 }
