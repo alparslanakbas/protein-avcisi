@@ -14,13 +14,25 @@ Kısacası: markanın söylediğine değil, biriktirdiği veriye güveniyor.
 
 ## Özellikler
 
-- **Çoklu marka desteği** — HIQ, SSN, Hardline, ProteinOcean; her marka kendi scraper
+- **Çoklu marka desteği** — HIQ, SSN, Hardline, ProteinOcean, Torq Nutrition,
+  West Nutrition, Yeşilmarka, BigJoy; her marka kendi scraper
   implementasyonuna sahip (`IBrandScraper`), ortak bir arayüz üzerinden.
 - **Gerçek fiyat geçmişi** — her tarama bir `PriceHistory` kaydı bırakıyor, indirim
   tespiti bu geçmişe dayanıyor.
 - **Mağaza kampanyaları** — markanın kendi beyan ettiği indirim, "doğrulanmamış" olarak
   ayrı gösteriliyor.
 - **Kupon kodları** — elle doğrulanmış, güncel kampanya kodları.
+- **Stok durumu** — stokta olmayan ürünler listeden çıkarılmıyor, "Tükendi"
+  rozetiyle gösteriliyor: stok geçici olduğu için ürünü taramadan düşürmek
+  fiyat geçmişinde boşluk bırakıyordu. Bu bilgi yalnızca sağlayan kaynaklarda
+  gösteriliyor; vermeyen markalarda alan boş bırakılıyor (tahmin üretilmiyor).
+- **Ürün ve marka karşılaştırma** — iki ürünü (`/karsilastir-urun/:pair`) ya da
+  iki markayı (`/karsilastir/:pair`) yan yana koyan sayfalar.
+- **Hesaplayıcılar** — protein ihtiyacı, kalori, VKİ, su ihtiyacı ve takviye
+  doz/maliyet hesaplayıcıları (`/hesaplama/*`).
+- **Rehber ve sözlük** — bilgi amaçlı yazılar (`/rehber`) ve terim sözlüğü
+  (`/sozluk`); ayrıca marka × kategori kesişim sayfaları
+  (`/marka/:marka/:kategori`).
 - **Sunucu taraflı arama/filtre/sayfalama/sıralama** — marka, kategori, fiyat aralığı,
   serbest metin arama; fiyata veya isme göre sıralama.
 - **Ürün detay + fiyat grafiği** — zaman aralığı seçilebilir (7 gün / 15 gün / 1 ay /
@@ -30,7 +42,7 @@ Kısacası: markanın söylediğine değil, biriktirdiği veriye güveniyor.
 - **E-posta bülteni** — haftalık öne çıkan indirimler özeti (double opt-in).
 - **Paylaşım** — site veya tekil ürün linkini WhatsApp/X/Facebook üzerinden veya
   doğrudan linki kopyalayarak paylaşma (mobilde native paylaşım penceresi).
-- **SSR (Angular Universal) + SEO** — her ürün kendi URL'ine sahip (`/urun/:id`),
+- **SSR (Angular Universal) + SEO** — her ürün kendi URL'ine sahip (`/urun/:id/:slug`),
   dinamik title/meta/Open Graph, schema.org `Product`/`Offer` structured data,
   dinamik `sitemap.xml` ve `robots.txt`.
 - **PWA desteği** — ana ekrana eklenebilir, yüklenebilir uygulama.
@@ -56,7 +68,11 @@ Kısacası: markanın söylediğine değil, biriktirdiği veriye güveniyor.
 - [Oracle Cloud Infrastructure](https://www.oracle.com/cloud/) — VPS (Ampere ARM,
   Docker + Docker Compose ile backend/frontend/[Caddy](https://caddyserver.com)
   reverse proxy, otomatik Let's Encrypt SSL)
-- [Neon](https://neon.tech) — serverless PostgreSQL
+- **PostgreSQL 18** — aynı sunucuda, Docker Compose ile (yalnızca compose ağına
+  açık, dışarıdan erişilemez). Başlangıçta yönetilen bir serverless veritabanı
+  kullanılıyordu; iş yükü "sürekli uyanık ama küçük veri" olduğu için
+  compute-saat bazlı fiyatlandırma uygun düşmedi. Günlük otomatik yedek alınıyor
+  ve her yedek `pg_restore` ile doğrulanıyor.
 - [Cloudflare](https://cloudflare.com) — DNS, CDN, edge güvenlik kuralları
 - [UptimeRobot](https://uptimerobot.com) — periyodik uptime izleme
 
