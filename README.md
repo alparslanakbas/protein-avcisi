@@ -15,7 +15,7 @@ Kısacası: markanın söylediğine değil, biriktirdiği veriye güveniyor.
 ## Özellikler
 
 - **Çoklu marka desteği** — HIQ, SSN, Hardline, ProteinOcean, Torq Nutrition,
-  West Nutrition, Yeşilmarka, BigJoy; her marka kendi scraper
+  West Nutrition, Yeşilmarka, BigJoy, Commander Nutrition; her marka kendi scraper
   implementasyonuna sahip (`IBrandScraper`), ortak bir arayüz üzerinden.
 - **Gerçek fiyat geçmişi** — her tarama bir `PriceHistory` kaydı bırakıyor, indirim
   tespiti bu geçmişe dayanıyor.
