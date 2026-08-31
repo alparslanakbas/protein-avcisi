@@ -47,10 +47,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         {
             c.Property(x => x.Code).HasMaxLength(100);
             c.Property(x => x.Description).HasMaxLength(500);
+            c.Property(x => x.Seller).HasMaxLength(200);
             c.HasOne(x => x.Brand)
                 .WithMany()
                 .HasForeignKey(x => x.BrandId)
                 .OnDelete(DeleteBehavior.Cascade);
+            c.ToTable(t => t.HasCheckConstraint(
+                "CK_Coupons_ExactlyOneTarget",
+                "(\"BrandId\" IS NULL) <> (\"Seller\" IS NULL)"));
         });
 
         modelBuilder.Entity<Subscriber>(s =>

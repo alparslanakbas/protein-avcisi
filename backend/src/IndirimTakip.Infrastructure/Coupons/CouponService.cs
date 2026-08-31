@@ -3,7 +3,16 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IndirimTakip.Infrastructure.Coupons;
 
-public record CreateCouponRequest(string BrandName, string Code, string Description, DateTimeOffset? ValidUntil);
+public record CreateCouponRequest(
+    string? BrandName,
+    string? Seller,
+    string Code,
+    string Description,
+    DateTimeOffset? ValidUntil)
+{
+    public bool HasExactlyOneTarget =>
+        !string.IsNullOrWhiteSpace(BrandName) ^ !string.IsNullOrWhiteSpace(Seller);
+}
 
 // IsActive dahil — süresi geçen/yanlış çıkan bir kuponu deaktive etmenin
 // API üzerinden hiçbir yolu yoktu, sadece doğrudan DB erişimiyle mümkündü.
@@ -17,22 +26,41 @@ public class CouponService(AppDbContext db)
 
         return await db.Coupons
             .Where(c => c.IsActive && (c.ValidUntil == null || c.ValidUntil >= now))
-            .OrderBy(c => c.Brand!.Name)
-            .Select(c => new CouponDto(c.Id, c.Brand!.Name, c.Code, c.Description, c.ValidUntil, c.LastVerifiedAt))
+            .OrderBy(c => c.Seller ?? c.Brand!.Name)
+            .Select(c => new CouponDto(
+                c.Id,
+                c.Brand != null ? c.Brand.Name : null,
+                c.Seller,
+                c.Code,
+                c.Description,
+                c.ValidUntil,
+                c.LastVerifiedAt))
             .ToListAsync(cancellationToken);
     }
 
     public async Task<CouponDto?> CreateAsync(CreateCouponRequest request, CancellationToken cancellationToken = default)
     {
-        var brand = await db.Brands.FirstOrDefaultAsync(b => b.Name == request.BrandName, cancellationToken);
-        if (brand is null)
-            return null;
+        if (!request.HasExactlyOneTarget)
+            throw new ArgumentException("Kupon yalnızca bir markaya veya bir satıcıya bağlanmalıdır.", nameof(request));
+
+        Brand? brand = null;
+        if (!string.IsNullOrWhiteSpace(request.BrandName))
+        {
+            brand = await db.Brands.FirstOrDefaultAsync(b => b.Name == request.BrandName.Trim(), cancellationToken);
+            if (brand is null)
+                return null;
+        }
+
+        var seller = string.IsNullOrWhiteSpace(request.Seller)
+            ? null
+            : request.Seller.Trim().ToLowerInvariant();
 
         var coupon = new Coupon
         {
-            BrandId = brand.Id,
-            Code = request.Code,
-            Description = request.Description,
+            BrandId = brand?.Id,
+            Seller = seller,
+            Code = request.Code.Trim(),
+            Description = request.Description.Trim(),
             ValidUntil = request.ValidUntil,
             LastVerifiedAt = DateTimeOffset.UtcNow,
             IsActive = true,
@@ -40,7 +68,7 @@ public class CouponService(AppDbContext db)
         db.Coupons.Add(coupon);
         await db.SaveChangesAsync(cancellationToken);
 
-        return new CouponDto(coupon.Id, brand.Name, coupon.Code, coupon.Description, coupon.ValidUntil, coupon.LastVerifiedAt);
+        return ToDto(coupon, brand?.Name);
     }
 
     public async Task<CouponDto?> UpdateAsync(int id, UpdateCouponRequest request, CancellationToken cancellationToken = default)
@@ -56,6 +84,16 @@ public class CouponService(AppDbContext db)
 
         await db.SaveChangesAsync(cancellationToken);
 
-        return new CouponDto(coupon.Id, coupon.Brand!.Name, coupon.Code, coupon.Description, coupon.ValidUntil, coupon.LastVerifiedAt);
+        return ToDto(coupon, coupon.Brand?.Name);
     }
+
+    private static CouponDto ToDto(Coupon coupon, string? brandName) =>
+        new(
+            coupon.Id,
+            brandName,
+            coupon.Seller,
+            coupon.Code,
+            coupon.Description,
+            coupon.ValidUntil,
+            coupon.LastVerifiedAt);
 }

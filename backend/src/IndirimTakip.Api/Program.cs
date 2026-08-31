@@ -400,6 +400,11 @@ app.MapGet("/api/coupons", async (CouponService coupons, CancellationToken ct) =
 // yok — /api/dev/ingest gibi bu da site canlıya çıkmadan önce korumaya alınmalı.
 app.MapPost("/api/dev/coupons", async (CreateCouponRequest request, CouponService coupons, CancellationToken ct) =>
 {
+    if (!request.HasExactlyOneTarget)
+        return Results.BadRequest("Kupon yalnızca bir markaya veya bir satıcıya bağlanmalıdır.");
+    if (string.IsNullOrWhiteSpace(request.Code) || string.IsNullOrWhiteSpace(request.Description))
+        return Results.BadRequest("Kupon kodu ve açıklaması boş olamaz.");
+
     var result = await coupons.CreateAsync(request, ct);
     return result is null ? Results.NotFound($"'{request.BrandName}' adında marka bulunamadı.") : Results.Ok(result);
 }).RequireAdminKey(adminApiKey);

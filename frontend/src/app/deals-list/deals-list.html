@@ -144,7 +144,11 @@
           <h2 id="coupon-title" class="mr-1 text-xs font-bold uppercase tracking-[0.08em] text-[var(--noc-neutral-600)]">Doğrulanmış kuponlar</h2>
           @for (coupon of coupons(); track coupon.id) {
             <div class="inline-flex items-center gap-2 rounded-full border border-dashed border-[var(--noc-accent)] bg-[color-mix(in_srgb,var(--noc-accent)_6%,transparent)] px-3 py-1.5 text-xs">
-              <span class="font-semibold">{{ coupon.brandName }}</span><code class="font-mono font-bold text-[var(--noc-accent)]">{{ coupon.code }}</code><span class="pa-muted">{{ coupon.description }}</span>
+              <span class="font-semibold">{{ coupon.seller ?? coupon.brandName }}</span>
+              @if (coupon.seller) {
+                <span class="rounded-full bg-[var(--noc-accent-100)] px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.06em] text-[var(--noc-accent-700)]">Satıcı kuponu</span>
+              }
+              <code class="font-mono font-bold text-[var(--noc-accent)]">{{ coupon.code }}</code><span class="pa-muted">{{ coupon.description }}</span>
             </div>
           }
         </section>
