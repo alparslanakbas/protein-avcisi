@@ -19,6 +19,7 @@ export interface BrandCategoryPair {
 
 export interface DealsQuery {
   brands?: string[];
+  sellers?: string[];
   categories?: string[];
   search?: string;
   minPrice?: number | null;
@@ -155,6 +156,9 @@ export class DealsService {
 
     for (const brand of query.brands ?? []) {
       params = params.append('brands', brand);
+    }
+    for (const seller of query.sellers ?? []) {
+      params = params.append('sellers', seller);
     }
     for (const category of query.categories ?? []) {
       params = params.append('categories', category);

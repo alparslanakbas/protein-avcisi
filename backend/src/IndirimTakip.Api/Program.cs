@@ -237,7 +237,9 @@ app.MapPost("/api/dev/ingest/{brand}", async (string brand, IEnumerable<IBrandSc
 void MapDealsQueryEndpoint(string route, bool onlyDiscounted, bool onlyStoreDiscounted)
 {
     app.MapGet(route, async (
-        DealsQueryService deals, string[]? brands, string[]? categories, string? search,
+        // sellers: ürünün satın alındığı yer (marka/üretici ile aynı şey değil).
+        // "Markanın kendi sitesi" etiketi DealsQueryService'te NULL'a çevriliyor.
+        DealsQueryService deals, string[]? brands, string[]? categories, string[]? sellers, string? search,
         decimal? minPrice, decimal? maxPrice, int? days, string? sortBy, int? page, int? pageSize,
         // Belirli bir bileşeni arayan sayfalar (ör. "Beta-Alanine Dozu"
         // hesaplayıcısı) eşanlamlı genişletmeyi KAPATABİLİR: "alanine"
@@ -249,7 +251,7 @@ void MapDealsQueryEndpoint(string route, bool onlyDiscounted, bool onlyStoreDisc
     {
         var windowDays = days is null or <= 0 ? 30 : days.Value;
         var result = await deals.GetDealsAsync(
-            windowDays, brands, categories, search, minPrice, maxPrice,
+            windowDays, brands, categories, sellers, search, minPrice, maxPrice,
             onlyDiscounted, onlyStoreDiscounted, sortBy,
             page is null or <= 0 ? 1 : page.Value, NormalizePageSize(pageSize), ct,
             expandSearchSynonyms: expandSynonyms ?? true);

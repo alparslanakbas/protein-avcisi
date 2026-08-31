@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using IndirimTakip.Core.Entities;
 using IndirimTakip.Core.Scraping;
 using IndirimTakip.Infrastructure.Subscribers;
@@ -12,7 +13,38 @@ public class ScrapeIngestionService(
     IndexNowClient indexNow,
     IConfiguration configuration)
 {
+    /// <summary>
+    /// Kaynak başına eşzamanlılık kilidi. Aynı kaynağın iki taraması aynı anda
+    /// çalışmamalı: protein7'de gerçekten yaşandı — 15 dakika süren elle
+    /// başlatılmış bir tarama sürerken günlük servis de devreye girdi, karşı
+    /// sunucuya iki kat istek gitti ve İKİSİ BİRDEN hız sınırına takıldı.
+    ///
+    /// Kilit süreç içi: tek konteyner çalıştığı için yeterli. Birden fazla
+    /// örnek çalıştırılacak olursa veritabanı tabanlı bir kilit gerekir.
+    /// </summary>
+    private static readonly ConcurrentDictionary<string, SemaphoreSlim> ScrapeLocks = new();
+
     public async Task<int> IngestAsync(IBrandScraper scraper, CancellationToken cancellationToken = default)
+    {
+        var gate = ScrapeLocks.GetOrAdd(scraper.BrandName, _ => new SemaphoreSlim(1, 1));
+
+        // Beklemiyoruz, doğrudan reddediyoruz: sıraya girmek ikinci taramanın
+        // birincisi bittikten hemen sonra baştan başlaması demek olurdu ve
+        // zaten taze olan veriyi tekrar çekerdi.
+        if (!await gate.WaitAsync(0, cancellationToken))
+            throw new InvalidOperationException($"{scraper.BrandName} taraması zaten çalışıyor, bu tetikleme atlandı.");
+
+        try
+        {
+            return await IngestCoreAsync(scraper, cancellationToken);
+        }
+        finally
+        {
+            gate.Release();
+        }
+    }
+
+    private async Task<int> IngestCoreAsync(IBrandScraper scraper, CancellationToken cancellationToken)
     {
         var scrapedProducts = await scraper.ScrapeAsync(cancellationToken);
         var scrapedAt = DateTimeOffset.UtcNow;

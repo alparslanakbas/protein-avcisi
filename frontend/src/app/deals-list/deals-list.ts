@@ -179,6 +179,11 @@ export class DealsList implements OnInit {
 
   protected readonly searchQuery = signal('');
   protected readonly selectedBrands = signal<Set<string>>(new Set());
+  // Satıcı filtresi: aynı ürün hem markanın kendi sitesinden hem bir bayiden
+  // gelebiliyor (barkod olmadığı için eşleştirilmiyorlar). Kullanıcı hangisini
+  // istediğini seçebilmeli.
+  protected readonly selectedSellers = signal<Set<string>>(new Set());
+  protected readonly availableSellers = signal<string[]>([]);
   protected readonly selectedCategories = signal<Set<string>>(new Set());
   protected readonly priceMin = signal<number | null>(null);
   protected readonly priceMax = signal<number | null>(null);
@@ -390,6 +395,7 @@ export class DealsList implements OnInit {
     this.dealsService.getFilterOptions().subscribe((options) => {
       this.availableBrands.set(options.brands);
       this.availableCategories.set(options.categories);
+      this.availableSellers.set(options.sellers ?? []);
     });
     this.couponsService.getCoupons().subscribe((coupons) => this.coupons.set(coupons));
     this.dealsService.getPreferredProducts(60).subscribe({
@@ -542,6 +548,25 @@ export class DealsList implements OnInit {
     this.syncPageQueryParam(1, false);
   }
 
+  protected toggleSeller(seller: string): void {
+    const current = new Set(this.selectedSellers());
+    if (current.has(seller)) current.delete(seller);
+    else current.add(seller);
+    this.selectedSellers.set(current);
+    this.currentPage.set(1);
+    this.load();
+    this.syncPageQueryParam(1, false);
+  }
+
+  // Marka/kategori kutularıyla aynı desen: kutu durum taşımıyor, seçimden
+  // sonra placeholder'a dönüyor (bkz. onBrandSelect'teki gerekçe).
+  protected onSellerSelect(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    const seller = select.value;
+    select.value = '';
+    if (seller) this.toggleSeller(seller);
+  }
+
   protected toggleBrand(brand: string): void {
     const current = new Set(this.selectedBrands());
     current.has(brand) ? current.delete(brand) : current.add(brand);
@@ -601,6 +626,7 @@ export class DealsList implements OnInit {
 
   protected clearFilters(): void {
     this.selectedBrands.set(new Set());
+    this.selectedSellers.set(new Set());
     this.selectedCategories.set(new Set());
     this.priceMin.set(null);
     this.priceMax.set(null);
@@ -644,6 +670,7 @@ export class DealsList implements OnInit {
 
     const query: DealsQuery = {
       brands: [...this.selectedBrands()],
+      sellers: [...this.selectedSellers()],
       categories: [...this.selectedCategories()],
       search: this.searchQuery().trim() || undefined,
       minPrice: this.priceMin(),
@@ -655,6 +682,7 @@ export class DealsList implements OnInit {
 
     this.hasActiveFilters.set(
       query.brands!.length > 0 ||
+        query.sellers!.length > 0 ||
         query.categories!.length > 0 ||
         this.priceMin() !== null ||
         this.priceMax() !== null ||

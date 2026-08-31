@@ -53,7 +53,7 @@ public class DigestService(AppDbContext db, DealsQueryService dealsQuery, IEmail
             return new DigestResult(0, 0, pendingCount);
 
         var deals = await dealsQuery.GetDealsAsync(
-            referenceWindowDays: 30, brands: null, categories: null, search: null,
+            referenceWindowDays: 30, brands: null, categories: null, sellers: null, search: null,
             minPrice: null, maxPrice: null, onlyDiscounted: true, onlyStoreDiscounted: false,
             sortBy: null, page: 1, pageSize: FeaturedDealCount, cancellationToken);
 

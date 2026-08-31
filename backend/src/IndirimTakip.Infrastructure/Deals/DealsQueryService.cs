@@ -36,6 +36,15 @@ public partial class DealsQueryService(AppDbContext db)
     // "artık güncellenmiyor" bilgisini saklamak yanıltıcı olurdu.
     private static readonly TimeSpan StaleThreshold = TimeSpan.FromHours(48);
 
+    /// <summary>
+    /// Satıcı filtresinde "markanın kendi sitesinden satılanlar" seçeneğini
+    /// temsil eden etiket. Veritabanında bu durum Seller = NULL ile tutuluyor;
+    /// null bir filtre değeri olarak taşınamadığı için adlandırılmış bir
+    /// etikete çevriliyor. Hem filtre listesinde hem sorguda aynı sabit
+    /// kullanılıyor ki ikisi birbirinden kaymasın.
+    /// </summary>
+    public const string BrandDirectSellerLabel = "Markanın kendi sitesi";
+
     // Vitrine girmek için gereken en düşük ortalama. Amaç "beğenilen ürünler"
     // göstermek; 3,2 ortalamalı bir ürünü öne çıkarmak bandın anlamını bozardı.
     private const decimal MinimumRatingValue = 4.0m;
@@ -75,6 +84,7 @@ public partial class DealsQueryService(AppDbContext db)
         int referenceWindowDays,
         string[]? brands,
         string[]? categories,
+        string[]? sellers,
         string? search,
         decimal? minPrice,
         decimal? maxPrice,
@@ -117,6 +127,17 @@ public partial class DealsQueryService(AppDbContext db)
 
         if (brands is { Length: > 0 })
             query = query.Where(r => brands.Contains(r.BrandName));
+
+        if (sellers is { Length: > 0 })
+        {
+            // "Markanın kendi sitesi" veritabanında NULL olarak duruyor, bu
+            // yüzden iki koşul ayrı ayrı kuruluyor.
+            var markaDirekt = sellers.Contains(BrandDirectSellerLabel);
+            var bayiler = sellers.Where(x => x != BrandDirectSellerLabel).ToArray();
+            query = query.Where(r =>
+                (markaDirekt && r.Product.Seller == null)
+                || (bayiler.Length > 0 && r.Product.Seller != null && bayiler.Contains(r.Product.Seller)));
+        }
 
         if (categories is { Length: > 0 })
             query = query.Where(r => r.Product.Category != null && categories.Contains(r.Product.Category));
@@ -495,6 +516,7 @@ public partial class DealsQueryService(AppDbContext db)
             referenceWindowDays: 30,
             brands: brands,
             categories: [category],
+            sellers: null,
             search: search,
             minPrice: null,
             maxPrice: null,
@@ -800,6 +822,21 @@ public partial class DealsQueryService(AppDbContext db)
             .OrderBy(c => c)
             .ToListAsync(cancellationToken);
 
-        return new FilterOptionsDto(brands, categories);
+        // Yalnızca gerçekten bayi ürünü varsa satıcı listesi anlamlı; hepsi
+        // markanın kendi sitesindense filtre gösterilmemeli (arayüz boş
+        // listede kutuyu gizliyor).
+        var bayiler = await db.Products
+            .AsNoTracking()
+            .Where(p => p.Seller != null)
+            .Select(p => p.Seller!)
+            .Distinct()
+            .OrderBy(x => x)
+            .ToListAsync(cancellationToken);
+
+        var sellers = bayiler.Count == 0
+            ? []
+            : new List<string> { BrandDirectSellerLabel }.Concat(bayiler).ToList();
+
+        return new FilterOptionsDto(brands, categories, sellers);
     }
 }

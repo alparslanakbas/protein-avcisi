@@ -170,6 +170,12 @@
             <option value="">Tüm kategoriler</option>
             @for (category of availableCategories(); track category) { <option [value]="category">{{ categoryLabel(category) }}</option> }
           </select>
+          @if (availableSellers().length > 0) {
+            <select aria-label="Satıcıya göre filtrele" class="pa-filter-control min-w-[170px] px-3 text-sm" (change)="onSellerSelect($event)">
+              <option value="">Tüm satıcılar</option>
+              @for (seller of availableSellers(); track seller) { <option [value]="seller">{{ seller }}</option> }
+            </select>
+          }
           <select aria-label="Ürünleri sırala" [ngModel]="sortBy()" (ngModelChange)="onSortChange($event)" class="pa-filter-control min-w-[160px] px-3 text-sm">
             <option value="">En çok düşen</option>
             <option value="newest">Son eklenenler</option>
@@ -182,9 +188,10 @@
         </div>
       </div>
 
-      @if (selectedBrands().size > 0 || selectedCategories().size > 0) {
+      @if (selectedBrands().size > 0 || selectedCategories().size > 0 || selectedSellers().size > 0) {
         <div class="mb-4 flex flex-wrap gap-2">
           @for (brand of selectedBrands(); track brand) { <button type="button" class="rounded-full bg-[var(--noc-accent-100)] px-3 py-1 text-xs font-semibold text-[var(--noc-accent-700)]" (click)="toggleBrand(brand)">{{ brand }} <i class="ph ph-x ml-1" aria-hidden="true"></i></button> }
+          @for (seller of selectedSellers(); track seller) { <button type="button" class="rounded-full bg-[var(--noc-accent-100)] px-3 py-1 text-xs font-semibold text-[var(--noc-accent-700)]" (click)="toggleSeller(seller)">{{ seller }} <i class="ph ph-x ml-1" aria-hidden="true"></i></button> }
           @for (category of selectedCategories(); track category) { <button type="button" class="rounded-full bg-[var(--noc-accent-100)] px-3 py-1 text-xs font-semibold text-[var(--noc-accent-700)]" (click)="toggleCategory(category)">{{ categoryLabel(category) }} <i class="ph ph-x ml-1" aria-hidden="true"></i></button> }
         </div>
       }
