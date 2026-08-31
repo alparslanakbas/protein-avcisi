@@ -46,4 +46,15 @@ public record ScrapedProduct(
     // ürünün fiyat geçmişinde günlerce boşluk oluşuyordu; stok geri
     // geldiğinde seri kopuk kalıyordu. Sitenin iddiası kesintisiz gerçek
     // fiyat geçmişi olduğu için bu boşluk doğrudan o iddiayı zayıflatıyordu.
-    bool? InStock = null);
+    bool? InStock = null,
+    // Ürünü SATAN mağaza. Marka (üretici) alanından ayrı.
+    //
+    // NULL = ürün markanın kendi sitesinden alınıyor (mevcut dokuz kaynağın
+    // hepsi böyle). Bir bayi kataloğunda ise üretici ile satıcı farklı:
+    // ürün "BigJoy" markası altında görünmeli ama satın alma bağlantısı
+    // bayiye gitmeli ve kullanıcı kimden aldığını bilmeli.
+    //
+    // Aynı ürün iki satıcıda ayrı kayıt olarak duruyor; barkod (GTIN)
+    // olmadığı için satıcılar arası eşleştirme YAPILMIYOR — bkz.
+    // `.claude/notlar/scraper-ve-veri.md`, protein7 değerlendirmesi.
+    string? Seller = null);

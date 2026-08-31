@@ -35,7 +35,11 @@ public class ScrapingBackgroundService(
     private async Task RunScrapeCycleAsync(CancellationToken cancellationToken)
     {
         using var scope = scopeFactory.CreateScope();
-        var scrapers = scope.ServiceProvider.GetServices<IBrandScraper>().ToList();
+        // DailyOnly işaretliler bu turun DIŞINDA: onları
+        // DailyScrapingBackgroundService günde bir kez çalıştırıyor.
+        var scrapers = scope.ServiceProvider.GetServices<IBrandScraper>()
+            .Where(s => !s.DailyOnly)
+            .ToList();
         var ingestion = scope.ServiceProvider.GetRequiredService<ScrapeIngestionService>();
 
         logger.LogInformation("Tarama döngüsü başladı ({Count} marka).", scrapers.Count);

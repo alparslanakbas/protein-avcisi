@@ -62,4 +62,6 @@ public record DealDto(
     // rozet göstermiyor. Stokta olmayan ürün listelerden ÇIKARILMIYOR:
     // fiyat geçmişi kesintisiz kalsın diye taranmaya devam ediyor ve
     // "Tükendi" rozetiyle gösteriliyor.
-    bool? InStock = null);
+    bool? InStock = null,
+    // Ürünü satan mağaza; NULL ise markanın kendi sitesi.
+    string? Seller = null);

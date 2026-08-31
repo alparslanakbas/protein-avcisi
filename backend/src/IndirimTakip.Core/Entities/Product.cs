@@ -22,6 +22,10 @@ public class Product
     // saymak uydurma veri olurdu.
     public bool? InStock { get; set; }
 
+    // Ürünü SATAN mağaza; Brand (üretici) alanından ayrı.
+    // NULL = markanın kendi sitesinden alınıyor. Bayi kataloglarında dolu.
+    public string? Seller { get; set; }
+
     public int ClickCount { get; set; }
 
     // Ürün sayfasındaki "Bu bilgi faydalı mıydı?" oyu — basit bir güven

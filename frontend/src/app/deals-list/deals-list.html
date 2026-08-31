@@ -226,7 +226,7 @@
                 }
                 <a [routerLink]="productPath(deal)" queryParamsHandling="preserve" class="mt-2 block w-full text-left">
                   <h2 [title]="displayName(deal.productName)" class="line-clamp-2 text-[16px] font-semibold leading-tight tracking-[-0.012em]">{{ displayName(deal.productName) }}</h2>
-                  <p class="mt-1 text-xs text-[var(--noc-neutral-500)]">{{ deal.brandName }}{{ deal.size ? ' · ' + deal.size : '' }}{{ deal.flavor ? ' · ' + deal.flavor : '' }}</p>
+                  <p class="mt-1 text-xs text-[var(--noc-neutral-500)]">{{ deal.brandName }}{{ deal.size ? ' · ' + deal.size : '' }}{{ deal.flavor ? ' · ' + deal.flavor : '' }}{{ deal.seller ? ' · satıcı: ' + deal.seller : '' }}</p>
                 </a>
                 <div class="pa-product-meta mt-3 flex flex-wrap items-center gap-3 text-xs text-[var(--noc-neutral-500)]">
                   <span class="inline-flex items-center gap-1"><i class="ph-fill ph-seal-check text-[15px] text-[var(--noc-accent)]" aria-hidden="true"></i>Fiyat geçmişi takipte</span>

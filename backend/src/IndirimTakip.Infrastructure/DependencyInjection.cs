@@ -7,6 +7,7 @@ using IndirimTakip.Infrastructure.Scraping.Hardline;
 using IndirimTakip.Infrastructure.Scraping.Hiq;
 using IndirimTakip.Infrastructure.Scraping.BigJoy;
 using IndirimTakip.Infrastructure.Scraping.CommanderNutrition;
+using IndirimTakip.Infrastructure.Scraping.Protein7;
 using IndirimTakip.Infrastructure.Scraping.ProteinOcean;
 using IndirimTakip.Infrastructure.Scraping.Ssn;
 using IndirimTakip.Infrastructure.Scraping.Supplementler;
@@ -46,6 +47,19 @@ public static class DependencyInjection
             client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
         });
         services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<CommanderNutritionScraper>());
+
+        // protein7 — BAYİ (çok markalı) kaynak. Ürün başına bir istek attığı
+        // için DailyOnly: 6 saatlik genel tura değil, günde bir kez çalışan
+        // tura giriyor (bkz. DailyScrapingBackgroundService).
+        services.AddHttpClient<Protein7Scraper>(client =>
+        {
+            client.BaseAddress = new Uri("https://protein7.com/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
+            // ~900 ürün sayfası tek tek geziliyor; tek sayfa için varsayılan
+            // timeout yeterli ama yavaş yanıtlarda takılıp kalmasın.
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
+        services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<Protein7Scraper>());
 
         services.AddHttpClient<SsnScraper>(client =>
         {
@@ -132,6 +146,8 @@ public static class DependencyInjection
         services.AddScoped<CouponService>();
         services.AddScoped<ArticleService>();
         services.AddHostedService<ScrapingBackgroundService>();
+        // Günde bir kez, 00:00 Türkiye saatinde çalışan kaynaklar (bkz. IBrandScraper.DailyOnly).
+        services.AddHostedService<DailyScrapingBackgroundService>();
         services.AddHostedService<DescriptionBackfillBackgroundService>();
         services.AddHostedService<RatingRefreshBackgroundService>();
 

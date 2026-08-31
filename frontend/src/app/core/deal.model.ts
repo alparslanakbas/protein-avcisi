@@ -13,6 +13,10 @@ export interface Deal {
   // diğerlerinde hiçbir rozet gösterilmemeli. Bilinmeyeni "stokta var"
   // saymak uydurma veri olurdu.
   inStock: boolean | null;
+  // Ürünü SATAN mağaza; null ise markanın kendi sitesinden alınıyor.
+  // Bayi kaynaklarında marka (üretici) ile satıcı farklı olabiliyor:
+  // ürün "BigJoy" markası altında görünür ama protein7.com'dan satılır.
+  seller: string | null;
   servingSizeGrams: number | null;
   // Paketten kaç servis çıktığı — markanın doğrudan beyanı (şimdilik
   // yalnızca ProteinOcean; o markada paket gramajı hiç gelmiyor).

@@ -150,17 +150,31 @@ export function buildProductFacts(deal: Deal, discountEventCount?: number): Prod
     facts.push({ label: 'Aroma', value: deal.flavor });
   }
 
+  // Satıcı yalnızca bayi kaynaklarında dolu. Markanın kendi sitesinden
+  // gelen ürünlerde null ve satır hiç üretilmiyor — orada "Satıcı: HIQ"
+  // demek gereksiz gürültü olurdu.
+  if (deal.seller) {
+    facts.push({
+      label: 'Satıcı',
+      value: `${deal.brandName} ürünü, ${deal.seller} üzerinden satılıyor.`,
+    });
+  }
+
   // Yalnızca stok bilgisi VEREN kaynaklarda gösteriliyor. `=== false`
-  // kontrolü zorunlu: null "bu marka stok bilgisi vermiyor" demek, "stokta
-  // yok" değil. Sekiz kaynaktan üçü bu bilgiyi veriyor.
+  // kontrolü zorunlu: null "bu kaynak stok bilgisi vermiyor" demek, "stokta
+  // yok" değil.
   //
   // Stokta olmayan ürün listeden çıkarılmıyor — fiyat geçmişi kesintisiz
   // kalsın diye taranmaya devam ediyor — ama kullanıcı boşuna mağazaya
-  // gitmesin diye burada da açıkça söyleniyor.
+  // gitmesin diye burada açıkça söyleniyor.
   if (deal.inStock === false) {
+    // Tükenen yer SATICININ mağazası. Bayi ürünlerinde marka ile satıcı
+    // farklı: "BigJoy sitesinde tükenmişti" demek yanlış olurdu, ürün
+    // protein7'de tükenmiş olabilir ama BigJoy'un kendi sitesinde durabilir.
+    const magaza = deal.seller ?? deal.brandName;
     facts.push({
       label: 'Stok durumu',
-      value: `Son kontrolümüzde ${deal.brandName} sitesinde tükenmişti. Fiyatını izlemeye devam ediyoruz.`,
+      value: `Son kontrolümüzde ${magaza} sitesinde tükenmişti. Fiyatını izlemeye devam ediyoruz.`,
     });
   }
 
