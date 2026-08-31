@@ -221,4 +221,52 @@ public class ProductAttributeParserTests
     {
         Assert.Equal(expected, ProductAttributeParser.InferCategory(productName, brandName));
     }
+
+    // REGRESYON: ürünün BİÇİMİ içeriğinden önce gelir. Anahtar kelime listesi
+    // sırayla taranıyor ve "protein-tozu" en başta olduğu için, adında
+    // "protein" geçen barlar toz kategorisine düşüyordu. Canlı veride
+    // ölçüldü: 11 markada 49 bar yanlış kategorideydi.
+    [Theory]
+    [InlineData("Multipower %50 Protein Bar 50gr 20 Adet")]
+    [InlineData("HIQ High Pro Protein Bar 12*55g")]
+    [InlineData("Grenade High Protein Bar 12 Adet")]
+    [InlineData("FİTNUT GO PROTEIN BAR FISTIK&ÇİKOLATA 40G")]
+    [InlineData("Protein Bar Fındık 50 Gr")]
+    // Pre-workout barı da bardır — o da atıştırmalık.
+    [InlineData("Pre-Workout Bar Fındık 50 Gr")]
+    public void InferCategory_protein_barlarini_toz_sanmiyor(string productName)
+    {
+        Assert.Equal("saglikli-atistirmaliklar", ProductAttributeParser.InferCategory(productName));
+    }
+
+    [Theory]
+    // Gerçek protein TOZLARI etkilenmemeli.
+    [InlineData("HIQ Whey Protein Tozu 2000 Gr", "protein-tozu")]
+    [InlineData("Hardline Whey 3 Matrix 2300 Gr", "protein-tozu")]
+    // "bar" bir başka kelimenin İÇİNDE geçiyorsa bar değildir.
+    [InlineData("Seedn Grains Barbekü Baharatı 80gr", null)]
+    public void InferCategory_bar_kurali_yanlis_pozitif_uretmiyor(string productName, string? expected)
+    {
+        Assert.Equal(expected, ProductAttributeParser.InferCategory(productName));
+    }
+
+    // REGRESYON: "mg" paket birimi değil, etken madde DOZU. İlk eşleşmeyi
+    // almak paket boyutunu doza çeviriyordu — canlıda 37 üründe böyleydi.
+    [Theory]
+    [InlineData("Herbina Magnezyum Sitrat 500 mg 120 Tablet", "120 Tablet")]
+    [InlineData("Alpha Lipoic Acid - Alfa Lipoik Asit 200 mg 60 Kapsül", "60 Kapsül")]
+    [InlineData("Amino Complex 8300 mg 300 gr Amino Asit Karışımı", "300 Gr")]
+    [InlineData("L-Karnitin 2000 mg 1000 ml Yeşil Elma Aromalı", "1000 Ml")]
+    [InlineData("Vitamin C Powder 1000 MG  200 Gr - 200 Servis", "200 Gr")]
+    public void ExtractSize_dozu_paket_boyutu_sanmiyor(string productName, string expected)
+    {
+        Assert.Equal(expected, ProductAttributeParser.ExtractSize(productName));
+    }
+
+    [Fact]
+    public void ExtractSize_baska_birim_yoksa_mg_gosterilir()
+    {
+        // Elde olan tek ölçü mg ise boş bırakmaktansa o gösteriliyor.
+        Assert.Equal("2900 Mg", ProductAttributeParser.ExtractSize("SWISS GH MATRIX 2900MG"));
+    }
 }

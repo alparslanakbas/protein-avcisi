@@ -75,14 +75,34 @@ public static partial class ProductAttributeParser
         // Markalı/özel karışım isimleri (GH-UP, Smash Pro, T-Prime vb.) BİLİNÇLİ
         // OLARAK eklenmedi — isimden çıkarım değil tahmin olurdu.
         ("vitamin", ["vitamin", "mineral", "magnesium", "magnezyum", "zinc", "cinko", "omega", "multivitamin", "biotin", "d3k2", "coenzyme", "ginkgo", "glutathione", "hyaluronic", "inulin", "milk thistle", "panax", "ginseng", "psyllium", "rhodiola", "saw palmetto", "selenium", "tribulus", "zma", "glucosamine", "chondroitin", "nmn", "tudca", "ester-c", "5-htp", "b-complex", "lion's mane", "maca", "iron", "chromium", "glucoflex", "curcumin", "spirulina"]),
-        ("saglikli-atistirmaliklar", ["bar", "cookie", "kurabiye", "atistirmalik", "rice cake", "pirinc", "fıstık ezmesi", "fıstığı ezmesi", "peanut butter", "ekmek"]),
+        // "bar" BİLİNÇLİ OLARAK burada YOK: alt dizi olarak arandığı için
+        // "Barbekü Baharatı"yı atıştırmalık sayıyordu. Bar biçimi artık
+        // yukarıda kelime sınırlı SnackBarFormRegex ile yakalanıyor.
+        ("saglikli-atistirmaliklar", ["cookie", "kurabiye", "atistirmalik", "rice cake", "pirinc", "fıstık ezmesi", "fıstığı ezmesi", "peanut butter", "ekmek"]),
     ];
 
+    /// <summary>
+    /// Paket büyüklüğü. "mg" bir PAKET birimi değil, ETKEN MADDE DOZUdur —
+    /// bu yüzden isimde başka bir birim varsa mg'li eşleşme atlanıyor.
+    ///
+    /// Gerçek örnek: "Herbina Magnezyum Sitrat 500 mg 120 Tablet". İlk
+    /// eşleşmeyi almak paket boyutunu "500 Mg" yapıyordu; doğru cevap
+    /// "120 Tablet". Aynı hata canlıda West Nutrition'ın üç ürününde de
+    /// duruyordu ("200 Mg", "600 Mg", "8300 Mg"), yani Swiss'e özel değil.
+    ///
+    /// mg TAMAMEN elenmiyor: isimde başka birim hiç yoksa ("SWISS GH MATRIX
+    /// 2900MG") elde olan tek ölçü odur, boş bırakmaktansa o gösteriliyor.
+    /// </summary>
     public static string? ExtractSize(string productName)
     {
-        var match = SizeRegex().Match(productName);
-        if (!match.Success)
+        var matches = SizeRegex().Matches(productName);
+        if (matches.Count == 0)
             return null;
+
+        static bool IsDoseUnit(Match m) =>
+            m.Groups["unit"].Value.Equals("mg", StringComparison.OrdinalIgnoreCase);
+
+        var match = matches.FirstOrDefault(m => !IsDoseUnit(m)) ?? matches[0];
 
         var value = match.Groups["value"].Value.Replace(',', '.');
         var unitKey = match.Groups["unit"].Value.ToLowerInvariant();
@@ -264,6 +284,19 @@ public static partial class ProductAttributeParser
         // Elle .Replace ile düzeltiliyor, culture-sensitive ToLower'a dönmeden.
         var normalized = productName.Replace('İ', 'i').ToLowerInvariant();
 
+        // ÜRÜNÜN BİÇİMİ, İÇERİĞİNDEN ÖNCE GELİR. Anahtar kelime listesi
+        // sırayla taranıyor ve "protein-tozu" en başta; bu yüzden adında
+        // "protein" geçen bir BAR, toz kategorisine düşüyordu. Canlı veride
+        // ölçüldü: 11 markada 39 protein barı "protein-tozu" etiketliydi
+        // (Multipower, Musclestation, Grenade, HIQ, Hardline, Torq...),
+        // 15 tanesi ise doğru kategorideydi — yani aynı ürün tipi iki
+        // kategoriye bölünmüştü.
+        //
+        // Kelime sınırı ŞART: liste "bar" alt dizisini arıyordu ve
+        // "Barbekü Baharatı" bu yüzden atıştırmalık sayılıyordu.
+        if (SnackBarFormRegex().IsMatch(normalized))
+            return "saglikli-atistirmaliklar";
+
         foreach (var (category, keywords) in CategoryKeywords)
         {
             if (keywords.Any(keyword => normalized.Contains(keyword, StringComparison.Ordinal)))
@@ -406,4 +439,12 @@ public static partial class ProductAttributeParser
 
     [GeneratedRegex(@"\(([^)]+)\)")]
     private static partial Regex ParenthesesRegex();
+
+    /// <summary>
+    /// Ürünün bar biçiminde olduğunu söyleyen kelime. Türkçe ekler dahil
+    /// ("barı", "barlar"), ama "Barbekü"/"Barbell" gibi kelimelerin içine
+    /// denk gelmemesi için kelime sınırıyla.
+    /// </summary>
+    [GeneratedRegex(@"\bbar(s|ı|i|lar|ler|ları|leri)?\b", RegexOptions.IgnoreCase)]
+    private static partial Regex SnackBarFormRegex();
 }
