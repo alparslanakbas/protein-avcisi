@@ -13,6 +13,7 @@ using IndirimTakip.Infrastructure.Scraping.Ssn;
 using IndirimTakip.Infrastructure.Scraping.Supplementler;
 using IndirimTakip.Infrastructure.Scraping.Torq;
 using IndirimTakip.Infrastructure.Scraping.West;
+using IndirimTakip.Infrastructure.Scraping.SwissNutrition;
 using IndirimTakip.Infrastructure.Scraping.Yesilmarka;
 using IndirimTakip.Infrastructure.Subscribers;
 using Microsoft.EntityFrameworkCore;
@@ -100,6 +101,12 @@ public static class DependencyInjection
             client.BaseAddress = new Uri("https://api.myikas.com/");
         });
         services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<YesilmarkaScraper>());
+
+        services.AddHttpClient<SwissNutritionScraper>(client =>
+        {
+            client.BaseAddress = new Uri("https://api.myikas.com/");
+        });
+        services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<SwissNutritionScraper>());
 
         services.AddHttpClient<BigJoyScraper>(client =>
         {

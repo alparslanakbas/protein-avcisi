@@ -39,6 +39,19 @@ internal sealed class IkasProduct
     // için orada null kalıyor.
     [JsonPropertyName("categories")]
     public List<IkasCategory>? Categories { get; set; }
+
+    // Yalnızca Swiss Nutrition sorgusu bu alanı istiyor: o katalogda ürünler
+    // birden çok üreticiye ait (Purevits, Herbina, FitNut), yani marka
+    // scraper'ın kendisinden değil ürün başına geliyor. Tek markalı
+    // kaynakların sorgularında hiç yer almadığı için orada null kalıyor.
+    [JsonPropertyName("brand")]
+    public IkasBrand? Brand { get; set; }
+}
+
+internal sealed class IkasBrand
+{
+    [JsonPropertyName("name")]
+    public string? Name { get; set; }
 }
 
 internal sealed class IkasCategory
