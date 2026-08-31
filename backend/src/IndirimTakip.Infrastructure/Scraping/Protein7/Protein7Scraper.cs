@@ -38,16 +38,16 @@ public partial class Protein7Scraper(HttpClient httpClient, ILogger<Protein7Scra
     private const string SellerName = "protein7.com";
     private const string ProductSitemapUrl = "https://protein7.com/xml/sitemap/product.xml";
 
-    // Nezaket beklemesi. İLK ÇALIŞTIRMADA 500 ms denendi ve 914 adresin
-    // yalnızca 466'sı geldi — geri kalanı sunucunun hız sınırına takıldı.
-    // Ölçüldü: 1 saniye aralıkla arka arkaya 8 istek sorunsuz. 900 istek ×
-    // 1 sn ≈ 15 dakika, günde bir çalışan bir tarama için sorun değil.
+    // Nezaket beklemesi. Hız sınırı YOK — VM'den 300 ardışık istek 0,3 sn
+    // aralıkla sorunsuz geçti. Bu değer tamamen nezaket: günde bir çalışan
+    // bir tarama için 15 dakika sorun değil, karşı sunucuyu yormamak yeğdir.
     private static readonly TimeSpan DelayBetweenRequests = TimeSpan.FromSeconds(1);
 
-    // Başarısız oranı bunu aşarsa tarama HATA sayılıyor. Sebep: ürün başına
-    // hatalar yutuluyor (tek bozuk sayfa ~900 ürünlük taramayı düşürmemeli)
-    // ama bu, yarısı kaybolmuş bir taramanın "başarılı" görünmesine yol
-    // açtı. Sessiz veri kaybı, gürültülü hatadan çok daha tehlikeli.
+    // GERÇEK hataların oranı bunu aşarsa tarama güvenilmez sayılıyor.
+    // 404'ler buna DAHİL DEĞİL: sitemap silinmiş ürünlerin adreslerini de
+    // listeliyor (ölçüldü: 914 adresin ~420'si 404) ve bu beklenen bir durum,
+    // hata değil. İlk sürümde 404'ler de sayıldığı için tarama "hız sınırına
+    // takıldı" sanılıp iki kez boşuna yavaşlatıldı.
     private const double MaxFailureRatio = 0.2;
 
     public async Task<IReadOnlyList<ScrapedProduct>> ScrapeAsync(CancellationToken cancellationToken = default)
@@ -55,6 +55,7 @@ public partial class Protein7Scraper(HttpClient httpClient, ILogger<Protein7Scra
         var urls = await FetchProductUrlsAsync(cancellationToken);
         var result = new List<ScrapedProduct>();
         var failures = 0;
+        var missing = 0;
 
         foreach (var url in urls)
         {
@@ -66,10 +67,17 @@ public partial class Protein7Scraper(HttpClient httpClient, ILogger<Protein7Scra
                 if (product is not null)
                     result.Add(product);
             }
+            catch (ProductGoneException)
+            {
+                // Sitemap'te olan ama artık var olmayan ürün. Beklenen durum,
+                // hata değil — güvenilirlik hesabına girmiyor.
+                missing++;
+            }
             catch (Exception) when (!cancellationToken.IsCancellationRequested)
             {
-                // Tek bir ürün sayfasının hatası (404, zaman aşımı, bozuk HTML)
-                // ~900 ürünlük taramanın tamamını düşürmemeli — ama sayılıyor.
+                // Zaman aşımı, 5xx, bozuk HTML: tek sayfa yüzünden ~900
+                // ürünlük tarama düşmemeli ama SAYILIYOR — sessiz veri kaybı
+                // gürültülü hatadan tehlikelidir.
                 failures++;
             }
 
@@ -82,12 +90,13 @@ public partial class Protein7Scraper(HttpClient httpClient, ILogger<Protein7Scra
             // yutma servisi mevcut ürünleri silmiyor, dolayısıyla veri
             // kaybolmuyor — ama sorun log'a düşüyor ve fark ediliyor.
             throw new InvalidOperationException(
-                $"protein7: {urls.Count} adresin {failures} tanesi alınamadı, " +
-                "tarama güvenilir değil (hız sınırı olabilir).");
+                $"protein7: {urls.Count} adresin {failures} tanesinde beklenmeyen hata oluştu, " +
+                "tarama güvenilir değil.");
         }
 
-        if (failures > 0)
-            logger.LogWarning("protein7: {Failures}/{Total} ürün sayfası alınamadı.", failures, urls.Count);
+        logger.LogInformation(
+            "protein7: {Total} adres tarandı, {Found} ürün alındı, {Missing} adres artık yok (404), {Failures} hata.",
+            urls.Count, result.Count, missing, failures);
 
         return result;
     }
@@ -102,9 +111,18 @@ public partial class Protein7Scraper(HttpClient httpClient, ILogger<Protein7Scra
             .ToList();
     }
 
+    /// <summary>Sitemap'te duran ama artık yayında olmayan ürün.</summary>
+    private sealed class ProductGoneException : Exception;
+
     private async Task<ScrapedProduct?> FetchProductAsync(string url, CancellationToken cancellationToken)
     {
-        var html = await httpClient.GetStringAsync(url, cancellationToken);
+        using var response = await httpClient.GetAsync(url, cancellationToken);
+
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            throw new ProductGoneException();
+
+        response.EnsureSuccessStatusCode();
+        var html = await response.Content.ReadAsStringAsync(cancellationToken);
 
         var name = OgTitleRegex().Match(html).Groups[1].Value.Trim();
         if (name.Length == 0)
