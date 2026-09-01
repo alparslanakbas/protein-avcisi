@@ -64,4 +64,18 @@ public record DealDto(
     // "Tükendi" rozetiyle gösteriliyor.
     bool? InStock = null,
     // Ürünü satan mağaza; NULL ise markanın kendi sitesi.
-    string? Seller = null);
+    string? Seller = null,
+    // ORTAKLIK KODU EKLENMİŞ mağaza adresi — "Mağazaya git" bağlantısının
+    // gideceği yer.
+    //
+    // Neden DTO'da: bağlantı eskiden kendi sitemizdeki /go/{id} ucuna
+    // gidiyordu, o da 302 ile mağazaya atıyordu. Kurulu PWA'da bu araya
+    // giren yönlendirme geri tuşunu ÖLDÜRÜYORDU: yeni tarama bağlamının
+    // geçmişinde yalnızca yönlendirme zinciri kalıyor, geri basınca bağlam
+    // kapanıyor ve kullanıcı uygulamadan çıkmış oluyordu (kullanıcı bildirdi,
+    // ölçümle doğrulandı). Doğrudan dış adrese giden bağlantıda sorun yok —
+    // aynı PWA'da yönlendirmesiz bir dış bağlantı test edildi, geri çalıştı.
+    //
+    // /go/{id} KALDIRILMADI: dizine girmiş adresler, e-postalar ve eski
+    // istemciler için çalışmaya devam ediyor.
+    string? StoreUrl = null);

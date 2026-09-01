@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using IndirimTakip.Core.Entities;
 using IndirimTakip.Infrastructure.Scraping;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace IndirimTakip.Infrastructure.Deals;
 
@@ -20,7 +21,7 @@ namespace IndirimTakip.Infrastructure.Deals;
 // dönüştükten sonra yapılıyor.
 internal sealed record DealRow(Product Product, string BrandName, PriceHistory Latest, decimal ReferencePrice, decimal ThirtyDayLowPrice);
 
-public partial class DealsQueryService(AppDbContext db)
+public partial class DealsQueryService(AppDbContext db, IOptions<AffiliateOptions> affiliateOptions)
 {
     // Markalar kendi sitelerinde bir ürünün SKU/URL'sini değiştirdiğinde
     // scraper eski kaydı bir daha bulamıyor, PriceHistory eklenmesi duruyor
@@ -78,7 +79,7 @@ public partial class DealsQueryService(AppDbContext db)
             ? string.Empty
             : value.Trim().Replace('İ', 'i').Replace('I', 'i').Replace('ı', 'i').ToLowerInvariant();
 
-    private static DealDto MapToDealDto(DealRow row)
+    private DealDto MapToDealDto(DealRow row)
     {
         var latest = row.Latest;
         var referencePrice = row.ReferencePrice;
@@ -106,7 +107,8 @@ public partial class DealsQueryService(AppDbContext db)
             RatingValue: row.Product.RatingValue,
             RatingCount: row.Product.RatingCount,
             InStock: row.Product.InStock,
-            Seller: row.Product.Seller);
+            Seller: row.Product.Seller,
+            AffiliateLinkBuilder.Apply(row.Product.Url, row.BrandName, affiliateOptions.Value));
     }
 
     public async Task<PagedResult<DealDto>> GetDealsAsync(

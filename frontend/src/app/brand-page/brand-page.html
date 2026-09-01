@@ -275,7 +275,7 @@
               </div>
 
               <a
-                [href]="goToStoreUrl(deal.productId)"
+                [href]="goToStoreUrl(deal)" (click)="magazaTiklamasi(deal.productId)"
                 target="_blank"
                 rel="nofollow sponsored noopener"
                 (click)="$event.stopPropagation()"

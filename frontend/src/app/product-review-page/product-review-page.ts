@@ -5,7 +5,6 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
-import { StoreLinkTargetDirective } from '../core/store-link-target.directive';
 import { dedupeSameDaySamePrice, hoverAlign, nearestPointIndex, tooltipDateLabel } from '../core/chart-hover';
 import { buildPageTitle, clampDescription } from '../core/meta-description';
 import { buildProductFacts, buildProductJsonLdDescription } from '../core/product-facts';
@@ -48,7 +47,7 @@ interface NutritionRow {
 // taraflı görünmeyelim diye.
 @Component({
   selector: 'app-product-review-page',
-  imports: [StoreLinkTargetDirective, DecimalPipe, RouterLink, SiteHeader],
+  imports: [DecimalPipe, RouterLink, SiteHeader],
   templateUrl: './product-review-page.html',
 })
 export class ProductReviewPage implements OnInit {
@@ -351,7 +350,13 @@ export class ProductReviewPage implements OnInit {
 
   protected storeUrl(): string {
     const d = this.deal();
-    return d ? this.priceHistoryService.goToStoreUrl(d.productId) : '#';
+    return d ? this.priceHistoryService.goToStoreUrl(d.productId, d.storeUrl) : '#';
+  }
+
+  /** Mağaza tıklamasını sayar (bkz. PriceHistoryService). */
+  protected magazaTiklamasi(): void {
+    const d = this.deal();
+    if (d) this.priceHistoryService.trackStoreClick(d.productId);
   }
 
   protected productLink(d: Deal): string[] {

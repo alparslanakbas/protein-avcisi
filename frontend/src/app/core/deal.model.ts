@@ -17,6 +17,10 @@ export interface Deal {
   // Bayi kaynaklarında marka (üretici) ile satıcı farklı olabiliyor:
   // ürün "BigJoy" markası altında görünür ama protein7.com'dan satılır.
   seller: string | null;
+  // Ortaklık kodu eklenmiş mağaza adresi. "Mağazaya git" bağlantısı buraya
+  // gidiyor — araya kendi sitemizdeki /go/{id} yönlendirmesi GİRMİYOR,
+  // çünkü kurulu PWA'da o yönlendirme geri tuşunu bozuyordu.
+  storeUrl: string | null;
   servingSizeGrams: number | null;
   // Paketten kaç servis çıktığı — markanın doğrudan beyanı (şimdilik
   // yalnızca ProteinOcean; o markada paket gramajı hiç gelmiyor).

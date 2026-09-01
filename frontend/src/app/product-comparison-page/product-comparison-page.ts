@@ -5,7 +5,6 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
-import { StoreLinkTargetDirective } from '../core/store-link-target.directive';
 import { CATEGORY_LABELS } from '../core/category-labels';
 import { ComparisonService } from '../core/comparison.service';
 import { Deal } from '../core/deal.model';
@@ -46,7 +45,7 @@ interface ComparedProduct {
 // ve sunucuda render ediliyor.
 @Component({
   selector: 'app-product-comparison-page',
-  imports: [StoreLinkTargetDirective, DecimalPipe, RouterLink, SiteHeader],
+  imports: [DecimalPipe, RouterLink, SiteHeader],
   templateUrl: './product-comparison-page.html',
 })
 export class ProductComparisonPage implements OnInit {
@@ -147,8 +146,14 @@ export class ProductComparisonPage implements OnInit {
     return formatRelativeTime(deal.scrapedAt);
   }
 
-  protected storeUrl(productId: number): string {
-    return this.priceHistoryService.goToStoreUrl(productId);
+  protected storeUrl(deal: Deal): string {
+    return this.priceHistoryService.goToStoreUrl(deal.productId, deal.storeUrl);
+  }
+
+  /** Mağaza tıklamasını sayar; bağlantı doğrudan mağazaya gittiği için
+   *  sayacı artık /go/{id} artıramıyor (bkz. PriceHistoryService). */
+  protected magazaTiklamasi(productId: number): void {
+    this.priceHistoryService.trackStoreClick(productId);
   }
 
   ngOnInit(): void {

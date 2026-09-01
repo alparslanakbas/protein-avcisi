@@ -272,7 +272,7 @@
       <div class="mt-[45px] grid grid-cols-2 gap-3">
         @for (item of products(); track item.deal.productId) {
           <a
-            [href]="storeUrl(item.deal.productId)"
+            [href]="storeUrl(item.deal)" (click)="magazaTiklamasi(item.deal.productId)"
             target="_blank"
             rel="noopener nofollow sponsored"
             class="rounded-[8px] py-2.5 text-center text-sm font-medium text-[var(--noc-accent-100)]"

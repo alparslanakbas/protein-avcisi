@@ -635,6 +635,29 @@ app.MapGet("/go/{productId:int}", async (int productId, HttpContext http, AppDbC
     return Results.Redirect(url, permanent: false);
 }).RequireRateLimiting("General");
 
+// Mağaza tıklaması. Bağlantı artık DOĞRUDAN mağazaya gittiği için (bkz.
+// DealDto.StoreUrl) sayacı /go/{id} artıramıyor; tıklama anında buraya
+// beacon gönderiliyor.
+//
+// Yan fayda: sayaç artık yalnızca JavaScript çalıştıran gerçek tarayıcılarda
+// artıyor. /go'da bunun için ayrıca user-agent'a bakıp bot ayıklamak
+// gerekiyordu (sayaç markalarla paylaşılan tıklama raporunu besliyor ve bot
+// trafiğiyle şişerse veri doğrudan yanıltıcı olur).
+//
+// Gövde beklenmiyor: navigator.sendBeacon boş gövdeyle çağrılıyor ki istek
+// "basit" kalsın ve CORS ön kontrolü tetiklenmesin — ön kontrol, sayfa
+// mağazaya giderken iptal edilip sayaç kaybolabilirdi.
+app.MapPost("/api/products/{id:int}/click", async (int id, AppDbContext db, CancellationToken ct) =>
+{
+    // Tek deyimde artırma: ürünü belleğe çekip SaveChanges yapmaya gerek yok
+    // ve eşzamanlı tıklamalarda kayıp güncelleme riski kalmıyor.
+    var affected = await db.Products
+        .Where(p => p.Id == id)
+        .ExecuteUpdateAsync(setters => setters.SetProperty(p => p.ClickCount, p => p.ClickCount + 1), ct);
+
+    return affected == 0 ? Results.NotFound() : Results.NoContent();
+}).RequireRateLimiting("General");
+
 // "Bu bilgi faydalı mıydı?" oyu — basit güven sinyali, /go ile aynı desende
 // (auth yok, kim oy verdiğini takip etmiyoruz — tekrar oy vermeyi frontend
 // localStorage ile engelliyor, backend'de dedup gerekmiyor).

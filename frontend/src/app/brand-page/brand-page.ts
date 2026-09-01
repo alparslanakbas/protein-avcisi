@@ -3,7 +3,6 @@ import { Component, OnInit, computed, effect, inject, signal } from '@angular/co
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
-import { StoreLinkTargetDirective } from '../core/store-link-target.directive';
 import { buildBrandCategoryFaqs, buildBrandFaqs } from '../core/brand-faqs';
 import { buildBreadcrumbJsonLd } from '../core/breadcrumb';
 import { BrandStats } from '../core/brand-stats.model';
@@ -31,7 +30,7 @@ const SEARCH_DEBOUNCE_MS = 350;
 
 @Component({
   selector: 'app-brand-page',
-  imports: [StoreLinkTargetDirective, DecimalPipe, FormsModule, RouterLink, ProductCardSparkline, ProductModal, SiteHeader],
+  imports: [DecimalPipe, FormsModule, RouterLink, ProductCardSparkline, ProductModal, SiteHeader],
   templateUrl: './brand-page.html',
 })
 export class BrandPage implements OnInit {
@@ -503,8 +502,14 @@ export class BrandPage implements OnInit {
     return formatRelativeTime(deal.scrapedAt);
   }
 
-  protected goToStoreUrl(productId: number): string {
-    return this.priceHistoryService.goToStoreUrl(productId);
+  protected goToStoreUrl(deal: Deal): string {
+    return this.priceHistoryService.goToStoreUrl(deal.productId, deal.storeUrl);
+  }
+
+  /** Mağaza tıklamasını sayar; bağlantı doğrudan mağazaya gittiği için
+   *  sayacı artık /go/{id} artıramıyor (bkz. PriceHistoryService). */
+  protected magazaTiklamasi(productId: number): void {
+    this.priceHistoryService.trackStoreClick(productId);
   }
 
   // deals-list.ts'teki aynı yöntem — sadece gerçek besin değeri verisi

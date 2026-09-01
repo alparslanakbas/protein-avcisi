@@ -5,7 +5,6 @@ import { FormsModule } from '@angular/forms';
 import { Meta } from '@angular/platform-browser';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
-import { StoreLinkTargetDirective } from '../core/store-link-target.directive';
 import { Deal } from '../core/deal.model';
 import { productPath, shouldHandleInApp } from '../core/product-link';
 import { DealsService } from '../core/deals.service';
@@ -24,7 +23,7 @@ const MAX_AUTO_RETRY = 2;
 
 @Component({
   selector: 'app-favorites-page',
-  imports: [StoreLinkTargetDirective, DecimalPipe, RouterLink, ProductModal, SiteHeader, FormsModule],
+  imports: [DecimalPipe, RouterLink, ProductModal, SiteHeader, FormsModule],
   templateUrl: './favorites-page.html',
   styleUrl: './favorites-page.css',
 })
@@ -256,7 +255,13 @@ export class FavoritesPage implements OnInit, OnDestroy {
     return formatRelativeTime(deal.scrapedAt);
   }
 
-  protected goToStoreUrl(productId: number): string {
-    return this.priceHistoryService.goToStoreUrl(productId);
+  protected goToStoreUrl(deal: Deal): string {
+    return this.priceHistoryService.goToStoreUrl(deal.productId, deal.storeUrl);
+  }
+
+  /** Mağaza tıklamasını sayar; bağlantı doğrudan mağazaya gittiği için
+   *  sayacı artık /go/{id} artıramıyor (bkz. PriceHistoryService). */
+  protected magazaTiklamasi(productId: number): void {
+    this.priceHistoryService.trackStoreClick(productId);
   }
 }

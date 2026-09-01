@@ -15,12 +15,37 @@ export class PriceHistoryService {
     });
   }
 
-  // Bilinçli olarak API_BASE_URL değil, göreceli bir yol — böylece link
-  // ziyaretçinin gördüğü sitenin kendi domain'inde kalıyor (bilinmeyen bir
-  // "api.protein-avcisi..." adresine gitmek, dikkatli kullanıcılara
-  // phishing linki gibi görünüyordu). server.ts'te bu yol backend'in
-  // gerçek /go/{id}'sine sunucu tarafında proxy'leniyor.
-  goToStoreUrl(productId: number): string {
-    return `/go/${productId}`;
+  /**
+   * "Mağazaya git" bağlantısının adresi.
+   *
+   * Ürünün ortaklık kodu eklenmiş mağaza adresi elimizdeyse DOĞRUDAN oraya
+   * gidiyoruz. Eskiden her zaman kendi sitemizdeki /go/{id} ucuna gidilir,
+   * o da 302 ile mağazaya atardı; kurulu PWA'da araya giren bu yönlendirme
+   * geri tuşunu ÖLDÜRÜYORDU (yeni tarama bağlamının geçmişinde yalnızca
+   * yönlendirme zinciri kalıyor, geri basınca bağlam kapanıp kullanıcı
+   * uygulamadan çıkıyordu — kullanıcı bildirdi, ölçümle doğrulandı).
+   *
+   * Adres yoksa (eski önbellekten gelen yanıt) /go/{id} yedeği kalıyor.
+   */
+  goToStoreUrl(productId: number, storeUrl?: string | null): string {
+    return storeUrl ?? `/go/${productId}`;
+  }
+
+  /**
+   * Mağaza tıklamasını sayar.
+   *
+   * Bağlantı artık doğrudan mağazaya gittiği için sayacı /go/{id} artıramıyor.
+   * sendBeacon kullanılıyor: sayfa mağazaya giderken bile isteğin gönderilmesi
+   * garanti, gövde boş olduğu için istek "basit" kalıyor ve CORS ön kontrolü
+   * tetiklenmiyor (ön kontrol, sayfa ayrılırken iptal edilip sayacı
+   * kaybettirebilirdi).
+   */
+  trackStoreClick(productId: number): void {
+    if (typeof navigator === 'undefined' || !navigator.sendBeacon) return;
+    try {
+      navigator.sendBeacon(`${API_BASE_URL}/api/products/${productId}/click`);
+    } catch {
+      // Sayaç kaybı, mağazaya gidişi engellemeyi haklı çıkarmaz.
+    }
   }
 }

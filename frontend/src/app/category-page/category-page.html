@@ -163,7 +163,7 @@
                   </td>
                   <td class="px-[16.8px] py-[11.2px] text-right">
                     <a
-                      [href]="goToStoreUrl(deal.productId)"
+                      [href]="goToStoreUrl(deal)" (click)="magazaTiklamasi(deal.productId)"
                       target="_blank"
                       rel="nofollow sponsored noopener"
                       (click)="$event.stopPropagation()"
