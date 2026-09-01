@@ -51,6 +51,21 @@ function extractIntro(raw: string | null | undefined, productName: string): stri
   text = text.replace(/^[İIiı]çerik\s*[:：]\s*/, '');
   text = text.replace(/^.{0,60}?ned[iıİI]r\s*\??\s*[:：]\s*/i, '');
 
+  // Bazı markaların metni ürün adını ARKA ARKAYA İKİ KEZ yazıyor:
+  // "BIGJOY® Classic High Protein Bar BIGJOY® Classic High Protein Bar
+  // içeriğinde…". Aşağıdaki ad kontrolü buna takılmıyor, çünkü metindeki
+  // yazım ürün adıyla birebir aynı değil (® işareti, "2100 g" ile "2100gr"
+  // farkı, parantezli aroma). Baştaki beş kelimelik blok metinde tekrar
+  // geçiyorsa ikinci geçişten başlatıyoruz — birinci kopya atılmış oluyor.
+  const kelimeler = text.split(' ');
+  if (kelimeler.length >= 10) {
+    const blok = kelimeler.slice(0, 5).join(' ');
+    const ikinci = text.indexOf(blok, 1);
+    if (ikinci > 0) {
+      text = text.slice(ikinci).replace(LEADING_PUNCTUATION, '').trim();
+    }
+  }
+
   // Metin ürün adını tekrarlıyorsa at — ad zaten başlıkta var.
   const name = productName.replace(/ /g, ' ').replace(/\s+/g, ' ').trim();
   if (name && text.toLocaleLowerCase('tr').startsWith(name.toLocaleLowerCase('tr'))) {
@@ -94,10 +109,43 @@ export function buildPageTitle(subject: string, suffix: string, tail: string): s
   const withoutTail = `${subject} ${suffix}`;
   if (withoutTail.length <= MAX) return withoutTail;
 
-  // Kelime ortasından kesmemek için son boşluğa kadar geri git.
   const room = MAX - suffix.length - 2;
-  const trimmed = subject.slice(0, Math.max(20, room)).replace(/\s+\S*$/, '');
-  return `${trimmed}… ${suffix}`;
+  return `${kelimeSinirindaKirp(subject, Math.max(20, room))} ${suffix}`;
+}
+
+/**
+ * Kesme sonrası SONDA KALAN anlamsız parçalar.
+ *
+ * Kelime sınırından kesmek tek başına yetmiyor: ölçümde (1 Eylül, canlıdan
+ * 160 sayfalık örnek) "…Command Quadro Whey 366…" ve "…Capsule 1250  120…"
+ * gibi başlıklar çıktı — sayı kesildiği yerde biriminden koptuğu için tek
+ * başına hiçbir şey anlatmıyor. "…Bar 45g x…" örneğinde ise yetim kalan tek
+ * harf ("x") başlığı bozuk gösteriyordu.
+ *
+ * Yalnızca AÇIKÇA parça olanlar atılıyor: sadece rakamdan oluşan bir öbek,
+ * tek harf, ya da bağlaç işareti. "45g" gibi birimiyle tam olan bir parça
+ * (harf içerdiği için) korunuyor.
+ */
+const YETIM_PARCA = /(?:\s+[\d.,]+|\s+[a-zA-ZçğıöşüÇĞİÖŞÜ]|\s+[x×+/&–-])+$/;
+
+/** Sonda kalan ayıraç — "2026 |…" gibi bozuk görünen başlıkları önler. */
+const SARKAN_AYIRAC = /[\s|·,:;&/–—-]+$/;
+
+/**
+ * Metni `max` karakterin altına indirir, kelime ortasından kesmez ve sonda
+ * yetim parça/ayıraç bırakmaz. Kırpma gerçekten olduysa sonuna "…" koyar.
+ */
+function kelimeSinirindaKirp(text: string, max: number): string {
+  if (text.length <= max) return text;
+
+  const kirpik = text
+    .slice(0, max)
+    .replace(/\s+\S*$/, '')
+    .replace(YETIM_PARCA, '')
+    .replace(SARKAN_AYIRAC, '');
+
+  // Her şey elendiyse (tek kelimelik çok uzun ad) sert kesmeye dön.
+  return kirpik ? `${kirpik}…` : `${text.slice(0, max)}…`;
 }
 
 /** Meta açıklamayı Google'ın kestiği sınırın altında tutar. */
@@ -107,11 +155,29 @@ export function clampDescription(text: string, max = 155): string {
 }
 
 /**
- * Başlığı arama sonucunda kırpılmayacak uzunlukta tutar. Kelime ortasından
- * kesmez. `buildPageTitle`'ın aksine yapıyı bilmediği için marka kuyruğunu
- * koruyamaz — bu yüzden yalnızca son çare güvenlik ağı olarak kullanılıyor.
+ * Başlığı arama sonucunda kırpılmayacak uzunlukta tutar.
+ *
+ * Son çare güvenlik ağı: `page-meta.service.ts` bunu TÜM sayfalara uyguluyor,
+ * yani `buildPageTitle`'dan geçmeyen marka/kategori sayfaları da buraya
+ * düşüyor. Onların başlığı "<Marka> <Kategori> Fiyatları ve İndirimleri 2026
+ * | ProteinAvcısı" kalıbında ve 65 karakteri aşınca eskiden kuyruğun ORTASINDAN
+ * kesiliyordu: "…İndirimleri 2026 |…". Canlıdan alınan 160 sayfalık örnekte
+ * sayfaların %16'sı böyleydi ve bunlar neredeyse tamamen marka×kategori
+ * sayfaları — GSC'ye göre sayfa başına en çok gösterim alan tip (26 gösterim;
+ * ürün sayfası 2,7). Yani kusur en değerli sayfalarda duruyordu.
+ *
+ * Artık kuyruk kesilecekse tamamı atılıyor: başlık "…İndirimleri 2026" olarak
+ * eksiksiz bitiyor. Site adını kaybetmek, yarım bir ayıraç bırakmaktan iyidir.
  */
 export function clampTitle(text: string, max = 65): string {
   if (text.length <= max) return text;
-  return text.slice(0, max).replace(/\s+\S*$/, '') + '…';
+
+  const ayirac = text.lastIndexOf(' | ');
+  if (ayirac > 0) {
+    const kuyruksuz = text.slice(0, ayirac);
+    if (kuyruksuz.length <= max) return kuyruksuz;
+    return kelimeSinirindaKirp(kuyruksuz, max);
+  }
+
+  return kelimeSinirindaKirp(text, max);
 }
