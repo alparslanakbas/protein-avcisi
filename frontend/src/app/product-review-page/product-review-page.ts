@@ -5,6 +5,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
+import { StoreLinkTargetDirective } from '../core/store-link-target.directive';
 import { dedupeSameDaySamePrice, hoverAlign, nearestPointIndex, tooltipDateLabel } from '../core/chart-hover';
 import { buildPageTitle, clampDescription } from '../core/meta-description';
 import { buildProductFacts, buildProductJsonLdDescription } from '../core/product-facts';
@@ -47,7 +48,7 @@ interface NutritionRow {
 // taraflı görünmeyelim diye.
 @Component({
   selector: 'app-product-review-page',
-  imports: [DecimalPipe, RouterLink, SiteHeader],
+  imports: [StoreLinkTargetDirective, DecimalPipe, RouterLink, SiteHeader],
   templateUrl: './product-review-page.html',
 })
 export class ProductReviewPage implements OnInit {

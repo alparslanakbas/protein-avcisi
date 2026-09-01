@@ -3,6 +3,7 @@ import { Component, OnInit, computed, effect, inject, signal } from '@angular/co
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
+import { StoreLinkTargetDirective } from '../core/store-link-target.directive';
 import { buildBrandCategoryFaqs, buildBrandFaqs } from '../core/brand-faqs';
 import { buildBreadcrumbJsonLd } from '../core/breadcrumb';
 import { BrandStats } from '../core/brand-stats.model';
@@ -30,7 +31,7 @@ const SEARCH_DEBOUNCE_MS = 350;
 
 @Component({
   selector: 'app-brand-page',
-  imports: [DecimalPipe, FormsModule, RouterLink, ProductCardSparkline, ProductModal, SiteHeader],
+  imports: [StoreLinkTargetDirective, DecimalPipe, FormsModule, RouterLink, ProductCardSparkline, ProductModal, SiteHeader],
   templateUrl: './brand-page.html',
 })
 export class BrandPage implements OnInit {

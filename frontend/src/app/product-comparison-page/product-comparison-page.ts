@@ -5,6 +5,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
+import { StoreLinkTargetDirective } from '../core/store-link-target.directive';
 import { CATEGORY_LABELS } from '../core/category-labels';
 import { ComparisonService } from '../core/comparison.service';
 import { Deal } from '../core/deal.model';
@@ -45,7 +46,7 @@ interface ComparedProduct {
 // ve sunucuda render ediliyor.
 @Component({
   selector: 'app-product-comparison-page',
-  imports: [DecimalPipe, RouterLink, SiteHeader],
+  imports: [StoreLinkTargetDirective, DecimalPipe, RouterLink, SiteHeader],
   templateUrl: './product-comparison-page.html',
 })
 export class ProductComparisonPage implements OnInit {

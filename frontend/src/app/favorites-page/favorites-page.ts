@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { Meta } from '@angular/platform-browser';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
+import { StoreLinkTargetDirective } from '../core/store-link-target.directive';
 import { Deal } from '../core/deal.model';
 import { productPath, shouldHandleInApp } from '../core/product-link';
 import { DealsService } from '../core/deals.service';
@@ -23,7 +24,7 @@ const MAX_AUTO_RETRY = 2;
 
 @Component({
   selector: 'app-favorites-page',
-  imports: [DecimalPipe, RouterLink, ProductModal, SiteHeader, FormsModule],
+  imports: [StoreLinkTargetDirective, DecimalPipe, RouterLink, ProductModal, SiteHeader, FormsModule],
   templateUrl: './favorites-page.html',
   styleUrl: './favorites-page.css',
 })

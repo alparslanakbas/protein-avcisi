@@ -3,6 +3,7 @@ import { Component, PLATFORM_ID, computed, effect, inject, input, output, signal
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
+import { StoreLinkTargetDirective } from '../core/store-link-target.directive';
 import { brandSlug } from '../core/brand-slug';
 import { dedupeSameDaySamePrice, hoverAlign, nearestPointIndex, tooltipDateLabel } from '../core/chart-hover';
 import { buildProductFacts } from '../core/product-facts';
@@ -64,7 +65,7 @@ const tooltipDateTimeFormatter = new Intl.DateTimeFormat('tr-TR', {
 
 @Component({
   selector: 'app-product-modal',
-  imports: [DecimalPipe, ShareButton, RouterLink, FormsModule],
+  imports: [StoreLinkTargetDirective, DecimalPipe, ShareButton, RouterLink, FormsModule],
   templateUrl: './product-modal.html',
 })
 export class ProductModal {

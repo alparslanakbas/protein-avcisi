@@ -5,6 +5,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, NavigationEnd, Router, RouterLink } from '@angular/router';
 
+import { StoreLinkTargetDirective } from '../core/store-link-target.directive';
 import { filterSelectValue, readFilterSelection } from '../core/filter-select';
 import { buildProductJsonLdDescription } from '../core/product-facts';
 import { ArticleSummary } from '../core/article.model';
@@ -104,7 +105,7 @@ const FAQ_ITEMS: { question: string; answer: string }[] = [
 
 @Component({
   selector: 'app-deals-list',
-  imports: [DecimalPipe, FormsModule, PreferredProducts, ProductCardSparkline, ProductModal, RouterLink],
+  imports: [StoreLinkTargetDirective, DecimalPipe, FormsModule, PreferredProducts, ProductCardSparkline, ProductModal, RouterLink],
   templateUrl: './deals-list.html',
 })
 export class DealsList implements OnInit {

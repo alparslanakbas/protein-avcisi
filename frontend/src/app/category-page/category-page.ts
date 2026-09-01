@@ -3,6 +3,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
+import { StoreLinkTargetDirective } from '../core/store-link-target.directive';
 import { buildBreadcrumbJsonLd } from '../core/breadcrumb';
 import { canonicalOrigin } from '../core/canonical-link';
 import { CATEGORY_FAQS, FaqItem } from '../core/category-faqs';
@@ -24,7 +25,7 @@ const SEARCH_DEBOUNCE_MS = 350;
 
 @Component({
   selector: 'app-category-page',
-  imports: [DecimalPipe, RouterLink, FormsModule, ProductModal, SiteHeader],
+  imports: [StoreLinkTargetDirective, DecimalPipe, RouterLink, FormsModule, ProductModal, SiteHeader],
   templateUrl: './category-page.html',
 })
 export class CategoryPage implements OnInit {
