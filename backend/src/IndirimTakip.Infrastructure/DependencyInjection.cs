@@ -8,6 +8,7 @@ using IndirimTakip.Infrastructure.Scraping.Hiq;
 using IndirimTakip.Infrastructure.Scraping.BigJoy;
 using IndirimTakip.Infrastructure.Scraping.CommanderNutrition;
 using IndirimTakip.Infrastructure.Scraping.Gnc;
+using IndirimTakip.Infrastructure.Scraping.PrimeNutrition;
 using IndirimTakip.Infrastructure.Scraping.Protein7;
 using IndirimTakip.Infrastructure.Scraping.ProteinOcean;
 using IndirimTakip.Infrastructure.Scraping.Provitamin;
@@ -114,6 +115,15 @@ public static class DependencyInjection
             client.BaseAddress = new Uri("https://api.myikas.com/");
         });
         services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<GncScraper>());
+
+        // Prime Nutrition — OpenCart; ürün başına HTML isteği (bkz. scraper
+        // yorumu: sitenin schema.org fiyatı bozuk).
+        services.AddHttpClient<PrimeNutritionScraper>(client =>
+        {
+            client.BaseAddress = new Uri("https://www.primenutrition.com.tr/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
+        });
+        services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<PrimeNutritionScraper>());
 
         services.AddHttpClient<YesilmarkaScraper>(client =>
         {
