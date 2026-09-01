@@ -8,6 +8,7 @@ using IndirimTakip.Infrastructure.Scraping.Hiq;
 using IndirimTakip.Infrastructure.Scraping.BigJoy;
 using IndirimTakip.Infrastructure.Scraping.CommanderNutrition;
 using IndirimTakip.Infrastructure.Scraping.Gnc;
+using IndirimTakip.Infrastructure.Scraping.Heyday;
 using IndirimTakip.Infrastructure.Scraping.PrimeNutrition;
 using IndirimTakip.Infrastructure.Scraping.Protein7;
 using IndirimTakip.Infrastructure.Scraping.ProteinOcean;
@@ -115,6 +116,13 @@ public static class DependencyInjection
             client.BaseAddress = new Uri("https://api.myikas.com/");
         });
         services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<GncScraper>());
+
+        // Heyday — GNC ile aynı ikas storefront API'si, farkı yalnızca kimlikler.
+        services.AddHttpClient<HeydayScraper>(client =>
+        {
+            client.BaseAddress = new Uri("https://api.myikas.com/");
+        });
+        services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<HeydayScraper>());
 
         // Prime Nutrition — OpenCart; ürün başına HTML isteği (bkz. scraper
         // yorumu: sitenin schema.org fiyatı bozuk).
