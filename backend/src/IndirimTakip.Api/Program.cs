@@ -219,16 +219,68 @@ app.Use(async (context, next) =>
     await next();
 });
 
-// Geçici tetikleme endpoint'i: gerçek zamanlanmış worker (roadmap'teki
-// BackgroundService) eklenene kadar taramayı elle tetiklemek için.
-app.MapPost("/api/dev/ingest/{brand}", async (string brand, IEnumerable<IBrandScraper> scrapers, ScrapeIngestionService ingestion, CancellationToken ct) =>
+// Taramayı elle tetiklemek için. İş ARKA PLANDA çalışıyor, uç hemen 202
+// dönüyor.
+//
+// NEDEN: eskiden tarama isteğin İÇİNDE çalışıp bitince yanıt dönüyordu ve bu
+// uzun süren kaynaklarda hiç işe yaramıyordu. Cloudflare origin yanıtını
+// ~100-125 saniye bekleyip 524 dönüyor; bağlantı kesilince ASP.NET isteği
+// iptal ediyor, CancellationToken tetikleniyor ve HİÇBİR ŞEY KAYDEDİLMİYOR.
+// 1 Eylül'de Provitamin denemesinde tam olarak bu oldu: ~500 istek karşı
+// siteye gitti, veritabanına tek ürün yazılmadı. protein7 (~15 dk) ve
+// Provitamin (~38 dk) bu yolla hiç tetiklenemezdi.
+//
+// İki incelik:
+//   • İstek kapsamı yanıt döner dönmez atılıyor, bu yüzden arka plan işi
+//     KENDİ kapsamını açıp scraper'ı oradan çözüyor.
+//   • İptal jetonu isteğe değil UYGULAMA ÖMRÜNE bağlı; yoksa aynı hatayı
+//     başka bir kılıkta tekrarlardık.
+//
+// Aynı kaynağın eşzamanlı taranmasına karşı koruma ScrapeIngestionService'te
+// zaten var (ikinci tetikleme reddediliyor), burada tekrarlanmıyor.
+app.MapPost("/api/dev/ingest/{brand}", (
+    string brand,
+    IEnumerable<IBrandScraper> scrapers,
+    IServiceScopeFactory scopeFactory,
+    IHostApplicationLifetime lifetime,
+    ILoggerFactory loggerFactory) =>
 {
     var scraper = scrapers.FirstOrDefault(s => s.BrandName.Equals(brand, StringComparison.OrdinalIgnoreCase));
     if (scraper is null)
         return Results.NotFound($"'{brand}' için scraper bulunamadı.");
 
-    var count = await ingestion.IngestAsync(scraper, ct);
-    return Results.Ok(new { brand = scraper.BrandName, scrapedCount = count });
+    var brandName = scraper.BrandName;
+    var logger = loggerFactory.CreateLogger("ElleTarama");
+
+    _ = Task.Run(async () =>
+    {
+        using var scope = scopeFactory.CreateScope();
+        var ingestion = scope.ServiceProvider.GetRequiredService<ScrapeIngestionService>();
+        var scoped = scope.ServiceProvider.GetServices<IBrandScraper>()
+            .First(s => s.BrandName == brandName);
+
+        try
+        {
+            logger.LogInformation("Elle tetiklenen tarama başladı: {Brand}.", brandName);
+            var count = await ingestion.IngestAsync(scoped, lifetime.ApplicationStopping);
+            logger.LogInformation("Elle tetiklenen tarama bitti: {Brand}, {Count} ürün.", brandName, count);
+        }
+        catch (Exception ex)
+        {
+            // Yutulmamalı: arka plan işinin sessizce ölmesi, tam da bu ucun
+            // çözmeye çalıştığı "çalışıyor sandım ama veri yok" durumudur.
+            logger.LogError(ex, "Elle tetiklenen tarama BAŞARISIZ: {Brand}.", brandName);
+        }
+    });
+
+    // Sonuç loglardan ve veritabanından izlenir; istemcinin bağlantıyı açık
+    // tutmasına gerek yok.
+    return Results.Accepted(value: new
+    {
+        brand = brandName,
+        durum = "tarama arka planda başlatıldı",
+        nasilIzlenir = "docker compose logs backend | grep 'Elle tetiklenen tarama'",
+    });
 }).RequireAdminKey(adminApiKey);
 
 // /api/deals, /api/products, /api/store-deals aynı sorgu parametrelerini
