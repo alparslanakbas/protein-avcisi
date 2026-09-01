@@ -31,6 +31,13 @@ export interface DealsQuery {
   // genişletme orada kategorinin tamamını getiriyor (bkz. backend'deki
   // expandSearchSynonyms açıklaması).
   expandSynonyms?: boolean;
+  // Marka SAYFASI true gönderiyor: markanın kendi sitesinden ürünü varsa
+  // yalnızca onlar listelenir, bayideki kopyası aynı sayfada yan yana durup
+  // ürünü iki kez göstermez. Markanın hiç doğrudan ürünü yoksa süzgeç
+  // uygulanmaz — yoksa yalnızca bayiden gelen markaların sayfaları boşalırdı.
+  // Ana sayfadaki marka filtresi bunu KULLANMIYOR; orada marka ve satıcı
+  // filtreleri birbirinden bağımsız kalmalı.
+  preferBrandStore?: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -171,6 +178,8 @@ export class DealsService {
     if (query.pageSize) params = params.set('pageSize', query.pageSize);
     // Yalnızca açıkça false verilince gönderiliyor — backend varsayılanı true.
     if (query.expandSynonyms === false) params = params.set('expandSynonyms', 'false');
+    // Yalnızca açıkça istenince gönderiliyor — backend varsayılanı false.
+    if (query.preferBrandStore) params = params.set('preferBrandStore', 'true');
 
     return params;
   }

@@ -287,6 +287,9 @@ export class BrandPage implements OnInit {
     );
     const query = {
       brands: [brand],
+      // Marka sayfası markanın kendi vitrini: kendi ürünü varsa bayideki
+      // kopyası burada listelenmiyor (bkz. DealsQuery.preferBrandStore).
+      preferBrandStore: true,
       categories: [...this.selectedCategories()],
       search: this.searchQuery().trim() || undefined,
       minPrice: this.priceMin(),

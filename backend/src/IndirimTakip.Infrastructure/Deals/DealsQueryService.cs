@@ -105,6 +105,19 @@ public partial class DealsQueryService(AppDbContext db)
         int page,
         int pageSize,
         CancellationToken cancellationToken = default,
+        // Marka SAYFALARI için: markanın kendi mağazasını öne al.
+        //
+        // Kural şu: bir markanın kendi sitesinden gelen ürünü VARSA marka
+        // sayfasında yalnızca onlar gösterilir — bayideki kopyası aynı sayfada
+        // yan yana durup ürünü iki kez listelemez. Ama markanın hiç doğrudan
+        // ürünü YOKSA süzgeç uygulanmaz, yoksa yalnızca bayiden gelen ~25
+        // markanın (Olimp, Multipower, Grenade, Mustang...) sayfaları tamamen
+        // boşalırdı.
+        //
+        // Yalnızca marka sayfası gönderiyor; ana sayfadaki marka filtresi
+        // bunu KULLANMIYOR, orada marka ve satıcı filtreleri birbirinden
+        // bağımsız çalışmalı.
+        bool preferBrandStore = false,
         // Arama terimini eşanlamlılarıyla genişletmek, kategori SERBEST
         // olduğunda faydalı ("kreatin" yazan "creatine" ürünlerini de
         // bulsun). Ama kategori zaten sabitlenmişse tam tersi etki yapıyor:
@@ -138,6 +151,19 @@ public partial class DealsQueryService(AppDbContext db)
 
         if (brands is { Length: > 0 })
             query = query.Where(r => brands.Contains(r.BrandName));
+
+        // Tek bir marka hedeflenmişse ve çağıran satıcıyı ayrıca belirtmemişse,
+        // markanın kendi mağazası önceliklidir (bkz. preferBrandStore).
+        if (preferBrandStore && brands is { Length: 1 } && sellers is null or { Length: 0 })
+        {
+            var hedefMarka = brands[0];
+            var kendiUrunuVar = await db.Products
+                .AsNoTracking()
+                .AnyAsync(p => p.Seller == null && p.Brand!.Name == hedefMarka, cancellationToken);
+
+            if (kendiUrunuVar)
+                query = query.Where(r => r.Product.Seller == null);
+        }
 
         if (sellers is { Length: > 0 })
         {

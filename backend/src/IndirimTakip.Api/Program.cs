@@ -247,6 +247,9 @@ void MapDealsQueryEndpoint(string route, bool onlyDiscounted, bool onlyStoreDisc
         // kelimelerinden biri olduğu için kategorinin TAMAMINI döndürüyordu
         // (arginin ürünleri beta-alanine sayfasında listeleniyordu).
         bool? expandSynonyms,
+        // Marka sayfası bunu true gönderiyor: markanın kendi mağazası varsa
+        // yalnızca onu göster (bkz. DealsQueryService.GetDealsAsync).
+        bool? preferBrandStore,
         CancellationToken ct) =>
     {
         var windowDays = days is null or <= 0 ? 30 : days.Value;
@@ -254,7 +257,8 @@ void MapDealsQueryEndpoint(string route, bool onlyDiscounted, bool onlyStoreDisc
             windowDays, brands, categories, sellers, search, minPrice, maxPrice,
             onlyDiscounted, onlyStoreDiscounted, sortBy,
             page is null or <= 0 ? 1 : page.Value, NormalizePageSize(pageSize), ct,
-            expandSearchSynonyms: expandSynonyms ?? true);
+            expandSearchSynonyms: expandSynonyms ?? true,
+            preferBrandStore: preferBrandStore ?? false);
         return Results.Ok(result);
     }).CacheOutput(PublicDataCachePolicy);
 }
