@@ -27,10 +27,15 @@ public class ProvitaminScraper(HttpClient httpClient, ILogger<ProvitaminScraper>
     private const string SellerName = "provitamin.com.tr";
     private const double MaxFailureRatio = 0.2;
 
-    // Wix, yaklaşık bir saniye aralıklı uzun seride 429 uyguluyor (canlı tam
-    // katalog testinde 54 başarılı istekten sonra ölçüldü). Üç saniye aralık
-    // tam taramayı yaklaşık 22 dakikada bitirir; günde bir çalışan kaynak için
-    // kabul edilebilir ve karşı sitenin hız sınırına saygılıdır.
+    // Wix, yaklaşık bir saniye aralıklı uzun seride 429 uyguluyor. Sınır
+    // YAPIŞKAN: 1,5 sn aralıkla tetiklendikten sonra ardışık 26 isteğin hepsi
+    // 429 döndü, tek tek denemek açmıyor. Üç saniye ise sürdürülebilir —
+    // 12 ardışık istek, 12'si 200 (1 Eylül'de ölçüldü).
+    //
+    // SÜRE: tam tarama ~38 DAKİKA sürüyor, 22 değil. 430 ürün × ~5,3 sn; aradaki
+    // fark 3 sn'lik nezaket beklemesinin üstüne binen Wix sayfası indirme süresi.
+    // İlk yorum yalnızca beklemeyi sayıp indirmeyi hesaba katmamıştı; gerçek
+    // ölçüm 1 Eylül'deki ilk tam taramadan (2274 sn).
     private static readonly TimeSpan DelayBetweenRequests = TimeSpan.FromSeconds(3);
 
     private static readonly IReadOnlyDictionary<string, string> BrandAliases =
