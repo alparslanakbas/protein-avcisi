@@ -45,4 +45,26 @@ public class BrandNameNormalizerTests
         // uydurma veri olurdu.
         Assert.Equal(ad, BrandNameNormalizer.Normalize(ad));
     }
+
+    [Theory]
+    // 1 Eylül'de Provitamin taramasından geldi: aynı üretici iki yazımla
+    // girip iki ayrı marka kaydı yaratmıştı.
+    [InlineData("JUST", "Just")]
+    [InlineData("just", "Just")]
+    [InlineData("FA Nutrition", "Fa Nutrition")]
+    [InlineData("Bite More", "Bite & More")]
+    public void ProvitaminKaynakliKopyalarBirlesir(string ham, string beklenen)
+    {
+        Assert.Equal(beklenen, BrandNameNormalizer.Normalize(ham));
+    }
+
+    [Theory]
+    [InlineData("Dr. Pan")]
+    [InlineData("Drpan")]
+    public void KanonikYazimVeritabanindakiYazimdir(string ham)
+    {
+        // Ters yönde eşlesek mevcut kaydı düzeltmek yerine İKİNCİ bir marka
+        // yaratırdık; ikisinin de slug'ı "dr-pan" olduğu için adres çakışırdı.
+        Assert.Equal("Dr Pan", BrandNameNormalizer.Normalize(ham));
+    }
 }

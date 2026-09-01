@@ -37,9 +37,18 @@ public static class BrandNameNormalizer
             ["Universal Nutrition"] = "Universal",
             ["Zero Shot"] = "ZeroShot",
             ["Zeroshot"] = "ZeroShot",
-            ["Dr Pan"] = "Dr. Pan",
-            ["Drpan"] = "Dr. Pan",
+            // Kanonik yazım veritabanında DURAN yazım: "Dr Pan". Tersine
+            // eşlersek mevcut kaydı düzeltmek yerine ikinci bir marka
+            // yaratırdık (slug ikisinde de "dr-pan", yani adres çakışırdı).
+            ["Dr. Pan"] = "Dr Pan",
+            ["Drpan"] = "Dr Pan",
             ["Bite More"] = "Bite & More",
+            // Provitamin kataloğundan geldi (1 Eylül): aynı üretici hem
+            // "JUST"/"Just", hem "FA"/"Fa Nutrition" yazımıyla geçiyordu ve
+            // ikisi de ayrı marka kaydı yaratmıştı. Kanonik taraf her zaman
+            // veritabanında ürünü çok olan yazım.
+            ["JUST"] = "Just",
+            ["FA Nutrition"] = "Fa Nutrition",
             ["Hiq"] = "HIQ",
             ["Ssn"] = "SSN",
         };

@@ -28,8 +28,15 @@ public static partial class NonSupplementProductFilter
     // "performans"ın dışarıda bırakılmasıyla aynı gerekçe.
     // "performans" gibi genel kelimeler BİLİNÇLİ olarak yok: markaların gerçek
     // takviye paketleri de o kelimeyi taşıyor (ör. "orta-guc-performans").
+    //
+    // 1 Eylül'de TÜRKÇE EK sorunu düzeltildi. Listede "havlu" ve "çanta"
+    // vardı ama Provitamin kataloğundan "Antrenman HAVLUSU" ve "Spor
+    // ÇANTASI" geçti: `` kelime sınırı ekten ÖNCE kırılmıyor, yani
+    // "havlu" kalıbı "havlusu" ile eşleşmiyor. Ek alabilen isimlere
+    // `[a-zçğıöşü]*` eklendi — kodda bu numara zaten kullanılıyordu
+    // (`eldiven[a-zçğıöşü]*`), sadece tutarsız uygulanmıştı.
     [GeneratedRegex(
-        @"\b(t-?shirt|sweatshirt|hoodie|şapka|beyzbol|pillbox|bileklik|havlu|buff|atlet|anahtarlık|maskot|huni|shaker|şort|korse|eşofman|esofman|çanta|canta|handbag|direnç band[a-zçğıöşü]*|direnc band[a-z]*|loop band[a-z]*|lifting strap[a-z]*|wrist wrap[a-z]*|ağırlık kemer[a-zçğıöşü]*|agirlik kemer[a-z]*|dip belt[a-z]*|eldiven[a-zçğıöşü]*|hap kutusu|bakım seti|bakim seti|seyahat seti|basmati|himalaya tuzu|hardal|sriracha|sweet drops)\b",
+        @"\b(t-?shirt|sweatshirt|hoodie|şapka[a-zçğıöşü]*|beyzbol|pillbox|bileklik[a-zçğıöşü]*|havlu[a-zçğıöşü]*|buff|atlet|anahtarlık[a-zçğıöşü]*|maskot|huni[a-zçğıöşü]*|shaker[a-zçğıöşü]*|şort[a-zçğıöşü]*|korse[a-zçğıöşü]*|eşofman[a-zçğıöşü]*|esofman[a-z]*|çanta[a-zçğıöşü]*|canta[a-z]*|handbag|direnç band[a-zçğıöşü]*|direnc band[a-z]*|loop band[a-z]*|lifting strap[a-z]*|wrist wrap[a-z]*|ağırlık kemer[a-zçğıöşü]*|agirlik kemer[a-z]*|dip belt[a-z]*|eldiven[a-zçğıöşü]*|hap kutusu|bakım seti|bakim seti|seyahat seti|basmati|himalaya tuzu|hardal|sriracha|sweet drops)\b",
         RegexOptions.IgnoreCase)]
     private static partial Regex AccessoryKeywordRegex();
 }

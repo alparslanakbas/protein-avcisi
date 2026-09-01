@@ -45,4 +45,28 @@ public class NonSupplementProductFilterTests
     {
         Assert.False(NonSupplementProductFilter.IsAccessoryOrApparel(productName));
     }
+
+    [Theory]
+    // REGRESYON: liste "havlu" ve "çanta" içeriyordu ama bu iki ürün canlıya
+    // GİRDİ, çünkü Türkçe ek kelime sınırını kaydırıyor: `havlu` kalıbı
+    // "havlusu" ile eşleşmiyor.
+    [InlineData("Just Profesyonel Antrenman Havlusu (Smart)")]
+    [InlineData("Just Leather Sport Bag -Şık Suni Deri Spor Çantası (Kahverengi & Siyah)")]
+    [InlineData("Siyah Havlular")]
+    [InlineData("Spor Çantaları")]
+    [InlineData("Protein Shakerı")]
+    public void TurkceEkAlanAksesuarlarDaElenir(string ad)
+    {
+        Assert.True(NonSupplementProductFilter.IsAccessoryOrApparel(ad));
+    }
+
+    [Theory]
+    // Gerçek takviyeler etkilenmemeli.
+    [InlineData("Whey Protein Tozu 2000 Gr")]
+    [InlineData("Creatine Monohydrate 300 Gr")]
+    [InlineData("Cream of Rice 1000 Gr")]
+    public void GercekTakviyelerElenmiyor(string ad)
+    {
+        Assert.False(NonSupplementProductFilter.IsAccessoryOrApparel(ad));
+    }
 }
