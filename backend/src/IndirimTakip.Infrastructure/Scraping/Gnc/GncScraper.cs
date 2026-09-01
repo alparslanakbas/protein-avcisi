@@ -3,7 +3,6 @@ using System.Net.Http.Json;
 using System.Text.RegularExpressions;
 using IndirimTakip.Core.Scraping;
 using IndirimTakip.Infrastructure.Scraping.ProteinOcean;
-using IndirimTakip.Infrastructure.Scraping.Provitamin;
 
 namespace IndirimTakip.Infrastructure.Scraping.Gnc;
 
@@ -102,7 +101,7 @@ public partial class GncScraper(HttpClient httpClient) : IBrandScraper
                 // paketlerde yalnızca vitrin kategorileri ("Çok Satanlar").
                 // Kategori KOŞUL olarak kullanılmıyor: kategorisiz ama gerçek
                 // bir ürün eklenirse sessizce kaybetmek istemeyiz.
-                if (ProvitaminScraper.IsBundle(product.Name))
+                if (BundleProductFilter.IsBundle(product.Name))
                     continue;
 
                 var variant = product.Variants.Find(v => v.Stocks.Sum(s => s.StockCount) > 0)

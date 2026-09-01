@@ -1,3 +1,4 @@
+using IndirimTakip.Infrastructure.Scraping;
 using IndirimTakip.Infrastructure.Scraping.Provitamin;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -176,7 +177,7 @@ public class ProvitaminScraperTests
         // Tek fiyatı var ama içinde birden çok ürün: servis başı maliyet,
         // gramaj ve protein yoğunluğu anlamsız çıkıyor. Setin içeriği
         // değişince fiyat "düşmüş" görünüyor.
-        Assert.True(ProvitaminScraper.IsBundle(ad));
+        Assert.True(BundleProductFilter.IsBundle(ad));
     }
 
     [Theory]
@@ -184,7 +185,7 @@ public class ProvitaminScraperTests
     [InlineData("Big Joy Creatine Monohydrate 300 Gr")]
     public void GercekUrunlerSetSanilmaz(string ad)
     {
-        Assert.False(ProvitaminScraper.IsBundle(ad));
+        Assert.False(BundleProductFilter.IsBundle(ad));
     }
 
     [Fact]

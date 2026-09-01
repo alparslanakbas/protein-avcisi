@@ -221,7 +221,7 @@ public class ProvitaminScraper(HttpClient httpClient, ILogger<ProvitaminScraper>
         if (string.IsNullOrEmpty(name) || NonSupplementProductFilter.IsAccessoryOrApparel(name))
             return true;
 
-        if (IsBundle(name))
+        if (BundleProductFilter.IsBundle(name))
             return true;
 
         var brand = ReadBrand(element);
@@ -245,28 +245,6 @@ public class ProvitaminScraper(HttpClient httpClient, ILogger<ProvitaminScraper>
             Seller: SellerName);
 
         return true;
-    }
-
-    /// <summary>
-    /// Birden çok ürünün bir arada satıldığı setler ("FITNESS PAKETİ - MEGA",
-    /// "HACİM PAKETİ - LARGE").
-    ///
-    /// Neden alınmıyor: tek bir fiyatı var ama içinde birden çok ürün var;
-    /// servis başına maliyet, gramaj ve protein yoğunluğu gibi bizim
-    /// ürettiğimiz ölçümlerin hiçbiri anlamlı çıkmıyor. Fiyat geçmişi tutmak da
-    /// yanıltıcı: setin içeriği değişince fiyat "düşmüş" görünür. Swiss
-    /// Nutrition'da aynı karar "Avantaj Paketleri" kategorisi için verilmişti;
-    /// Provitamin kategori bilgisi vermediği için ada bakılıyor.
-    ///
-    /// Canlı katalogla ölçüldü: 430 adresin yalnızca 14'ünde "paket" geçiyor ve
-    /// hepsi gerçekten set — yanlış pozitif yok.
-    /// </summary>
-    internal static bool IsBundle(string name)
-    {
-        // Türkçe harf tuzağı: "PAKETİ" içindeki noktalı İ, OrdinalIgnoreCase ile
-        // "i"ye katlanmıyor. Noktalı/noktasız ayrımı önce siliniyor.
-        var normalized = name.Replace('İ', 'i').Replace('I', 'ı').ToLowerInvariant();
-        return normalized.Contains("paketi", StringComparison.Ordinal);
     }
 
     private static bool IsProduct(JsonElement element)

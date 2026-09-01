@@ -1,5 +1,5 @@
 using IndirimTakip.Infrastructure.Scraping.Gnc;
-using IndirimTakip.Infrastructure.Scraping.Provitamin;
+using IndirimTakip.Infrastructure.Scraping;
 
 namespace IndirimTakip.Infrastructure.Tests;
 
@@ -60,7 +60,7 @@ public class GncScraperTests
     [InlineData("Cilt Sağlığı Paketi")]
     public void CokUrunluSetleriEler(string ad)
     {
-        Assert.True(ProvitaminScraper.IsBundle(ad));
+        Assert.True(BundleProductFilter.IsBundle(ad));
     }
 
     [Theory]
@@ -71,6 +71,6 @@ public class GncScraperTests
     [InlineData("Vitamin B12 1000 MCG - 100 Tablet")]
     public void GercekUrunleriElemez(string ad)
     {
-        Assert.False(ProvitaminScraper.IsBundle(ad));
+        Assert.False(BundleProductFilter.IsBundle(ad));
     }
 }
