@@ -220,6 +220,17 @@ public class ScrapeIngestionService(
                     product.ContentUpdatedAt = DateTimeOffset.UtcNow;
 
                 product.Name = scraped.Name;
+                // Marka da güncelleniyor. Eskiden yalnızca ürün İLK kaydedilirken
+                // atanıyordu, yani kaynaktaki yazım düzelse bile eski kayıt eski
+                // markada kalıyordu: protein7 "Proteinocean" yazdığı için 67 ürün
+                // ayrı bir markaya düşmüş ve marka ikiye bölünmüştü. Artık
+                // normalizasyon (bkz. BrandNameNormalizer) mevcut ürünlere de
+                // işliyor, elle DB müdahalesi gerekmiyor.
+                //
+                // Tek markalı kaynaklarda davranış DEĞİŞMİYOR: onlar
+                // scraped.BrandName göndermiyor, değer scraper'ın kendi adına
+                // düşüyor ve zaten aynı markayı veriyor.
+                product.Brand = ResolveBrand(scraped.BrandName ?? scraper.BrandName);
                 product.ImageUrl = scraped.ImageUrl;
                 product.Category = category;
                 product.Size = size;

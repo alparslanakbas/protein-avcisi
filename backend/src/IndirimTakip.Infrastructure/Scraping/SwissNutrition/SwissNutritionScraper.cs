@@ -220,7 +220,7 @@ public class SwissNutritionScraper(HttpClient httpClient) : IBrandScraper
                     : null;
         }
 
-        return brand;
+        return BrandNameNormalizer.Normalize(brand);
     }
 
     private async Task<SearchProductsGraphQlResponse?> SearchProductsPageAsync(int page, CancellationToken cancellationToken)

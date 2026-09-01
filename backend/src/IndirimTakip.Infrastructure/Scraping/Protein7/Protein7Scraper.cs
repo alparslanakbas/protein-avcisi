@@ -157,7 +157,11 @@ public partial class Protein7Scraper(HttpClient httpClient, ILogger<Protein7Scra
             Category: null,
             Price: price,
             // Üretici markası ürün başına geliyor; okunamazsa mağazanın kendi adı.
-            BrandName: brand.Length > 0 ? brand : null,
+            // Ortak normalizasyon ŞART: protein7 "Proteinocean" yazıyor,
+            // markanın kendi sitesi "ProteinOcean". Normalize edilmeyince marka
+            // ikiye bölünüyor, ikisi de aynı adrese çözülüyor ve sitemap'e
+            // tekrar eden adresler giriyordu (bkz. BrandNameNormalizer).
+            BrandName: brand.Length > 0 ? BrandNameNormalizer.Normalize(brand) : null,
             InStock: inStock,
             Seller: SellerName);
     }

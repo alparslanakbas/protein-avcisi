@@ -292,8 +292,18 @@ public class ProvitaminScraper(HttpClient httpClient, ILogger<ProvitaminScraper>
         return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
     }
 
-    internal static string NormalizeBrand(string brand) =>
-        BrandAliases.TryGetValue(brand.Trim(), out var canonical) ? canonical : brand.Trim();
+    /// <summary>
+    /// Önce bu kaynağa özel takma adlar, sonra tüm kaynakların paylaştığı
+    /// kanonik harita. İkisi ayrı: buradaki liste Provitamin'in kataloğunda
+    /// GÖRÜLEN yazımlardan çıkarıldı, ortak olan ise markalar arası tekilliği
+    /// koruyor.
+    /// </summary>
+    internal static string NormalizeBrand(string brand)
+    {
+        var trimmed = brand.Trim();
+        var yerel = BrandAliases.TryGetValue(trimmed, out var canonical) ? canonical : trimmed;
+        return BrandNameNormalizer.Normalize(yerel);
+    }
 
     private static bool TryReadOffer(JsonElement offers, out decimal price, out bool? inStock)
     {
