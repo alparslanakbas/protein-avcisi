@@ -357,7 +357,11 @@ export class DealsList implements OnInit {
         description: deal.description,
       });
 
-      const canonicalProductPath = `/urun/${deal.productId}/${slugify(deal.productName)}`;
+      // Kopya bir kayıtsak canonical ASIL sayfayı göstermeli. Slug aynı —
+      // zaten aynı ürün adını taşıdıkları için kopya sayılıyorlar — yalnızca
+      // Id değişiyor. (bkz. DealDto.CanonicalProductId)
+      const canonicalId = deal.canonicalProductId ?? deal.productId;
+      const canonicalProductPath = `/urun/${canonicalId}/${slugify(deal.productName)}`;
 
       this.pageMeta.set({
         title,

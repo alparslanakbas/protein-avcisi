@@ -21,6 +21,11 @@ export interface Deal {
   // gidiyor — araya kendi sitemizdeki /go/{id} yönlendirmesi GİRMİYOR,
   // çünkü kurulu PWA'da o yönlendirme geri tuşunu bozuyordu.
   storeUrl: string | null;
+  // Bu sayfa BAŞKA bir ürün sayfasının kopyasıysa, asıl sayfanın ürün Id'si.
+  // Markaların kendi siteleri aynı ürünü birden çok adreste yayınlıyor;
+  // sayfalar birbirinin aynısı olduğu için Google kopya sayıyordu. Dolu
+  // olduğunda canonical asıl sayfayı gösteriyor. NULL = bu zaten asıl sayfa.
+  canonicalProductId: number | null;
   servingSizeGrams: number | null;
   // Paketten kaç servis çıktığı — markanın doğrudan beyanı (şimdilik
   // yalnızca ProteinOcean; o markada paket gramajı hiç gelmiyor).

@@ -390,6 +390,14 @@ public partial class DealsQueryService(AppDbContext db, IOptions<AffiliateOption
 
         var dto = MapToDealDto(new DealRow(row.Product, row.BrandName, row.Latest, row.ReferencePrice.Value, row.ThirtyDayLowPrice.Value));
 
+        // Bu ürün, aynı marka+isimli bir grubun İKİNCİL kaydıysa canonical
+        // asıl sayfayı göstermeli. Yalnızca bu uçta hesaplanıyor: liste
+        // sorguları sıcak yol, oraya ek sorgu koymanın anlamı yok — canonical
+        // etiketi zaten tek bir ürün sayfasında üretiliyor.
+        var kopyalar = await GetDuplicateCanonicalMapAsync(cancellationToken);
+        if (kopyalar.TryGetValue(productId, out var asilId))
+            dto = dto with { CanonicalProductId = asilId };
+
         // Bu uç, listelerdeki donmuş-ürün filtresinden BİLİNÇLİ olarak muaf
         // (doğrudan paylaşılmış bir link bozulmasın diye). Ama bu, markanın
         // artık taramada döndürmediği bir kaydın sessizce canlı sayfa gibi
@@ -756,14 +764,87 @@ public partial class DealsQueryService(AppDbContext db, IOptions<AffiliateOption
     // tutuluyor (bkz. StaleThreshold) — aksi halde sitemap, artık site
     // içinde hiçbir yerden linklenmeyen (kategori/marka listelerinde
     // görünmeyen) URL'leri Google'a "tara" diye bildirmeye devam ederdi.
+    /// <summary>
+    /// AYNI MARKA + AYNI İSİMLİ ürün gruplarında hangisinin "asıl" sayfa
+    /// olduğunu belirler ve <c>ikincil ürün Id -> asıl ürün Id</c> haritasını
+    /// döndürür. Asıl olan ve gruba girmeyen ürünler haritada YER ALMAZ.
+    ///
+    /// NEDEN GEREKLİ: markaların kendi siteleri aynı ürünü birden çok adreste
+    /// yayınlıyor — eski adres, "copy-of-..." taslağı, sonuna "-1" eklenmiş
+    /// tekrar. Her adres bizde ayrı bir ürün satırı oluyor ve sayfaları
+    /// birbirinin aynısı çıkıyor. Google bunu KOPYA sayıp kendi standart
+    /// sayfasını seçiyor: 1 Eylül'de GSC'de "Kopya, Google kullanıcıdan farklı
+    /// bir standart sayfa seçti" doğrulaması 21 sayfada BAŞARISIZ oldu.
+    /// Canlıda ölçüldü: 67 grup, 140 ürün, 73 fazladan adres.
+    ///
+    /// Satırlar SİLİNMİYOR — fiyat geçmişleri duruyor ve bir sonraki taramada
+    /// zaten yeniden oluşurlardı (kaynak adresleri hâlâ markanın sitemap'inde).
+    /// Yapılan tek şey Google'a hangisinin asıl sayfa olduğunu söylemek:
+    /// ikincil olanlar sitemap'e girmiyor ve canonical'ları asıl sayfayı
+    /// gösteriyor.
+    ///
+    /// ASIL SEÇİMİ: fiyat geçmişi en zengin olan (yani en uzun süredir
+    /// takip ettiğimiz kayıt); eşitlikte en küçük Id — seçim her çağrıda
+    /// AYNI sonucu vermek zorunda, yoksa canonical sayfalar arasında salınır.
+    /// </summary>
+    private async Task<Dictionary<int, int>> GetDuplicateCanonicalMapAsync(CancellationToken cancellationToken)
+    {
+        // Ürün sayısı birkaç bin; Id/BrandId/Name üçlüsünü belleğe alıp
+        // gruplamak, EF'e çevrilmesi zor bir gruplu alt sorgu yazmaktan
+        // hem basit hem güvenli.
+        var hepsi = await db.Products
+            .AsNoTracking()
+            .Select(p => new { p.Id, p.BrandId, p.Name })
+            .ToListAsync(cancellationToken);
+
+        var gruplar = hepsi
+            .GroupBy(x => (x.BrandId, x.Name))
+            .Where(g => g.Count() > 1)
+            .ToList();
+
+        if (gruplar.Count == 0)
+            return [];
+
+        var idler = gruplar.SelectMany(g => g.Select(x => x.Id)).ToList();
+
+        var gecmisSayilari = await db.PriceHistories
+            .AsNoTracking()
+            .Where(h => idler.Contains(h.ProductId))
+            .GroupBy(h => h.ProductId)
+            .Select(g => new { ProductId = g.Key, Adet = g.Count() })
+            .ToDictionaryAsync(x => x.ProductId, x => x.Adet, cancellationToken);
+
+        var harita = new Dictionary<int, int>();
+        foreach (var grup in gruplar)
+        {
+            var asil = grup
+                .OrderByDescending(x => gecmisSayilari.GetValueOrDefault(x.Id))
+                .ThenBy(x => x.Id)
+                .First();
+
+            foreach (var uye in grup.Where(x => x.Id != asil.Id))
+                harita[uye.Id] = asil.Id;
+        }
+
+        return harita;
+    }
+
     public async Task<IReadOnlyList<SitemapEntryDto>> GetSitemapEntriesAsync(CancellationToken cancellationToken = default)
     {
         var staleSince = DateTimeOffset.UtcNow.Subtract(StaleThreshold);
 
+        // Aynı ürünün ikincil kopyaları sitemap'e GİRMİYOR — Google'a
+        // indekslemesi için kopya sayfa bildirmenin anlamı yok (bkz.
+        // GetDuplicateCanonicalMapAsync).
+        var kopyalar = await GetDuplicateCanonicalMapAsync(cancellationToken);
+        var ikincilIdler = kopyalar.Keys.ToList();
+
         return await (
             from p in db.Products
             join b in db.Brands on p.BrandId equals b.Id
-            where b.IsActive && p.PriceHistories.OrderByDescending(ph => ph.ScrapedAt).Select(ph => ph.ScrapedAt).FirstOrDefault() >= staleSince
+            where b.IsActive
+                && !ikincilIdler.Contains(p.Id)
+                && p.PriceHistories.OrderByDescending(ph => ph.ScrapedAt).Select(ph => ph.ScrapedAt).FirstOrDefault() >= staleSince
             select new SitemapEntryDto(
                 p.Id,
                 p.Name,

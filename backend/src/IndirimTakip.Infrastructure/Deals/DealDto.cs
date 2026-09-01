@@ -78,4 +78,15 @@ public record DealDto(
     //
     // /go/{id} KALDIRILMADI: dizine girmiş adresler, e-postalar ve eski
     // istemciler için çalışmaya devam ediyor.
-    string? StoreUrl = null);
+    string? StoreUrl = null,
+    // Bu sayfa BAŞKA bir ürün sayfasının kopyasıysa, asıl sayfanın ürün Id'si.
+    //
+    // Markaların kendi siteleri aynı ürünü birden çok adreste yayınlıyor
+    // (eski adres, "copy-of-..." taslağı, sonuna "-1" eklenmiş tekrar) ve
+    // her adres bizde ayrı bir ürün satırı oluyor. Sayfalar birbirinin aynısı
+    // olduğu için Google bunları kopya sayıp kendi standart sayfasını
+    // seçiyordu (GSC, 1 Eylül: 21 sayfada doğrulama başarısız).
+    //
+    // Dolu olduğunda ürün sayfası canonical'ı asıl sayfayı gösteriyor.
+    // NULL = bu sayfa zaten asıl sayfa (ya da hiç kopyası yok).
+    int? CanonicalProductId = null);
