@@ -1,9 +1,9 @@
-import { DOCUMENT, DecimalPipe, isPlatformServer } from '@angular/common';
+import { DOCUMENT, DecimalPipe, Location, isPlatformServer } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, HostListener, OnInit, PLATFORM_ID, RESPONSE_INIT, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, NavigationEnd, Router, RouterLink } from '@angular/router';
 
 import { filterSelectValue, readFilterSelection } from '../core/filter-select';
 import { buildProductJsonLdDescription } from '../core/product-facts';
@@ -124,6 +124,16 @@ export class DealsList implements OnInit {
   protected readonly pwaInstall = inject(PwaInstallService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly location = inject(Location);
+
+  // Bu oturumda uygulama içinde kaç kez gezinildi. Modalı kapatırken geri mi
+  // gideceğimizi buna bakarak seçiyoruz (bkz. closeDeal).
+  //
+  // Bayrakla ("openDeal çağrıldı mı") yapılamıyor: ürün kartı routerLink
+  // kullanıyor, openDeal hiç çalışmıyor. Bu, ilk denemede yazılan düzeltmenin
+  // sessizce işe yaramamasına yol açtı — tarayıcıda geçmiş uzunluğu ölçülünce
+  // görüldü.
+  private uygulamaIciGezinme = 0;
   /** ngOnInit'teki ilk queryParamMap emisyonunu ayırt etmek için. */
   private initialLoadDone = false;
   private readonly destroyRef = inject(DestroyRef);
@@ -484,6 +494,12 @@ export class DealsList implements OnInit {
     // Ürün modalı artık URL'e bağlı (/urun/:id) — bileşen '' ve 'urun/:id'
     // arasında yeniden kurulmadan yaşadığı için (bkz. DealsRouteReuseStrategy)
     // parametre değişikliklerine burada tek seferlik abone oluyoruz.
+    this.router.events
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((event) => {
+        if (event instanceof NavigationEnd) this.uygulamaIciGezinme++;
+      });
+
     this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       const idParam = params.get('id');
       if (!idParam) {
@@ -867,7 +883,33 @@ export class DealsList implements OnInit {
     this.router.navigate(['/urun', deal.productId, slugify(deal.productName)], { queryParamsHandling: 'preserve' });
   }
 
+  /**
+   * Modalı kapat.
+   *
+   * Uygulama içinden girildiyse GERİ gidiyoruz, '/' adresine yeni bir
+   * navigasyon YAPMIYORUZ. Eskiden navigate(['/']) çağrılıyordu ve bu
+   * geçmişe ÜÇÜNCÜ bir kayıt ekliyordu: [/] -> [/urun/123] -> [/]. Sonuç,
+   * telefonun geri tuşunun tersine çalışması: kullanıcı modalı kapattıktan
+   * sonra geri tuşuna basınca kapattığı modal yeniden açılıyordu. Aynı
+   * kalıp birkaç ürün gezildiğinde geçmişi tamamen şişiriyor ve "geri"
+   * kullanıcıyı gezdiği ürünlerin arasında ileri geri dolaştırıyordu.
+   *
+   * Doğrudan /urun/:id ile girildiyse (arama motorundan gelen ziyaretçi,
+   * paylaşılan bağlantı) geride bu sitenin bir sayfası YOK — orada
+   * location.back() kullanıcıyı siteden tamamen çıkarırdı, bu yüzden ana
+   * sayfaya gerçek bir navigasyon yapılıyor. Ayrımı `uygulamaIciGezinme`
+   * sayacı veriyor. Bileşen İLK navigasyon sırasında oluştuğu için o
+   * navigasyonun NavigationEnd'ini KAÇIRIYOR; dolayısıyla sayaç 0 ise
+   * kullanıcı doğrudan /urun/:id ile gelmiş, 1+ ise uygulama içinde en az
+   * bir kez gezinmiş demektir. (İlk denemede eşik 1 yazılmıştı ve düzeltme
+   * sessizce çalışmadı — tarayıcıda geçmiş uzunluğu ölçülerek bulundu.)
+   */
   protected closeDeal(): void {
+    if (this.uygulamaIciGezinme > 0) {
+      this.location.back();
+      return;
+    }
+
     this.router.navigate(['/'], { queryParamsHandling: 'preserve' });
   }
 
