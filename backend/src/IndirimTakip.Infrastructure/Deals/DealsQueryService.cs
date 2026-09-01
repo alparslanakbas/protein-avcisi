@@ -60,6 +60,24 @@ public partial class DealsQueryService(AppDbContext db)
     // göstermek; 3,2 ortalamalı bir ürünü öne çıkarmak bandın anlamını bozardı.
     private const decimal MinimumRatingValue = 4.0m;
 
+    /// <summary>
+    /// Arama metnini veritabanındaki `lower()` ile AYNI sonuca indirger.
+    ///
+    /// Neden gerekli: Postgres `lower('İ')` ve `lower('I')` için "i" üretiyor
+    /// (ölçüldü), ama .NET tarafında `ToLower()` invariant kültürde `İ`'yi HİÇ
+    /// küçültmüyor — "VİTAMİN" araması "vİtamİn" olup veritabanındaki
+    /// "vitamin" ile asla eşleşmiyordu. Canlıda ölçüldü: "vitamin" 260 sonuç,
+    /// "VİTAMİN" 0. Büyük harfle yazmak mobilde çok yaygın.
+    ///
+    /// Noktasız `ı` da `i`'ye katlanıyor ki "fıstık" araması hem "FISTIK"
+    /// (Postgres bunu "fistik" yapıyor) hem "Fıstık" ürünlerini bulsun —
+    /// alan tarafında da aynı katlama uygulanıyor (bkz. ApplyTermFilter).
+    /// </summary>
+    internal static string NormalizeSearchText(string? value) =>
+        string.IsNullOrWhiteSpace(value)
+            ? string.Empty
+            : value.Trim().Replace('İ', 'i').Replace('I', 'i').Replace('ı', 'i').ToLowerInvariant();
+
     private static DealDto MapToDealDto(DealRow row)
     {
         var latest = row.Latest;
@@ -186,7 +204,27 @@ public partial class DealsQueryService(AppDbContext db)
         if (categories is { Length: > 0 })
             query = query.Where(r => r.Product.Category != null && categories.Contains(r.Product.Category));
 
-        var searchTerm = search?.Trim().ToLower();
+        // Verilen terimlerden EN AZ BİRİ ürünün alanlarından birinde geçiyorsa
+        // satırı tutar. Birden çok kez çağrılırsa koşullar AND'lenir — kelime
+        // bazlı arama tam olarak buna dayanıyor.
+        //
+        // Yerel fonksiyon, çünkü `query` isimsiz bir tip üzerinde duruyor ve
+        // statik bir yardımcıya parametre olarak geçirilemiyor.
+        void TerimleriUygula(string[] terimler)
+        {
+            // Alan tarafında da `ı` -> `i` katlanıyor; Postgres'in lower()'ı
+            // İ/I'yı zaten "i" yapıyor ama noktasız ı'yı olduğu gibi bırakıyor.
+            // Kategori "protein-tozu" gibi tire'li saklanıyor; "protein tozu"
+            // araması da eşleşsin diye tire boşluğa çevriliyor.
+            query = query.Where(r =>
+                terimler.Any(t => r.Product.Name.ToLower().Replace("ı", "i").Contains(t)) ||
+                terimler.Any(t => r.BrandName.ToLower().Replace("ı", "i").Contains(t)) ||
+                (r.Product.Category != null && terimler.Any(t => r.Product.Category.Replace("-", " ").ToLower().Replace("ı", "i").Contains(t))) ||
+                (r.Product.Size != null && terimler.Any(t => r.Product.Size.ToLower().Replace("ı", "i").Contains(t))) ||
+                (r.Product.Flavor != null && terimler.Any(t => r.Product.Flavor.ToLower().Replace("ı", "i").Contains(t))));
+        }
+
+        var searchTerm = NormalizeSearchText(search);
         // Aşağıdaki relevance sıralamasında da kullanılıyor (bkz. orderedQuery
         // öncesi) — bu yüzden if bloğunun dışında, boş dizi varsayılanıyla
         // tanımlı.
@@ -200,18 +238,46 @@ public partial class DealsQueryService(AppDbContext db)
             var synonyms = expandSearchSynonyms
                 ? ProductAttributeParser.GetSearchSynonyms(searchTerm)
                 : [];
-            searchTerms = synonyms.Count > 0
-                ? synonyms.Append(searchTerm).Distinct().ToArray()
-                : [searchTerm];
 
-            // Kategori "protein-tozu" gibi tire'li saklanıyor; "protein tozu" araması
-            // da eşleşsin diye tire'leri boşluğa çevirip karşılaştırıyoruz.
-            query = query.Where(r =>
-                searchTerms.Any(t => r.Product.Name.ToLower().Contains(t)) ||
-                searchTerms.Any(t => r.BrandName.ToLower().Contains(t)) ||
-                (r.Product.Category != null && searchTerms.Any(t => r.Product.Category.Replace("-", " ").ToLower().Contains(t))) ||
-                (r.Product.Size != null && searchTerms.Any(t => r.Product.Size.ToLower().Contains(t))) ||
-                (r.Product.Flavor != null && searchTerms.Any(t => r.Product.Flavor.ToLower().Contains(t))));
+            if (synonyms.Count > 0)
+            {
+                // Yazılan ifadenin KENDİSİ bilinen bir eşanlamlı grubuysa
+                // (tek kelimeli "kreatin" ya da çok kelimeli "yag yakici",
+                // "pre workout") tüm ifadeyle aranır. Kelimelere bölmek burada
+                // GERİLEME olurdu: "yag yakici" grubunun karşılığı "thermo"/
+                // "burner"dır, tek tek "yag" ve "yakici" hiçbir üründe geçmez.
+                searchTerms = synonyms.Append(searchTerm).Select(NormalizeSearchText).Distinct().ToArray();
+                TerimleriUygula(searchTerms);
+            }
+            else
+            {
+                // Bilinen bir grup değilse KELİMELERE BÖL: her kelime en az bir
+                // alanda geçmeli (kelimeler arası AND, alanlar arası OR).
+                //
+                // Eskiden yazılan metnin TAMAMI tek parça aranıyordu ve bu,
+                // kullanıcının en doğal arama biçimini tamamen kırıyordu:
+                // "Torq Protein" hiçbir şey bulmuyordu çünkü ürün adında
+                // "Torq", marka adında "Protein" geçmiyor — hiçbir ALAN tek
+                // başına ifadenin tamamını içermiyor. Canlıda ölçüldü:
+                // 1974 ürünün 803'ünün (%41) adında markası geçmiyor, yani
+                // Hardline/West/ProteinOcean/Torq/BigJoy ürünleri "marka +
+                // ürün" yazan kullanıcıya hiç çıkmıyordu.
+                foreach (var kelime in searchTerm.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+                {
+                    var kelimeEsanlamlari = expandSearchSynonyms
+                        ? ProductAttributeParser.GetSearchSynonyms(kelime)
+                        : [];
+                    var terimler = kelimeEsanlamlari.Count > 0
+                        ? kelimeEsanlamlari.Append(kelime).Select(NormalizeSearchText).Distinct().ToArray()
+                        : [kelime];
+
+                    TerimleriUygula(terimler);
+                }
+
+                // Sıralama tüm ifadeye göre: adında ifadenin tamamı geçen ürün
+                // üstte kalmalı.
+                searchTerms = [searchTerm];
+            }
         }
 
         query = query.Where(r => r.Latest != null && r.ReferencePrice != null);
@@ -246,9 +312,9 @@ public partial class DealsQueryService(AppDbContext db)
         var relevanceOrdered = searchTerms.Length > 0
             ? query
                 .OrderBy(r =>
-                    searchTerms.Any(t => r.Product.Name.ToLower() == t) ? 0
-                    : searchTerms.Any(t => r.Product.Name.ToLower().StartsWith(t)) ? 1
-                    : searchTerms.Any(t => r.Product.Name.ToLower().Contains(t)) ? 2
+                    searchTerms.Any(t => r.Product.Name.ToLower().Replace("ı", "i") == t) ? 0
+                    : searchTerms.Any(t => r.Product.Name.ToLower().Replace("ı", "i").StartsWith(t)) ? 1
+                    : searchTerms.Any(t => r.Product.Name.ToLower().Replace("ı", "i").Contains(t)) ? 2
                     : 3)
                 .ThenBy(r => r.Product.Name.Length)
             : query.OrderBy(r => 0);
