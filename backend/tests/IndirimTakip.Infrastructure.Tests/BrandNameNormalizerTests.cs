@@ -53,6 +53,7 @@ public class BrandNameNormalizerTests
     [InlineData("just", "Just")]
     [InlineData("FA Nutrition", "Fa Nutrition")]
     [InlineData("Bite More", "Bite & More")]
+    [InlineData("Synergy", "Synergy Nutrition")]
     public void ProvitaminKaynakliKopyalarBirlesir(string ham, string beklenen)
     {
         Assert.Equal(beklenen, BrandNameNormalizer.Normalize(ham));

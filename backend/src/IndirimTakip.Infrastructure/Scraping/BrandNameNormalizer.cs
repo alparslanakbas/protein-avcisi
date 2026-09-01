@@ -47,6 +47,11 @@ public static class BrandNameNormalizer
             // "JUST"/"Just", hem "FA"/"Fa Nutrition" yazımıyla geçiyordu ve
             // ikisi de ayrı marka kaydı yaratmıştı. Kanonik taraf her zaman
             // veritabanında ürünü çok olan yazım.
+            // Provitamin aynı ürünü ("Synergy Instant BCAA 650 Gr") İKİ ayrı
+            // sayfada listeliyor ve birinde marka "Synergy Nutrition",
+            // diğerinde "Synergy" yazıyor. Kullanıcı markanın yabancı bir
+            // üretici olduğunu ve ürünün ona ait olduğunu doğruladı.
+            ["Synergy"] = "Synergy Nutrition",
             ["JUST"] = "Just",
             ["FA Nutrition"] = "Fa Nutrition",
             ["Hiq"] = "HIQ",
