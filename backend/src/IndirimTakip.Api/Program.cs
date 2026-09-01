@@ -402,8 +402,11 @@ app.MapPost("/api/dev/coupons", async (CreateCouponRequest request, CouponServic
 {
     if (!request.HasExactlyOneTarget)
         return Results.BadRequest("Kupon yalnızca bir markaya veya bir satıcıya bağlanmalıdır.");
-    if (string.IsNullOrWhiteSpace(request.Code) || string.IsNullOrWhiteSpace(request.Description))
-        return Results.BadRequest("Kupon kodu ve açıklaması boş olamaz.");
+    // Kod BİLİNÇLİ olarak zorunlu değil: her kampanyanın girilecek bir kodu
+    // yok (ör. üyelikle otomatik uygulanan "ilk alışverişte ek %5"). Açıklama
+    // ise zorunlu — kullanıcının kutuda göreceği tek metin o.
+    if (string.IsNullOrWhiteSpace(request.Description))
+        return Results.BadRequest("Kupon açıklaması boş olamaz.");
 
     var result = await coupons.CreateAsync(request, ct);
     return result is null ? Results.NotFound($"'{request.BrandName}' adında marka bulunamadı.") : Results.Ok(result);
