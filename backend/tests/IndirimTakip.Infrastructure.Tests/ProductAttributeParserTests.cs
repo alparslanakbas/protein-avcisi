@@ -269,4 +269,45 @@ public class ProductAttributeParserTests
         // Elde olan tek ölçü mg ise boş bırakmaktansa o gösteriliyor.
         Assert.Equal("2900 Mg", ProductAttributeParser.ExtractSize("SWISS GH MATRIX 2900MG"));
     }
+
+    // GNC eklenirken (1 Eylül 2026) 45 ürünün 13'ü kategorisiz kaldı; üçü
+    // bizde ZATEN kategorisi olan spor ürünüydü, kalanı vitamin/bitkisel.
+    // Adlar GNC'nin gerçek kataloğundan.
+    [Theory]
+    [InlineData("GNC Pro Pre-W-Out – 339 g", "pre-workout")]
+    [InlineData("GNC Pro Pre-W-Out – 339 g - Yaban Mersini ve Frambuaz Aromalı", "pre-workout")]
+    [InlineData("GNC Pro Bulk 1340 – 5443 g (15 servis)", "kilo-hacim")]
+    [InlineData("GNC CoQ-10 100 mg 30 Yumuşak Kapsül", "vitamin")]
+    [InlineData("Quercetin – 60 Tablet", "vitamin")]
+    [InlineData("Fish Oil - 60 Yumuşak Kapsül", "vitamin")]
+    [InlineData("Triple Strenght Krill Oil – 30 Yumuşak Kapsül", "vitamin")]
+    [InlineData("Bromelain – 60 Tablet", "vitamin")]
+    [InlineData("Herbal Plus Turmeric Complex - 100 Kapsül", "vitamin")]
+    [InlineData("GNC FOLAT 400 MCG 100 TABLET", "vitamin")]
+    public void InferCategory_gnc_kataloguna_gore(string ad, string beklenen)
+    {
+        Assert.Equal(beklenen, ProductAttributeParser.InferCategory(ad));
+    }
+
+    // "bulk" eklenirken ölçüldü: o dizi 1100 ürün içinde başka yalnızca SSN'in
+    // gainer'larında geçiyor. Onların kategorisi KAYNAKTAN geliyor (SSN kendi
+    // slug'ını veriyor) ama parser'a düşselerdi de doğru yere giderlerdi —
+    // "mass" zaten kilo-hacim'de. Bu test o gerekçeyi sabitliyor: ekleme
+    // hiçbir ürünü protein-tozu'ndan çekip almıyor.
+    [Theory]
+    [InlineData("SSN Bulk Power Gainzilla Mass 5000 g (Çikolata)")]
+    [InlineData("SSN Bulk Power Gainzilla Mass 1500 g")]
+    public void InferCategory_bulk_gainerlari_protein_tozuna_tasimaz(string ad)
+    {
+        Assert.Equal("kilo-hacim", ProductAttributeParser.InferCategory(ad));
+    }
+
+    // Sıra bağımlılığı: adında hem protein hem gainer geçen ürün protein-tozu
+    // kalmalı (liste sırası bilinçli, bkz. `5e8ef43`). "bulk" eklemesi bu
+    // dengeyi bozmamalı.
+    [Fact]
+    public void InferCategory_protein_gecen_bulk_urunu_protein_tozunda_kalir()
+    {
+        Assert.Equal("protein-tozu", ProductAttributeParser.InferCategory("Bulk Whey Protein 1000 g"));
+    }
 }

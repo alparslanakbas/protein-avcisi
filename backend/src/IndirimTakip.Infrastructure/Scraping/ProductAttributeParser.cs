@@ -49,7 +49,10 @@ public static partial class ProductAttributeParser
         // "caffeine" eklendi: hem HIQ/Hardline/ProteinOcean'da tek başına
         // satılan kafein ürünleri var, enerji/odaklanma amaçlı pre-workout
         // ailesine en yakın kategori bu.
-        ("pre-workout", ["pre workout", "preworkout", "pump", "nitric", "hellfire", "pre-workout", "caffeine"]),
+        // "pre-w-out": GNC'nin kendi kısaltması ("GNC Pro Pre-W-Out – 339 g").
+        // 1 Eylül'de canlı katalogda ölçüldü — bu dizi yalnızca o iki ürüne
+        // çarpıyor, ikisi de o güne kadar kategorisizdi.
+        ("pre-workout", ["pre workout", "preworkout", "pump", "nitric", "hellfire", "pre-workout", "pre-w-out", "caffeine"]),
         // SSN kendi ürünlerinde bu kategoriyi doğrudan veriyor (elle set edilmiş
         // slug); diğer markalarda (HIQ/Hardline/ProteinOcean) daha önce burada
         // hiç bir giriş olmadığı için l-carnitine/karnitin/cla ürünleri yanlışlıkla
@@ -64,7 +67,11 @@ public static partial class ProductAttributeParser
         // "gain" ayrı eklendi: "gainer" ile eşleşmeyen "HIQ Gain Deluxe" gibi
         // ürünler var. Karbonhidrat/kütle kaynakları da (maltodextrin,
         // dextrose, Vitargo, Cream of Rice, Carbopure) bu kategoriye eklendi.
-        ("kilo-hacim", ["gainer", "gain", "mass", "kilo", "hacim", "maltodextrin", "dextrose", "vitargo", "cream of rice", "carbopure", "pirinç unu", "muscle rice"]),
+        // "bulk": kütle artırıcıların sektördeki ortak adı ("GNC Pro Bulk 1340
+        // – 5443 g"). 1 Eylül'de 1100 üründe tarandı; "bulk" geçen diğer üç
+        // ürün SSN'in ve onların kategorisi KAYNAKTAN geliyor (SSN kendi slug'ını
+        // veriyor), parser'a hiç düşmüyorlar — yani bu ekleme onları taşımaz.
+        ("kilo-hacim", ["gainer", "gain", "mass", "kilo", "hacim", "bulk", "maltodextrin", "dextrose", "vitargo", "cream of rice", "carbopure", "pirinç unu", "muscle rice"]),
         // Kapsamlı kategori taraması (2026-08-17): vitamin/mineral kategorisinin
         // kendi açıklaması zaten geniş bir yelpaze tanımlıyor ("multivitaminden
         // omega-3'e, magnezyumdan çinkoya") — bu ruhla, önceden hiç bir kategoriye
@@ -74,7 +81,7 @@ public static partial class ProductAttributeParser
         // "spirulina" (tanınmış bir süperfood takviyesi) de eklendi.
         // Markalı/özel karışım isimleri (GH-UP, Smash Pro, T-Prime vb.) BİLİNÇLİ
         // OLARAK eklenmedi — isimden çıkarım değil tahmin olurdu.
-        ("vitamin", ["vitamin", "mineral", "magnesium", "magnezyum", "zinc", "cinko", "omega", "multivitamin", "biotin", "d3k2", "coenzyme", "ginkgo", "glutathione", "hyaluronic", "inulin", "milk thistle", "panax", "ginseng", "psyllium", "rhodiola", "saw palmetto", "selenium", "tribulus", "zma", "glucosamine", "chondroitin", "nmn", "tudca", "ester-c", "5-htp", "b-complex", "lion's mane", "maca", "iron", "chromium", "glucoflex", "curcumin", "spirulina"]),
+        ("vitamin", ["vitamin", "mineral", "magnesium", "magnezyum", "zinc", "cinko", "omega", "multivitamin", "biotin", "d3k2", "coenzyme", "ginkgo", "glutathione", "hyaluronic", "inulin", "milk thistle", "panax", "ginseng", "psyllium", "rhodiola", "saw palmetto", "selenium", "tribulus", "zma", "glucosamine", "chondroitin", "nmn", "tudca", "ester-c", "5-htp", "b-complex", "lion's mane", "maca", "iron", "chromium", "glucoflex", "curcumin", "spirulina", "coq-10", "coq10", "quercetin", "fish oil", "krill", "bromelain", "turmeric", "folat"]),
         // "bar" BİLİNÇLİ OLARAK burada YOK: alt dizi olarak arandığı için
         // "Barbekü Baharatı"yı atıştırmalık sayıyordu. Bar biçimi artık
         // yukarıda kelime sınırlı SnackBarFormRegex ile yakalanıyor.
