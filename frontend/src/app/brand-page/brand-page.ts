@@ -80,7 +80,12 @@ export class BrandPage implements OnInit {
     const stats = this.brandStats();
     return buildBrandFaqs({
       brandName: brand,
-      couponCodes: this.coupons().map((c) => c.code),
+      // SSS metni "şu kodu kullan" diyor; kodu OLMAYAN kampanyalar (üyelikle
+      // otomatik uygulananlar) buraya girmemeli, yoksa kullanıcı olmayan bir
+      // kodu ödeme sayfasında arar.
+      couponCodes: this.coupons()
+        .map((c) => c.code)
+        .filter((code): code is string => code !== null),
       totalProducts: stats?.totalProducts ?? null,
       averageDiscountPercent: stats?.averageDiscountPercent ?? null,
       topCategoryLabel: this.topCategoryLabel(),

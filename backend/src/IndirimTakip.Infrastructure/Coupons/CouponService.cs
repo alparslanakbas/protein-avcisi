@@ -6,7 +6,8 @@ namespace IndirimTakip.Infrastructure.Coupons;
 public record CreateCouponRequest(
     string? BrandName,
     string? Seller,
-    string Code,
+    // Kodu olmayan kampanyalar için boş bırakılabilir; bkz. Coupon.Code.
+    string? Code,
     string Description,
     DateTimeOffset? ValidUntil)
 {
@@ -59,7 +60,9 @@ public class CouponService(AppDbContext db)
         {
             BrandId = brand?.Id,
             Seller = seller,
-            Code = request.Code.Trim(),
+            // Boş dize ile NULL aynı şeyi ifade ediyor ("kod yok"); tek bir
+            // biçimde saklanıyor ki arayüz iki ayrı boşluk durumu kontrol etmesin.
+            Code = string.IsNullOrWhiteSpace(request.Code) ? null : request.Code.Trim(),
             Description = request.Description.Trim(),
             ValidUntil = request.ValidUntil,
             LastVerifiedAt = DateTimeOffset.UtcNow,
@@ -77,7 +80,8 @@ public class CouponService(AppDbContext db)
         if (coupon is null)
             return null;
 
-        if (request.Code is not null) coupon.Code = request.Code;
+        if (request.Code is not null)
+            coupon.Code = string.IsNullOrWhiteSpace(request.Code) ? null : request.Code.Trim();
         if (request.Description is not null) coupon.Description = request.Description;
         if (request.ValidUntil is not null) coupon.ValidUntil = request.ValidUntil;
         if (request.IsActive is not null) coupon.IsActive = request.IsActive.Value;

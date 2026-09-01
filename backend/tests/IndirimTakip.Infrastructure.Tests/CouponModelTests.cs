@@ -36,6 +36,12 @@ public class CouponModelTests
         Assert.True(coupon.FindProperty(nameof(Coupon.BrandId))!.IsNullable);
         Assert.Equal(200, coupon.FindProperty(nameof(Coupon.Seller))!.GetMaxLength());
 
+        // Kod OPSİYONEL: her kampanyanın kodu yok. Swiss Nutrition'ın "yeni
+        // üyeye ilk alışverişte ek %5" kampanyası üyelikle otomatik uygulanıyor;
+        // zorunlu tutulsaydı ya kampanya hiç gösterilemez ya da boş bir kod
+        // rozeti çizilip kullanıcı olmayan bir kodu arardı.
+        Assert.True(coupon.FindProperty(nameof(Coupon.Code))!.IsNullable);
+
         var constraint = Assert.Single(
             coupon.GetCheckConstraints(),
             c => c.Name == "CK_Coupons_ExactlyOneTarget");

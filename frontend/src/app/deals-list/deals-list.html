@@ -148,7 +148,12 @@
               @if (coupon.seller) {
                 <span class="rounded-full bg-[var(--noc-accent-100)] px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.06em] text-[var(--noc-accent-700)]">Satıcı kuponu</span>
               }
-              <code class="font-mono font-bold text-[var(--noc-accent)]">{{ coupon.code }}</code><span class="pa-muted">{{ coupon.description }}</span>
+              @if (coupon.code) {
+                <code class="font-mono font-bold text-[var(--noc-accent)]">{{ coupon.code }}</code>
+              } @else {
+                <span class="font-semibold text-[var(--noc-accent)]">Kod gerekmiyor</span>
+              }
+              <span class="pa-muted">{{ coupon.description }}</span>
             </div>
           }
         </section>
