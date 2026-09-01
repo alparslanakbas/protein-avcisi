@@ -14,6 +14,7 @@ using IndirimTakip.Infrastructure.Scraping.Protein7;
 using IndirimTakip.Infrastructure.Scraping.ProteinOcean;
 using IndirimTakip.Infrastructure.Scraping.Provitamin;
 using IndirimTakip.Infrastructure.Scraping.Ssn;
+using IndirimTakip.Infrastructure.Scraping.SpaceSupplements;
 using IndirimTakip.Infrastructure.Scraping.SupraProtein;
 using IndirimTakip.Infrastructure.Scraping.Supplementler;
 using IndirimTakip.Infrastructure.Scraping.Torq;
@@ -61,6 +62,16 @@ public static class DependencyInjection
             client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
         });
         services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<SupraProteinScraper>());
+
+        // Space Supplements — custom Laravel mağaza; sitemap + ürün
+        // sayfasındaki schema.org Product verisi, toplam yedi adres.
+        services.AddHttpClient<SpaceSupplementsScraper>(client =>
+        {
+            client.BaseAddress = new Uri("https://spacegymsupplements.com/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
+        services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<SpaceSupplementsScraper>());
 
         // protein7 — BAYİ (çok markalı) kaynak. Ürün başına bir istek attığı
         // için DailyOnly: 6 saatlik genel tura değil, günde bir kez çalışan
