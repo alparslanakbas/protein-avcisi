@@ -42,6 +42,16 @@ const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(na
 const PAGE_SIZE = 24;
 const SEARCH_DEBOUNCE_MS = 350;
 
+function tekSecimEtiketi(
+  secilenler: Set<string>,
+  tekil: (ad: string) => string,
+  cogul: (adet: number) => string,
+): string {
+  const [ilk] = secilenler;
+  return secilenler.size === 1 ? tekil(ilk) : cogul(secilenler.size);
+}
+
+
 
 // Hero kartındaki küçük fiyat grafiği — product-modal'ın tam boyutlu
 // grafiğinden çok daha küçük, kendi ölçüleri (Nocturne referansı: 280×90).
@@ -196,6 +206,17 @@ export class DealsList implements OnInit {
   protected readonly brandSelectValue = computed(() => filterSelectValue(this.selectedBrands().size));
   protected readonly categorySelectValue = computed(() => filterSelectValue(this.selectedCategories().size));
   protected readonly sellerSelectValue = computed(() => filterSelectValue(this.selectedSellers().size));
+
+  // Kutuda ne yazacağı. TEK seçimde sayı değil ADIN KENDİSİ gösteriliyor:
+  // "Markanın kendi sitesi" seçiliyken "1 satıcı seçili" yazması kullanıcıyı
+  // şaşırtıyordu (bildirildi) — seçtiği şey zaten tek ve adı kutuya sığıyor.
+  // Birden çoğunda ad listelemek kutuyu taşırdığı için sayıya düşülüyor.
+  protected readonly brandSelectLabel = computed(() =>
+    tekSecimEtiketi(this.selectedBrands(), (ad) => ad, (n) => `${n} marka seçili`));
+  protected readonly categorySelectLabel = computed(() =>
+    tekSecimEtiketi(this.selectedCategories(), (ad) => this.categoryLabel(ad), (n) => `${n} kategori seçili`));
+  protected readonly sellerSelectLabel = computed(() =>
+    tekSecimEtiketi(this.selectedSellers(), (ad) => ad, (n) => `${n} satıcı seçili`));
 
   protected readonly availableBrands = signal<string[]>([]);
   protected readonly availableCategories = signal<string[]>([]);

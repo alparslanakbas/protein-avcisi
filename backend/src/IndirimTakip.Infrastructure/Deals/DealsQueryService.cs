@@ -45,6 +45,17 @@ public partial class DealsQueryService(AppDbContext db)
     /// </summary>
     public const string BrandDirectSellerLabel = "Markanın kendi sitesi";
 
+    /// <summary>
+    /// Bayilerin TAMAMI için tek etiket.
+    ///
+    /// Filtre bilinçli olarak satıcı satıcı listelenmiyor: kullanıcının sorduğu
+    /// soru "bu ürünü markadan mı bayiden mi alıyorum" — hangi bayi olduğu
+    /// ürünün kendi satırında zaten yazıyor. Her bayi ayrı seçenek olsaydı
+    /// kaynak ekledikçe liste uzayacak ve seçim bir tercihten çok bir envanter
+    /// taramasına dönüşecekti.
+    /// </summary>
+    public const string DealerSellerLabel = "Bayiden satılanlar";
+
     // Vitrine girmek için gereken en düşük ortalama. Amaç "beğenilen ürünler"
     // göstermek; 3,2 ortalamalı bir ürünü öne çıkarmak bandın anlamını bozardı.
     private const decimal MinimumRatingValue = 4.0m;
@@ -131,12 +142,19 @@ public partial class DealsQueryService(AppDbContext db)
         if (sellers is { Length: > 0 })
         {
             // "Markanın kendi sitesi" veritabanında NULL olarak duruyor, bu
-            // yüzden iki koşul ayrı ayrı kuruluyor.
+            // yüzden koşullar ayrı ayrı kuruluyor.
             var markaDirekt = sellers.Contains(BrandDirectSellerLabel);
-            var bayiler = sellers.Where(x => x != BrandDirectSellerLabel).ToArray();
+            var tumBayiler = sellers.Contains(DealerSellerLabel);
+            // Belirli bir bayi adı hâlâ kabul ediliyor: arayüz artık böyle bir
+            // seçenek sunmuyor ama /api/deals herkese açık ve eski bağlantılar
+            // (sellers=protein7.com) çalışmaya devam etmeli.
+            var belirliBayiler = sellers
+                .Where(x => x != BrandDirectSellerLabel && x != DealerSellerLabel)
+                .ToArray();
             query = query.Where(r =>
                 (markaDirekt && r.Product.Seller == null)
-                || (bayiler.Length > 0 && r.Product.Seller != null && bayiler.Contains(r.Product.Seller)));
+                || (tumBayiler && r.Product.Seller != null)
+                || (belirliBayiler.Length > 0 && r.Product.Seller != null && belirliBayiler.Contains(r.Product.Seller)));
         }
 
         if (categories is { Length: > 0 })
@@ -822,20 +840,17 @@ public partial class DealsQueryService(AppDbContext db)
             .OrderBy(c => c)
             .ToListAsync(cancellationToken);
 
-        // Yalnızca gerçekten bayi ürünü varsa satıcı listesi anlamlı; hepsi
+        // Yalnızca gerçekten bayi ürünü varsa satıcı filtresi anlamlı; hepsi
         // markanın kendi sitesindense filtre gösterilmemeli (arayüz boş
-        // listede kutuyu gizliyor).
-        var bayiler = await db.Products
+        // listede kutuyu gizliyor). Bayi ADLARI listelenmiyor — filtre iki
+        // seçenekli, gerekçe için bkz. DealerSellerLabel.
+        var bayiUrunuVar = await db.Products
             .AsNoTracking()
-            .Where(p => p.Seller != null)
-            .Select(p => p.Seller!)
-            .Distinct()
-            .OrderBy(x => x)
-            .ToListAsync(cancellationToken);
+            .AnyAsync(p => p.Seller != null, cancellationToken);
 
-        var sellers = bayiler.Count == 0
-            ? []
-            : new List<string> { BrandDirectSellerLabel }.Concat(bayiler).ToList();
+        List<string> sellers = bayiUrunuVar
+            ? [BrandDirectSellerLabel, DealerSellerLabel]
+            : [];
 
         return new FilterOptionsDto(brands, categories, sellers);
     }
