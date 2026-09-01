@@ -1,6 +1,7 @@
 import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { Component, OnInit, PLATFORM_ID, computed, inject, signal } from '@angular/core';
 import { ActivatedRouteSnapshot, NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
+import { showFooterBrandLinks } from './core/footer-brand-links';
 import { NavigationSnapshot, routePath, shouldResetScroll } from './core/scroll-reset';
 import { filter } from 'rxjs';
 
@@ -50,6 +51,9 @@ export class App implements OnInit {
   // "Yeşilmarka"); toLowerCase() bunları adrese olduğu gibi taşıyıp
   // %20/%C5%9F içeren ikinci bir adres üretiyordu.
   protected readonly brandSlug = brandSlug;
+
+  /** Footer marka listesi bu sayfada gösterilsin mi (bkz. core/footer-brand-links.ts). */
+  protected readonly footerMarkaListesi = signal(true);
 
   protected readonly brands = signal<string[]>([]);
   protected readonly categories = signal<{ slug: string; label: string }[]>([]);
@@ -119,21 +123,24 @@ export class App implements OnInit {
     // zıplatırdı — bu yüzden burada sadece gerçekten FARKLI bir sayfaya
     // (component'e) geçildiğinde en üste kaydırıyoruz; aynı sayfa içindeki
     // route-reuse navigasyonlarına (modal aç/kapa) dokunmuyoruz.
-    if (this.isBrowser) {
-      this.router.events.pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd)).subscribe(() => {
-        // Karar mantığı core/scroll-reset.ts'te, saf ve test edilebilir
-        // hâlde. Buradaki iş yalnızca durumu okuyup uygulamak.
-        const next: NavigationSnapshot = {
-          component: leafComponent(this.router.routerState.snapshot.root),
-          path: routePath(this.router.url),
-        };
+    // DİKKAT: bu abonelik isBrowser guard'ının DIŞINDA. Footer kararının
+    // SSR çıktısında da uygulanması şart — Google'ın okuduğu o. Kaydırma
+    // kısmı ise yalnızca tarayıcıda anlamlı, o yüzden içeride korunuyor.
+    this.router.events.pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd)).subscribe(() => {
+      // Karar mantığı core/scroll-reset.ts'te, saf ve test edilebilir
+      // hâlde. Buradaki iş yalnızca durumu okuyup uygulamak.
+      const next: NavigationSnapshot = {
+        component: leafComponent(this.router.routerState.snapshot.root),
+        path: routePath(this.router.url),
+      };
 
-        if (shouldResetScroll(this.lastNavigation, next)) {
-          window.scrollTo(0, 0);
-        }
+      this.footerMarkaListesi.set(showFooterBrandLinks(next.path));
 
-        this.lastNavigation = next;
-      });
-    }
+      if (this.isBrowser && shouldResetScroll(this.lastNavigation, next)) {
+        window.scrollTo(0, 0);
+      }
+
+      this.lastNavigation = next;
+    });
   }
 }
