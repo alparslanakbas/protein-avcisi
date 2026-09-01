@@ -34,6 +34,12 @@
 const ACRONYMS = new Set([
   'HIQ', 'SSN', 'BCAA', 'EAA', 'WPC', 'WPI', 'WPH', 'CLA', 'ZMA', 'GI',
   'NOX', 'PRE', 'ISO', 'GR', 'ML', 'KG', 'L', 'PLUS',
+  // GNC eklendikten sonra canlıda 45 ürünün H1'i tarandı (2 Eylül): marka
+  // adının kendisi "Gnc" çıkıyordu (22 sayfa), ayrıca "5 - HTP" → "Htp",
+  // "AMP - Wheybolic" → "Amp", "400 MCG" → "Mcg". MCG diğer birimlerle
+  // (GR/ML/KG) aynı mantıkta: kaynaktaki yazım korunuyor, yani "mcg" küçük
+  // yazılmışsa küçük kalmaya devam ediyor.
+  'GNC', 'HTP', 'AMP', 'MCG',
 ]);
 
 // Başlık içinde küçük kalması gereken bağlaçlar. İngilizce olanlar

@@ -79,4 +79,24 @@ describe('displayName', () => {
     expect(displayName('MIKRONIZE KREATIN')).toBe('Mikronize Kreatin');
   });
 
+  // GNC eklendikten sonra canlıdaki 45 H1 tarandı (2 Eylül) — bozulan
+  // kısaltmalar bunlardı. Adlar gerçek katalogdan.
+  it('GNC kataloğundaki kısaltmalar büyük kalır', () => {
+    expect(displayName('GNC CoQ-10 100 mg 30 Yumuşak Kapsül')).toContain('GNC');
+    expect(displayName('GNC 5 - HTP')).toBe('GNC 5 - HTP');
+    expect(displayName('GNC AMP - Wheybolic – 1300 g')).toContain('AMP');
+    expect(displayName('GNC FOLAT 400 MCG 100 TABLET')).toContain('MCG');
+  });
+
+  // Birim yazımı KAYNAKTAN geliyor; MCG'yi listeye eklemek küçük yazılmış
+  // "mcg"leri büyütmemeli (GR/ML/KG ile aynı davranış).
+  it('küçük yazılmış birimi büyütmez', () => {
+    expect(displayName('Biotin 5000 mcg 120 Kapsül')).toContain('mcg');
+  });
+
+  // Marka adı zaten karışık yazılmışsa dokunulmamalı.
+  it('karışık yazımlı bileşen adını bozmaz', () => {
+    expect(displayName('GNC CoQ-10 100 mg')).toContain('CoQ-10');
+  });
+
 });
