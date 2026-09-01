@@ -1748,6 +1748,29 @@ app-preferred-products {
 .pa-preferred-rail::-webkit-scrollbar,
 .pa-preferred-tabs::-webkit-scrollbar { display: none; }
 
+/* Yatay kaydırmalı her şerit/tablo kendi kaydırmasını İÇİNDE tutsun.
+ *
+ * Kullanıcı mobilde bildirdi: ana sayfada sağa kaydırınca sağ tarafta siyah
+ * bir alan açılıyordu. Sayfada gerçek bir yatay taşma YOK (ölçüldü:
+ * scrollWidth === clientWidth, hem 360 hem 375 genişlikte, sayfanın her
+ * noktasında). Sebep kaydırma ZİNCİRLEMESİ: kategori şeridinin sonuna
+ * gelince kaydırma belgeye devroluyor, belge yana kayıyor ve arkasındaki
+ * koyu tuval görünüyordu.
+ *
+ * `pa-preferred-rail` bunu zaten yapıyordu; kategori şeridi ve geniş
+ * tablolar atlanmıştı. Tek tek eklemek yerine yatay kaydıran her kapsayıcıyı
+ * kapsıyoruz.
+ *
+ * Kök elemana `overscroll-behavior-x: none` verilmedi BİLİNÇLİ OLARAK:
+ * iOS Safari'de o kural kenardan kaydırarak geri gitme hareketini de
+ * kapatıyor. `contain` zincirlemeyi durdurmaya yetiyor ve tarayıcının
+ * gezinme hareketlerine dokunmuyor.
+ */
+.overflow-x-auto,
+.pa-responsive-table {
+  overscroll-behavior-inline: contain;
+}
+
 .pa-preferred-card {
   position: relative;
   display: grid;
