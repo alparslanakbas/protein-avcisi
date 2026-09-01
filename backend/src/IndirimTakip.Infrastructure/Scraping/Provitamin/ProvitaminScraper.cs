@@ -54,10 +54,13 @@ public class ProvitaminScraper(HttpClient httpClient, ILogger<ProvitaminScraper>
         var products = new List<ScrapedProduct>();
         var missing = 0;
         var failures = 0;
+        var attempted = 0;
+        var rateLimited = false;
 
         foreach (var url in urls)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            attempted++;
 
             try
             {
@@ -68,10 +71,10 @@ public class ProvitaminScraper(HttpClient httpClient, ILogger<ProvitaminScraper>
                 }
                 else if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
                 {
-                    // Aynı turda tekrar deneyip hız sınırını uzatma. Yutma
-                    // servisi mevcut veriyi silmiyor; bir sonraki günlük tur
-                    // temiz bir pencerede yeniden deneyecek.
-                    throw new ProvitaminRateLimitException();
+                    // Aynı turda tekrar DENEME: sınır YAPIŞKAN. Ölçüldü — 1,5 sn
+                    // aralıkla tetiklendikten sonra ardışık 26 isteğin hepsi 429
+                    // döndü. Tek tek denemek sınırı açmıyor, sadece kaynağı zorluyor.
+                    rateLimited = true;
                 }
                 else
                 {
@@ -82,27 +85,47 @@ public class ProvitaminScraper(HttpClient httpClient, ILogger<ProvitaminScraper>
                         products.Add(product);
                 }
             }
-            catch (ProvitaminRateLimitException)
-            {
-                throw;
-            }
             catch (Exception) when (!cancellationToken.IsCancellationRequested)
             {
                 failures++;
             }
 
+            // Yeni istek atmadan çık — ama toplananı ATMA. Kaydetmek karşı siteye
+            // tek bir ek istek bile bindirmiyor ve yutma servisi taramada
+            // olmayan ürünleri SİLMEDİĞİ için kısmi sonuç güvenli. Eskiden burada
+            // exception fırlatılıyordu: 400. üründe gelen bir 429, 400 başarılı
+            // isteği ve o günün fiyat noktalarını çöpe atıyor, bir sonraki deneme
+            // ancak ertesi gece olduğu için fiyat geçmişinde tam bir gün boşluk
+            // bırakıyordu.
+            if (rateLimited)
+                break;
+
             await Task.Delay(DelayBetweenRequests, cancellationToken);
         }
 
-        if (failures > urls.Count * MaxFailureRatio)
+        // Hiçbir ürün alınamadıysa sessizce "başarılı" dönmek yerine gürültü çıkar:
+        // bu, kaynağın bize tamamen kapandığı anlamına gelir.
+        if (rateLimited && products.Count == 0)
+            throw new ProvitaminRateLimitException();
+
+        // Oran DENENEN adres üzerinden: hız sınırı yüzünden erken çıkıldığında tüm
+        // sitemap'i payda almak taramayı haksız yere "güvenilmez" gösterirdi.
+        if (failures > attempted * MaxFailureRatio)
         {
             throw new InvalidOperationException(
-                $"Provitamin: {urls.Count} adresin {failures} tanesinde beklenmeyen hata oluştu, tarama güvenilir değil.");
+                $"Provitamin: denenen {attempted} adresin {failures} tanesinde beklenmeyen hata oluştu, tarama güvenilir değil.");
+        }
+
+        if (rateLimited)
+        {
+            logger.LogWarning(
+                "Provitamin: hız sınırı (429) görüldü, tarama {Attempted}/{Total} adreste durduruldu. {Found} ürün korunuyor.",
+                attempted, urls.Count, products.Count);
         }
 
         logger.LogInformation(
-            "Provitamin: {Total} adres tarandı, {Found} ürün alındı, {Missing} adres bulunamadı, {Failures} hata.",
-            urls.Count, products.Count, missing, failures);
+            "Provitamin: {Attempted}/{Total} adres tarandı, {Found} ürün alındı, {Missing} adres bulunamadı, {Failures} hata.",
+            attempted, urls.Count, products.Count, missing, failures);
 
         return products;
     }
@@ -193,6 +216,9 @@ public class ProvitaminScraper(HttpClient httpClient, ILogger<ProvitaminScraper>
         if (string.IsNullOrEmpty(name) || NonSupplementProductFilter.IsAccessoryOrApparel(name))
             return true;
 
+        if (IsBundle(name))
+            return true;
+
         var brand = ReadBrand(element);
         if (brand is null)
             return true;
@@ -214,6 +240,28 @@ public class ProvitaminScraper(HttpClient httpClient, ILogger<ProvitaminScraper>
             Seller: SellerName);
 
         return true;
+    }
+
+    /// <summary>
+    /// Birden çok ürünün bir arada satıldığı setler ("FITNESS PAKETİ - MEGA",
+    /// "HACİM PAKETİ - LARGE").
+    ///
+    /// Neden alınmıyor: tek bir fiyatı var ama içinde birden çok ürün var;
+    /// servis başına maliyet, gramaj ve protein yoğunluğu gibi bizim
+    /// ürettiğimiz ölçümlerin hiçbiri anlamlı çıkmıyor. Fiyat geçmişi tutmak da
+    /// yanıltıcı: setin içeriği değişince fiyat "düşmüş" görünür. Swiss
+    /// Nutrition'da aynı karar "Avantaj Paketleri" kategorisi için verilmişti;
+    /// Provitamin kategori bilgisi vermediği için ada bakılıyor.
+    ///
+    /// Canlı katalogla ölçüldü: 430 adresin yalnızca 14'ünde "paket" geçiyor ve
+    /// hepsi gerçekten set — yanlış pozitif yok.
+    /// </summary>
+    internal static bool IsBundle(string name)
+    {
+        // Türkçe harf tuzağı: "PAKETİ" içindeki noktalı İ, OrdinalIgnoreCase ile
+        // "i"ye katlanmıyor. Noktalı/noktasız ayrımı önce siliniyor.
+        var normalized = name.Replace('İ', 'i').Replace('I', 'ı').ToLowerInvariant();
+        return normalized.Contains("paketi", StringComparison.Ordinal);
     }
 
     private static bool IsProduct(JsonElement element)

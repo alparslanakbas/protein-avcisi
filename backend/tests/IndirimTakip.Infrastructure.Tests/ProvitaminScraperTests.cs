@@ -166,4 +166,92 @@ public class ProvitaminScraperTests
             return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.TooManyRequests));
         }
     }
+
+    [Theory]
+    [InlineData("FITNESS PAKETİ - MEGA")]
+    [InlineData("HACİM PAKETİ - LARGE")]
+    [InlineData("fitness paketi - small")]
+    public void CokUrunluSetlerAlinmaz(string ad)
+    {
+        // Tek fiyatı var ama içinde birden çok ürün: servis başı maliyet,
+        // gramaj ve protein yoğunluğu anlamsız çıkıyor. Setin içeriği
+        // değişince fiyat "düşmüş" görünüyor.
+        Assert.True(ProvitaminScraper.IsBundle(ad));
+    }
+
+    [Theory]
+    [InlineData("Dymatize Iso 100 Whey Protein 932 Gr")]
+    [InlineData("Big Joy Creatine Monohydrate 300 Gr")]
+    public void GercekUrunlerSetSanilmaz(string ad)
+    {
+        Assert.False(ProvitaminScraper.IsBundle(ad));
+    }
+
+    [Fact]
+    public async Task HizSiniriGorulunceOnaKadarToplananlarKorunur()
+    {
+        // REGRESYON: eskiden ilk 429'da exception fırlatılıyordu ve o ana kadar
+        // toplanan ürünler de kayboluyordu. 400. üründe gelen bir 429, 400
+        // başarılı isteği ve o günün fiyat noktalarını çöpe atıyordu; bir
+        // sonraki deneme ancak ertesi gece olduğu için fiyat geçmişinde tam bir
+        // gün boşluk kalıyordu.
+        var handler = new IkiUrunSonra429Handler();
+        using var http = new HttpClient(handler) { BaseAddress = new Uri("https://www.provitamin.com.tr/") };
+        var scraper = new ProvitaminScraper(http, NullLogger<ProvitaminScraper>.Instance);
+
+        var products = await scraper.ScrapeAsync();
+
+        Assert.Equal(2, products.Count);
+        // 429'dan sonra YENİ istek atılmamalı: sitemap + 2 ürün + 429 = 4.
+        Assert.Equal(4, handler.RequestCount);
+    }
+
+    private sealed class IkiUrunSonra429Handler : HttpMessageHandler
+    {
+        public int RequestCount { get; private set; }
+
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            RequestCount++;
+            if (RequestCount == 1)
+            {
+                const string sitemap = """
+                    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+                      <url><loc>https://www.provitamin.com.tr/urun-1</loc></url>
+                      <url><loc>https://www.provitamin.com.tr/urun-2</loc></url>
+                      <url><loc>https://www.provitamin.com.tr/urun-3</loc></url>
+                      <url><loc>https://www.provitamin.com.tr/urun-4</loc></url>
+                    </urlset>
+                    """;
+                return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+                {
+                    Content = new StringContent(sitemap),
+                });
+            }
+
+            if (RequestCount <= 3)
+            {
+                // Ham dizede interpolasyon YOK: JSON'daki ardışık "}}" ile
+                // $$ söz diziminin kapanış ayraçları çakışıyor.
+                const string sablon = """
+                    <script type="application/ld+json">
+                    {"@context":"https://schema.org/","@type":"Product",
+                     "name":"Test Whey Protein SIRA 1000 Gr",
+                     "brand":{"@type":"Brand","name":"Dymatize"},
+                     "offers":{"@type":"Offer","priceCurrency":"TRY","price":"1000",
+                     "availability":"https://schema.org/InStock"}}
+                    </script>
+                    """;
+                var html = sablon.Replace("SIRA", RequestCount.ToString());
+                return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+                {
+                    Content = new StringContent(html),
+                });
+            }
+
+            return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.TooManyRequests));
+        }
+    }
 }
