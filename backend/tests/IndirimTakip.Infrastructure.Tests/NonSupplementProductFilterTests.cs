@@ -69,4 +69,32 @@ public class NonSupplementProductFilterTests
     {
         Assert.False(NonSupplementProductFilter.IsAccessoryOrApparel(ad));
     }
+
+    [Theory]
+    // REGRESYON: bu altı ürün CANLIYA GİRDİ, kullanıcı ekran görüntüsüyle
+    // bildirdi. Hepsi listedeki bir kelimenin farklı yazımı/ekli hâliydi.
+    [InlineData("Just Likralı Antrenman Atleti")]
+    [InlineData("Just 8 Loop Strap")]
+    [InlineData("Protein 7 Pill Box -Tablet Saklama Kabı Aksesuar Protein7 Diğer")]
+    [InlineData("Protein 7 Powder Box -Toz Saklama Kabı Aksesuar Protein7 Diğer")]
+    [InlineData("Xpro Pill Box -Tablet Saklama Kabı Aksesuar Xpro Nutrition")]
+    [InlineData("Antrenman Havlusu 50x90 cm")]
+    public void CanliyaKacanAksesuarlarArtikElenir(string ad)
+    {
+        Assert.True(NonSupplementProductFilter.IsAccessoryOrApparel(ad));
+    }
+
+    [Theory]
+    // YANLIŞ POZİTİF KORUMASI: "Kutu"/"Box" meşru çoklu paketlerde geçiyor,
+    // kör silme bu ürünleri de götürürdü.
+    [InlineData("Fındıklı Protein Bar 16lı Kutu x 50 gram")]
+    [InlineData("SSN Command Quadro Whey 22 Gr x 40 Şase Kutu 880 Gr")]
+    [InlineData("SWISS WHEY GOLD DELUXE SERIES SAŞE 24 ADET - 1 Kutu / 24 Servis")]
+    [InlineData("PROTEİN BAR KARMA KUTU")]
+    // "atletik" bir aksesuar değil; ek desteği bunu yakalamamalı.
+    [InlineData("Atletik Performans Kompleksi 90 Kapsül")]
+    public void MesruUrunlerElenmiyor(string ad)
+    {
+        Assert.False(NonSupplementProductFilter.IsAccessoryOrApparel(ad));
+    }
 }
