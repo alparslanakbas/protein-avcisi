@@ -44,7 +44,13 @@
     </div>
 
     @if (brands().length > 0 || categories().length > 0) {
-      <div class="grid gap-6 border-b border-white/10 py-7 md:grid-cols-2">
+      <!-- Marka listesi TAM GENİŞLİK. Eskiden iki eşit sütundu (md:grid-cols-2)
+           ama iki taraf hiç dengeli değil: 69 marka bağlantısı sol yarıya
+           sıkışıp ~20 satıra yayılırken sağ yarıdaki 9 kategori 2 satır
+           tutuyor ve altı bomboş kalıyordu. Provitamin 24 marka daha
+           ekleyince göze battı. Tam genişlikte aynı liste yaklaşık yarı
+           yüksekte bitiyor. -->
+      <div class="space-y-6 border-b border-white/10 py-7">
         @if (brands().length > 0) {
           <div>
             <h2 class="text-[11px] font-bold uppercase tracking-[0.1em] text-white">Marka kampanyaları</h2>
