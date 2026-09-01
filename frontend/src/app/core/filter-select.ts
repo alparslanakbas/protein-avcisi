@@ -9,7 +9,11 @@
  *
  *   1. Kutu, filtre aktifken bile "Tüm markalar" yazıyordu — durum
  *      göstergesi gibi duran ama aslında placeholder olan bir kutu.
- *   2. "Tüm markalar"ı seçmek filtreyi temizlemiyordu. Kutunun değeri boş
+ *   2. Seçili değer kutuda İKİ KEZ görünüyordu: hem durum seçeneği hem de
+ *      listedeki gerçek seçenek olarak. Kutu bir "ekle" kontrolü olduğu için
+ *      zaten seçili olan artık listelenmiyor (şablonda süzülüyor); çıkarmak
+ *      için çip ya da "Tümü" kullanılıyor.
+ *   3. "Tüm markalar"ı seçmek filtreyi temizlemiyordu. Kutunun değeri boş
  *      dizeyken boş seçeneği tekrar seçmek bir DEĞİŞİKLİK olmadığı için
  *      tarayıcı `change` olayını hiç tetiklemiyor; üstelik tetiklense bile
  *      eski handler boş değeri yok sayıyordu.

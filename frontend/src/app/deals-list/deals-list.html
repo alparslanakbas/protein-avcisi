@@ -174,18 +174,24 @@
           <select aria-label="Markaya göre filtrele" class="pa-filter-control min-w-[150px] px-3 text-sm" [ngModel]="brandSelectValue()" (ngModelChange)="onBrandSelect($event)">
             <option value="">Tüm markalar</option>
             @if (selectedBrands().size > 0) { <option [value]="brandSelectValue()">{{ brandSelectLabel() }}</option> }
-            @for (brand of availableBrands(); track brand) { <option [value]="brand">{{ brand }}</option> }
+            @for (brand of availableBrands(); track brand) {
+              @if (!selectedBrands().has(brand)) { <option [value]="brand">{{ brand }}</option> }
+            }
           </select>
           <select aria-label="Kategoriye göre filtrele" class="pa-filter-control min-w-[160px] px-3 text-sm" [ngModel]="categorySelectValue()" (ngModelChange)="onCategorySelect($event)">
             <option value="">Tüm kategoriler</option>
             @if (selectedCategories().size > 0) { <option [value]="categorySelectValue()">{{ categorySelectLabel() }}</option> }
-            @for (category of availableCategories(); track category) { <option [value]="category">{{ categoryLabel(category) }}</option> }
+            @for (category of availableCategories(); track category) {
+              @if (!selectedCategories().has(category)) { <option [value]="category">{{ categoryLabel(category) }}</option> }
+            }
           </select>
           @if (availableSellers().length > 0) {
             <select aria-label="Satıcıya göre filtrele" class="pa-filter-control min-w-[170px] px-3 text-sm" [ngModel]="sellerSelectValue()" (ngModelChange)="onSellerSelect($event)">
               <option value="">Tüm satıcılar</option>
               @if (selectedSellers().size > 0) { <option [value]="sellerSelectValue()">{{ sellerSelectLabel() }}</option> }
-              @for (seller of availableSellers(); track seller) { <option [value]="seller">{{ seller }}</option> }
+              @for (seller of availableSellers(); track seller) {
+                @if (!selectedSellers().has(seller)) { <option [value]="seller">{{ seller }}</option> }
+              }
             </select>
           }
           <select aria-label="Ürünleri sırala" [ngModel]="sortBy()" (ngModelChange)="onSortChange($event)" class="pa-filter-control min-w-[160px] px-3 text-sm">
