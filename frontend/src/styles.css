@@ -1775,7 +1775,13 @@ app-preferred-products {
   position: relative;
   display: grid;
   min-width: clamp(255px, 24vw, 330px);
-  height: 106px;
+  /* SABİT yükseklik DEĞİL: ürün adı iki satıra düştüğünde içerik 120px'e
+   * çıkıyor ve `overflow: hidden` yüzünden FİYAT SATIRI kesiliyordu
+   * (kullanıcı bildirdi; ölçüldü: masaüstünde 6 karttan 4'ü, mobilde
+   * hepsi taşıyordu). min-height ile kart büyüyebiliyor; şerit flex
+   * olduğu için tüm kartlar en uzununa eşitleniyor, yani hizalama
+   * bozulmuyor. */
+  min-height: 106px;
   grid-template-columns: 88px minmax(0, 1fr) 28px;
   align-items: center;
   gap: 11px;
@@ -1953,7 +1959,7 @@ app-preferred-products {
   .pa-preferred-head h2 { font-size: 16px; }
   .pa-preferred-tabs { margin-top: 11px; overflow-x: auto; scrollbar-width: none; }
   .pa-preferred-tabs button { min-width: 0; flex: 1 1 0; padding-inline: 5px; font-size: 9px; }
-  .pa-preferred-card { min-width: min(82vw, 292px); height: 100px; grid-template-columns: 78px minmax(0, 1fr) 26px; gap: 9px; }
+  .pa-preferred-card { min-width: min(82vw, 292px); min-height: 100px; grid-template-columns: 78px minmax(0, 1fr) 26px; gap: 9px; }
   .pa-preferred-image { width: 78px; height: 78px; }
   .pa-preferred-arrow { display: none; }
   .pa-preferred-hint { margin-top: 6px; font-size: 9px; }
