@@ -115,4 +115,34 @@ public class NonSupplementProductFilterTests
     {
         Assert.True(NonSupplementProductFilter.IsAccessoryOrApparel(ad));
     }
+
+    // HEDİYE SHAKER: aksesuar hediyeli TAKVİYE, aksesuar değil. Adlar gerçek
+    // kataloglardan (Imperium 7.200 TL'lik set, HIQ başlangıç paketleri).
+    [Theory]
+    [InlineData("Kilo Aldırıcı Ultra Set - Shaker Hediyeli")]
+    [InlineData("HIQ Fitness Başlangıç Paketi + Shaker")]
+    [InlineData("HIQ Amino Başlangıç Paketi + Shaker")]
+    [InlineData("HIQ Enerji Başlangıç Paketi + Shaker")]
+    public void ShakerHediyeliTakviyePaketiElenmiyor(string ad)
+    {
+        Assert.False(NonSupplementProductFilter.IsAccessoryOrApparel(ad));
+    }
+
+    // İstisna DAR olmalı: shaker'ın KENDİSİ ürünse hâlâ eleniyor.
+    [Theory]
+    [InlineData("Renkli Yüksek Kalite Shaker 550cc")]
+    [InlineData("Space Shaker")]
+    [InlineData("Prime Nutrition Shaker 500 ml.")]
+    [InlineData("Batman Shaker")]
+    public void GercekShakerHalaEleniyor(string ad)
+    {
+        Assert.True(NonSupplementProductFilter.IsAccessoryOrApparel(ad));
+    }
+
+    // İstisna YALNIZCA shaker için: hediyeli de olsa çanta çantadır.
+    [Fact]
+    public void HediyeliCantaYineDeEleniyor()
+    {
+        Assert.True(NonSupplementProductFilter.IsAccessoryOrApparel("Protein Paketi - Spor Çantası Hediyeli"));
+    }
 }

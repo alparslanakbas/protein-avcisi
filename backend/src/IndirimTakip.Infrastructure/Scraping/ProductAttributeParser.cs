@@ -85,7 +85,7 @@ public static partial class ProductAttributeParser
         // "bar" BİLİNÇLİ OLARAK burada YOK: alt dizi olarak arandığı için
         // "Barbekü Baharatı"yı atıştırmalık sayıyordu. Bar biçimi artık
         // yukarıda kelime sınırlı SnackBarFormRegex ile yakalanıyor.
-        ("saglikli-atistirmaliklar", ["cookie", "kurabiye", "atistirmalik", "rice cake", "pirinc", "fıstık ezmesi", "fıstığı ezmesi", "peanut butter", "ekmek"]),
+        ("saglikli-atistirmaliklar", ["cookie", "kurabiye", "atistirmalik", "rice cake", "pirinc", "fıstık ezmesi", "fıstığı ezmesi", "fındık ezmesi", "fındığı ezmesi", "peanut butter", "ekmek"]),
     ];
 
     /// <summary>

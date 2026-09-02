@@ -12,8 +12,32 @@ namespace IndirimTakip.Infrastructure.Scraping;
 // isteğiyle kapsam dışı bırakıldı (bkz. CLAUDE.md, 2026-08-23).
 public static partial class NonSupplementProductFilter
 {
-    public static bool IsAccessoryOrApparel(string productName) =>
-        AccessoryKeywordRegex().IsMatch(productName);
+    public static bool IsAccessoryOrApparel(string productName)
+    {
+        var match = AccessoryKeywordRegex().Match(productName);
+        if (!match.Success)
+            return false;
+
+        // HEDİYE SHAKER İSTİSNASI. Markalar takviye paketlerinin yanında
+        // shaker veriyor ve adına yazıyor: "Kilo Aldırıcı Ultra Set - Shaker
+        // Hediyeli" (7.200 TL), "HIQ Fitness Başlangıç Paketi + Shaker".
+        // Bunlar aksesuar değil, aksesuar HEDİYELİ takviye — elenirlerse
+        // gerçek ürün kaybediyoruz.
+        //
+        // Katalog tarandı (2 Eylül, 1456 ad): "shaker" geçen ÜÇ ürünün üçü de
+        // bu tipte, gerçek shaker hiç yok (onlar zaten yutulurken eleniyor).
+        // Gerçek shaker'larda da bu işaretler hiç geçmiyor — o gün görülenler:
+        // "Renkli Yüksek Kalite Shaker 550cc", "Space Shaker",
+        // "Prime Nutrition Shaker 500 ml.".
+        //
+        // İstisna DAR: yalnızca eşleşen tek kelime "shaker" olduğunda ve adda
+        // hediye/ekleme işareti varken geçerli. "Spor Çantası Hediyeli" gibi
+        // bir ad hâlâ eleniyor, çünkü orada eşleşen kelime "çanta".
+        var yalnizcaShaker = match.Value.StartsWith("shaker", StringComparison.OrdinalIgnoreCase)
+            && AccessoryKeywordRegex().Matches(productName).Count == 1;
+
+        return !(yalnizcaShaker && GiftedAccessoryRegex().IsMatch(productName));
+    }
 
     // Not: liste, kaçan ürünler bulundukça genişliyor — korse/eşofman/çanta
     // 28 Ağustos'ta eklendi (ilk temizlik turunda gözden kaçmışlardı).
@@ -63,4 +87,12 @@ public static partial class NonSupplementProductFilter
         @"\b(t-?shirt|sweatshirt|hoodie|şapka[a-zçğıöşü]*|beyzbol|pillbox|pill ?box|powder ?box|saklama kab[ıi]|bileklik[a-zçğıöşü]*|havlu[a-zçğıöşü]*|buff|atlet(i|ler|leri)?|anahtarlık[a-zçğıöşü]*|maskot|huni[a-zçğıöşü]*|shaker[a-zçğıöşü]*|şort[a-zçğıöşü]*|korse[a-zçğıöşü]*|eşofman[a-zçğıöşü]*|esofman[a-z]*|çanta[a-zçğıöşü]*|canta(s[ıi]|lar|lar[ıi])?|handbag|direnç band[a-zçğıöşü]*|direnc band[a-z]*|loop band[a-z]*|strap[a-z]*|wrist wrap[a-z]*|ağırlık kemer[a-zçğıöşü]*|agirlik kemer[a-z]*|dip belt[a-z]*|eldiven[a-zçğıöşü]*|hap kutusu|bakım seti|bakim seti|seyahat seti|basmati|himalaya tuzu|hardal|sriracha|sweet drops)\b",
         RegexOptions.IgnoreCase)]
     private static partial Regex AccessoryKeywordRegex();
+
+    /// <summary>
+    /// "Hediyeli" / "+ Shaker" — aksesuarın ürünün KENDİSİ değil, yanında
+    /// verilen bir ek olduğunu söyleyen işaretler. Türkçe noktalı İ tuzağı
+    /// yok (hepsi ASCII harf), IgnoreCase yeterli.
+    /// </summary>
+    [GeneratedRegex(@"(hediye[a-zçğıöşü]*|\+\s*shaker)", RegexOptions.IgnoreCase)]
+    private static partial Regex GiftedAccessoryRegex();
 }
