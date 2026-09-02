@@ -55,12 +55,6 @@ public class SupraProteinScraper(HttpClient httpClient) : IBrandScraper
                 if (NonSupplementProductFilter.IsAccessoryOrApparel(product.Title))
                     continue;
 
-                // Çok ürünlü setler ("Sporcu Paketi" 1990 TL, "4'lü Deneme
-                // Seti" 259 TL) — servis başı fiyatı ve gerçek indirim
-                // hesabını bozuyorlar. Katalogdaki dördünü de yakalıyor.
-                if (BundleProductFilter.IsBundle(product.Title))
-                    continue;
-
                 // Stokta olan varyant varsa o, yoksa ilki: stokta olmayan ürün
                 // taramadan DÜŞMEMELİ, yoksa fiyat geçmişinde boşluk oluşur.
                 var variant = product.Variants.Find(v => v.Available) ?? product.Variants.FirstOrDefault();

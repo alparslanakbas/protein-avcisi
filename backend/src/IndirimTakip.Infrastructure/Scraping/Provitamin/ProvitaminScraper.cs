@@ -221,6 +221,17 @@ public class ProvitaminScraper(HttpClient httpClient, ILogger<ProvitaminScraper>
         if (string.IsNullOrEmpty(name) || NonSupplementProductFilter.IsAccessoryOrApparel(name))
             return true;
 
+        // PAKET SÜZGECİ BU KAYNAĞA ÖZEL — genel kural DEĞİL.
+        //
+        // Sitenin geneli çok ürünlü paketleri TUTUYOR: 2 Eylül'de ölçüldü,
+        // canlıda dokuz markada 102 paket ürünü var (BigJoy 36, West 25,
+        // Xpro 13...). Onlar birbirinden ayrı, gerçek ürünler.
+        //
+        // Provitamin'inkiler farklı: 15 adresin hepsi aynı ailenin beden
+        // varyantı ve numaralı tekrarı — fitness-paketi-small-4,
+        // -medium-2, -large-6, -mega, -x-large... Yani ürün çeşidi değil,
+        // aynı şeyin kopyaları. Tekrar eden içerik çalışmasında (556ca45)
+        // uğraştığımız gürültünün aynısı, o yüzden burada eleniyor.
         if (BundleProductFilter.IsBundle(name))
             return true;
 

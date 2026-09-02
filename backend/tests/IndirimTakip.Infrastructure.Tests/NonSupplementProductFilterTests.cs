@@ -93,8 +93,26 @@ public class NonSupplementProductFilterTests
     [InlineData("PROTEİN BAR KARMA KUTU")]
     // "atletik" bir aksesuar değil; ek desteği bunu yakalamamalı.
     [InlineData("Atletik Performans Kompleksi 90 Kapsül")]
+    // "canta[a-z]*" kalıbı "CANTAloupe"u yakalıyordu — katalogdaki gerçek
+    // kurban. Bir whey proteini spor çantası sanıp sessizce elerdi; Nois
+    // scraper'ı bu yüzden ortak süzgeci hiç kullanmıyordu.
+    [InlineData("Nois Whey Rex 900G Protein Tozu - Cantaloupe")]
+    [InlineData("BCAA Cantaloupe Aromalı")]
+    [InlineData("Cantaloupe")]
     public void MesruUrunlerElenmiyor(string ad)
     {
         Assert.False(NonSupplementProductFilter.IsAccessoryOrApparel(ad));
+    }
+
+    // Cantaloupe düzeltmesi gerçek çantaları kaçırmamalı — ek listesi
+    // daraltıldı ama kapsam korundu.
+    [Theory]
+    [InlineData("Spor Çantası")]
+    [InlineData("Hardline Spor Cantasi")]
+    [InlineData("Gym Canta")]
+    [InlineData("Antrenman Cantalari")]
+    public void GercekCantalarHalaEleniyor(string ad)
+    {
+        Assert.True(NonSupplementProductFilter.IsAccessoryOrApparel(ad));
     }
 }

@@ -1,5 +1,4 @@
 using IndirimTakip.Infrastructure.Scraping.Gnc;
-using IndirimTakip.Infrastructure.Scraping;
 
 namespace IndirimTakip.Infrastructure.Tests;
 
@@ -46,31 +45,5 @@ public class GncScraperTests
     public void MakulOlmayanServisSayisiniAlmaz(string ad)
     {
         Assert.Null(GncScraper.ExtractServingsPerPackage(ad));
-    }
-
-    // Altı çok ürünlü set kataloğun içinde duruyor ve servis başı fiyatı
-    // bozuyor. Süzgeç Provitamin'den yeniden kullanılıyor; burada GNC'nin
-    // GERÇEK adlarıyla, gerçek ürünlerin elenmediği de dahil doğrulanıyor.
-    [Theory]
-    [InlineData("Spor Rutini Paketi")]
-    [InlineData("Antrenman Paketi")]
-    [InlineData("Kas Desteği Paketi")]
-    [InlineData("Zihin Paketi")]
-    [InlineData("Kilo Kontrolü Paketi")]
-    [InlineData("Cilt Sağlığı Paketi")]
-    public void CokUrunluSetleriEler(string ad)
-    {
-        Assert.True(BundleProductFilter.IsBundle(ad));
-    }
-
-    [Theory]
-    [InlineData("WHEY Protein Isolate - Çikolata Aromalı")]
-    [InlineData("Creatine MonoHydrate – 510 g (100 servis)")]
-    [InlineData("GNC Pro Pre-W-Out – 339 g")]
-    [InlineData("GNC CLA+CARNITINE ORMAN MEYVESİ AROMALI")]
-    [InlineData("Vitamin B12 1000 MCG - 100 Tablet")]
-    public void GercekUrunleriElemez(string ad)
-    {
-        Assert.False(BundleProductFilter.IsBundle(ad));
     }
 }

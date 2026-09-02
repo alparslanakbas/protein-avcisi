@@ -51,8 +51,16 @@ public static partial class NonSupplementProductFilter
     // "havlu" kalıbı "havlusu" ile eşleşmiyor. Ek alabilen isimlere
     // `[a-zçğıöşü]*` eklendi — kodda bu numara zaten kullanılıyordu
     // (`eldiven[a-zçğıöşü]*`), sadece tutarsız uygulanmıştı.
+    // "canta[a-z]*" DEĞİL: o hâli "Cantaloupe"u yakalıyordu ve katalogda
+    // gerçek bir kurban var — "Nois Whey Rex 900G Protein Tozu - Cantaloupe".
+    // Bir whey proteini spor çantası sanıp sessizce eleyecekti. Nois scraper'ı
+    // bu yüzden ortak süzgeci hiç kullanmıyor, kaynağın kendi "Aksesuar"
+    // kategorisine bakıyor. Kalıp artık AÇIK EK LİSTESİ kullanıyor —
+    // "atlet(i|ler|leri)?" için daha önce verilen kararın aynısı: Türkçe ek
+    // serbest bırakılınca başka kelimelerin içine denk geliyor.
+    // 1416 ürünlük katalogla doğrulandı: yalnızca gerçek aksesuarlar kalıyor.
     [GeneratedRegex(
-        @"\b(t-?shirt|sweatshirt|hoodie|şapka[a-zçğıöşü]*|beyzbol|pillbox|pill ?box|powder ?box|saklama kab[ıi]|bileklik[a-zçğıöşü]*|havlu[a-zçğıöşü]*|buff|atlet(i|ler|leri)?|anahtarlık[a-zçğıöşü]*|maskot|huni[a-zçğıöşü]*|shaker[a-zçğıöşü]*|şort[a-zçğıöşü]*|korse[a-zçğıöşü]*|eşofman[a-zçğıöşü]*|esofman[a-z]*|çanta[a-zçğıöşü]*|canta[a-z]*|handbag|direnç band[a-zçğıöşü]*|direnc band[a-z]*|loop band[a-z]*|strap[a-z]*|wrist wrap[a-z]*|ağırlık kemer[a-zçğıöşü]*|agirlik kemer[a-z]*|dip belt[a-z]*|eldiven[a-zçğıöşü]*|hap kutusu|bakım seti|bakim seti|seyahat seti|basmati|himalaya tuzu|hardal|sriracha|sweet drops)\b",
+        @"\b(t-?shirt|sweatshirt|hoodie|şapka[a-zçğıöşü]*|beyzbol|pillbox|pill ?box|powder ?box|saklama kab[ıi]|bileklik[a-zçğıöşü]*|havlu[a-zçğıöşü]*|buff|atlet(i|ler|leri)?|anahtarlık[a-zçğıöşü]*|maskot|huni[a-zçğıöşü]*|shaker[a-zçğıöşü]*|şort[a-zçğıöşü]*|korse[a-zçğıöşü]*|eşofman[a-zçğıöşü]*|esofman[a-z]*|çanta[a-zçğıöşü]*|canta(s[ıi]|lar|lar[ıi])?|handbag|direnç band[a-zçğıöşü]*|direnc band[a-z]*|loop band[a-z]*|strap[a-z]*|wrist wrap[a-z]*|ağırlık kemer[a-zçğıöşü]*|agirlik kemer[a-z]*|dip belt[a-z]*|eldiven[a-zçğıöşü]*|hap kutusu|bakım seti|bakim seti|seyahat seti|basmati|himalaya tuzu|hardal|sriracha|sweet drops)\b",
         RegexOptions.IgnoreCase)]
     private static partial Regex AccessoryKeywordRegex();
 }

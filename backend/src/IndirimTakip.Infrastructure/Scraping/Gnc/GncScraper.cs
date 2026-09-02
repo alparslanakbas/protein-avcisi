@@ -86,24 +86,6 @@ public partial class GncScraper(HttpClient httpClient) : IBrandScraper
                 if (NonSupplementProductFilter.IsAccessoryOrApparel(product.Name))
                     continue;
 
-                // Tek kutuda birden çok ürün satan setleri ele ("Kas Desteği
-                // Paketi", 17.951 TL) — servis başı fiyatı ve "gerçek indirim"
-                // hesabını bozuyorlar. Provitamin'de aynı karar verilmişti
-                // (`2b61b56`); isim kontrolü oradan yeniden kullanılıyor,
-                // Türkçe noktalı İ tuzağı orada zaten çözülmüş.
-                //
-                // Bu kararı kataloğa karşı DOĞRULADIM (1 Eylül): altı paketin
-                // hepsinin adı "… Paketi" ile bitiyor ve gerçek ürünlerin
-                // hiçbirinde "paket" geçmiyor. Bağımsız ikinci sinyal olarak
-                // GNC'nin kendi kategorileri de aynı altısını gösteriyor —
-                // gerçek ürünlerin hepsinde anlamlı bir kategori var
-                // ("Sporcu Destek Ürünleri", "Vitamin & Mineral Takviyeleri"),
-                // paketlerde yalnızca vitrin kategorileri ("Çok Satanlar").
-                // Kategori KOŞUL olarak kullanılmıyor: kategorisiz ama gerçek
-                // bir ürün eklenirse sessizce kaybetmek istemeyiz.
-                if (BundleProductFilter.IsBundle(product.Name))
-                    continue;
-
                 var variant = product.Variants.Find(v => v.Stocks.Sum(s => s.StockCount) > 0)
                     ?? product.Variants.FirstOrDefault();
                 if (variant is null || variant.Prices.Count == 0)

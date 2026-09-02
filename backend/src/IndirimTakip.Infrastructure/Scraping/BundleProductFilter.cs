@@ -6,10 +6,16 @@ namespace IndirimTakip.Infrastructure.Scraping;
 /// Tek kutuda BİRDEN ÇOK ÜRÜN satan setleri tanır.
 ///
 /// Bunlar takviye dışı değil — içindekiler gerçek ürün — ama tek bir fiyat
-/// noktası olarak saklamak iki şeyi bozuyor: servis başı fiyat hesabı
-/// (kaç servis olduğu belirsiz) ve "gerçek indirim" karşılaştırması (paketin
-/// içeriği zamanla değişebiliyor). İlk olarak Provitamin'de karar verildi
-/// (`2b61b56`), sonra GNC ve Supra Protein'de de aynı durum çıktı.
+/// DİKKAT — BU GENEL BİR POLİTİKA DEĞİL. Sitenin yerleşik davranışı paketleri
+/// TUTMAK: 2 Eylül'de ölçüldü, canlıda dokuz markada 102 paket ürünü duruyor
+/// (BigJoy 36, West Nutrition 25, Xpro 13...) ve hiçbirinde servis verisi
+/// olmadığı için servis başı fiyat hesabını da bozmuyorlar.
+///
+/// Süzgeç yalnızca paketleri AYNI ŞEYİN KOPYALARI olan kaynaklarda kullanılıyor.
+/// Şu an tek kullanıcı Provitamin: oradaki 15 adres bir ürün ailesinin beden
+/// varyantları ve numaralı tekrarları (fitness-paketi-small-4, -medium-2,
+/// -large-6...). Yeni bir kaynağa eklemeden önce o kaynağın paketlerinin
+/// gerçekten ayrı ürünler mi yoksa kopyalar mı olduğuna BAKILMALI.
 ///
 /// Kalıp DAR tutuluyor: yalnızca "paket"/"set" sözcüğünün kendisi, ek almış
 /// hâlleriyle. Katalog tarandı (2 Eylül 2026) — "set" gövdesi mevcut 2009
