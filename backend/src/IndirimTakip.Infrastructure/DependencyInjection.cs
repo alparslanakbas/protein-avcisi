@@ -7,6 +7,7 @@ using IndirimTakip.Infrastructure.Scraping.Hardline;
 using IndirimTakip.Infrastructure.Scraping.Hiq;
 using IndirimTakip.Infrastructure.Scraping.BigJoy;
 using IndirimTakip.Infrastructure.Scraping.CommanderNutrition;
+using IndirimTakip.Infrastructure.Scraping.DrSupplement;
 using IndirimTakip.Infrastructure.Scraping.Gnc;
 using IndirimTakip.Infrastructure.Scraping.Heyday;
 using IndirimTakip.Infrastructure.Scraping.Nois;
@@ -138,6 +139,14 @@ public static class DependencyInjection
             client.Timeout = TimeSpan.FromSeconds(30);
         });
         services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<NoisScraper>());
+
+        // Dr Supplement — İkas public storefront GraphQL kataloğu.
+        services.AddHttpClient<DrSupplementScraper>(client =>
+        {
+            client.BaseAddress = new Uri("https://api.myikas.com/");
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
+        services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<DrSupplementScraper>());
 
         // GNC Türkiye — ProteinOcean/Yeşilmarka ile aynı ikas storefront API'si.
         services.AddHttpClient<GncScraper>(client =>
