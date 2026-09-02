@@ -4,8 +4,9 @@ import { forkJoin } from 'rxjs';
 
 import { brandSlug } from '../core/brand-slug';
 import { CATEGORY_LABELS } from '../core/category-labels';
-import { BrandCategoryPair, DealsService } from '../core/deals.service';
+import { BrandCategoryPair, BrandProductCount, DealsService } from '../core/deals.service';
 import { PageMetaService } from '../core/page-meta.service';
+import { normalizeSearchText } from '../core/search-normalize';
 import { SiteHeader } from '../site-header/site-header';
 
 type BrandSortMode = 'product-count' | 'name';
@@ -119,9 +120,10 @@ export class BrandListPage implements OnInit {
     forkJoin({
       filters: this.dealsService.getFilterOptions(),
       pairs: this.dealsService.getBrandCategoryPairs(),
+      counts: this.dealsService.getBrandProductCounts(),
     }).subscribe({
-      next: ({ filters, pairs }) => {
-        const items = this.buildBrandItems(filters.brands, pairs);
+      next: ({ filters, pairs, counts }) => {
+        const items = this.buildBrandItems(filters.brands, pairs, counts);
         this.brands.set(items);
         const preferred = items.find((brand) => brand.name === 'ProteinOcean') ?? items[0];
         this.selectedSlug.set(preferred?.slug ?? '');
@@ -166,7 +168,11 @@ export class BrandListPage implements OnInit {
     this.failedLogos.update((current) => new Set([...current, slug]));
   }
 
-  private buildBrandItems(brandNames: string[], pairs: BrandCategoryPair[]): BrandDirectoryItem[] {
+  private buildBrandItems(
+    brandNames: string[],
+    pairs: BrandCategoryPair[],
+    counts: BrandProductCount[],
+  ): BrandDirectoryItem[] {
     const categoriesByBrand = new Map<string, Map<string, number>>();
 
     for (const pair of pairs) {
@@ -174,6 +180,12 @@ export class BrandListPage implements OnInit {
       categories.set(pair.category, pair.productCount);
       categoriesByBrand.set(pair.brandName, categories);
     }
+
+    // Ürün sayısı kategori çiftlerinden TOPLANMIYOR: o liste yalnızca
+    // kategorisi olan ürünleri sayıyor ve marka sayfasındaki rakamdan
+    // sapıyordu (HIQ dizinde 85, kendi sayfasında 113). Kategori çiftleri
+    // yalnızca kategori çipleri için kullanılıyor.
+    const countByBrand = new Map(counts.map((row) => [row.brandName, row.productCount]));
 
     return brandNames
       .map((name) => {
@@ -188,7 +200,7 @@ export class BrandListPage implements OnInit {
         return {
           name,
           slug: brandSlug(name),
-          productCount: categories.reduce((total, category) => total + category.productCount, 0),
+          productCount: countByBrand.get(name) ?? 0,
           categories,
           logoUrl: OFFICIAL_BRAND_LOGOS[name] ?? null,
           previewLogoUrl: OFFICIAL_BRAND_WORDMARKS[name] ?? OFFICIAL_BRAND_LOGOS[name] ?? null,
@@ -201,10 +213,9 @@ export class BrandListPage implements OnInit {
     this.selectedSlug.set(this.pageBrands()[0]?.slug ?? '');
   }
 
+  // T\u00fcrk\u00e7e harf tuza\u011f\u0131 i\u00e7in ortak yard\u0131mc\u0131 \u2014 gerek\u00e7esi ve testleri
+  // `core/search-normalize.ts` i\u00e7inde.
   private normalize(value: string): string {
-    return value
-      .toLocaleLowerCase('tr-TR')
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '');
+    return normalizeSearchText(value);
   }
 }

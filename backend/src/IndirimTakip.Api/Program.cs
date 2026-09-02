@@ -371,6 +371,15 @@ app.MapGet("/api/brand-category-pairs", async (DealsQueryService deals, Cancella
     return Results.Ok(result);
 }).CacheOutput(PublicDataCachePolicy);
 
+// Markalar dizini (/markalar) — marka başına ürün sayısı, tek istekte.
+// Dizin bu sayıyı brand-category-pairs'ı toplayarak hesaplıyordu ve
+// kategorisiz ürünleri kaçırıyordu; artık marka sayfasıyla aynı tanım.
+app.MapGet("/api/brand-product-counts", async (DealsQueryService deals, CancellationToken ct) =>
+{
+    var result = await deals.GetBrandProductCountsAsync(ct);
+    return Results.Ok(result);
+}).CacheOutput(PublicDataCachePolicy);
+
 // Hesaplayıcı tablosundaki marka çipleri — yalnızca o kategoride servis
 // başı fiyatı hesaplanabilen ürünü olan markalar.
 app.MapGet("/api/best-value-brands", async (string? category, DealsQueryService deals, CancellationToken ct) =>

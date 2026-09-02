@@ -17,6 +17,14 @@ export interface BrandCategoryPair {
   productCount: number;
 }
 
+// Markalar dizinindeki ürün sayısı. Marka × kategori çiftlerini TOPLAMAK
+// yanlış sonuç veriyor (o liste yalnızca kategorisi olan ürünleri sayıyor),
+// bu yüzden ayrı bir uç var — marka sayfasıyla aynı tanım.
+export interface BrandProductCount {
+  brandName: string;
+  productCount: number;
+}
+
 export interface DealsQuery {
   brands?: string[];
   sellers?: string[];
@@ -126,6 +134,12 @@ export class DealsService {
   // kombinasyona sayfa/link üretilmiyor.
   getBrandCategoryPairs(): Observable<BrandCategoryPair[]> {
     return this.http.get<BrandCategoryPair[]>(`${API_BASE_URL}/api/brand-category-pairs`);
+  }
+
+  // Markalar dizinindeki ürün sayıları — marka sayfasındaki rakamla aynı
+  // tanım (aktif marka + bayat olmayan ürün).
+  getBrandProductCounts(): Observable<BrandProductCount[]> {
+    return this.http.get<BrandProductCount[]>(`${API_BASE_URL}/api/brand-product-counts`);
   }
 
   // Ürün kartlarındaki mini sparkline'lar için toplu istek — bir sayfa

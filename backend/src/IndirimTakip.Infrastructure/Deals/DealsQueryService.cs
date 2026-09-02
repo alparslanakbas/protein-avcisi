@@ -695,6 +695,39 @@ public partial class DealsQueryService(AppDbContext db, IOptions<AffiliateOption
             .ToList();
     }
 
+    // Markalar dizini (/markalar) için — marka başına takip edilen ürün
+    // sayısı, TEK sorguda.
+    //
+    // GetBrandCategoryPairsAsync'i toplayarak bu sayıya ulaşılamaz: o liste
+    // `p.Category != null` şartı taşıyor (boş kesişim sayfası üretmemek için,
+    // orada doğru). Dizin sayfası onu toplayınca kategorisiz ürünler
+    // düşüyordu — HIQ 113 yerine 85, katalog genelinde 414 ürün eksik ve
+    // hiç kategorisi olmayan üç marka "0 ürün" görünüyordu.
+    //
+    // Buradaki şart GetBrandStatsAsync ile BİREBİR AYNI (aktif marka + bayat
+    // olmayan ürün); marka sayfası ile dizin artık aynı rakamı veriyor.
+    // Değiştirilirse ikisi ayrışır — o yüzden ikisi birlikte düşünülmeli.
+    public async Task<IReadOnlyList<BrandProductCountDto>> GetBrandProductCountsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var staleSince = DateTimeOffset.UtcNow.Subtract(StaleThreshold);
+
+        var rows = await (
+            from p in db.Products
+            join b in db.Brands on p.BrandId equals b.Id
+            where b.IsActive
+                  && p.PriceHistories.OrderByDescending(ph => ph.ScrapedAt).Select(ph => ph.ScrapedAt).FirstOrDefault() >= staleSince
+            group p by b.Name into g
+            select new BrandProductCountDto(g.Key, g.Count()))
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+        return rows
+            .OrderByDescending(r => r.ProductCount)
+            .ThenBy(r => r.BrandName)
+            .ToList();
+    }
+
     // Hesaplayıcı sayfasındaki marka çipleri için — o kategoride servis
     // başı fiyatı GERÇEKTEN hesaplanabilen ürünü olan markalar. Genel
     // /api/filters listesini kullanmak yanıltıcı olurdu: bir markanın o
