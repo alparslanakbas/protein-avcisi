@@ -12,7 +12,7 @@ namespace IndirimTakip.Infrastructure.Scraping.Biofitle;
 /// </summary>
 public class BiofitleScraper(HttpClient httpClient) : IBrandScraper
 {
-    public string BrandName => "BioFit";
+    public string BrandName => "Biofit";
     public string BaseUrl => "https://biofitle.com";
 
     private const string MerchantId = "37e283dd-51a1-43e4-9b9f-e5acaeb63164";

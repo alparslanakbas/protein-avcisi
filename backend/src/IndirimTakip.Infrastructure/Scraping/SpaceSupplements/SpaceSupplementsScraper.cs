@@ -24,7 +24,7 @@ public partial class SpaceSupplementsScraper(
     HttpClient httpClient,
     ILogger<SpaceSupplementsScraper> logger) : IBrandScraper
 {
-    public string BrandName => "Space";
+    public string BrandName => "Space Gym Supplements";
     public string BaseUrl => "https://spacegymsupplements.com";
 
     private const string SitemapPath = "sitemap.xml";
