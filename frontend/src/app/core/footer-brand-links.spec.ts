@@ -20,6 +20,10 @@ describe('showFooterBrandLinks', () => {
     expect(showFooterBrandLinks('/kategori/kreatin')).toBe(true);
   });
 
+  it('markalar dizininde aynı listeyi footer\'da tekrarlamaz', () => {
+    expect(showFooterBrandLinks('/markalar')).toBe(false);
+  });
+
   it('adı benzeyen ama farklı olan yollar etkilenmez', () => {
     expect(showFooterBrandLinks('/urunler')).toBe(true);
     expect(showFooterBrandLinks('/karsilastir-urun/263-1126')).toBe(true);

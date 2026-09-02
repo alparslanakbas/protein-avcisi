@@ -1493,6 +1493,31 @@ body {
   margin-inline: auto;
 }
 
+.pa-nav-link {
+  position: relative;
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  color: inherit;
+  transition: color 160ms ease;
+}
+
+.pa-nav-link:hover,
+.pa-nav-link.is-active {
+  color: #fff;
+}
+
+.pa-nav-link.is-active::after {
+  position: absolute;
+  right: 0;
+  bottom: -20px;
+  left: 0;
+  height: 2px;
+  border-radius: 999px;
+  background: #8f80ff;
+  content: '';
+}
+
 .pa-brand-mark {
   display: inline-flex;
   width: 36px;

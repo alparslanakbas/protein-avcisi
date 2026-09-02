@@ -13,7 +13,9 @@
  *
  * Liste ana sayfada ve marka/kategori sayfalarında AYNEN duruyor: Google
  * marka sayfalarını oradan zaten buluyor, kaybolan bir giriş noktası yok.
+ * Yeni /markalar dizini bütün markaları asıl içeriğinde zaten sunduğu için
+ * aynı listenin footer'da ikinci kez tekrarlanması o sayfada engelleniyor.
  */
 export function showFooterBrandLinks(path: string): boolean {
-  return !path.startsWith('/urun/') && !path.startsWith('/urun-inceleme/');
+  return path !== '/markalar' && !path.startsWith('/urun/') && !path.startsWith('/urun-inceleme/');
 }

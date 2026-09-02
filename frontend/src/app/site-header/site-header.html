@@ -10,7 +10,7 @@
          yaptığını sanıp ana sayfaya düşüyordu. Ürün listesi bu sayfalarda
          olmadığı için arama, sonucu gösterebilen ana sayfaya ?search= ile
          taşınıyor. -->
-    <form (ngSubmit)="submitSearch()" role="search" class="hidden h-11 min-w-[250px] items-center gap-2.5 rounded-[10px] border border-white/10 bg-white/[0.06] px-4 transition-colors focus-within:border-[#8879f6]/60 hover:border-[#8879f6]/60 lg:flex">
+    <form (ngSubmit)="submitSearch()" role="search" class="hidden h-11 min-w-[250px] items-center gap-2.5 rounded-[10px] border border-white/10 bg-white/[0.06] px-4 transition-colors focus-within:border-[#8879f6]/60 hover:border-[#8879f6]/60 xl:flex">
       <i class="ph ph-magnifying-glass shrink-0 text-[18px] text-[#aeb4ce]" aria-hidden="true"></i>
       <input
         type="search"
@@ -23,7 +23,7 @@
       />
     </form>
 
-    <nav class="hidden items-center gap-6 text-sm font-medium text-[#d8dbea] sm:flex" aria-label="Ana menü">
+    <nav class="hidden items-center gap-6 text-sm font-medium text-[#d8dbea] lg:flex" aria-label="Ana menü">
       <div class="relative">
         <button type="button" class="flex items-center gap-1.5 hover:text-white" [class.text-white]="categoriesOpen()" (click)="toggleCategories()">
           Kategoriler
@@ -42,6 +42,8 @@
           </div>
         }
       </div>
+
+      <a routerLink="/markalar" routerLinkActive="is-active" class="pa-nav-link">Markalar</a>
 
       <div class="relative">
         <button type="button" class="flex items-center gap-1.5 hover:text-white" [class.text-white]="calculatorsOpen()" (click)="toggleCalculators()">

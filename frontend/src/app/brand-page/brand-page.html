@@ -83,7 +83,7 @@
            öğrenmek istiyor. Boş bırakmak hem o kişiyi cevapsız bırakıyordu hem
            de sayfayı sorguyla ilgisiz gösteriyordu. -->
       @if (!fixedCategory()) {
-        <div class="mt-6">
+        <div id="kuponlar" class="mt-6 scroll-mt-24">
           <h2 class="mb-2 text-[11px] font-medium uppercase tracking-[0.1em] text-[var(--noc-neutral-500)]">{{ brandName() }} Kupon Kodları</h2>
           @if (coupons().length > 0) {
             <div class="flex flex-wrap items-center gap-2">

@@ -1,0 +1,198 @@
+<div class="noc-shell min-h-screen bg-[var(--noc-bg)] text-[var(--noc-text)]">
+  <app-site-header />
+
+  <main class="pa-brand-directory">
+    <div class="pa-brand-explorer">
+      <section class="min-w-0">
+        <nav class="pa-directory-breadcrumb">
+          <a routerLink="/" class="hover:text-[var(--noc-accent)]">Ana Sayfa</a> / Markalar
+        </nav>
+
+        <h1 class="pa-directory-title">Markaları Keşfet</h1>
+        <p class="pa-directory-lead">
+          Spor takviyesi markalarının ürünlerini, güncel fiyatlarını, indirimlerini ve fiyat geçmişini karşılaştır.
+        </p>
+
+        <section class="pa-brand-toolbar" aria-label="Marka arama ve sıralama">
+          <label class="pa-directory-search pa-brand-search">
+            <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
+            <span class="sr-only">Marka ara</span>
+            <input
+              type="search"
+              placeholder="Marka ara..."
+              [value]="searchQuery()"
+              (input)="setSearchQuery($any($event.target).value)"
+            />
+          </label>
+
+          <label class="pa-brand-sort">
+            <i class="ph ph-sort-ascending" aria-hidden="true"></i>
+            <span class="sr-only">Markaları sırala</span>
+            <select [value]="sortMode()" (change)="setSortMode($any($event.target).value)">
+              <option value="product-count">Ürün sayısına göre</option>
+              <option value="name">İsme göre A-Z</option>
+            </select>
+            <i class="ph ph-caret-down" aria-hidden="true"></i>
+          </label>
+        </section>
+
+        @if (loadError()) {
+          <div class="pa-directory-state">
+            <i class="ph ph-warning-circle" aria-hidden="true"></i>
+            Markalar şu anda yüklenemedi. Lütfen birazdan tekrar dene.
+          </div>
+        } @else if (loading()) {
+          <div class="pa-directory-state">
+            <i class="ph ph-circle-notch motion-safe:animate-spin" aria-hidden="true"></i>
+            Markalar yükleniyor...
+          </div>
+        } @else {
+        <section aria-label="Marka listesi">
+          <div class="pa-brand-grid">
+            @for (brand of pageBrands(); track brand.slug) {
+              <a
+                [routerLink]="['/marka', brand.slug, 'indirim-kodu']"
+                class="pa-brand-tile"
+                [class.is-selected]="selectedBrand()?.slug === brand.slug"
+                (mouseenter)="selectBrand(brand)"
+                (focus)="selectBrand(brand)"
+              >
+                <span class="pa-brand-tile-logo" aria-hidden="true">
+                  @if (brand.logoUrl && !failedLogos().has(brand.slug)) {
+                    <img
+                      [src]="brand.logoUrl"
+                      [alt]="brand.name + ' amblemi'"
+                      loading="lazy"
+                      referrerpolicy="no-referrer"
+                      (error)="markLogoFailed(brand.slug)"
+                    />
+                  } @else {
+                    <i class="ph ph-storefront"></i>
+                  }
+                </span>
+                <span class="pa-brand-tile-copy">
+                  <strong>{{ brand.name }}</strong>
+                  <small>{{ brand.productCount }} ürün</small>
+                </span>
+                <i class="ph ph-arrow-right pa-brand-tile-arrow" aria-hidden="true"></i>
+              </a>
+            } @empty {
+              <div class="pa-directory-state pa-directory-empty">
+                <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
+                Bu aramayla eşleşen marka bulunamadı.
+              </div>
+            }
+          </div>
+
+          @if (totalPages() > 1) {
+            <nav class="pa-brand-pagination" aria-label="Marka sayfaları">
+              <span>Diğer markalar</span>
+              <div class="pa-brand-page-controls">
+                <button
+                  type="button"
+                  [disabled]="currentPage() === 1"
+                  (click)="goToPage(currentPage() - 1)"
+                  aria-label="Önceki marka sayfası"
+                >
+                  <i class="ph ph-caret-left" aria-hidden="true"></i>
+                </button>
+                @for (page of visiblePages(); track page) {
+                  <button
+                    type="button"
+                    [class.is-active]="page === currentPage()"
+                    [attr.aria-current]="page === currentPage() ? 'page' : null"
+                    (click)="goToPage(page)"
+                  >
+                    {{ page }}
+                  </button>
+                }
+                <button
+                  type="button"
+                  [disabled]="currentPage() === totalPages()"
+                  (click)="goToPage(currentPage() + 1)"
+                  aria-label="Sonraki marka sayfası"
+                >
+                  <i class="ph ph-caret-right" aria-hidden="true"></i>
+                </button>
+              </div>
+            </nav>
+          }
+
+          <p class="mt-6 flex items-center gap-2 rounded-[10px] border border-[var(--noc-divider)] bg-[var(--noc-card)] px-4 py-3 text-[11px] text-[var(--noc-neutral-500)]">
+            <i class="ph ph-info text-base text-[var(--noc-accent)]" aria-hidden="true"></i>
+            Ürün sayıları aktif katalogdan hesaplanır ve taramalarla birlikte değişebilir.
+          </p>
+        </section>
+        }
+      </section>
+
+      @if (selectedBrand(); as brand) {
+          <aside class="pa-brand-preview" aria-live="polite">
+            <span class="pa-brand-preview-label">
+              <i class="ph ph-star" aria-hidden="true"></i>
+              Seçili marka
+            </span>
+
+            <div class="pa-brand-preview-logo">
+              @if (brand.previewLogoUrl && !failedLogos().has(brand.slug)) {
+                <img
+                  [src]="brand.previewLogoUrl"
+                  [alt]="brand.name + ' amblemi'"
+                  referrerpolicy="no-referrer"
+                  (error)="markLogoFailed(brand.slug)"
+                />
+              } @else {
+                <i class="ph ph-storefront" aria-hidden="true"></i>
+              }
+            </div>
+
+            <h2>{{ brand.name }}</h2>
+            <p class="pa-brand-preview-description">{{ selectedBrandDescription(brand) }}</p>
+
+            <div class="pa-brand-preview-stat">
+              <span class="pa-brand-preview-stat-icon"><i class="ph ph-package" aria-hidden="true"></i></span>
+              <span>
+                <small>Takip edilen ürünler</small>
+                <strong>{{ brand.productCount }} ürün</strong>
+              </span>
+            </div>
+
+            @if (brand.categories.length > 0) {
+              <div class="pa-brand-preview-categories">
+                <span>Öne çıkan kategoriler</span>
+                <div>
+                  @for (category of brand.categories.slice(0, 3); track category.slug) {
+                    <a [routerLink]="['/marka', brand.slug, category.slug]">
+                      <i class="ph ph-tag" aria-hidden="true"></i>{{ category.label }}
+                    </a>
+                  }
+                </div>
+              </div>
+            }
+
+            <div class="pa-brand-preview-trust">
+              <i class="ph ph-shield-check" aria-hidden="true"></i>
+              <p>
+                <strong>Fiyat geçmişi düzenli güncellenir</strong>
+                <span>Veriler takip ettiğimiz satış kanallarından otomatik olarak toplanır.</span>
+              </p>
+            </div>
+
+            <a [routerLink]="['/marka', brand.slug, 'indirim-kodu']" class="pa-brand-primary-action">
+              {{ brand.name }} ürünlerini incele
+              <i class="ph ph-arrow-right" aria-hidden="true"></i>
+            </a>
+            <a
+              [routerLink]="['/marka', brand.slug, 'indirim-kodu']"
+              fragment="kuponlar"
+              class="pa-brand-secondary-action"
+            >
+              <i class="ph ph-ticket" aria-hidden="true"></i>
+              İndirim kodlarını gör
+              <i class="ph ph-arrow-right" aria-hidden="true"></i>
+            </a>
+          </aside>
+      }
+    </div>
+  </main>
+</div>

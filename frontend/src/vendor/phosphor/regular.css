@@ -51,6 +51,7 @@
 .ph.ph-caret-right:before { content: "\e13a"; }
 .ph.ph-chart-line-up:before { content: "\e156"; }
 .ph.ph-check-circle:before { content: "\e184"; }
+.ph.ph-circle-notch:before { content: "\eb44"; }
 .ph.ph-clock-counter-clockwise:before { content: "\e1a0"; }
 .ph.ph-compass:before { content: "\e1c8"; }
 .ph.ph-cookie:before { content: "\e6ca"; }
@@ -87,6 +88,7 @@
 .ph.ph-shield-check:before { content: "\e40c"; }
 .ph.ph-shield-plus:before { content: "\e706"; }
 .ph.ph-sign-out:before { content: "\e42a"; }
+.ph.ph-sort-ascending:before { content: "\e444"; }
 .ph.ph-sparkle:before { content: "\e6a2"; }
 .ph.ph-squares-four:before { content: "\e464"; }
 .ph.ph-star:before { content: "\e46a"; }

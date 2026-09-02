@@ -30,6 +30,10 @@ export const routes: Routes = [
     loadComponent: () => import('./category-list-page/category-list-page').then((m) => m.CategoryListPage),
   },
   {
+    path: 'markalar',
+    loadComponent: () => import('./brand-list-page/brand-list-page').then((m) => m.BrandListPage),
+  },
+  {
     path: 'kategori/:categorySlug',
     loadComponent: () => import('./category-page/category-page').then((m) => m.CategoryPage),
   },
