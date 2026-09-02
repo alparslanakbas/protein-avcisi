@@ -21,6 +21,7 @@ using IndirimTakip.Infrastructure.Scraping.ProteinOcean;
 using IndirimTakip.Infrastructure.Scraping.Provitamin;
 using IndirimTakip.Infrastructure.Scraping.Ssn;
 using IndirimTakip.Infrastructure.Scraping.SpaceSupplements;
+using IndirimTakip.Infrastructure.Scraping.SupplementFactory;
 using IndirimTakip.Infrastructure.Scraping.SupraProtein;
 using IndirimTakip.Infrastructure.Scraping.Supplementler;
 using IndirimTakip.Infrastructure.Scraping.ThinkNutrition;
@@ -69,6 +70,14 @@ public static class DependencyInjection
             client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
         });
         services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<SupraProteinScraper>());
+
+        // Supplement Factory — Supra/Commander ile aynı Shopify deseni.
+        services.AddHttpClient<SupplementFactoryScraper>(client =>
+        {
+            client.BaseAddress = new Uri("https://supplementfactory.com.tr/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
+        });
+        services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<SupplementFactoryScraper>());
 
         // Space Supplements — custom Laravel mağaza; sitemap + ürün
         // sayfasındaki schema.org Product verisi, toplam yedi adres.
