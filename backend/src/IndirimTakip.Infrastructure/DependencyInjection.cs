@@ -19,6 +19,7 @@ using IndirimTakip.Infrastructure.Scraping.PrimeNutrition;
 using IndirimTakip.Infrastructure.Scraping.Protein7;
 using IndirimTakip.Infrastructure.Scraping.ProteinOcean;
 using IndirimTakip.Infrastructure.Scraping.Provitamin;
+using IndirimTakip.Infrastructure.Scraping.S4u;
 using IndirimTakip.Infrastructure.Scraping.Ssn;
 using IndirimTakip.Infrastructure.Scraping.SpaceSupplements;
 using IndirimTakip.Infrastructure.Scraping.SupplementFactory;
@@ -128,6 +129,18 @@ public static class DependencyInjection
             client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
         });
         services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<SsnScraper>());
+
+        // S4U — OpenCart, ürün sayfasındaki schema.org bloğu. Marka katalogda
+        // ZATEN var (protein7 üzerinden); ad birebir aynı olduğu için aynı
+        // Brand kaydına düşüyor, Seller null kaldığından bayi kayıtlarından
+        // ayrılıyor.
+        services.AddHttpClient<S4uScraper>(client =>
+        {
+            client.BaseAddress = new Uri("https://s4u.com.tr/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
+        services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<S4uScraper>());
 
         services.AddHttpClient<TorqScraper>(client =>
         {
