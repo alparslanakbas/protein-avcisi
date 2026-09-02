@@ -11,6 +11,7 @@ using IndirimTakip.Infrastructure.Scraping.CommanderNutrition;
 using IndirimTakip.Infrastructure.Scraping.DrSupplement;
 using IndirimTakip.Infrastructure.Scraping.Gnc;
 using IndirimTakip.Infrastructure.Scraping.Heyday;
+using IndirimTakip.Infrastructure.Scraping.MusclePump;
 using IndirimTakip.Infrastructure.Scraping.Nois;
 using IndirimTakip.Infrastructure.Scraping.PrimeNutrition;
 using IndirimTakip.Infrastructure.Scraping.Protein7;
@@ -157,6 +158,17 @@ public static class DependencyInjection
             client.Timeout = TimeSpan.FromSeconds(30);
         });
         services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<BiofitleScraper>());
+
+        // Muscle Pump — AKINSOFT public ürün sitemap'i ve ürün HTML'i.
+        // Fitness aksesuarları ve kombinasyon altındaki standlar sitemap
+        // aşamasında elenir.
+        services.AddHttpClient<MusclePumpScraper>(client =>
+        {
+            client.BaseAddress = new Uri("https://musclepump.com.tr/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
+        services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<MusclePumpScraper>());
 
         // GNC Türkiye — ProteinOcean/Yeşilmarka ile aynı ikas storefront API'si.
         services.AddHttpClient<GncScraper>(client =>
