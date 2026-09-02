@@ -29,6 +29,7 @@ using IndirimTakip.Infrastructure.Scraping.ThinkNutrition;
 using IndirimTakip.Infrastructure.Scraping.Torq;
 using IndirimTakip.Infrastructure.Scraping.West;
 using IndirimTakip.Infrastructure.Scraping.SwissNutrition;
+using IndirimTakip.Infrastructure.Scraping.Vitabear;
 using IndirimTakip.Infrastructure.Scraping.Yesilmarka;
 using IndirimTakip.Infrastructure.Subscribers;
 using Microsoft.EntityFrameworkCore;
@@ -141,6 +142,18 @@ public static class DependencyInjection
             client.Timeout = TimeSpan.FromSeconds(30);
         });
         services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<S4uScraper>());
+
+        // Vitabear — Laravel; katalogun tamamı TEK istekle JSON olarak
+        // geliyor (`/products/get?cat=all`). Çerez/CSRF gerekmiyor.
+        // Marka katalogda YOKTU (3 Eylül'de canlı marka listesiyle
+        // doğrulandı), yani kopya Brand riski yok.
+        services.AddHttpClient<VitabearScraper>(client =>
+        {
+            client.BaseAddress = new Uri("https://www.vitabear.com.tr/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
+        services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<VitabearScraper>());
 
         services.AddHttpClient<TorqScraper>(client =>
         {
