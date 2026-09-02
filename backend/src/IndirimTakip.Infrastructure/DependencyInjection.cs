@@ -23,6 +23,7 @@ using IndirimTakip.Infrastructure.Scraping.Ssn;
 using IndirimTakip.Infrastructure.Scraping.SpaceSupplements;
 using IndirimTakip.Infrastructure.Scraping.SupraProtein;
 using IndirimTakip.Infrastructure.Scraping.Supplementler;
+using IndirimTakip.Infrastructure.Scraping.ThinkNutrition;
 using IndirimTakip.Infrastructure.Scraping.Torq;
 using IndirimTakip.Infrastructure.Scraping.West;
 using IndirimTakip.Infrastructure.Scraping.SwissNutrition;
@@ -195,6 +196,13 @@ public static class DependencyInjection
             client.BaseAddress = new Uri("https://api.myikas.com/");
         });
         services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<HeydayScraper>());
+
+        // Think Nutrition — GNC/Heyday ile aynı ikas storefront API'si.
+        services.AddHttpClient<ThinkNutritionScraper>(client =>
+        {
+            client.BaseAddress = new Uri("https://api.myikas.com/");
+        });
+        services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<ThinkNutritionScraper>());
 
         // Imperium Supplements — GNC/Heyday ile aynı ikas storefront API'si.
         services.AddHttpClient<ImperiumSupplementsScraper>(client =>
