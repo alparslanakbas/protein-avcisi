@@ -6,6 +6,7 @@ using IndirimTakip.Infrastructure.Scraping;
 using IndirimTakip.Infrastructure.Scraping.Hardline;
 using IndirimTakip.Infrastructure.Scraping.Hiq;
 using IndirimTakip.Infrastructure.Scraping.BigJoy;
+using IndirimTakip.Infrastructure.Scraping.Biofitle;
 using IndirimTakip.Infrastructure.Scraping.CommanderNutrition;
 using IndirimTakip.Infrastructure.Scraping.DrSupplement;
 using IndirimTakip.Infrastructure.Scraping.Gnc;
@@ -147,6 +148,15 @@ public static class DependencyInjection
             client.Timeout = TimeSpan.FromSeconds(30);
         });
         services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<DrSupplementScraper>());
+
+        // Biofitle — İkas public storefront GraphQL kataloğu; yalnız açıkça
+        // yüksek proteinli kahvaltılık gevrekler kapsamda.
+        services.AddHttpClient<BiofitleScraper>(client =>
+        {
+            client.BaseAddress = new Uri("https://api.myikas.com/");
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
+        services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<BiofitleScraper>());
 
         // GNC Türkiye — ProteinOcean/Yeşilmarka ile aynı ikas storefront API'si.
         services.AddHttpClient<GncScraper>(client =>
