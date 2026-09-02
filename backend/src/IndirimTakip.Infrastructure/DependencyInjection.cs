@@ -9,6 +9,7 @@ using IndirimTakip.Infrastructure.Scraping.BigJoy;
 using IndirimTakip.Infrastructure.Scraping.Biofitle;
 using IndirimTakip.Infrastructure.Scraping.CommanderNutrition;
 using IndirimTakip.Infrastructure.Scraping.DrSupplement;
+using IndirimTakip.Infrastructure.Scraping.FitCarsi;
 using IndirimTakip.Infrastructure.Scraping.Gnc;
 using IndirimTakip.Infrastructure.Scraping.Heyday;
 using IndirimTakip.Infrastructure.Scraping.ImperiumSupplements;
@@ -100,6 +101,16 @@ public static class DependencyInjection
             client.Timeout = TimeSpan.FromSeconds(30);
         });
         services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<ProvitaminScraper>());
+
+        // Fit Çarşı — ÜÇÜNCÜ BAYİ, özel ASP.NET mağazası. Ürün başına istek
+        // ATMIYOR (25 marka sayfası yetiyor), o yüzden DailyOnly değil.
+        services.AddHttpClient<FitCarsiScraper>(client =>
+        {
+            client.BaseAddress = new Uri("https://www.fitcarsi.com.tr/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
+        services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<FitCarsiScraper>());
 
         services.AddHttpClient<SsnScraper>(client =>
         {

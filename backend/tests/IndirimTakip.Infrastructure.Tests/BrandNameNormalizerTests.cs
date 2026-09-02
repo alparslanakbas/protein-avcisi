@@ -68,4 +68,29 @@ public class BrandNameNormalizerTests
         // yaratırdık; ikisinin de slug'ı "dr-pan" olduğu için adres çakışırdı.
         Assert.Equal("Dr Pan", BrandNameNormalizer.Normalize(ham));
     }
+
+    // Fit Çarşı (2 Eylül) — bayi marka etiketlerini Title Case yapıp
+    // kısaltmaları bozuyor. Doğru karşılıklar bayinin ÜRÜN ADLARINDAN
+    // doğrulandı, isme bakıp tahmin edilmedi.
+    [Theory]
+    [InlineData("Konzept", "Z-Konzept")]        // ürünleri "Z-Konzept Isolate Whey" diyor
+    [InlineData("Optimum", "Optimum Nutrition")] // ürünleri "Optimum Gold Standard" diyor
+    [InlineData("Tnt", "TNT")]
+    [InlineData("Gpn", "GPN")]
+    [InlineData("Qnt", "QNT")]
+    [InlineData("Biotechusa", "BioTech USA")]
+    public void FitCarsiEtiketleriKanonikYazimaCevriliyor(string gelen, string beklenen)
+    {
+        Assert.Equal(beklenen, BrandNameNormalizer.Normalize(gelen));
+    }
+
+    // Türkçe tuzağı: site "SIS"i tr-TR ile küçültünce noktasız ı ile "Sıs"
+    // oluyor. Markanın kendi yazımı SiS (Science in Sport).
+    [Theory]
+    [InlineData("Sıs")]
+    [InlineData("Sis")]
+    public void NoktasizIIleBozulanSiSDuzeltiliyor(string gelen)
+    {
+        Assert.Equal("SiS", BrandNameNormalizer.Normalize(gelen));
+    }
 }

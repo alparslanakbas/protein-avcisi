@@ -56,6 +56,24 @@ public static class BrandNameNormalizer
             ["FA Nutrition"] = "Fa Nutrition",
             ["Hiq"] = "HIQ",
             ["Ssn"] = "SSN",
+
+            // Fit Çarşı (2 Eylül) — bayi kendi marka etiketlerini Title Case
+            // yapıyor ve kısaltmaları bozuyor. Kanonik taraf her zaman
+            // VERİTABANINDA duran yazım; doğru karşılıklar bayinin ÜRÜN
+            // ADLARINDAN doğrulandı, isme bakıp tahmin edilmedi:
+            //   "Konzept" -> ürünleri "Z-Konzept Isolate Whey ..." diyor
+            //   "Optimum" -> ürünleri "Optimum Gold Standard Whey ..." diyor
+            ["Konzept"] = "Z-Konzept",
+            ["Optimum"] = "Optimum Nutrition",
+            // Türkçe tuzağı: site "SIS"i tr-TR ile küçültünce "Sıs" oluyor
+            // (noktasız ı). Markanın kendi yazımı SiS (Science in Sport),
+            // ürün adlarında da öyle geçiyor.
+            ["Sıs"] = "SiS",
+            ["Sis"] = "SiS",
+            ["Tnt"] = "TNT",
+            ["Gpn"] = "GPN",
+            ["Qnt"] = "QNT",
+            ["Biotechusa"] = "BioTech USA",
         };
 
     /// <summary>
