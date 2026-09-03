@@ -60,6 +60,10 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - PORT=8080
+      # Önbellek ısıtma isteğinin GERÇEK ziyaretçiyle aynı önbellek anahtarına
+      # düşmesi için: anahtar Host ve şemayı da içeriyor. Bu değer olmadan
+      # ısıtma "localhost" anahtarını doldurur ve hiçbir işe yaramaz.
+      - OutputCache__WarmupHost=api.proteinavcisi.com.tr
       - ConnectionStrings__Default=${CONNECTION_STRING}
       - AdminApiKey=${ADMIN_API_KEY}
       - Brevo__ApiKey=${BREVO_API_KEY}

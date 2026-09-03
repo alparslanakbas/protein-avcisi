@@ -80,6 +80,26 @@ public sealed class OutputCacheRefresher(
                     .TrimEnd('/');
     }
 
+    /// <summary>
+    /// <b>ÖNBELLEK ANAHTARI HOST VE ŞEMAYI DA İÇERİYOR.</b> İlk uygulamada
+    /// ısıtma <c>http://localhost:8080</c> adresine gidiyordu; istekler 200
+    /// dönüyor, log "6/6 uç ısıtıldı" diyordu ama GERÇEK ziyaretçi hâlâ
+    /// soğuk önbelleğe düşüyordu. Canlıda ölçülerek bulundu — aynı adres,
+    /// üç farklı Host başlığıyla:
+    ///
+    ///   Host: backend:8080               -> 0,001 sn  (Age 81)
+    ///   Host: localhost:8080             -> 0,003 sn  (Age 84)
+    ///   Host: api.proteinavcisi.com.tr   -> 2,123 sn  (Age 0)
+    ///
+    /// Yani ısıtma kimsenin kullanmadığı bir anahtarı dolduruyordu. Şema da
+    /// anahtara giriyor: gerçek istekler Caddy'den <c>X-Forwarded-Proto:
+    /// https</c> ile geldiği için <c>Request.Scheme</c> "https" oluyor.
+    ///
+    /// İstek yine makinenin İÇİNDEN gidiyor (Cloudflare'e çıkmıyor); yalnızca
+    /// Host ve şema gerçek trafikle aynı olacak şekilde ayarlanıyor.
+    /// Yapılandırılmazsa ısıtma yerel anahtarı doldurur — geliştirmede
+    /// doğrudur, canlıda <c>OutputCache__WarmupHost</c> verilmelidir.
+    /// </summary>
     public async Task RefreshAsync(CancellationToken cancellationToken = default)
     {
         try
@@ -103,11 +123,23 @@ public sealed class OutputCacheRefresher(
         var client = httpClientFactory.CreateClient(nameof(OutputCacheRefresher));
         var basarili = 0;
 
+        // Isıtılan girdinin GERÇEK ziyaretçininkiyle aynı anahtara düşmesi
+        // için gereken başlıklar — gerekçesi HerkeseAcikBaslikla'da.
+        var acikHost = configuration.GetValue<string>("OutputCache:WarmupHost");
+        var acikSema = configuration.GetValue("OutputCache:WarmupScheme", "https");
+
         foreach (var yol in IsitilacakYollar)
         {
             try
             {
-                using var yanit = await client.GetAsync(taban + yol, cancellationToken);
+                using var istek = new HttpRequestMessage(HttpMethod.Get, taban + yol);
+                if (!string.IsNullOrWhiteSpace(acikHost))
+                {
+                    istek.Headers.Host = acikHost;
+                    istek.Headers.TryAddWithoutValidation("X-Forwarded-Proto", acikSema);
+                }
+
+                using var yanit = await client.SendAsync(istek, cancellationToken);
                 if (yanit.IsSuccessStatusCode)
                     basarili++;
                 else
