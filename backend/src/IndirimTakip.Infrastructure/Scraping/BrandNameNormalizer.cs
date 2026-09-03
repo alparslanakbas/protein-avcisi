@@ -86,6 +86,16 @@ public static class BrandNameNormalizer
         ["Seed'n Grains"] = "Seedn Grains",
         ["Seed’n Grains"] = "Seedn Grains",
         ["detoksfit"] = "Detoksfit",
+
+        // protein34 (3 Eylül) — DÖRDÜNCÜ BAYİ. Taşıdığı 14 markanın hepsi
+        // katalogda ZATEN var; adları birebir aynı yazıma çevrilmezse kopya
+        // Brand kaydı oluşurdu.
+        ["Bigjoy Sports"] = "BigJoy",
+        ["Nuclear"] = "Nuclear Nutrition",
+        // Sözlük OrdinalIgnoreCase — Türkçe NOKTALI İ'yi tanımaz, yani
+        // "KEVİN LEVRONE" büyük yazımı "Kevin Levrone" anahtarıyla EŞLEŞMEZ.
+        // Bu yüzden kaynağın yazdığı hâl birebir anahtar olarak konuluyor.
+        ["KEVİN LEVRONE"] = "Kevin Levrone",
         };
 
     /// <summary>

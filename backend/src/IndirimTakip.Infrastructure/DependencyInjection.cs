@@ -19,6 +19,7 @@ using IndirimTakip.Infrastructure.Scraping.MlaProtein;
 using IndirimTakip.Infrastructure.Scraping.MusclePump;
 using IndirimTakip.Infrastructure.Scraping.Nois;
 using IndirimTakip.Infrastructure.Scraping.PrimeNutrition;
+using IndirimTakip.Infrastructure.Scraping.Protein34;
 using IndirimTakip.Infrastructure.Scraping.Protein7;
 using IndirimTakip.Infrastructure.Scraping.ProteinOcean;
 using IndirimTakip.Infrastructure.Scraping.Provitamin;
@@ -190,6 +191,17 @@ public static class DependencyInjection
             client.Timeout = TimeSpan.FromSeconds(30);
         });
         services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<MlaProteinScraper>());
+
+        // protein34 — DÖRDÜNCÜ BAYİ, IdeaSoft. Marka ürün sayfasından
+        // okunuyor; taşıdığı 14 markanın hepsi katalogda zaten var, yeni
+        // üretici getirmiyor. Değeri aynı ürün için ek bir fiyat noktası.
+        services.AddHttpClient<Protein34Scraper>(client =>
+        {
+            client.BaseAddress = new Uri("https://www.protein34.com/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
+        services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<Protein34Scraper>());
 
         services.AddHttpClient<TorqScraper>(client =>
         {
