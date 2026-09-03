@@ -1,3 +1,4 @@
+using IndirimTakip.Core.Caching;
 using IndirimTakip.Core.Scraping;
 using IndirimTakip.Infrastructure.Articles;
 using IndirimTakip.Infrastructure.Coupons;
@@ -35,6 +36,7 @@ using IndirimTakip.Infrastructure.Subscribers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace IndirimTakip.Infrastructure;
 
@@ -48,6 +50,12 @@ public static class DependencyInjection
     {
         services.AddDbContext<AppDbContext>(options =>
             options.UseNpgsql(configuration.GetConnectionString("Default")));
+
+        // Tarama bitince genel veri önbelleğini tazeleyen bağımlılık. GERÇEK
+        // uygulama Api projesinde (ASP.NET'in çıktı önbelleğine bağlı);
+        // buradaki yalnızca Api olmadan çalışan ortamlar (testler, konsol
+        // araçları) için boş yedek. TryAdd olduğu için Api'nin kaydını EZMEZ.
+        services.TryAddScoped<IPublicCacheRefresher, NullPublicCacheRefresher>();
 
         services.AddHttpClient<HiqScraper>(client =>
         {

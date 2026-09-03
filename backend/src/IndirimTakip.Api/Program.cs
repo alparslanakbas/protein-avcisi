@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Options;
 using IndirimTakip.Core.Scraping;
+using IndirimTakip.Api.Caching;
+using IndirimTakip.Core.Caching;
 using IndirimTakip.Infrastructure;
 using IndirimTakip.Infrastructure.Articles;
 using IndirimTakip.Infrastructure.Coupons;
@@ -92,17 +94,33 @@ builder.Services.AddCors(options =>
 // açıkça işaretlenmediği sürece önbelleğe girmiyor. Kişiye özel yanıt
 // döndüren uçlar (favori listesi, abonelik onayı) ve sayaç artıran /go/{id}
 // bu yüzden kazara önbelleğe alınamaz.
-var publicCacheSeconds = builder.Configuration.GetValue("OutputCache:PublicSeconds", 60);
+// 60 saniyeydi; 3 Eylül'de ölçüldü ki bu sürede pratikte HER ziyaretçi soğuk
+// önbelleğe düşüyor (trafik düşük): /api/deals sıcakta 0,26 sn, soğukta 2,1 sn;
+// ana sayfa soğukta 6,0 sn. Veri yalnızca taramayla değiştiği için süre uzun
+// tutuluyor ve tarama biter bitmez ETİKETE GÖRE temizleniyor
+// (OutputCacheRefresher) — böylece hem soğuk isabet kalmıyor hem de veri
+// hiçbir zaman bir taramadan daha bayat olmuyor.
+var publicCacheSeconds = builder.Configuration.GetValue("OutputCache:PublicSeconds", 3600);
 builder.Services.AddOutputCache(options =>
 {
     options.AddBasePolicy(policy => policy.NoCache());
     options.AddPolicy(PublicDataCachePolicy, policy => policy
         .Expire(TimeSpan.FromSeconds(publicCacheSeconds))
+        // Tarama sonrası toplu temizleme bu etikete göre yapılıyor.
+        .Tag(OutputCacheRefresher.Tag)
         // Filtre/sayfalama parametreleri yanıtı tamamen değiştiriyor; tümü
         // önbellek anahtarına dahil edilmezse farklı filtreler birbirinin
         // sonucunu görürdü.
         .SetVaryByQuery("*"));
 });
+
+// Tarama bitince önbelleği tazeleyen uygulama. Arayüz Core'da: scraper'ların
+// HTTP sunucusundan haberi olmasın diye somut tip buraya bırakıldı.
+builder.Services.AddHttpClient(nameof(OutputCacheRefresher), client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
+builder.Services.AddScoped<IPublicCacheRefresher, OutputCacheRefresher>();
 
 builder.Services.Configure<AffiliateOptions>(builder.Configuration.GetSection("Affiliate"));
 
@@ -263,6 +281,13 @@ app.MapPost("/api/dev/ingest/{brand}", (
         {
             logger.LogInformation("Elle tetiklenen tarama başladı: {Brand}.", brandName);
             var count = await ingestion.IngestAsync(scoped, lifetime.ApplicationStopping);
+
+            // Veri değişti: önbelleği düşür ve sıcak uçları yeniden doldur.
+            // Elle tarama çoğunlukla deploy sonrası çalıştırılıyor, yani tam
+            // da ziyaretçinin soğuk önbelleğe düşeceği an.
+            await scope.ServiceProvider.GetRequiredService<IPublicCacheRefresher>()
+                .RefreshAsync(lifetime.ApplicationStopping);
+
             logger.LogInformation("Elle tetiklenen tarama bitti: {Brand}, {Count} ürün.", brandName, count);
         }
         catch (Exception ex)

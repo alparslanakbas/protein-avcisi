@@ -1,3 +1,4 @@
+using IndirimTakip.Core.Caching;
 using IndirimTakip.Core.Scraping;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -94,6 +95,9 @@ public class DailyScrapingBackgroundService(
                 logger.LogError(ex, "{Brand} taranırken hata oluştu (günlük).", scraper.BrandName);
             }
         }
+
+        await scope.ServiceProvider.GetRequiredService<IPublicCacheRefresher>()
+            .RefreshAsync(cancellationToken);
 
         logger.LogInformation("Günlük tarama bitti.");
     }

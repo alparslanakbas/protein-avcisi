@@ -1,3 +1,4 @@
+using IndirimTakip.Core.Caching;
 using IndirimTakip.Core.Scraping;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -59,6 +60,12 @@ public class ScrapingBackgroundService(
 
             await Task.Delay(DelayBetweenBrands, cancellationToken);
         }
+
+        // Veri değişti: önbelleği düşür ve sıcak uçları yeniden doldur.
+        // Yoksa bir sonraki ziyaretçi soğuk önbelleğe düşüyor (ölçüm: ana
+        // sayfa soğukta 6,0 sn, sıcakta 0,26 sn).
+        await scope.ServiceProvider.GetRequiredService<IPublicCacheRefresher>()
+            .RefreshAsync(cancellationToken);
 
         logger.LogInformation("Tarama döngüsü bitti.");
     }
