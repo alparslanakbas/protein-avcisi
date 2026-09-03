@@ -14,6 +14,22 @@ public static partial class NonSupplementProductFilter
 {
     public static bool IsAccessoryOrApparel(string productName)
     {
+        // TÜRKÇE HARFLER ASCII'YE İNDİRİLİYOR — kalıplar çalışmadan ÖNCE.
+        //
+        // .NET'in RegexOptions.IgnoreCase'i invariant kültürle çalışıyor ve
+        // Türkçe harf çiftlerini katlamıyor. Sonuç: "EFFİVE BLACK PİLLBOX"
+        // adlı ürün `pillbox` kalıbına TAKILMIYORDU ve canlı katalogda
+        // aksesuar olarak duruyordu (3 Eylül'de 2991 ürün taranırken bulundu).
+        // Aynı tuzak noktasız I için de var — "ANAHTARLIK" gibi tamamı büyük
+        // yazılmış adlar `anahtarlık` kalıbıyla eşleşmiyordu; Grizzone'un
+        // kataloğu baştan sona büyük harf.
+        //
+        // Kalıplar da bu yüzden SAF ASCII yazıldı. Öncesinde her Türkçe
+        // kelimenin ASCII kopyası ayrıca tutuluyordu ("esofman", "agirlik
+        // kemer", "bakim seti", "ketcap"...); tek biçime inince o çoğaltma
+        // gereksizleşti ve eksik kalan yazımlar da kapandı.
+        productName = TurkceyiAsciiyeIndir(productName);
+
         var match = AccessoryKeywordRegex().Match(productName);
         if (!match.Success)
             return false;
@@ -33,6 +49,38 @@ public static partial class NonSupplementProductFilter
         // İstisna DAR: yalnızca eşleşen tek kelime "shaker" olduğunda ve adda
         // hediye/ekleme işareti varken geçerli. "Spor Çantası Hediyeli" gibi
         // bir ad hâlâ eleniyor, çünkü orada eşleşen kelime "çanta".
+
+        // TAKVİYE PAKETİ İSTİSNASI. Adında hem PAKET/SET işareti hem de bir
+        // takviye bileşeni geçen ürünler, içindeki aksesuarlar yüzünden
+        // elenmemeli — o aksesuarlar ürünün KENDİSİ değil, paketin içeriği.
+        //
+        // 3 Eylül'de Grizzone kataloğunda ölçülerek bulundu; süzgeç üç GERÇEK
+        // takviye paketini eliyordu:
+        //   "FİTNESS PAKETİ - PROFESYONEL (WHEY PROTEİN PRO 1800 GR + ...)"
+        //      -> shaker, havlu, strap, anahtarlık kelimelerine takılıyordu
+        //   "GRIZZY IRON PACK (WHEY PROTEIN PRO + ZINC+D3+C + GRIZZONE SHAKER)"
+        //   "FİTNESS PAKETİ - ORTA (WHEY PROTEIN 420 GR + BCAA 500 GR + ...)"
+        //
+        // Aşağıdaki "hediye shaker" istisnası bunları KURTARMIYORDU: o istisna
+        // yalnızca TEK eşleşme varken ve "+shaker" bitişikken geçerli.
+        //
+        // İki şart birlikte aranıyor, çünkü tek başına ikisi de yetersiz:
+        // "Grizzone SACKPACK Spor Çanta" içinde "pack" geçiyor (kelime sınırı
+        // bunu eler) ve "Gıda paketi (PANCAKE + ... SOS)" paket işareti taşıyor
+        // ama takviye bileşeni taşımıyor — ikisi de doğru şekilde eleniyor.
+        //
+        // İstisna GİYSİ ve ÇANTAYA UZANMIYOR. Mevcut kural şunu diyor:
+        // "hediyeli de olsa çanta çantadır" (bkz. HediyeliCantaYineDeEleniyor
+        // testi). Grizzone'da kurtarılan paketlerin içindekiler shaker, havlu,
+        // strap ve anahtarlık — yani tipik hediye kalemleri; giysi/çanta
+        // geçen bir adda paket istisnası çalışmıyor, ürün yine eleniyor.
+        if (BundleMarkerRegex().IsMatch(productName)
+            && SupplementMarkerRegex().IsMatch(productName)
+            && !ApparelOrBagRegex().IsMatch(productName))
+        {
+            return false;
+        }
+
         var yalnizcaShaker = match.Value.StartsWith("shaker", StringComparison.OrdinalIgnoreCase)
             && AccessoryKeywordRegex().Matches(productName).Count == 1;
 
@@ -71,7 +119,7 @@ public static partial class NonSupplementProductFilter
     //
     // 1 Eylül'de TÜRKÇE EK sorunu düzeltildi. Listede "havlu" ve "çanta"
     // vardı ama Provitamin kataloğundan "Antrenman HAVLUSU" ve "Spor
-    // ÇANTASI" geçti: `` kelime sınırı ekten ÖNCE kırılmıyor, yani
+    // ÇANTASI" geçti: `\b` kelime sınırı ekten ÖNCE kırılmıyor, yani
     // "havlu" kalıbı "havlusu" ile eşleşmiyor. Ek alabilen isimlere
     // `[a-zçğıöşü]*` eklendi — kodda bu numara zaten kullanılıyordu
     // (`eldiven[a-zçğıöşü]*`), sadece tutarsız uygulanmıştı.
@@ -101,7 +149,7 @@ public static partial class NonSupplementProductFilter
     // "flavor/chocolate" gibi genel kelimeler gerçek aromalı ürünleri elerdi.
     // Bir çeşni ürününü kaçırmak, bir protein tozunu elemekten iyidir.
     [GeneratedRegex(
-        @"\b(t-?shirt|sweatshirt|hoodie|şapka[a-zçğıöşü]*|beyzbol|pillbox|pill ?box|powder ?box|saklama kab[ıi]|bileklik[a-zçğıöşü]*|havlu[a-zçğıöşü]*|buff|atlet(i|ler|leri)?|anahtarlık[a-zçğıöşü]*|maskot|huni[a-zçğıöşü]*|shaker[a-zçğıöşü]*|şort[a-zçğıöşü]*|korse[a-zçğıöşü]*|eşofman[a-zçğıöşü]*|esofman[a-z]*|çanta[a-zçğıöşü]*|canta(s[ıi]|lar|lar[ıi])?|handbag|direnç band[a-zçğıöşü]*|direnc band[a-z]*|loop band[a-z]*|strap[a-z]*|wrist wrap[a-z]*|ağırlık kemer[a-zçğıöşü]*|agirlik kemer[a-z]*|dip belt[a-z]*|eldiven[a-zçğıöşü]*|hap kutusu|bakım seti|bakim seti|seyahat seti|kase(si|ler|leri)?|kuru yemişlik|kuru yemislik|basmati|himalaya tuzu|hardal|sriracha|sweet drops|sos(u|lar|ları)?|ketçap|ketcap|ketchup|garlic powder|hot chili|cajun|chicken mix|vegetable mix|bbq|sprey yağ[ıi]?|sprey yag[ıi]?|tatlandırıcı|tatlandirici)\b",
+        @"\b(t-?shirt|sweatshirt|hoodie|sapka[a-z]*|beyzbol|pillbox|pill ?box|powder ?box|saklama kabi|bileklik[a-z]*|havlu[a-z]*|buff|atlet(i|ler|leri)?|anahtarlik[a-z]*|maskot|huni[a-z]*|shaker[a-z]*|sort[a-z]*|korse[a-z]*|esofman[a-z]*|canta(si|lar|lari)?|handbag|direnc band[a-z]*|loop band[a-z]*|strap[a-z]*|wrist wrap[a-z]*|agirlik kemer[a-z]*|dip belt[a-z]*|eldiven[a-z]*|hap kutusu|bakim seti|seyahat seti|kase(si|ler|leri)?|kuru yemislik|basmati|himalaya tuzu|hardal|sriracha|sweet drops|sos(u|lar|lari)?|ketcap|ketchup|garlic powder|hot chili|cajun|chicken mix|vegetable mix|bbq|sprey yag[i]?|tatlandirici)\b",
         RegexOptions.IgnoreCase)]
     private static partial Regex AccessoryKeywordRegex();
 
@@ -110,6 +158,55 @@ public static partial class NonSupplementProductFilter
     /// verilen bir ek olduğunu söyleyen işaretler. Türkçe noktalı İ tuzağı
     /// yok (hepsi ASCII harf), IgnoreCase yeterli.
     /// </summary>
-    [GeneratedRegex(@"(hediye[a-zçğıöşü]*|\+\s*shaker)", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"(hediye[a-z]*|\+\s*shaker)", RegexOptions.IgnoreCase)]
     private static partial Regex GiftedAccessoryRegex();
+
+    /// <summary>
+    /// Paket/set işareti. KELİME SINIRLI: "Sackpack" gibi adlar "pack"
+    /// içerdiği için sınırsız kalıp gerçek bir çantayı kurtarırdı.
+    /// </summary>
+    [GeneratedRegex(@"\b(paket|paketi|paketleri|set|seti|setleri|pack|kit)\b", RegexOptions.IgnoreCase)]
+    private static partial Regex BundleMarkerRegex();
+
+    /// <summary>
+    /// Giysi ve çanta grubu — paket istisnasının UZANMADIĞI aksesuarlar.
+    /// Mevcut kural: "hediyeli de olsa çanta çantadır".
+    /// Kalıp ASCII, çünkü ad zaten ASCII'ye indirgenmiş olarak geliyor.
+    /// </summary>
+    [GeneratedRegex(@"\b(t-?shirt|sweatshirt|hoodie|sapka[a-z]*|sort[a-z]*|korse[a-z]*|esofman[a-z]*|canta(si|lar|lari)?|handbag|atlet(i|ler|leri)?|maskot)\b",
+        RegexOptions.IgnoreCase)]
+    private static partial Regex ApparelOrBagRegex();
+
+    /// <summary>
+    /// Adın içinde gerçek bir takviye bileşeni geçiyor mu? Paket istisnası
+    /// yalnızca bununla birlikte çalışıyor — yoksa "Gıda paketi (PANCAKE +
+    /// ÇİKOLATA SOS)" gibi çeşni paketleri de kurtulurdu.
+    /// </summary>
+    [GeneratedRegex(@"\b(whey|protein|proteini|bcaa|eaa|kreatin|creatine|amino|vitamin|gainer|glutamin|glutamine|kolajen|collagen|karnitin|carnitine|arginin|arginine)\b",
+        RegexOptions.IgnoreCase)]
+    private static partial Regex SupplementMarkerRegex();
+
+    /// <summary>
+    /// Türkçe harfleri ASCII karşılığına indirger. Kalıplar bu alfabede
+    /// yazıldığı için büyük/küçük harf tuzakları tek noktada bitiyor.
+    /// </summary>
+    private static string TurkceyiAsciiyeIndir(string value)
+    {
+        Span<char> tampon = value.Length <= 256 ? stackalloc char[value.Length] : new char[value.Length];
+        for (var i = 0; i < value.Length; i++)
+        {
+            tampon[i] = value[i] switch
+            {
+                'ç' or 'Ç' => 'c',
+                'ğ' or 'Ğ' => 'g',
+                'ı' or 'İ' or 'I' => 'i',
+                'ö' or 'Ö' => 'o',
+                'ş' or 'Ş' => 's',
+                'ü' or 'Ü' => 'u',
+                var c => c,
+            };
+        }
+
+        return new string(tampon);
+    }
 }

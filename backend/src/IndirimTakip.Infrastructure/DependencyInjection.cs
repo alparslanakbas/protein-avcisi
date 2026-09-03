@@ -13,8 +13,10 @@ using IndirimTakip.Infrastructure.Scraping.DrSupplement;
 using IndirimTakip.Infrastructure.Scraping.FitCarsi;
 using IndirimTakip.Infrastructure.Scraping.Gigis;
 using IndirimTakip.Infrastructure.Scraping.Gnc;
+using IndirimTakip.Infrastructure.Scraping.Grizzone;
 using IndirimTakip.Infrastructure.Scraping.Heyday;
 using IndirimTakip.Infrastructure.Scraping.ImperiumSupplements;
+using IndirimTakip.Infrastructure.Scraping.Kiperin;
 using IndirimTakip.Infrastructure.Scraping.MlaProtein;
 using IndirimTakip.Infrastructure.Scraping.MusclePump;
 using IndirimTakip.Infrastructure.Scraping.Nois;
@@ -23,6 +25,7 @@ using IndirimTakip.Infrastructure.Scraping.Protein34;
 using IndirimTakip.Infrastructure.Scraping.Protein7;
 using IndirimTakip.Infrastructure.Scraping.ProteinOcean;
 using IndirimTakip.Infrastructure.Scraping.Provitamin;
+using IndirimTakip.Infrastructure.Scraping.Renovafood;
 using IndirimTakip.Infrastructure.Scraping.S4u;
 using IndirimTakip.Infrastructure.Scraping.Ssn;
 using IndirimTakip.Infrastructure.Scraping.SpaceSupplements;
@@ -202,6 +205,33 @@ public static class DependencyInjection
             client.Timeout = TimeSpan.FromSeconds(30);
         });
         services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<Protein34Scraper>());
+
+        // Grizzone / Kiperin / Renovafood — üçü de "sitemap + ürün sayfasındaki
+        // schema.org" deseni. İlk ikisi ikas, Renovafood Ticimax; desen
+        // platformdan bağımsız çalıştığı için aynı taban sınıfı paylaşıyorlar.
+        services.AddHttpClient<GrizzoneScraper>(client =>
+        {
+            client.BaseAddress = new Uri("https://grizzone.com.tr/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
+        services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<GrizzoneScraper>());
+
+        services.AddHttpClient<KiperinScraper>(client =>
+        {
+            client.BaseAddress = new Uri("https://kiperinturkiye.com/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
+        services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<KiperinScraper>());
+
+        services.AddHttpClient<RenovafoodScraper>(client =>
+        {
+            client.BaseAddress = new Uri("https://renovafood.com.tr/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
+        services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<RenovafoodScraper>());
 
         services.AddHttpClient<TorqScraper>(client =>
         {
