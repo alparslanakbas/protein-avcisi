@@ -1,6 +1,7 @@
 import { DOCUMENT, DecimalPipe, isPlatformServer } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, PLATFORM_ID, RESPONSE_INIT, computed, inject, signal } from '@angular/core';
+import { Location } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
@@ -50,6 +51,7 @@ interface ComparedProduct {
 })
 export class ProductComparisonPage implements OnInit {
   protected readonly displayName = displayName;
+  private readonly location = inject(Location);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly dealsService = inject(DealsService);
@@ -255,6 +257,46 @@ export class ProductComparisonPage implements OnInit {
     if (!value) return null;
 
     return match[2].toLowerCase() === 'kg' ? value * 1000 : value;
+  }
+
+
+  /**
+   * Mağaza butonunun ikinci satırı — ürünü ayırt eden kısım.
+   *
+   * Buton eskiden yalnızca "{marka} mağazasına git" yazıyordu. Aynı markanın
+   * iki ürünü karşılaştırıldığında (mobilde kullanıcı bunu bildirdi:
+   * ProteinOcean vs ProteinOcean) yan yana BİREBİR AYNI iki buton çıkıyor ve
+   * hangisinin hangi ürüne gittiği anlaşılmıyordu.
+   *
+   * Ayırt edici olarak boyut/aroma tercih ediliyor (kısa ve tam da iki ürünü
+   * ayıran şey); ikisi de yoksa ürün adına düşülüyor.
+   */
+  protected magazaButonEtiketi(deal: Deal): string {
+    const ayirtEdici = [deal.size, deal.flavor].filter(Boolean).join(' · ');
+    return ayirtEdici || displayName(deal.productName);
+  }
+
+  /**
+   * "Karşılaştırmayı temizle".
+   *
+   * Eskiden yalnızca `comparison.clear()` çağrılıyordu ve kullanıcı için
+   * HİÇBİR ŞEY OLMUYORDU: bu sayfa ürünleri servisten değil ROTA
+   * PARAMETRESİNDEN yüklüyor, dolayısıyla seçim temizlense de ekran aynı
+   * kalıyordu. Kullanıcı bunu "aksiyon yok" diye bildirdi.
+   *
+   * Seçim temizlendikten sonra sayfanın kendisi de anlamsızlaşıyor; geldiği
+   * yere dönülüyor. Doğrudan bu adresle gelinmişse (paylaşılan link) geri
+   * gidilecek bir yer olmadığı için ana sayfaya alınıyor.
+   */
+  protected karsilastirmayiTemizle(): void {
+    this.comparison.clear();
+
+    if (this.location.getState() && window.history.length > 1) {
+      this.location.back();
+      return;
+    }
+
+    this.router.navigate(['/']);
   }
 
   private setMeta(a: Deal, b: Deal): void {

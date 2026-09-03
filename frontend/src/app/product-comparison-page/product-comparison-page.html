@@ -278,13 +278,14 @@
             class="rounded-[8px] py-2.5 text-center text-sm font-medium text-[var(--noc-accent-100)]"
             style="background: var(--noc-accent-800)"
           >
-            {{ item.deal.brandName }} mağazasına git
+            <span class="block text-[11px] opacity-80">{{ item.deal.brandName }}</span>
+            <span class="block truncate">{{ magazaButonEtiketi(item.deal) }}</span>
           </a>
         }
       </div>
 
       <div class="mt-6 text-center">
-        <button type="button" class="text-xs text-[var(--noc-neutral-500)] underline hover:text-[var(--noc-accent)]" (click)="comparison.clear()">
+        <button type="button" class="text-xs text-[var(--noc-neutral-500)] underline hover:text-[var(--noc-accent)]" (click)="karsilastirmayiTemizle()">
           Karşılaştırmayı temizle
         </button>
       </div>

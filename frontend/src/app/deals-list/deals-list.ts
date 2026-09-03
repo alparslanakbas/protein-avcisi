@@ -38,6 +38,10 @@ import { PreferredProducts } from '../preferred-products/preferred-products';
 
 type ViewMode = 'deals' | 'all' | 'store';
 
+// Adrese yalnızca varsayılandan SAPAN görünüm yazılıyor; bu sabit iki yerde
+// (yazma ve okuma) aynı olmak zorunda.
+const DEFAULT_VIEW_MODE: ViewMode = 'store';
+
 const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
 const PAGE_SIZE = 24;
 const SEARCH_DEBOUNCE_MS = 350;
@@ -486,6 +490,70 @@ export class DealsList implements OnInit {
         if (search) this.viewMode.set('all');
       }
 
+      // Filtreler de adresten geri yükleniyor. Bu, GERİ tuşunun çalışması
+      // için şart: kullanıcı arama/filtre yapıp başka bir sayfaya (ürün,
+      // karşılaştırma) gidip geri döndüğünde bileşen yeniden kuruluyor ve
+      // signal'ler varsayılana düşüyordu — durum yalnızca adreste yaşıyorsa
+      // kurtarılabiliyor.
+      const kume = (ad: string) => {
+        const ham = params.get(ad);
+        return new Set((ham ?? '').split(',').map((x) => x.trim()).filter(Boolean));
+      };
+      const sayi = (ad: string) => {
+        const ham = params.get(ad);
+        if (ham === null || ham.trim() === '') return null;
+        const deger = Number(ham);
+        return Number.isFinite(deger) ? deger : null;
+      };
+
+      const kumeFarkli = (a: Set<string>, b: Set<string>) =>
+        a.size !== b.size || [...a].some((x) => !b.has(x));
+
+      const markalar = kume('brands');
+      if (kumeFarkli(markalar, this.selectedBrands())) {
+        this.selectedBrands.set(markalar);
+        needsLoad = true;
+      }
+
+      const kategoriler = kume('categories');
+      if (kumeFarkli(kategoriler, this.selectedCategories())) {
+        this.selectedCategories.set(kategoriler);
+        needsLoad = true;
+      }
+
+      const saticilar = kume('sellers');
+      if (kumeFarkli(saticilar, this.selectedSellers())) {
+        this.selectedSellers.set(saticilar);
+        needsLoad = true;
+      }
+
+      const enAz = sayi('min');
+      if (enAz !== this.priceMin()) {
+        this.priceMin.set(enAz);
+        needsLoad = true;
+      }
+
+      const enCok = sayi('max');
+      if (enCok !== this.priceMax()) {
+        this.priceMax.set(enCok);
+        needsLoad = true;
+      }
+
+      const siralama = params.get('sort') ?? '';
+      if (siralama !== this.sortBy()) {
+        this.sortBy.set(siralama);
+        needsLoad = true;
+      }
+
+      // Görünüm sekmesi listeyi değiştirdiği için adresten geri geliyor; ama
+      // yukarıdaki "dışarıdan arama gelince Tümü'ne geç" kuralını EZMEMELİ,
+      // o yüzden yalnızca adreste açıkça yazılıysa uygulanıyor.
+      const gorunum = params.get('view') as ViewMode | null;
+      if (gorunum && gorunum !== this.viewMode()) {
+        this.viewMode.set(gorunum);
+        needsLoad = true;
+      }
+
       const page = Math.max(1, Number(params.get('page')) || 1);
       if (page !== this.currentPage()) {
         this.currentPage.set(page);
@@ -577,7 +645,7 @@ export class DealsList implements OnInit {
     this.viewMode.set(mode);
     this.currentPage.set(1);
     this.load();
-    this.syncPageQueryParam(1, false);
+    this.syncUrlState(1, false);
   }
 
   protected onSearchChange(value: string): void {
@@ -586,7 +654,7 @@ export class DealsList implements OnInit {
     this.searchDebounceHandle = setTimeout(() => {
       this.currentPage.set(1);
       this.load();
-      this.syncPageQueryParam(1, false);
+      this.syncUrlState(1, false);
     }, SEARCH_DEBOUNCE_MS);
   }
 
@@ -594,7 +662,7 @@ export class DealsList implements OnInit {
     this.sortBy.set(value);
     this.currentPage.set(1);
     this.load();
-    this.syncPageQueryParam(1, false);
+    this.syncUrlState(1, false);
   }
 
   protected toggleSeller(seller: string): void {
@@ -604,7 +672,7 @@ export class DealsList implements OnInit {
     this.selectedSellers.set(current);
     this.currentPage.set(1);
     this.load();
-    this.syncPageQueryParam(1, false);
+    this.syncUrlState(1, false);
   }
 
   protected onSellerSelect(value: string): void {
@@ -619,7 +687,7 @@ export class DealsList implements OnInit {
     this.selectedBrands.set(current);
     this.currentPage.set(1);
     this.load();
-    this.syncPageQueryParam(1, false);
+    this.syncUrlState(1, false);
   }
 
   protected toggleCategory(category: string): void {
@@ -628,21 +696,21 @@ export class DealsList implements OnInit {
     this.selectedCategories.set(current);
     this.currentPage.set(1);
     this.load();
-    this.syncPageQueryParam(1, false);
+    this.syncUrlState(1, false);
   }
 
   protected onPriceMinChange(value: number | null): void {
     this.priceMin.set(value);
     this.currentPage.set(1);
     this.load();
-    this.syncPageQueryParam(1, false);
+    this.syncUrlState(1, false);
   }
 
   protected onPriceMaxChange(value: number | null): void {
     this.priceMax.set(value);
     this.currentPage.set(1);
     this.load();
-    this.syncPageQueryParam(1, false);
+    this.syncUrlState(1, false);
   }
 
   protected onBrandSelect(value: string): void {
@@ -678,7 +746,7 @@ export class DealsList implements OnInit {
   private afterFilterChange(): void {
     this.currentPage.set(1);
     this.load();
-    this.syncPageQueryParam(1, false);
+    this.syncUrlState(1, false);
   }
 
   protected clearFilters(): void {
@@ -695,7 +763,7 @@ export class DealsList implements OnInit {
     this.sortBy.set('');
     this.currentPage.set(1);
     this.load();
-    this.syncPageQueryParam(1, false);
+    this.syncUrlState(1, false);
   }
 
   protected goToPage(page: number): void {
@@ -707,15 +775,42 @@ export class DealsList implements OnInit {
     // değişiklikleri bunun aksine replaceUrl kullanıyor (bkz. syncPageQueryParam
     // çağrıları yukarıda) — her filtre tıklaması ayrı bir "geri" durağı
     // olmasın diye.
-    this.syncPageQueryParam(page, true);
+    this.syncUrlState(page, true);
     // Sayfa değişince en üste dön, kullanıcı grid'in ortasında kalmasın.
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  private syncPageQueryParam(page: number, push: boolean): void {
+  /**
+   * Liste durumunun TAMAMINI adrese yazar.
+   *
+   * Eskiden adreste yalnızca `page` vardı; arama ve filtreler saf signal'di.
+   * Sonuç: kullanıcı "magnezyum" arayıp bir ürüne/karşılaştırmaya gidip GERİ
+   * döndüğünde her şey sıfırlanmış boş bir ana sayfa buluyordu (kullanıcı
+   * mobilde bildirdi). Durum adreste olduğu için artık tarayıcının kendi
+   * geri/ileri mantığı yeterli — ayrıca liste paylaşılabilir ve yenilemeye
+   * dayanıklı hale geliyor.
+   *
+   * Varsayılan değerler adrese YAZILMIYOR (null veriliyor, Angular parametreyi
+   * düşürüyor): filtresiz ana sayfanın adresi sade kalsın ve kanonik adres
+   * bozulmasın diye.
+   */
+  private syncUrlState(page: number, push: boolean): void {
+    const dizi = (deger: Set<string>) => (deger.size > 0 ? [...deger].join(',') : null);
+    const arama = this.searchQuery().trim();
+
     this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: { page: page > 1 ? page : null },
+      queryParams: {
+        page: page > 1 ? page : null,
+        search: arama || null,
+        brands: dizi(this.selectedBrands()),
+        categories: dizi(this.selectedCategories()),
+        sellers: dizi(this.selectedSellers()),
+        min: this.priceMin(),
+        max: this.priceMax(),
+        sort: this.sortBy() || null,
+        view: this.viewMode() === DEFAULT_VIEW_MODE ? null : this.viewMode(),
+      },
       queryParamsHandling: 'merge',
       replaceUrl: !push,
     });
