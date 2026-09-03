@@ -149,25 +149,57 @@ public partial class DealsQueryService(AppDbContext db, IOptions<AffiliateOption
         var referenceSince = DateTimeOffset.UtcNow.AddDays(-referenceWindowDays);
         var staleSince = DateTimeOffset.UtcNow.Subtract(StaleThreshold);
 
-        var query = (
-            from p in db.Products
-            join b in db.Brands on p.BrandId equals b.Id
-            where b.IsActive
-            select new
-            {
-                Product = p,
-                BrandName = b.Name,
-                Latest = p.PriceHistories.OrderByDescending(ph => ph.ScrapedAt).FirstOrDefault(),
-                ReferencePrice = p.PriceHistories
-                    .Where(ph => ph.ScrapedAt >= referenceSince)
-                    .Max(ph => (decimal?)ph.Price),
-                ThirtyDayLowPrice = p.PriceHistories
-                    .Where(ph => ph.ScrapedAt >= referenceSince)
-                    .Min(ph => (decimal?)ph.Price),
-            }).AsNoTracking();
+        // ÖNCEDEN HESAPLANMIŞ ÖZET vs CANLI HESAP.
+        //
+        // Bu sorgu 2713 ürünün HER BİRİ için PriceHistories üzerinde 6-8
+        // korelasyonlu alt sorgu çalıştırıyordu; isteğin %97,7'si burada
+        // geçiyordu (COUNT 654 ms + veri sorgusu 1.437 ms, C# tarafı 49 ms).
+        // Aynı değerler artık her taramadan sonra tek küme sorgusuyla ürüne
+        // yazılıyor (PriceSummaryRefresher).
+        //
+        // Özet SABİT 30 günlük pencere için hesaplanıyor. Çağıran farklı bir
+        // pencere isterse (days=7, days=90) ESKİ CANLI HESAP kullanılıyor —
+        // o yol bilinçli olarak duruyor, silinmedi. Böylece hızlanma yalnızca
+        // varsayılan ve fiilen tek kullanılan pencerede geçerli, diğer
+        // pencerelerde davranış birebir aynı kalıyor.
+        var ozetiKullan = referenceWindowDays == PriceSummaryRefresher.WindowDays;
+
+        // İki dal AYNI şekle projekte ediliyor; aşağıdaki tüm süzgeç ve
+        // sıralama mantığı hangi dalın seçildiğini bilmiyor.
+        var query = (ozetiKullan
+            ? from p in db.Products
+              join b in db.Brands on p.BrandId equals b.Id
+              where b.IsActive
+              select new
+              {
+                  Product = p,
+                  BrandName = b.Name,
+                  LatestPrice = p.LatestPrice,
+                  LatestStoreOldPrice = p.LatestStoreOldPrice,
+                  LatestScrapedAt = p.LatestScrapedAt,
+                  ReferencePrice = p.ReferencePrice30,
+                  ThirtyDayLowPrice = p.LowestPrice30,
+              }
+            : from p in db.Products
+              join b in db.Brands on p.BrandId equals b.Id
+              where b.IsActive
+              select new
+              {
+                  Product = p,
+                  BrandName = b.Name,
+                  LatestPrice = (decimal?)p.PriceHistories.OrderByDescending(ph => ph.ScrapedAt).Select(ph => ph.Price).FirstOrDefault(),
+                  LatestStoreOldPrice = p.PriceHistories.OrderByDescending(ph => ph.ScrapedAt).Select(ph => ph.StoreOldPrice).FirstOrDefault(),
+                  LatestScrapedAt = (DateTimeOffset?)p.PriceHistories.OrderByDescending(ph => ph.ScrapedAt).Select(ph => ph.ScrapedAt).FirstOrDefault(),
+                  ReferencePrice = p.PriceHistories
+                      .Where(ph => ph.ScrapedAt >= referenceSince)
+                      .Max(ph => (decimal?)ph.Price),
+                  ThirtyDayLowPrice = p.PriceHistories
+                      .Where(ph => ph.ScrapedAt >= referenceSince)
+                      .Min(ph => (decimal?)ph.Price),
+              }).AsNoTracking();
 
         // Donmuş/hayalet ürünleri gizle — bkz. StaleThreshold üzerindeki yorum.
-        query = query.Where(r => r.Latest != null && r.Latest.ScrapedAt >= staleSince);
+        query = query.Where(r => r.LatestScrapedAt != null && r.LatestScrapedAt >= staleSince);
 
         if (brands is { Length: > 0 })
             query = query.Where(r => brands.Contains(r.BrandName));
@@ -282,19 +314,19 @@ public partial class DealsQueryService(AppDbContext db, IOptions<AffiliateOption
             }
         }
 
-        query = query.Where(r => r.Latest != null && r.ReferencePrice != null);
+        query = query.Where(r => r.LatestPrice != null && r.ReferencePrice != null);
 
         if (onlyDiscounted)
-            query = query.Where(r => r.Latest!.Price < r.ReferencePrice);
+            query = query.Where(r => r.LatestPrice < r.ReferencePrice);
 
         if (onlyStoreDiscounted)
-            query = query.Where(r => r.Latest!.StoreOldPrice != null && r.Latest.StoreOldPrice > r.Latest.Price);
+            query = query.Where(r => r.LatestStoreOldPrice != null && r.LatestStoreOldPrice > r.LatestPrice);
 
         if (minPrice is not null)
-            query = query.Where(r => r.Latest!.Price >= minPrice);
+            query = query.Where(r => r.LatestPrice >= minPrice);
 
         if (maxPrice is not null)
-            query = query.Where(r => r.Latest!.Price <= maxPrice);
+            query = query.Where(r => r.LatestPrice <= maxPrice);
 
         var totalCount = await query.CountAsync(cancellationToken);
 
@@ -330,8 +362,8 @@ public partial class DealsQueryService(AppDbContext db, IOptions<AffiliateOption
         {
             "name_asc" => relevanceOrdered.ThenBy(r => r.Product.Name),
             "name_desc" => relevanceOrdered.ThenByDescending(r => r.Product.Name),
-            "price_asc" => relevanceOrdered.ThenBy(r => r.Latest!.Price).ThenBy(r => r.Product.Name),
-            "price_desc" => relevanceOrdered.ThenByDescending(r => r.Latest!.Price).ThenBy(r => r.Product.Name),
+            "price_asc" => relevanceOrdered.ThenBy(r => r.LatestPrice).ThenBy(r => r.Product.Name),
+            "price_desc" => relevanceOrdered.ThenByDescending(r => r.LatestPrice).ThenBy(r => r.Product.Name),
             // Ürünün eklenme sırası: Id artan bir kimlik olduğu için
             // takibe alınma sırasını birebir veriyor. Ayrı bir tarih
             // alanı tutmaya gerek yok — ürün kaydı yalnızca ilk
@@ -339,13 +371,25 @@ public partial class DealsQueryService(AppDbContext db, IOptions<AffiliateOption
             "newest" => relevanceOrdered.ThenByDescending(r => r.Product.Id),
             "oldest" => relevanceOrdered.ThenBy(r => r.Product.Id),
             _ => onlyStoreDiscounted
-                ? relevanceOrdered.ThenByDescending(r => (r.Latest!.StoreOldPrice!.Value - r.Latest.Price) / r.Latest.StoreOldPrice.Value).ThenBy(r => r.Product.Name)
+                ? relevanceOrdered.ThenByDescending(r => (r.LatestStoreOldPrice!.Value - r.LatestPrice!.Value) / r.LatestStoreOldPrice.Value).ThenBy(r => r.Product.Name)
                 // Referans fiyat 0 olabiliyor (bir marka ürünü 0 TL ile listelerse):
                 // korumasız bırakılınca veritabanı sıfıra bölme hatası veriyor ve
                 // TÜM ürün listesi 500 dönüyordu. Bu tür ürünler zaten indirimli
                 // sayılmadığı için sıralamada en sona düşmeleri doğru davranış.
-                : relevanceOrdered.ThenByDescending(r => r.ReferencePrice!.Value == 0m ? 0m : (r.ReferencePrice.Value - r.Latest!.Price) / r.ReferencePrice.Value).ThenBy(r => r.Product.Name),
+                : relevanceOrdered.ThenByDescending(r => r.ReferencePrice!.Value == 0m ? 0m : (r.ReferencePrice.Value - r.LatestPrice!.Value) / r.ReferencePrice.Value).ThenBy(r => r.Product.Name),
         };
+
+        // KESİN EŞİTLİK BOZUCU. Sıralama anahtarları eşit olan kayıtların
+        // (aynı indirim oranı + aynı ad — katalogda aynı ürünün iki satıcıdaki
+        // kopyaları tam olarak böyle) kendi aralarındaki sırası veritabanına
+        // kalıyordu, yani ISTEKTEN İSTEĞE DEĞİŞEBİLİYORDU. Sayfalamada bunun
+        // sonucu bir ürünün iki sayfada birden çıkması ya da hiç çıkmamasıdır.
+        //
+        // Fiyat özetine geçerken yakalandı: sorgu planı değişince beraberliklerin
+        // sırası da değişti ve eski/yeni çıktı karşılaştırmasında 22 sorgunun
+        // 3'ü ayrıştı — ürün KÜMESİ aynıydı, yalnızca beraberlerin sırası
+        // farklıydı. Id benzersiz olduğu için sıra artık her zaman aynı.
+        orderedQuery = orderedQuery.ThenBy(r => r.Product.Id);
 
         var pageRows = await orderedQuery
             .Skip((page - 1) * pageSize)
@@ -353,7 +397,19 @@ public partial class DealsQueryService(AppDbContext db, IOptions<AffiliateOption
             .ToListAsync(cancellationToken);
 
         var items = pageRows
-            .Select(r => new DealRow(r.Product, r.BrandName, r.Latest!, r.ReferencePrice!.Value, r.ThirtyDayLowPrice!.Value))
+            .Select(r => new DealRow(
+                r.Product, r.BrandName,
+                // DealRow bir PriceHistory bekliyor; özet dalında ortada gerçek
+                // bir satır yok, alanlardan kuruluyor. MapToDealDto yalnızca üç
+                // alanı okuyor (Price, StoreOldPrice, ScrapedAt).
+                new PriceHistory
+                {
+                    ProductId = r.Product.Id,
+                    Price = r.LatestPrice!.Value,
+                    StoreOldPrice = r.LatestStoreOldPrice,
+                    ScrapedAt = r.LatestScrapedAt!.Value,
+                },
+                r.ReferencePrice!.Value, r.ThirtyDayLowPrice!.Value))
             .Select(MapToDealDto)
             .ToList();
 
