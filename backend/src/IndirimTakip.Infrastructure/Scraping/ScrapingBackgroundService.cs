@@ -1,4 +1,5 @@
 using IndirimTakip.Core.Caching;
+using IndirimTakip.Infrastructure.Deals;
 using IndirimTakip.Core.Scraping;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -64,6 +65,11 @@ public class ScrapingBackgroundService(
         // Veri değişti: önbelleği düşür ve sıcak uçları yeniden doldur.
         // Yoksa bir sonraki ziyaretçi soğuk önbelleğe düşüyor (ölçüm: ana
         // sayfa soğukta 6,0 sn, sıcakta 0,26 sn).
+        // Fiyat özeti ÖNCE: önbellek ısıtması bu alanları okuyor, ters
+        // sırada ısıtma eski özeti önbelleğe alırdı.
+        await scope.ServiceProvider.GetRequiredService<PriceSummaryRefresher>()
+            .RefreshAsync(cancellationToken);
+
         await scope.ServiceProvider.GetRequiredService<IPublicCacheRefresher>()
             .RefreshAsync(cancellationToken);
 

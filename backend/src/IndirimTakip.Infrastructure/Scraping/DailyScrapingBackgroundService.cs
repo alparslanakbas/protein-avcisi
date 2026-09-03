@@ -1,4 +1,5 @@
 using IndirimTakip.Core.Caching;
+using IndirimTakip.Infrastructure.Deals;
 using IndirimTakip.Core.Scraping;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -95,6 +96,11 @@ public class DailyScrapingBackgroundService(
                 logger.LogError(ex, "{Brand} taranırken hata oluştu (günlük).", scraper.BrandName);
             }
         }
+
+        // Fiyat özeti ÖNCE: önbellek ısıtması bu alanları okuyor, ters
+        // sırada ısıtma eski özeti önbelleğe alırdı.
+        await scope.ServiceProvider.GetRequiredService<PriceSummaryRefresher>()
+            .RefreshAsync(cancellationToken);
 
         await scope.ServiceProvider.GetRequiredService<IPublicCacheRefresher>()
             .RefreshAsync(cancellationToken);

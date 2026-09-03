@@ -57,6 +57,10 @@ public static class DependencyInjection
         // araçları) için boş yedek. TryAdd olduğu için Api'nin kaydını EZMEZ.
         services.TryAddScoped<IPublicCacheRefresher, NullPublicCacheRefresher>();
 
+        // Fiyat özeti (Products üzerindeki önceden hesaplanmış alanlar) her
+        // taramadan sonra tek küme sorgusuyla tazeleniyor.
+        services.AddScoped<PriceSummaryRefresher>();
+
         services.AddHttpClient<HiqScraper>(client =>
         {
             client.BaseAddress = new Uri("https://takehiq.com/");

@@ -66,6 +66,11 @@ internal static class AdminEndpoints
                     // Veri değişti: önbelleği düşür ve sıcak uçları yeniden doldur.
                     // Elle tarama çoğunlukla deploy sonrası çalıştırılıyor, yani tam
                     // da ziyaretçinin soğuk önbelleğe düşeceği an.
+                    // Fiyat özeti ÖNCE: önbellek ısıtması bu alanları okuyor,
+                    // ters sırada ısıtma eski özeti önbelleğe alırdı.
+                    await scope.ServiceProvider.GetRequiredService<PriceSummaryRefresher>()
+                        .RefreshAsync(lifetime.ApplicationStopping);
+
                     await scope.ServiceProvider.GetRequiredService<IPublicCacheRefresher>()
                         .RefreshAsync(lifetime.ApplicationStopping);
 

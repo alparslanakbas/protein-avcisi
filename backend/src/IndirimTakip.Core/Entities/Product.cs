@@ -104,4 +104,41 @@ public class Product
     public DateTimeOffset? RatingCheckedAt { get; set; }
 
     public ICollection<PriceHistory> PriceHistories { get; set; } = new List<PriceHistory>();
+
+    // ---- Fiyat özeti (önceden hesaplanmış) --------------------------------
+    //
+    // Bu beş alan PriceHistories'ten TÜRETİLİR, kaynak veri değildir; fiyat
+    // geçmişi tek doğru kaynak olmaya devam ediyor. Her taramadan sonra tek
+    // bir küme sorgusuyla yeniden hesaplanıyorlar
+    // (PriceSummaryRefresher).
+    //
+    // NEDEN: /api/deals isteğinin %97,7'si PostgreSQL'de geçiyordu, çünkü
+    // sorgu 2713 ürünün HER BİRİ için PriceHistories üzerinde 6-8
+    // korelasyonlu alt sorgu çalıştırıyordu (son fiyat, 30 günün en yükseği,
+    // en düşüğü, indirim yüzdesi hesabında aynı alt sorgular tekrar tekrar).
+    // Ölçüm: COUNT 654 ms + veri sorgusu 1.437 ms.
+    //
+    // PENCERE SABİT 30 GÜN. `days` parametresi 30'dan farklı gelirse sorgu
+    // eski canlı hesaba düşüyor — o yol silinmedi, kasıtlı olarak duruyor.
+
+    /// <summary>En son taranan fiyat.</summary>
+    public decimal? LatestPrice { get; set; }
+
+    /// <summary>En son taramada mağazanın beyan ettiği eski fiyat.</summary>
+    public decimal? LatestStoreOldPrice { get; set; }
+
+    /// <summary>En son fiyat noktasının zamanı. Bayat ürün süzgeci bunu kullanıyor.</summary>
+    public DateTimeOffset? LatestScrapedAt { get; set; }
+
+    /// <summary>Son 30 günün EN YÜKSEK fiyatı — "doğrulanmış indirim" bunun üzerinden hesaplanıyor.</summary>
+    public decimal? ReferencePrice30 { get; set; }
+
+    /// <summary>Son 30 günün EN DÜŞÜK fiyatı — "30 günün en düşüğü" rozeti.</summary>
+    public decimal? LowestPrice30 { get; set; }
+
+    /// <summary>
+    /// Özetin en son ne zaman hesaplandığı. Taramadan sonra güncelleniyor;
+    /// çok bayatsa sorgu güvenli tarafa geçip canlı hesaba düşebilir.
+    /// </summary>
+    public DateTimeOffset? PriceSummaryUpdatedAt { get; set; }
 }
