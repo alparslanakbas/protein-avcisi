@@ -268,6 +268,9 @@ export class ProductComparisonPage implements OnInit {
    * ProteinOcean vs ProteinOcean) yan yana BİREBİR AYNI iki buton çıkıyor ve
    * hangisinin hangi ürüne gittiği anlaşılmıyordu.
    *
+   * Butonun ALT satırı "{marka} mağazasına git" olarak duruyor (eylem
+   * kaybolmamalı); bu metin ÜST satırda, küçük ve soluk gösteriliyor.
+   *
    * Ayırt edici olarak boyut/aroma tercih ediliyor (kısa ve tam da iki ürünü
    * ayıran şey); ikisi de yoksa ürün adına düşülüyor.
    */
