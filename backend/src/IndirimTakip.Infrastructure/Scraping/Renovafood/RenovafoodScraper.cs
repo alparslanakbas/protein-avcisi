@@ -13,6 +13,12 @@ namespace IndirimTakip.Infrastructure.Scraping.Renovafood;
 /// "challenge/detox" paketlerinden oluşuyor — wellness ağırlıklı bir marka.
 ///
 /// Sitemap adresi ikas'takinden farklı: <c>/sitemap/products/0.xml</c>.
+///
+/// <b>ŞU AN DEVRE DIŞI — site sunucumuzun IP'sini ENGELLİYOR.</b> Deploy
+/// sonrası ölçüldü: sitemap VM'den 200 dönüyor ama ürün sayfaları 403
+/// (User-Agent'lı da, UA'sız da). Geliştirme makinesinden 38/38 ürün
+/// sorunsuz alınıyordu, yani kod doğru — engel ağ tarafında.
+/// Supplementler.com ile aynı durum; DI kaydı yorumda bekliyor.
 /// </summary>
 public sealed class RenovafoodScraper(HttpClient httpClient, ILogger<RenovafoodScraper> logger)
     : SitemapSchemaOrgScraper(httpClient, logger)
