@@ -74,6 +74,18 @@ public static class BrandNameNormalizer
             ["Gpn"] = "GPN",
             ["Qnt"] = "QNT",
             ["Biotechusa"] = "BioTech USA",
+
+        // MLA Protein (3 Eylül) — mağaza çok markalı ve schema.org marka
+        // adlarını KÜÇÜK HARFLE yazıyor ("mla protein", "detoksfit"). Üçü
+        // katalogda ZATEN var (Dr Pan, FitNut, Seedn Grains bayilerden
+        // geliyor); birebir aynı yazıma çevrilmezse kopya Brand kaydı
+        // oluşurdu — 1 Eylül'de tam bu şekilde kopya markalar oluşmuştu.
+        ["mla protein"] = "MLA Protein",
+        ["Mla Protein"] = "MLA Protein",
+        ["Fitnut"] = "FitNut",
+        ["Seed'n Grains"] = "Seedn Grains",
+        ["Seed’n Grains"] = "Seedn Grains",
+        ["detoksfit"] = "Detoksfit",
         };
 
     /// <summary>

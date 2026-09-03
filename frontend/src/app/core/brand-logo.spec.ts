@@ -7,6 +7,9 @@ describe('brandLogoUrl', () => {
     expect(brandLogoUrl('HIQ')).toBe('/marka-logo/hiq.webp');
     expect(brandLogoUrl('Space Gym Supplements')).toBe('/marka-logo/space-gym-supplements.webp');
     expect(brandLogoUrl('Yeşilmarka')).toBe('/marka-logo/yesilmarka.webp');
+    // Kesme işareti slug'da tire oluyor — dosya adıyla birebir uyuşmalı.
+    expect(brandLogoUrl("Gigi's")).toBe('/marka-logo/gigi-s.webp');
+    expect(brandLogoUrl('MLA Protein')).toBe('/marka-logo/mla-protein.webp');
   });
 
   // Katalogdaki 66 marka yalnızca bir bayiden geliyor; onlar için doğrulanmış

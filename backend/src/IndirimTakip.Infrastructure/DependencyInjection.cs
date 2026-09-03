@@ -11,9 +11,11 @@ using IndirimTakip.Infrastructure.Scraping.Biofitle;
 using IndirimTakip.Infrastructure.Scraping.CommanderNutrition;
 using IndirimTakip.Infrastructure.Scraping.DrSupplement;
 using IndirimTakip.Infrastructure.Scraping.FitCarsi;
+using IndirimTakip.Infrastructure.Scraping.Gigis;
 using IndirimTakip.Infrastructure.Scraping.Gnc;
 using IndirimTakip.Infrastructure.Scraping.Heyday;
 using IndirimTakip.Infrastructure.Scraping.ImperiumSupplements;
+using IndirimTakip.Infrastructure.Scraping.MlaProtein;
 using IndirimTakip.Infrastructure.Scraping.MusclePump;
 using IndirimTakip.Infrastructure.Scraping.Nois;
 using IndirimTakip.Infrastructure.Scraping.PrimeNutrition;
@@ -166,6 +168,28 @@ public static class DependencyInjection
             client.Timeout = TimeSpan.FromSeconds(30);
         });
         services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<VitabearScraper>());
+
+        // Gigi's — ikas; products.xml sitemap + ürün sayfasındaki schema.org.
+        // GraphQL ucu bu mağazada totalCount:0 döndüğü için sitemap yolu
+        // kullanılıyor (bkz. IkasSchemaOrgCatalog).
+        services.AddHttpClient<GigisScraper>(client =>
+        {
+            client.BaseAddress = new Uri("https://gigis.com.tr/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
+        services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<GigisScraper>());
+
+        // MLA Protein — Gigi's ile aynı desen, farkı ÇOK MARKALI olması:
+        // marka ürün sayfasından okunuyor (Nutraxin, Dr. Pan, FitNut,
+        // Seedn Grains de satıyor).
+        services.AddHttpClient<MlaProteinScraper>(client =>
+        {
+            client.BaseAddress = new Uri("https://mlaprotein.com/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
+        services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<MlaProteinScraper>());
 
         services.AddHttpClient<TorqScraper>(client =>
         {

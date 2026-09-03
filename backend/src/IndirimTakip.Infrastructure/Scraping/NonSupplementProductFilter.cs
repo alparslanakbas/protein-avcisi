@@ -83,8 +83,25 @@ public static partial class NonSupplementProductFilter
     // "atlet(i|ler|leri)?" için daha önce verilen kararın aynısı: Türkçe ek
     // serbest bırakılınca başka kelimelerin içine denk geliyor.
     // 1416 ürünlük katalogla doğrulandı: yalnızca gerçek aksesuarlar kalıyor.
+    //
+    // 3 Eylül'de iki yeni kaynağın kataloğu ÖLÇÜLEREK genişletildi (tahminle
+    // değil: 79 + 86 ürünün tamamı çekilip mevcut kalıp üzerinden geçirildi,
+    // neyin kaçtığı listelendi).
+    //   Gigi's: 8 el yapımı seramik KASE / kuru yemişlik kaçıyordu (çantaları
+    //   kalıp zaten yakalıyordu).
+    //   MLA Protein: BBQ Sos, Şekersiz Ketçap, Garlic powder, Hot Chili,
+    //   Cajun/Chicken/Vegetable/BBQ Mix, Sprey Yağ, Aromalı Tatlandırıcı
+    //   kaçıyordu (hardal/sriracha/himalaya tuzu/shaker zaten yakalanıyordu).
+    //
+    // "sos" kelime sınırıyla ve açık ek listesiyle yazıldı: "sos(u|lar|ları)?"
+    // — bu hâli "SOSis"i YAKALAMAZ, çünkü "sos"tan sonra gelen "is" listede
+    // yok ve sınır tutmuyor. Aynı gerekçe "kase" için de geçerli.
+    //
+    // "Flavor Chocolate" BİLİNÇLİ OLARAK eklenmedi: tek bir üründe geçiyor ve
+    // "flavor/chocolate" gibi genel kelimeler gerçek aromalı ürünleri elerdi.
+    // Bir çeşni ürününü kaçırmak, bir protein tozunu elemekten iyidir.
     [GeneratedRegex(
-        @"\b(t-?shirt|sweatshirt|hoodie|şapka[a-zçğıöşü]*|beyzbol|pillbox|pill ?box|powder ?box|saklama kab[ıi]|bileklik[a-zçğıöşü]*|havlu[a-zçğıöşü]*|buff|atlet(i|ler|leri)?|anahtarlık[a-zçğıöşü]*|maskot|huni[a-zçğıöşü]*|shaker[a-zçğıöşü]*|şort[a-zçğıöşü]*|korse[a-zçğıöşü]*|eşofman[a-zçğıöşü]*|esofman[a-z]*|çanta[a-zçğıöşü]*|canta(s[ıi]|lar|lar[ıi])?|handbag|direnç band[a-zçğıöşü]*|direnc band[a-z]*|loop band[a-z]*|strap[a-z]*|wrist wrap[a-z]*|ağırlık kemer[a-zçğıöşü]*|agirlik kemer[a-z]*|dip belt[a-z]*|eldiven[a-zçğıöşü]*|hap kutusu|bakım seti|bakim seti|seyahat seti|basmati|himalaya tuzu|hardal|sriracha|sweet drops)\b",
+        @"\b(t-?shirt|sweatshirt|hoodie|şapka[a-zçğıöşü]*|beyzbol|pillbox|pill ?box|powder ?box|saklama kab[ıi]|bileklik[a-zçğıöşü]*|havlu[a-zçğıöşü]*|buff|atlet(i|ler|leri)?|anahtarlık[a-zçğıöşü]*|maskot|huni[a-zçğıöşü]*|shaker[a-zçğıöşü]*|şort[a-zçğıöşü]*|korse[a-zçğıöşü]*|eşofman[a-zçğıöşü]*|esofman[a-z]*|çanta[a-zçğıöşü]*|canta(s[ıi]|lar|lar[ıi])?|handbag|direnç band[a-zçğıöşü]*|direnc band[a-z]*|loop band[a-z]*|strap[a-z]*|wrist wrap[a-z]*|ağırlık kemer[a-zçğıöşü]*|agirlik kemer[a-z]*|dip belt[a-z]*|eldiven[a-zçğıöşü]*|hap kutusu|bakım seti|bakim seti|seyahat seti|kase(si|ler|leri)?|kuru yemişlik|kuru yemislik|basmati|himalaya tuzu|hardal|sriracha|sweet drops|sos(u|lar|ları)?|ketçap|ketcap|ketchup|garlic powder|hot chili|cajun|chicken mix|vegetable mix|bbq|sprey yağ[ıi]?|sprey yag[ıi]?|tatlandırıcı|tatlandirici)\b",
         RegexOptions.IgnoreCase)]
     private static partial Regex AccessoryKeywordRegex();
 
