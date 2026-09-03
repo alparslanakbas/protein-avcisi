@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { normalizeSearchText } from './search-normalize';
+import { matchesSearch, normalizeSearchText } from './search-normalize';
 
 // Bu testlerin varlık sebebi somut bir üretim hatası: markalar dizininde
 // "hiq" yazınca 0 sonuç çıkıyor, "HIQ" yazınca çıkıyordu. Sebep
@@ -57,5 +57,50 @@ describe('normalizeSearchText', () => {
   it('kısmi yazımda alt dize eşleşmesi korunuyor', () => {
     expect(normalizeSearchText('Hardline').includes(normalizeSearchText('hard'))).toBe(true);
     expect(normalizeSearchText('Fit Çarşı').includes(normalizeSearchText('cars'))).toBe(true);
+  });
+});
+
+// Kullanıcı bildirdi: "protein ocean yazıyorum sonuç yok diyor, çünkü marka
+// adı ProteinOcean. Diğer markaları buluyor."
+describe('matchesSearch', () => {
+  it('boşluklu yazımla bitişik marka adını bulur', () => {
+    expect(matchesSearch('ProteinOcean', 'protein ocean')).toBe(true);
+    expect(matchesSearch('ProteinOcean', 'Protein Ocean')).toBe(true);
+    expect(matchesSearch('ProteinOcean', 'proteinocean')).toBe(true);
+  });
+
+  it('boşluksuz yazımla ayrık marka adını bulur', () => {
+    expect(matchesSearch('Swiss Nutrition', 'swissnutrition')).toBe(true);
+    expect(matchesSearch('Prime Nutrition', 'primenutrition')).toBe(true);
+  });
+
+  it('kelime sırası önemsiz', () => {
+    expect(matchesSearch('Swiss Nutrition', 'nutrition swiss')).toBe(true);
+  });
+
+  it('kısmi yazımda da bulur', () => {
+    expect(matchesSearch('ProteinOcean', 'ocean')).toBe(true);
+    expect(matchesSearch('Muscle Pump', 'pump')).toBe(true);
+  });
+
+  // Düzeltilen Türkçe tuzağı burada da geçerli olmalı.
+  it('küçük/büyük harf ve Türkçe harf farkı engel değil', () => {
+    expect(matchesSearch('HIQ', 'hiq')).toBe(true);
+    expect(matchesSearch('Imperium Supplements', 'imperium')).toBe(true);
+    expect(matchesSearch('Fit Çarşı', 'fit carsi')).toBe(true);
+    expect(matchesSearch('Yeşilmarka', 'yesil')).toBe(true);
+  });
+
+  it('boş arama her şeyi geçirir', () => {
+    expect(matchesSearch('BigJoy', '')).toBe(true);
+    expect(matchesSearch('BigJoy', '   ')).toBe(true);
+  });
+
+  // ALAKASIZ SONUÇ ÜRETMEMELİ: kelime kelime eşleşme gevşetiyor, ama
+  // kelimelerin HEPSİ geçmek zorunda.
+  it('eşleşmeyeni bulmaz', () => {
+    expect(matchesSearch('ProteinOcean', 'protein ocean kreatin')).toBe(false);
+    expect(matchesSearch('BigJoy', 'hardline')).toBe(false);
+    expect(matchesSearch('Swiss Nutrition', 'swiss xyz')).toBe(false);
   });
 });

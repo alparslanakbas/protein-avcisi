@@ -1996,6 +1996,18 @@ app-preferred-products {
   .pa-preferred-arrow { transition: none; }
 }
 
+/* AÇILIR LİSTE SEÇENEKLERİ OKUNMUYORDU. `select` elemanlarına koyu temanın
+   açık metin rengi veriliyor ama seçeneklerin zeminini tarayıcı/işletim
+   sistemi çiziyor ve o beyaz kalıyordu — açık gri yazı beyaz zeminde
+   görünmez oluyordu (kullanıcı markalar sayfasındaki sıralama kutusunda
+   fark etti, ama sitedeki BÜTÜN select'ler etkileniyordu: ana sayfadaki
+   dört filtre, marka ve kategori sayfalarındaki sıralama).
+   Zemin de renk de burada açıkça veriliyor. */
+option {
+  background: var(--noc-card);
+  color: var(--noc-text);
+}
+
 .pa-filter-control {
   min-height: 42px;
   border: 1px solid var(--noc-divider);

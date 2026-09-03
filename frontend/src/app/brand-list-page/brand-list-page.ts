@@ -12,7 +12,7 @@ import { brandSlug } from '../core/brand-slug';
 import { CATEGORY_LABELS } from '../core/category-labels';
 import { BrandCategoryPair, BrandProductCount, DealsService } from '../core/deals.service';
 import { PageMetaService } from '../core/page-meta.service';
-import { normalizeSearchText } from '../core/search-normalize';
+import { matchesSearch } from '../core/search-normalize';
 import { SiteHeader } from '../site-header/site-header';
 
 type BrandSortMode = 'product-count' | 'name';
@@ -56,13 +56,12 @@ export class BrandListPage implements OnInit {
   protected readonly failedLogos = signal<ReadonlySet<string>>(new Set());
 
   protected readonly filteredBrands = computed(() => {
-    const query = this.normalize(this.searchQuery());
+    const query = this.searchQuery();
     const result = this.brands().filter((brand) => {
-      if (!query) return true;
-      const searchable = this.normalize(
-        `${brand.name} ${brand.categories.map((category) => category.label).join(' ')}`,
-      );
-      return searchable.includes(query);
+      // Eşleştirme kuralı (kelime kelime + boşluksuz) ve gerekçesi
+      // `core/search-normalize.ts` içinde, testleriyle birlikte.
+      const searchable = `${brand.name} ${brand.categories.map((category) => category.label).join(' ')}`;
+      return matchesSearch(searchable, query);
     });
 
     return [...result].sort((a, b) => {
@@ -195,11 +194,5 @@ export class BrandListPage implements OnInit {
 
   private selectFirstVisibleBrand(): void {
     this.selectedSlug.set(this.pageBrands()[0]?.slug ?? '');
-  }
-
-  // T\u00fcrk\u00e7e harf tuza\u011f\u0131 i\u00e7in ortak yard\u0131mc\u0131 \u2014 gerek\u00e7esi ve testleri
-  // `core/search-normalize.ts` i\u00e7inde.
-  private normalize(value: string): string {
-    return normalizeSearchText(value);
   }
 }

@@ -47,3 +47,32 @@ export function normalizeSearchText(value: string): string {
     .replace(/\s+/g, ' ')
     .trim();
 }
+
+/**
+ * Aranan metin, hedef metinle eşleşiyor mu?
+ *
+ * <b>NEDEN DÜZ `includes` YETMİYOR.</b> Marka adları boşluk konusunda tutarsız
+ * yazılıyor: "ProteinOcean" bitişik, "Swiss Nutrition" ayrık. Kullanıcı
+ * "protein ocean" yazdığında hiçbir sonuç çıkmıyordu, çünkü "proteinocean"
+ * içinde "protein ocean" geçmiyor. Kullanıcı bunu bildirdi: "diğer markaları
+ * buluyor ama ProteinOcean'ı bulmuyor".
+ *
+ * İki yönlü çözüm — biri tutarsa eşleşiyor:
+ * 1. <b>Kelime kelime:</b> aranan metnin HER kelimesi hedefte geçiyorsa.
+ *    "protein ocean" -> "protein" ✓ ve "ocean" ✓ -> ProteinOcean bulunur.
+ *    Sıra da önemsizleşir: "nutrition swiss" -> Swiss Nutrition.
+ * 2. <b>Boşluksuz:</b> iki taraftan da boşluklar atılıp karşılaştırılır.
+ *    "swissnutrition" -> "swissnutrition" ✓ -> Swiss Nutrition bulunur.
+ *
+ * Ürün aramasındaki (backend) mantıkla aynı ruhta: kelimeler arası AND.
+ */
+export function matchesSearch(searchable: string, query: string): boolean {
+  const hedef = normalizeSearchText(searchable);
+  const aranan = normalizeSearchText(query);
+  if (!aranan) return true;
+
+  const kelimeler = aranan.split(' ').filter(Boolean);
+  if (kelimeler.every((kelime) => hedef.includes(kelime))) return true;
+
+  return hedef.replace(/ /g, '').includes(aranan.replace(/ /g, ''));
+}
