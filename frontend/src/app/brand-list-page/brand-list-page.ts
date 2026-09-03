@@ -2,6 +2,12 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 
+import {
+  brandLogoNeedsDarkBackdrop,
+  brandLogoUrl,
+  brandMonogram,
+  brandMonogramColor,
+} from '../core/brand-logo';
 import { brandSlug } from '../core/brand-slug';
 import { CATEGORY_LABELS } from '../core/category-labels';
 import { BrandCategoryPair, BrandProductCount, DealsService } from '../core/deals.service';
@@ -23,34 +29,10 @@ interface BrandDirectoryItem {
   productCount: number;
   categories: BrandCategorySummary[];
   logoUrl: string | null;
-  previewLogoUrl: string | null;
+  logoNeedsDarkBackdrop: boolean;
+  monogram: string;
+  monogramColor: string;
 }
-
-// Markaların kendi sitelerinin yayınladığı favicon/amblem dosyaları.
-// Katalogdaki bayi markaları için doğrulanmış bir resmî kaynak yoksa logo
-// uydurmak yerine arayüzde Phosphor mağaza ikonu gösteriliyor.
-const OFFICIAL_BRAND_LOGOS: Readonly<Record<string, string>> = {
-  BigJoy: 'https://cdn.bigjoy.com.tr/image/catalog/bigjoy_icon.jpg',
-  Biofit: 'https://cdn.myikas.com/images/theme-images/2a7efd28-ceef-4028-8a0a-06b9ef42f37d/image_180.webp',
-  'Dr Supplement': 'https://cdn.myikas.com/images/theme-images/740e2988-ed44-40a5-afa3-f35d0cc53b56/image_180.webp',
-  GNC: 'https://cdn.myikas.com/images/theme-images/c8e1a8de-78a0-4a2f-b0af-86782dae8626/image_180.webp',
-  Hardline: 'https://www.hardlinenutrition.com/image/catalog/HL_favicon-1.png',
-  Heyday: 'https://cdn.myikas.com/images/theme-images/0be8dee1-6cdb-42fb-a9d7-fd7fa716d82d/image_180.webp',
-  'Nois Nutrition': 'https://cdn.myikas.com/images/theme-images/f0998119-9718-4af3-b480-67141264afe9/image_180.webp',
-  'Prime Nutrition': 'https://www.primenutrition.com.tr/image/catalog/Prime/Prime%20Logo/Prime-Nutrition-Favicon.png',
-  ProteinOcean: 'https://cdn.myikas.com/images/theme-images/7303f395-885d-4e31-b9d1-fff056f9ddf6/image_180.webp',
-  'S4U Nutrition': 'https://s4u.com.tr/image/catalog/logo/favicons4u.png',
-  'Space Gym Supplements': 'https://spacegymsupplements.com/images/spacelogo.png',
-  SSN: 'https://www.ssnsports.com.tr/image/catalog/logo/s-icon.png',
-  'Swiss Nutrition': 'https://cdn.myikas.com/images/theme-images/470ab99f-38f9-4787-8fc2-924f09f6ee16/image_180.webp',
-  'Think Nutrition': 'https://cdn.myikas.com/images/theme-images/c2aa545a-76df-4f11-b816-4bce949a21ae/image_180.webp',
-  'Torq Nutrition': 'https://www.torqnutrition.com.tr/image/catalog/torq.png',
-  Yeşilmarka: 'https://cdn.myikas.com/images/theme-images/23113b17-441b-433c-9d95-6dd8797b5c06/image_180.webp',
-};
-
-const OFFICIAL_BRAND_WORDMARKS: Readonly<Record<string, string>> = {
-  ProteinOcean: 'https://proteinocean.com/logo.svg',
-};
 
 const PAGE_SIZE = 12;
 
@@ -202,8 +184,10 @@ export class BrandListPage implements OnInit {
           slug: brandSlug(name),
           productCount: countByBrand.get(name) ?? 0,
           categories,
-          logoUrl: OFFICIAL_BRAND_LOGOS[name] ?? null,
-          previewLogoUrl: OFFICIAL_BRAND_WORDMARKS[name] ?? OFFICIAL_BRAND_LOGOS[name] ?? null,
+          logoUrl: brandLogoUrl(name),
+          logoNeedsDarkBackdrop: brandLogoNeedsDarkBackdrop(name),
+          monogram: brandMonogram(name),
+          monogramColor: brandMonogramColor(name),
         };
       })
       .sort((a, b) => b.productCount - a.productCount || a.name.localeCompare(b.name, 'tr-TR'));

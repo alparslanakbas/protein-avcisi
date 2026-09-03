@@ -57,17 +57,22 @@
                 (mouseenter)="selectBrand(brand)"
                 (focus)="selectBrand(brand)"
               >
-                <span class="pa-brand-tile-logo" aria-hidden="true">
+                <span
+                  class="pa-brand-tile-logo"
+                  [class.is-dark-backdrop]="brand.logoNeedsDarkBackdrop"
+                  aria-hidden="true"
+                >
                   @if (brand.logoUrl && !failedLogos().has(brand.slug)) {
                     <img
                       [src]="brand.logoUrl"
                       [alt]="brand.name + ' amblemi'"
                       loading="lazy"
-                      referrerpolicy="no-referrer"
                       (error)="markLogoFailed(brand.slug)"
                     />
                   } @else {
-                    <i class="ph ph-storefront"></i>
+                    <span class="pa-brand-monogram" [style.background]="brand.monogramColor">
+                      {{ brand.monogram }}
+                    </span>
                   }
                 </span>
                 <span class="pa-brand-tile-copy">
@@ -133,16 +138,20 @@
               Seçili marka
             </span>
 
-            <div class="pa-brand-preview-logo">
-              @if (brand.previewLogoUrl && !failedLogos().has(brand.slug)) {
+            <div class="pa-brand-preview-logo" [class.is-dark-backdrop]="brand.logoNeedsDarkBackdrop">
+              @if (brand.logoUrl && !failedLogos().has(brand.slug)) {
                 <img
-                  [src]="brand.previewLogoUrl"
+                  [src]="brand.logoUrl"
                   [alt]="brand.name + ' amblemi'"
-                  referrerpolicy="no-referrer"
                   (error)="markLogoFailed(brand.slug)"
                 />
               } @else {
-                <i class="ph ph-storefront" aria-hidden="true"></i>
+                <span
+                  class="pa-brand-monogram pa-brand-monogram-lg"
+                  [style.background]="brand.monogramColor"
+                  aria-hidden="true"
+                  >{{ brand.monogram }}</span
+                >
               }
             </div>
 

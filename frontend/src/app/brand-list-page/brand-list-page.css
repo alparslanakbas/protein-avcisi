@@ -125,8 +125,31 @@
   padding: 7px;
 }
 
-.pa-brand-tile-logo i {
-  font-size: 25px;
+/* Açık renk + şeffaf logolar açık dairede kayboluyordu — bkz. brand-logo.ts */
+.pa-brand-tile-logo.is-dark-backdrop,
+.pa-brand-preview-logo.is-dark-backdrop {
+  border-color: #23242c;
+  background: #16171d;
+}
+
+/* Logosuz markalarda monogram; daireyi TAMAMEN doldurur — bkz. brand-logo.ts */
+.pa-brand-monogram {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 20px;
+  font-weight: 680;
+  letter-spacing: 0.01em;
+  line-height: 1;
+}
+
+.pa-brand-monogram-lg {
+  border-radius: 22px;
+  font-size: 62px;
+  letter-spacing: 0.02em;
 }
 
 .pa-brand-tile-copy {
@@ -205,10 +228,6 @@
   width: min(72%, 230px);
   height: 72%;
   object-fit: contain;
-}
-
-.pa-brand-preview-logo i {
-  font-size: 64px;
 }
 
 .pa-brand-preview h2 {
