@@ -1,6 +1,8 @@
 using System.Security.Cryptography;
 using System.Text;
 using IndirimTakip.Core.Scraping;
+using IndirimTakip.Core.Caching;
+using IndirimTakip.Infrastructure.Deals;
 using IndirimTakip.Infrastructure.Scraping;
 using IndirimTakip.Infrastructure.Scraping.Supplementler;
 
@@ -53,6 +55,8 @@ internal static class CollectorEndpoints
             ScrapedProduct[] products,
             IServiceProvider services,
             ScrapeIngestionService ingestion,
+            PriceSummaryRefresher priceSummary,
+            IPublicCacheRefresher cache,
             CancellationToken ct) =>
         {
             if (!AllowedSources.TryGetValue(source, out var scraperType))
@@ -78,6 +82,20 @@ internal static class CollectorEndpoints
             try
             {
                 var count = await ingestion.IngestAsync(scraper, products, ct);
+
+                // Yutmadan sonraki İKİ ADIM, elle tarama ucundaki sırayla aynı.
+                // Bunlar ingestion'ın İÇİNDE değil, çağıran tarafta yapılıyor.
+                // Atlanırsa gönderim "başarılı" döner ama ürünler sitede
+                // GÖRÜNMEZ: denormalize fiyat alanları boş kalır (liste
+                // sorgusu onlara bakıyor) ve çıktı önbelleği bir saat boyunca
+                // eski sayıyı sunar. İlk sürümde tam bu oldu — 631 ürün
+                // veritabanına girdi, site 0 gösterdi.
+                //
+                // Sıra ÖNEMLİ: fiyat özeti önce, çünkü önbellek ısıtması bu
+                // alanları okuyor; ters sırada eski özet önbelleğe alınırdı.
+                await priceSummary.RefreshAsync(ct);
+                await cache.RefreshAsync(ct);
+
                 logger.LogInformation(
                     "Dışarıdan gönderim yutuldu: {Source}, {Count} ürün.", source, count);
                 return Results.Ok(new { source, ingested = count });
