@@ -3,5 +3,6 @@
     <Project Path="src/IndirimTakip.Api/IndirimTakip.Api.csproj" />
     <Project Path="src/IndirimTakip.Core/IndirimTakip.Core.csproj" />
     <Project Path="src/IndirimTakip.Infrastructure/IndirimTakip.Infrastructure.csproj" />
+    <Project Path="src/IndirimTakip.Toplayici/IndirimTakip.Toplayici.csproj" />
   </Folder>
 </Solution>

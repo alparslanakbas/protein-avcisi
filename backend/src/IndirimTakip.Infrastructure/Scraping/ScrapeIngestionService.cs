@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using IndirimTakip.Core.Entities;
 using IndirimTakip.Core.Scraping;
 using IndirimTakip.Infrastructure.Subscribers;
@@ -36,7 +36,8 @@ public class ScrapeIngestionService(
 
         try
         {
-            return await IngestCoreAsync(scraper, cancellationToken);
+            var scrapedProducts = await scraper.ScrapeAsync(cancellationToken);
+            return await IngestCoreAsync(scraper, scrapedProducts, cancellationToken);
         }
         finally
         {
@@ -44,9 +45,44 @@ public class ScrapeIngestionService(
         }
     }
 
-    private async Task<int> IngestCoreAsync(IBrandScraper scraper, CancellationToken cancellationToken)
+    /// <summary>
+    /// Ürünleri BAŞKA BİR YERDE toplanmış olarak alır ve aynı yutma yolundan
+    /// geçirir.
+    ///
+    /// NEDEN VAR: Supplementler.com sunucumuzun bulunduğu datacenter'dan
+    /// Cloudflare managed challenge'ı ile karşılanıyor (403 gövdesi "Just a
+    /// moment..." sayfası), ev bağlantısından ise normal 200 dönüyor. Tarama
+    /// bu yüzden geliştirme makinesinde çalışıp sonucu buraya gönderiyor.
+    /// Toplama yeri değişiyor, yutma mantığı DEĞİŞMİYOR — marka çözümlemesi,
+    /// kategori çıkarımı, fiyat geçmişi ve bayatlama hep aynı kod.
+    ///
+    /// Kilit paylaşılıyor: aynı kaynak için sunucu içi bir tarama sürerken
+    /// dışarıdan gelen gönderim de reddediliyor.
+    /// </summary>
+    public async Task<int> IngestAsync(
+        IBrandScraper scraper,
+        IReadOnlyList<ScrapedProduct> scrapedProducts,
+        CancellationToken cancellationToken = default)
     {
-        var scrapedProducts = await scraper.ScrapeAsync(cancellationToken);
+        var gate = ScrapeLocks.GetOrAdd(scraper.BrandName, _ => new SemaphoreSlim(1, 1));
+        if (!await gate.WaitAsync(0, cancellationToken))
+            throw new InvalidOperationException($"{scraper.BrandName} taraması zaten çalışıyor, bu gönderim atlandı.");
+
+        try
+        {
+            return await IngestCoreAsync(scraper, scrapedProducts, cancellationToken);
+        }
+        finally
+        {
+            gate.Release();
+        }
+    }
+
+    private async Task<int> IngestCoreAsync(
+        IBrandScraper scraper,
+        IReadOnlyList<ScrapedProduct> scrapedProducts,
+        CancellationToken cancellationToken)
+    {
         var scrapedAt = DateTimeOffset.UtcNow;
 
         // Markalar ada göre önbelleğe alınıyor: çok markalı bir kaynakta

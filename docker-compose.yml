@@ -66,6 +66,10 @@ services:
       - OutputCache__WarmupHost=api.proteinavcisi.com.tr
       - ConnectionStrings__Default=${CONNECTION_STRING}
       - AdminApiKey=${ADMIN_API_KEY}
+      # Dışarıda toplanan ürünleri kabul eden uç (POST /api/ingest/{kaynak}).
+      # AYRI anahtar: bu değer geliştirme makinesinde de duruyor, sızarsa
+      # admin uçlarına erişim vermemeli. Tanımlı değilse uç tamamen kapalı.
+      - IngestApiKey=${INGEST_API_KEY}
       - Brevo__ApiKey=${BREVO_API_KEY}
       # Arama motoru bildirimi (Bing/Yandex/Seznam). Anahtar gizli değil —
       # site sahipliğini doğrulamak için /{key}.txt adresinde zaten açıkta.

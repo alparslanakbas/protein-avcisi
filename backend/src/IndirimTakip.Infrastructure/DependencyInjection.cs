@@ -409,12 +409,25 @@ public static class DependencyInjection
         // yol siteden izin/veri akışı istemek. İzin gelirse aşağıdaki iki
         // satırı geri açmak yeterli.
         //
-        // services.AddHttpClient<SupplementlerScraper>(client =>
-        // {
-        //     client.BaseAddress = new Uri("https://www.supplementler.com/");
-        //     client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
-        // });
-        // services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<SupplementlerScraper>());
+        // SUPPLEMENTLER — SUNUCUDA TARANMIYOR, DIŞARIDAN GÖNDERİLİYOR.
+        //
+        // Site sunucumuzun datacenter aralığını Cloudflare managed challenge
+        // ile karşılıyor (403 gövdesi "Just a moment..." sayfası); ev
+        // bağlantısından 200 dönüyor. Bu yüzden toplama geliştirme
+        // makinesinde çalışıyor (IndirimTakip.Toplayici) ve sonucu
+        // POST /api/ingest/supplementler ucuna gönderiyor.
+        //
+        // KAYIT BİLEREK YARIM: yalnızca somut tip kaydediliyor, IBrandScraper
+        // OLARAK KAYDEDİLMİYOR. İkincisi eklenirse 6 saatlik tarama turu bu
+        // kaynağı da denemeye kalkar ve her turda challenge'a takılıp hata
+        // üretir. Uç, markanın adını/adresini okumak için somut tipi
+        // çözümlüyor; ScrapeAsync sunucuda hiç çağrılmıyor.
+        services.AddHttpClient<SupplementlerScraper>(client =>
+        {
+            client.BaseAddress = new Uri("https://www.supplementler.com/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
 
         // Arama motorlarına sayfa değişikliği bildirimi (Bing/Yandex/Seznam).
         services.AddHttpClient<IndexNowClient>(client =>

@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>IndirimTakip.Toplayici</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.10" />
+    <!-- Toplayıcı EF kullanmıyor ama Infrastructure'a referans verdiği için
+         onun bağımlılık ağacını taşıyor: Npgsql sağlayıcısı EF Relational
+         10.0.4'e, diğer paketler 10.0.10'a bağlı ve exe projesinde bu
+         çakışma MSB3277 uyarısı üretiyor. Sürüm burada açıkça sabitlenerek
+         tek sürüme indiriliyor. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.10" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\IndirimTakip.Core\IndirimTakip.Core.csproj" />
+    <ProjectReference Include="..\IndirimTakip.Infrastructure\IndirimTakip.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

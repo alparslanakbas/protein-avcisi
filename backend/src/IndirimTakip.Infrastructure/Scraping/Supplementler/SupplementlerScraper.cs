@@ -1,4 +1,4 @@
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using System.Web;
 using IndirimTakip.Core.Scraping;
 
@@ -25,13 +25,16 @@ public partial class SupplementlerScraper(HttpClient httpClient) : IBrandScraper
 
     public string BaseUrl => "https://www.supplementler.com";
 
-    /// <summary>
-    /// Kendi mağazasından zaten doğrudan takip ettiğimiz markalar buradan
-    /// ALINMIYOR. Alınsaydı aynı ürün iki ayrı kayıt olarak görünürdü (iki
-    /// farklı adres, iki farklı fiyat) ve listede yinelenmiş gibi dururdu.
-    /// Üreticinin kendi mağazası fiyat geçmişi için daha doğrudan bir kaynak.
-    /// </summary>
-    private static readonly string[] AlreadyTrackedBrands = ["hardline", "bigjoy", "big joy"];
+    private const string SellerName = "supplementler.com";
+
+    // NOT: burada bir zamanlar "Hardline ve BigJoy'u alma, onları kendi
+    // sitelerinden zaten takip ediyoruz" filtresi vardı. KALDIRILDI, çünkü o
+    // karar bayi desteğinden önceydi ve artık projenin yönüyle çelişiyor:
+    // aynı ürünü birden fazla satıcıda AYRI kayıt olarak tutmak bilinçli bir
+    // tercih (protein34 eklenirken doğrulandı — Akakçe mantığı, amaç aynı
+    // ürünün kimde daha ucuz olduğunu göstermek). Satıcı artık `Seller`
+    // alanıyla ayırt edildiği için "yinelenmiş gibi durur" endişesi de
+    // geçersiz; kullanıcı hangi mağaza olduğunu görüyor.
 
     /// <summary>Sayfa başına 40 ürün geliyor; bu tavan sonsuz döngüye karşı.</summary>
     private const int MaxPagesPerCategory = 40;
@@ -88,7 +91,7 @@ public partial class SupplementlerScraper(HttpClient httpClient) : IBrandScraper
                     if (name.Length == 0 || brand.Length == 0)
                         continue;
 
-                    if (IsAlreadyTracked(brand) || NonSupplementProductFilter.IsAccessoryOrApparel(name))
+                    if (NonSupplementProductFilter.IsAccessoryOrApparel(name))
                         continue;
 
                     var price = ParsePrice(card.Groups["price"].Value);
@@ -101,7 +104,16 @@ public partial class SupplementlerScraper(HttpClient httpClient) : IBrandScraper
                         ImageUrl: null,
                         Category: category,
                         Price: price.Value,
-                        BrandName: brand);
+                        BrandName: brand,
+                        // BAYİ KAYDI. Bu alan scraper ilk yazıldığında henüz
+                        // yoktu (Supplementler, protein7'den — yani ilk
+                        // bayimizden — önce yazılmıştı) ve boş bırakılırsa
+                        // 540 ürünün hepsi "markanın kendi sitesinden"
+                        // görünürdü: Scitec'i Supplementler satarken Scitec
+                        // kendi satıyormuş gibi kaydedilirdi. Marka sayfası
+                        // da bayi kopyalarını markanın kendi vitrinine
+                        // koyardı.
+                        Seller: SellerName);
                 }
 
                 if (pageUrls.SetEquals(previousPageUrls))
@@ -127,12 +139,6 @@ public partial class SupplementlerScraper(HttpClient httpClient) : IBrandScraper
             .Select(c => (SupplementlerCategories.Path(c.Slug, c.Id), c.Category))
             .ToList();
 
-    private static bool IsAlreadyTracked(string brand)
-    {
-        var normalized = brand.Replace(" ", "");
-        return AlreadyTrackedBrands.Any(b =>
-            normalized.Contains(b.Replace(" ", ""), StringComparison.OrdinalIgnoreCase));
-    }
 
     /// <summary>
     /// Öznitelikteki fiyat "8950,0" biçiminde — binlik ayracı yok, ondalık

@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Options;
 using IndirimTakip.Api.Caching;
 using IndirimTakip.Api.Endpoints;
 using IndirimTakip.Core.Caching;
@@ -130,6 +130,10 @@ var app = builder.Build();
 // (header'da) yeterli. Anahtar ayarlanmamışsa (ör. yerelde unutulduysa) güvenli
 // tarafta kalıp erişimi tamamen reddediyoruz.
 var adminApiKey = app.Configuration["AdminApiKey"];
+// Dışarıda toplanan ürünleri kabul eden uç için AYRI anahtar — bkz.
+// CollectorEndpoints. Admin anahtarı kullanılmıyor, çünkü bu değer
+// geliştirme makinesinde de duracak.
+var ingestApiKey = app.Configuration["IngestApiKey"];
 
 // Onay/abonelikten çıkma sayfalarındaki "Siteye Dön" linki ve bültendeki
 // ürün/site linkleri için — tek yerden yönetiliyor ki domain değişince
@@ -238,6 +242,7 @@ app.Use(async (context, next) =>
 // satıra çıkmıştı ve 42 uç tek dosyadaydı; bu bölme yalnızca organizasyon —
 // rotalar, önbellek politikaları, hız sınırları ve filtreler birebir aynı.
 app.MapAdminEndpoints(adminApiKey);
+app.MapCollectorEndpoints(ingestApiKey);
 app.MapDealsEndpoints(PublicDataCachePolicy);
 app.MapCouponEndpoints(PublicDataCachePolicy);
 app.MapArticleEndpoints(PublicDataCachePolicy);
