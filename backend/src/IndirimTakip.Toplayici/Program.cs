@@ -88,7 +88,12 @@ catch (Exception ex)
     return 1;
 }
 
-log.LogInformation("Toplandı: {Adet} ürün.", urunler.Count);
+// Görsel kapsamı HER TURDA loglanıyor: kaynak işaretlemesini
+// değiştirirse (ör. data-src'yi başka bir özniteliğe taşırsa) görseller
+// sessizce kaybolur ve bunu ancak siteye bakınca fark ederiz.
+var gorselli = urunler.Count(u => !string.IsNullOrWhiteSpace(u.ImageUrl));
+log.LogInformation("Toplandı: {Adet} ürün, {Gorselli} tanesinde görsel var.",
+    urunler.Count, gorselli);
 
 // Boş sonuç GÖNDERİLMİYOR. Challenge'a takılan bir tur sıfır ürün döndürür;
 // bunu göndermek sunucudaki 545 ürünün hepsini bir anda "bayat" yapardı.

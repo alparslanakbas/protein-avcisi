@@ -98,10 +98,30 @@ public partial class SupplementlerScraper(HttpClient httpClient) : IBrandScraper
                     if (price is null or <= 0)
                         continue;
 
+                    // GÖRSEL data-src'DE, src'de DEĞİL. src her kartta aynı
+                    // lazy-load placeholder'ını gösteriyor
+                    // ("ajax_loader_small.gif"); onu alsaydık 631 ürünün
+                    // hepsine aynı spinner düşerdi. Öznitelik TEK TIRNAKLI,
+                    // sayfadaki diğer her şey çift tırnaklı.
+                    //
+                    // Ürün başına iki bağlantı var (görsel ve başlık); yalnızca
+                    // ilkinde img duruyor. Sözlük ilk kaydı tuttuğu için
+                    // (ContainsKey -> continue) görselli olan kazanıyor,
+                    // ama grup yine de OPSİYONEL: img yoksa ürün elenmemeli.
+                    var image = card.Groups["image"].Success
+                        ? HttpUtility.HtmlDecode(card.Groups["image"].Value).Trim()
+                        : null;
+
+                    // Kart görseli 145 px geliyor, listemiz için küçük.
+                    // Genişlik uydurulmuyor: sitenin KENDİ data-srcset'i aynı
+                    // görselin 435 px hâlini 3x olarak listeliyor.
+                    if (image is not null)
+                        image = image.Replace("/mnresize/145/-/", "/mnresize/435/-/", StringComparison.Ordinal);
+
                     products[productUrl] = new ScrapedProduct(
                         Name: name,
                         Url: productUrl,
-                        ImageUrl: null,
+                        ImageUrl: string.IsNullOrWhiteSpace(image) ? null : image,
                         Category: category,
                         Price: price.Value,
                         BrandName: brand,
@@ -159,7 +179,7 @@ public partial class SupplementlerScraper(HttpClient httpClient) : IBrandScraper
     /// sabit olduğu için tek desenle okunuyor.
     /// </summary>
     [GeneratedRegex(
-        """href="(?<url>https://www\.supplementler\.com/urun/[^"]+)"[^>]*?data-name="(?<name>[^"]*)"[^>]*?data-brand="(?<brand>[^"]*)"[^>]*?data-price="(?<price>[^"]*)""",
+        """href="(?<url>https://www\.supplementler\.com/urun/[^"]+)"[^>]*?data-name="(?<name>[^"]*)"[^>]*?data-brand="(?<brand>[^"]*)"[^>]*?data-price="(?<price>[^"]*)"(?:[^<]*<img[^>]*?data-src='(?<image>[^']*)')?""",
         RegexOptions.IgnoreCase)]
     private static partial Regex ProductCardRegex();
 
