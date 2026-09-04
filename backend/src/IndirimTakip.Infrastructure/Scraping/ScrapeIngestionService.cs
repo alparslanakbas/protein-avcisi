@@ -58,17 +58,45 @@ public class ScrapeIngestionService(
         // ArgumentException fırlatır ve tüm tarama düşerdi. İlk kayıt esas
         // alınıyor; yinelenen kayıtlar zaten listelerde tekilleştiriliyor.
         var brandsByName = new Dictionary<string, Brand>();
+        // İkinci indeks: Türkçe harfleri katlanmış, büyük/küçük harf duyarsız
+        // ad. Sebebi ölçülmüş bir hata: bayiler aynı üreticiyi farklı yazıyor
+        // ve yukarıdaki sözlük ORDINAL, yani "TREC" ile "Trec" ayrı kabul
+        // edilip İKİNCİ bir marka kaydı oluşuyordu. .NET'in kültürden bağımsız
+        // karşılaştırması ayrıca Türkçe noktalı İ'yi hiç katlamıyor, yani
+        // "PRİME NUTRİTİON" da "Prime Nutrition" ile eşleşmiyordu.
+        //
+        // Bu, BrandNameNormalizer'ın yerini almıyor — orası "Proteinocean →
+        // ProteinOcean" gibi GERÇEKTEN farklı yazımlar için. Buradaki indeks
+        // yalnızca harf/aksan farkını kapatıyor ve takma ad listesinin her
+        // yeni bayide onlarca satır büyümesini engelliyor.
+        //
+        // Mevcut 96 markada tek bir katlama çakışması bile yok (ölçüldü,
+        // 4 Eylül), yani bu indeks var olan hiçbir markayı birleştirmiyor.
+        var brandsByFoldedName = new Dictionary<string, Brand>();
         foreach (var existingBrand in await db.Brands.ToListAsync(cancellationToken))
+        {
             brandsByName.TryAdd(existingBrand.Name, existingBrand);
+            brandsByFoldedName.TryAdd(FoldBrandName(existingBrand.Name), existingBrand);
+        }
 
         Brand ResolveBrand(string name)
         {
             if (brandsByName.TryGetValue(name, out var existing))
                 return existing;
 
+            var folded = FoldBrandName(name);
+            if (brandsByFoldedName.TryGetValue(folded, out var sameBrandDifferentCase))
+            {
+                // Adı DEĞİŞTİRMİYORUZ, yalnızca mevcut kayda bağlanıyoruz:
+                // marka adı değişimi slug'ı ve /marka/... adresini kırar.
+                brandsByName[name] = sameBrandDifferentCase;
+                return sameBrandDifferentCase;
+            }
+
             var created = new Brand { Name = name, BaseUrl = scraper.BaseUrl, IsActive = true };
             db.Brands.Add(created);
             brandsByName[name] = created;
+            brandsByFoldedName[folded] = created;
             return created;
         }
 
@@ -291,5 +319,47 @@ public class ScrapeIngestionService(
         }
 
         return scrapedProducts.Count;
+    }
+
+    /// <summary>
+    /// Marka adını yalnızca EŞLEŞTİRME için sadeleştirir; saklanan ada
+    /// dokunulmaz.
+    ///
+    /// Türkçe harfler ELLE eşleniyor, kültüre bırakılmıyor. İki taraf da
+    /// tuzaklı: <c>ToLowerInvariant</c> Türkçe noktalı İ'yi hiç küçültmüyor
+    /// ("VİTAMİN" → "vİtamİn"), tr-TR kültürü ise İngilizce kelimeleri
+    /// bozuyor ("CREATINE" → "creatıne"). Elle eşleme ikisinden de kaçınıyor.
+    ///
+    /// Boşluk ve nokta da atılıyor: "Dr. Pan" ile "Dr Pan", "Big Joy" ile
+    /// "BigJoy" aynı üretici ve ikisi de canlıda kopya marka üretmişti.
+    /// TİRE ATILMIYOR — "Z-Konzept" gibi adlarda tire markanın kendi
+    /// yazımının parçası ve atmak farklı üreticileri birleştirme riskini
+    /// gereksiz yere artırırdı.
+    /// </summary>
+    internal static string FoldBrandName(string name)
+    {
+        Span<char> buffer = stackalloc char[name.Length];
+        var length = 0;
+
+        foreach (var ch in name)
+        {
+            var mapped = ch switch
+            {
+                'ç' or 'Ç' => 'c',
+                'ğ' or 'Ğ' => 'g',
+                'ı' or 'İ' or 'I' => 'i',
+                'ö' or 'Ö' => 'o',
+                'ş' or 'Ş' => 's',
+                'ü' or 'Ü' => 'u',
+                _ => ch,
+            };
+
+            if (mapped is ' ' or '.' or '\t')
+                continue;
+
+            buffer[length++] = char.ToLowerInvariant(mapped);
+        }
+
+        return new string(buffer[..length]);
     }
 }
