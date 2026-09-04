@@ -1,4 +1,4 @@
-using IndirimTakip.Infrastructure.Scraping;
+﻿using IndirimTakip.Infrastructure.Scraping;
 
 namespace IndirimTakip.Infrastructure.Tests;
 
@@ -52,6 +52,15 @@ public class ProductAttributeParserTests
     [InlineData("HIQ Glucoflex 60 Kapsül", "vitamin")]
     [InlineData("HIQ Curcumin 30 Sıvı Kapsül", "vitamin")]
     [InlineData("SPIRULINA POWDER", "vitamin")]
+    // Gliserol: canlıda 13 ürünün 7'si hiçbir kategoride değildi. Amino asit
+    // DEĞİL — antrenman öncesi hiperhidrasyon/pump maddesi.
+    [InlineData("Bigjoy Hydro Glycerol 140g", "pre-workout")]
+    [InlineData("GLISEROL", "pre-workout")]
+    [InlineData("Pure Waves Gliserol - 200 g", "pre-workout")]
+    [InlineData("SWISS GLYCEROL %90 HYDROXYPUMP", "pre-workout")]
+    // Sıra koruması: adında hem amino asit hem gliserol geçen bir ürün
+    // amino-asitler'de kalmalı, çünkü o kategori listede önce geliyor.
+    [InlineData("BCAA + Glycerol Blend", "amino-asitler")]
     [InlineData("Bilinmeyen bir ürün adı", null)]
     public void InferCategory_dogru_kategoriyi_donuyor(string productName, string? expectedCategory)
     {

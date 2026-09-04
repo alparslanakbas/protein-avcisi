@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text.RegularExpressions;
 
 namespace IndirimTakip.Infrastructure.Scraping;
@@ -52,7 +52,23 @@ public static partial class ProductAttributeParser
         // "pre-w-out": GNC'nin kendi kısaltması ("GNC Pro Pre-W-Out – 339 g").
         // 1 Eylül'de canlı katalogda ölçüldü — bu dizi yalnızca o iki ürüne
         // çarpıyor, ikisi de o güne kadar kategorisizdi.
-        ("pre-workout", ["pre workout", "preworkout", "pump", "nitric", "hellfire", "pre-workout", "pre-w-out", "caffeine"]),
+        // "glycerol"/"gliserol" 4 Eylül'de eklendi. Canlıda ölçüldü: adında
+        // gliserol geçen 13 ürün ÜÇ parçaya bölünmüştü — 7'si hiçbir
+        // kategoride değildi (yani kategori sayfalarında hiç görünmüyorlardı),
+        // 3'ü "pump" kelimesi sayesinde zaten buradaydı, 3'ü kaynağın kendi
+        // kategorisiyle amino-asitler'de.
+        //
+        // Kategori olarak pre-workout seçildi çünkü kaynakların çoğunluğu da
+        // öyle diyor: gliserol bir amino asit DEĞİL, antrenman öncesi
+        // hiperhidrasyon/pump maddesi ("Hydro Pump + Glycerol", "Glycerol
+        // %90 Hydroxypump" adlarının kendisi bunu söylüyor).
+        //
+        // Kaynağın kendi kategorisini VEREN 3 ürün yine amino-asitler'de
+        // kalıyor: yutma servisinde kaynak kategorisi parser'ı eziyor
+        // (scraped.Category ?? InferCategory) ve bu önceliği tek bir kelime
+        // için tersine çevirmek ayrı bir karar. Kazanç yine de net:
+        // kategorisiz 7 ürün artık bir kategoride.
+        ("pre-workout", ["pre workout", "preworkout", "pump", "nitric", "hellfire", "pre-workout", "pre-w-out", "caffeine", "glycerol", "gliserol"]),
         // SSN kendi ürünlerinde bu kategoriyi doğrudan veriyor (elle set edilmiş
         // slug); diğer markalarda (HIQ/Hardline/ProteinOcean) daha önce burada
         // hiç bir giriş olmadığı için l-carnitine/karnitin/cla ürünleri yanlışlıkla
