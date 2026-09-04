@@ -86,6 +86,16 @@ services:
       - DescriptionBackfill__Enabled=true
     expose:
       - "8080"
+    # Port YALNIZCA loopback'e bağlanıyor (db'deki desenin aynısı, "0.0.0.0"
+    # DEĞİL): internetten erişilemez, yalnızca VM'in kendi içinden.
+    #
+    # NEDEN GEREKLİ: Supplementler toplayıcısı VM'de çalışıyor ve topladığını
+    # /api/ingest ucuna gönderiyor. Public adrese gönderseydi istek WireGuard
+    # tünelinden ev bağlantısına, oradan Cloudflare'e ve tekrar buraya
+    # dönerdi — gereksiz ve kırılgan. Loopback trafiği yönlendirme
+    # kurallarına hiç girmiyor.
+    ports:
+      - "127.0.0.1:8080:8080"
     # Backend açılışta EF migration çalıştırıyor; veritabanı hazır değilken
     # başlarsa hata verir. Deploy workflow'u backend'i "--no-deps" ile
     # yenilediği için bu koşul orada devreye girmiyor (db zaten sürekli
