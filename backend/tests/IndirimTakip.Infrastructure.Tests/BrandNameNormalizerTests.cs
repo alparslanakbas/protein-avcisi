@@ -102,6 +102,7 @@ public class BrandNameNormalizerTests
     [InlineData("UNİVERSAL NUTRİTİON", "Universal")]
     [InlineData("Vitargo Nutrition", "Vitargo")]
     [InlineData("Z Konzept", "Z-Konzept")]        // proteinim böyle yazıyor
+    [InlineData("Kingsize Nutrition", "Kingsize")] // supplementler böyle yazıyor
     public void EkKelimeliBayiEtiketleriKanoniklesiyor(string gelen, string beklenen)
     {
         Assert.Equal(beklenen, BrandNameNormalizer.Normalize(gelen));

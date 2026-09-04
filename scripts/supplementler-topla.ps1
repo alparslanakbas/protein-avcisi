@@ -21,6 +21,11 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+# Alt sürecin (dotnet) çıktısı UTF-8; PowerShell onu varsayılan olarak
+# konsolun OEM kod sayfasıyla çözüyor ve Türkçe harfler loga bozuk düşüyor
+# ("Toplandı" -> "Topland─▒"). Bu satır olmadan log okunamaz hâle geliyor.
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
 $depoKok    = Split-Path -Parent $PSScriptRoot
 $proje      = Join-Path $depoKok 'backend\src\IndirimTakip.Toplayici\IndirimTakip.Toplayici.csproj'
 $anahtarYol = Join-Path $env:USERPROFILE '.proteinavcisi\ingest.key'

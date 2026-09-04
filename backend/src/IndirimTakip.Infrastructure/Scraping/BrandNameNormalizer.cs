@@ -1,4 +1,4 @@
-namespace IndirimTakip.Infrastructure.Scraping;
+﻿namespace IndirimTakip.Infrastructure.Scraping;
 
 /// <summary>
 /// Üretici adlarını tek bir kanonik yazıma çeker.
@@ -131,6 +131,13 @@ public static class BrandNameNormalizer
         ["AEGIS"] = "Aegis",
         ["RULE ONE"] = "Rule One",
         ["DEX SUPPORTS"] = "Dex Supports",
+
+        // Supplementler (4 Eylül) — markayı tam adıyla yazıyor, katalogda ise
+        // kısası duruyor. Aynı üretici olduğu ÜRÜN ADLARINDAN doğrulandı:
+        // mevcut "Kingsize" kaydının ürünleri zaten "KİNGSİZE NUTRİTİON
+        // ALL IN ONE ..." diye geçiyor. Kanonik taraf veritabanındaki yazım
+        // (kısası), çünkü marka adını değiştirmek /marka/... adresini kırar.
+        ["Kingsize Nutrition"] = "Kingsize",
         };
 
     /// <summary>
