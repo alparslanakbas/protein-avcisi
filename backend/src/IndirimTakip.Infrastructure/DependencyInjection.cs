@@ -1,4 +1,4 @@
-using IndirimTakip.Core.Caching;
+﻿using IndirimTakip.Core.Caching;
 using IndirimTakip.Core.Scraping;
 using IndirimTakip.Infrastructure.Articles;
 using IndirimTakip.Infrastructure.Coupons;
@@ -38,6 +38,10 @@ using IndirimTakip.Infrastructure.Scraping.West;
 using IndirimTakip.Infrastructure.Scraping.SwissNutrition;
 using IndirimTakip.Infrastructure.Scraping.Vitabear;
 using IndirimTakip.Infrastructure.Scraping.Yesilmarka;
+using IndirimTakip.Infrastructure.Scraping.Fellas;
+using IndirimTakip.Infrastructure.Scraping.Bahs;
+using IndirimTakip.Infrastructure.Scraping.Proteinim;
+using IndirimTakip.Infrastructure.Scraping.ProteinPazari;
 using IndirimTakip.Infrastructure.Subscribers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -224,6 +228,40 @@ public static class DependencyInjection
             client.Timeout = TimeSpan.FromSeconds(30);
         });
         services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<KiperinScraper>());
+
+        services.AddHttpClient<FellasScraper>(client =>
+        {
+            client.BaseAddress = new Uri("https://fellasfoods.com.tr/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
+        services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<FellasScraper>());
+
+        services.AddHttpClient<BahsScraper>(client =>
+        {
+            client.BaseAddress = new Uri("https://www.bahsbar.com/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
+        services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<BahsScraper>());
+
+        services.AddHttpClient<ProteinimScraper>(client =>
+        {
+            client.BaseAddress = new Uri("https://proteinim.com/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
+        services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<ProteinimScraper>());
+
+        // proteinpazari 49 kategori sayfası geziyor; her sayfa 650 kB'a kadar
+        // çıkabiliyor, o yüzden zaman aşımı diğerlerinden uzun.
+        services.AddHttpClient<ProteinPazariScraper>(client =>
+        {
+            client.BaseAddress = new Uri("https://proteinpazari.com.tr/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
+            client.Timeout = TimeSpan.FromSeconds(60);
+        });
+        services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<ProteinPazariScraper>());
 
         // RENOVAFOOD DEVRE DIŞI — site sunucumuzun IP'sini ENGELLİYOR.
         //

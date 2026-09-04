@@ -20,10 +20,12 @@ import { brandSlug } from './brand-slug';
  * gösteriliyor.
  */
 const YEREL_LOGOLU_MARKALAR: ReadonlySet<string> = new Set([
+  'bahs',
   'bigjoy',
   'biofit',
   'commander-nutrition',
   'dr-supplement',
+  'fellas',
   'gigi-s',
   'gnc',
   'grizzone',

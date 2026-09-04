@@ -1,4 +1,4 @@
-using IndirimTakip.Infrastructure.Scraping;
+﻿using IndirimTakip.Infrastructure.Scraping;
 
 namespace IndirimTakip.Infrastructure.Tests;
 
@@ -92,5 +92,44 @@ public class BrandNameNormalizerTests
     public void NoktasizIIleBozulanSiSDuzeltiliyor(string gelen)
     {
         Assert.Equal("SiS", BrandNameNormalizer.Normalize(gelen));
+    }
+
+    // proteinpazari (4 Eylül) — katlamayla ÇÖZÜLMEYEN adlar: kaynak markanın
+    // adına ek kelime koyuyor ya da tireyi atıyor, yani harf farkı değil.
+    [Theory]
+    [InlineData("BİG JOY SPORTS", "BigJoy")]
+    [InlineData("Z-KONZEPT NUTRİTİON", "Z-Konzept")]
+    [InlineData("UNİVERSAL NUTRİTİON", "Universal")]
+    [InlineData("Vitargo Nutrition", "Vitargo")]
+    [InlineData("Z Konzept", "Z-Konzept")]        // proteinim böyle yazıyor
+    public void EkKelimeliBayiEtiketleriKanoniklesiyor(string gelen, string beklenen)
+    {
+        Assert.Equal(beklenen, BrandNameNormalizer.Normalize(gelen));
+    }
+
+    // Kaynağın GERÇEKTEN yeni getirdiği markalar büyük harfle geliyor;
+    // katalogda karşılıkları olmadığı için katlama devreye giremez ve
+    // "MONSTER ENERGY" diye kaydedilirlerdi.
+    [Theory]
+    [InlineData("MONSTER ENERGY", "Monster Energy")]
+    [InlineData("ANIMAL JOY", "Animal Joy")]
+    [InlineData("BİOXLAB", "Bioxlab")]
+    [InlineData("RULE ONE", "Rule One")]
+    public void YeniMarkalarKanonikYazimlaKaydediliyor(string gelen, string beklenen)
+    {
+        Assert.Equal(beklenen, BrandNameNormalizer.Normalize(gelen));
+    }
+
+    // Salt harf/boşluk farkı BURAYA GİRMİYOR — takma ad listesi o yüzden
+    // büyümüyor. Normalize bunları olduğu gibi döndürür; eşleştirme
+    // ScrapeIngestionService.FoldBrandName'de yapılıyor (bkz.
+    // MarkaEslestirmeTests).
+    [Theory]
+    [InlineData("TREC")]
+    [InlineData("CELLUCOR")]
+    [InlineData("PRİME NUTRİTİON")]
+    public void HarfFarkiTakmaAdListesineGirmiyor(string gelen)
+    {
+        Assert.Equal(gelen, BrandNameNormalizer.Normalize(gelen));
     }
 }

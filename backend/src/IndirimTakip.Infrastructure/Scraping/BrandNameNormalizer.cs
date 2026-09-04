@@ -96,6 +96,41 @@ public static class BrandNameNormalizer
         // "KEVİN LEVRONE" büyük yazımı "Kevin Levrone" anahtarıyla EŞLEŞMEZ.
         // Bu yüzden kaynağın yazdığı hâl birebir anahtar olarak konuluyor.
         ["KEVİN LEVRONE"] = "Kevin Levrone",
+
+        // proteinim (4 Eylül) — BEŞİNCİ BAYİ. Altı markasının beşi katalogda
+        // zaten var; yalnızca Z-Konzept'i tire olmadan yazıyor.
+        ["Z Konzept"] = "Z-Konzept",
+
+        // proteinpazari (4 Eylül) — ALTINCI BAYİ, 54 marka etiketi taşıyor ve
+        // hepsini BÜYÜK HARFLE yazıyor. Etiketler canlı `Brands` tablosuyla
+        // karşılaştırıldı: 35'i katalogda ZATEN VARDI.
+        //
+        // Bunların ÇOĞU BURAYA GİRMEDİ. "PRİME NUTRİTİON", "SİS", "TREC",
+        // "MEAL JOY" gibi yalnızca harf/boşluk farkı olan adlar artık
+        // `ScrapeIngestionService.FoldBrandName` ile eşleşiyor; buraya
+        // yazılsalardı liste her yeni bayide onlarca satır büyürdü.
+        //
+        // Aşağıdakiler katlamayla ÇÖZÜLMEYENLER: adın kendisi farklı
+        // (kaynak markanın adına "NUTRITION"/"SPORTS" ekliyor ya da tireyi
+        // atıyor). Eşlenmeseydi kopya marka oluşurdu.
+        ["BİG JOY SPORTS"] = "BigJoy",
+        ["Z-KONZEPT NUTRİTİON"] = "Z-Konzept",
+        ["UNİVERSAL NUTRİTİON"] = "Universal",
+        ["Vitargo Nutrition"] = "Vitargo",
+
+        // Aynı kaynağın GERÇEKTEN yeni getirdiği markalar. Katlama bunları
+        // eşleyemez, çünkü katalogda karşılıkları yok — ilk kez oluşacaklar
+        // ve kaynağın yazdığı hâlle, yani BÜYÜK HARFLE oluşurlardı. Marka
+        // dizini bir markayı "MONSTER ENERGY" diye göstermesin diye kanonik
+        // yazımları burada veriliyor.
+        ["ANIMAL JOY"] = "Animal Joy",
+        ["PRIME HYDRATION"] = "Prime Hydration",
+        ["BİOXLAB"] = "Bioxlab",
+        ["MONSTER ENERGY"] = "Monster Energy",
+        ["ARMY OF ONE"] = "Army of One",
+        ["AEGIS"] = "Aegis",
+        ["RULE ONE"] = "Rule One",
+        ["DEX SUPPORTS"] = "Dex Supports",
         };
 
     /// <summary>

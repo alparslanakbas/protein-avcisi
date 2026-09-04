@@ -54,8 +54,18 @@ public static partial class IkasSchemaOrgCatalog
                 continue;
             }
 
-            IEnumerable<JsonElement> nodes = root.ValueKind == JsonValueKind.Array
-                ? root.EnumerateArray()
+            // Üç biçim de destekleniyor: düz nesne, dizi ve @graph.
+            //
+            // @graph, WebSite/Organization/BreadcrumbList/Product düğümlerini
+            // tek blokta listeleyen yaygın bir kalıp; Muscle Pump ve
+            // proteinpazari bunu kullanıyor. Düz nesne varsayan bir okuyucu
+            // Product'ı hiç bulamaz — Muscle Pump'ta canlıda tam bu oldu
+            // (site mikro veriden JSON-LD'ye geçince tarama 0 ürün verdi).
+            IEnumerable<JsonElement> nodes =
+                root.ValueKind == JsonValueKind.Array ? root.EnumerateArray()
+                : root.ValueKind == JsonValueKind.Object
+                  && root.TryGetProperty("@graph", out var graph)
+                  && graph.ValueKind == JsonValueKind.Array ? graph.EnumerateArray()
                 : [root];
 
             foreach (var node in nodes)
