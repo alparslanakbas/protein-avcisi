@@ -72,7 +72,15 @@ const SCAN_DATE_FORMATTER = new Intl.DateTimeFormat('tr-TR', { day: 'numeric', m
 // — logodaki bitişik "ProteinAvcısı" yazımı marka kimliği olarak kalıyor, ama
 // insanlar arama kutusuna doğal olarak boşluklu yazıyor; arama motoruna dönük
 // metinlerde bu ayrımı güçlendirmek ucuz ve düşük riskli bir SEO düzeltmesi.
-const DEFAULT_TITLE = 'Protein Avcısı | Güncel İndirim ve Kampanyalar — Spor Takviyesi Fiyat Takibi';
+// SIRA ÖNEMLİ: anahtar kelimeler ÖNDE, marka kuyrukta.
+//
+// Eski hâli "Protein Avcısı | Güncel İndirim ve Kampanyalar — Spor Takviyesi
+// Fiyat Takibi" idi: marka BAŞTAYDI ve başlık 76 karakterdi. clampTitle
+// sığmayan başlıkta son " | " işaretinden SONRASINI atıyor (kuyruktaki marka
+// eki hedef alınarak yazılmış bir kural), dolayısıyla canlıda geriye yalnızca
+// "Protein Avcısı" kalıyordu — sitenin en önemli sayfasında 14 karakterlik
+// saf marka, sıfır anahtar kelime. Yeni başlık 54 karakter, hiç kırpılmıyor.
+const DEFAULT_TITLE = 'Gerçek Protein ve Takviye İndirimleri | Protein Avcısı';
 const DEFAULT_DESCRIPTION =
   'Protein Avcısı; protein tozu, kreatin, pre-workout ve diğer spor takviyelerinde markanın beyanına değil, gerçek fiyat geçmişine dayanan doğrulanmış indirimleri gösterir. HIQ, SSN, Hardline ve ProteinOcean tek yerde.';
 

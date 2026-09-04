@@ -245,3 +245,22 @@ describe('indirim yüzdesi biçimi', () => {
     expect(d).not.toContain('7.2');
   });
 });
+
+describe('clampTitle — marka kuyrukta olmalı', () => {
+  // GERÇEK OLAY (5 Eylül): ana sayfanın başlığı "Protein Avcısı | Güncel
+  // İndirim ve Kampanyalar — Spor Takviyesi Fiyat Takibi" idi. Marka BAŞTA,
+  // uzunluk 76. clampTitle son " | " işaretinden sonrasını attığı için
+  // canlıda geriye sadece "Protein Avcısı" kalıyordu — sitenin en önemli
+  // sayfasında sıfır anahtar kelime, ve bu hiçbir yerde hata vermiyordu.
+  it('marka BAŞTAYSA içerik tamamen kaybolur — bu yüzden marka kuyrukta yazılmalı', () => {
+    const markaBasta = 'Protein Avcısı | Güncel İndirim ve Kampanyalar — Spor Takviyesi Fiyat Takibi';
+    expect(markaBasta.length).toBeGreaterThan(65);
+    expect(clampTitle(markaBasta)).toBe('Protein Avcısı');
+  });
+
+  it('marka kuyruktaysa ve sığıyorsa başlığa hiç dokunmuyor', () => {
+    const dogru = 'Gerçek Protein ve Takviye İndirimleri | Protein Avcısı';
+    expect(dogru.length).toBeLessThanOrEqual(60);
+    expect(clampTitle(dogru)).toBe(dogru);
+  });
+});
