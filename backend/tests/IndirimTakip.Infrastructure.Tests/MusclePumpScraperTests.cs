@@ -4,6 +4,10 @@ namespace IndirimTakip.Infrastructure.Tests;
 
 // Fixture'lar musclepump.com.tr AKINSOFT ürün sayfalarının 2 Eylül 2026
 // tarihli gerçek ana detay bloğu, fiyat ve ürün bilgisi yapısından alınmıştır.
+// FİKSTÜR 3 EYLÜL'DE GÜNCELLENDİ. Site mikro veriyi (itemprop/itemscope)
+// tamamen kaldırıp JSON-LD'ye geçti ve @graph dizisi kullanıyor; eski
+// fikstür gerçeği yansıtmadığı için tarama canlıda sessizce 0 ürün
+// veriyordu (bkz. MusclePumpScraper.ParseProduct).
 public class MusclePumpScraperTests
 {
     [Fact]
@@ -163,6 +167,47 @@ public class MusclePumpScraperTests
         Assert.Equal(1290m, product.Price);
     }
 
+    // Sitenin JSON-LD'si düz bir Product nesnesi DEĞİL, @graph dizisi:
+    // WebSite, BreadcrumbList ve Product aynı blokta duruyor. Düz nesne
+    // varsayan bir okuyucu Product'ı hiç bulamaz — canlıda tam bu oldu ve
+    // tarama "136 adres, 0 ürün" verdi.
+    [Fact]
+    public void GrafDizisiIcindekiUrunDugumunuBulur()
+    {
+        var html = ProductHtml("Sygenix Complex Whey", "Sygenix", "3589.76", null, "/prd-x", inStock: true);
+
+        var product = MusclePumpScraper.ParseProduct(html, "https://musclepump.com.tr/prd-x");
+
+        Assert.NotNull(product);
+        Assert.Equal("Sygenix Complex Whey", product.Name);
+        Assert.Equal(3589.76m, product.Price);
+    }
+
+    // Fiyat JSON-LD'de NOKTA ondalıklı geliyor; Türkçe kültürle
+    // ayrıştırılsaydı 358976 çıkardı.
+    [Fact]
+    public void NoktaliOndaligiBinlikAyracSanmaz()
+    {
+        var html = ProductHtml("Test", "Sygenix", "1299.50", null, "/prd-x", inStock: true);
+
+        var product = MusclePumpScraper.ParseProduct(html, "https://musclepump.com.tr/prd-x");
+
+        Assert.Equal(1299.50m, product!.Price);
+    }
+
+    // JSON-LD hiç yoksa (ya da Product düğümü yoksa) ürün üretilmemeli —
+    // uydurma veri yerine boş geçmek doğru davranış.
+    [Fact]
+    public void SchemaOrgYoksaNullDoner()
+    {
+        const string html = """
+            <html><head><link rel="canonical" href="https://musclepump.com.tr/prd-x" /></head>
+            <body><detail-region><div class="detailRightBlock"></div></detail-region></body></html>
+            """;
+
+        Assert.Null(MusclePumpScraper.ParseProduct(html, "https://musclepump.com.tr/prd-x"));
+    }
+
     private static string ProductHtml(
         string name,
         string brand,
@@ -181,16 +226,24 @@ public class MusclePumpScraperTests
             <html><head>
               <link rel="canonical" href="https://musclepump.com.tr{{{canonicalPath}}}" />
               <meta property="og:image" content="https://musclepump.com.tr/thumb.ashx?Resim=/Resim/ornek.jpeg&amp;v=1" />
+              <script type="application/ld+json">
+              {"@context":"https://schema.org","@graph":[
+                {"@type":"WebSite","name":"Muscle Pump"},
+                {"@type":"BreadcrumbList","itemListElement":[]},
+                {"@type":"Product","name":"{{{name}}}",
+                 "brand":{"@type":"Brand","name":"{{{brand}}}"},
+                 "image":["https://musclepump.com.tr/Resim/ornek.png"],
+                 "offers":{"@type":"Offer","price":"{{{price}}}","priceCurrency":"TRY",
+                           "availability":"https://schema.org/InStock"}}
+              ]}
+              </script>
             </head><body>
-              <detail-region itemscope itemtype="https://schema.org/Product">
+              <detail-region>
                 <div class="detailRightBlock basket4selector">
-                  <strong itemprop="name">{{{name}}}</strong>
                   <div class="detailPriceBlock">
-                    <meta itemprop="price" content="{{{price}}}" />
                     {{{oldPriceHtml}}}
                   </div>
                   <div class="basketButtonBlock">{{{button}}}</div>
-                  <div class="detailInfoItem"><a itemprop="brand">{{{brand}}}</a></div>
                 </div>
                 <div id="nav-description">{{{servingText}}}</div>
               </detail-region>

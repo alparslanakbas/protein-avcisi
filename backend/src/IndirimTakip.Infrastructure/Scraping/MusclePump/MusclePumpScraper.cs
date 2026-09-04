@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Net;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using HtmlAgilityPack;
@@ -132,8 +133,24 @@ public partial class MusclePumpScraper(
         var document = new HtmlDocument();
         document.LoadHtml(html);
 
-        var detailRegion = document.DocumentNode.SelectSingleNode(
-            "//detail-region[@itemscope]");
+        // SITE MİKRO VERİYİ KALDIRDI (3 Eylül'de canlıda yakalandı).
+        //
+        // Ad, fiyat ve marka eskiden `itemprop` mikro verisinden okunuyordu
+        // (`strong[@itemprop='name']`, `meta[@itemprop='price']`,
+        // `a[@itemprop='brand']`). Site bunları TAMAMEN kaldırdı — sayfada
+        // artık tek bir `itemscope` bile yok — ve yerine JSON-LD koydu.
+        // Sonuç sessiz bir bozulmaydı: tarama hatasız görünüyor ama
+        // "136 adres tarandı, 0 ürün alındı, 136 geçersiz ürün" diyordu.
+        // Kullanıcı bir ürünün fiyat geçmişinin "dün"de kalmasından fark etti.
+        //
+        // Yeni kaynak JSON-LD ve `@graph` DİZİSİ kullanıyor — düz bir
+        // Product nesnesi değil, tipli düğümlerin listesi; Product düğümü
+        // onun içinden aranıyor.
+        var urunDugumu = SchemaOrgProductNode(document);
+        if (urunDugumu is null)
+            return null;
+
+        var detailRegion = document.DocumentNode.SelectSingleNode("//detail-region");
         var detailRight = detailRegion?.SelectSingleNode(
             ".//div[contains(concat(' ', normalize-space(@class), ' '), ' detailRightBlock ')]");
         if (detailRegion is null || detailRight is null)
@@ -149,21 +166,29 @@ public partial class MusclePumpScraper(
             return null;
         }
 
-        var name = WebUtility.HtmlDecode(
-                detailRight.SelectSingleNode(".//strong[@itemprop='name']")?.InnerText ?? string.Empty)
-            .Trim();
+        var name = (urunDugumu.Value.TryGetProperty("name", out var adAlani)
+            ? WebUtility.HtmlDecode(adAlani.GetString() ?? string.Empty)
+            : string.Empty).Trim();
         if (name.Length == 0 || NonSupplementProductFilter.IsAccessoryOrApparel(name))
             return null;
 
-        var priceArea = detailRight.SelectSingleNode(
-            ".//div[contains(concat(' ', normalize-space(@class), ' '), ' detailPriceBlock ')]");
-        var priceValue = priceArea?.SelectSingleNode(".//meta[@itemprop='price']")
-            ?.GetAttributeValue("content", string.Empty);
+        var teklif = SchemaOrgOffer(urunDugumu.Value);
+        var priceValue = teklif is not null && teklif.Value.TryGetProperty("price", out var fiyatAlani)
+            ? (fiyatAlani.ValueKind == JsonValueKind.String ? fiyatAlani.GetString() : fiyatAlani.ToString())
+            : null;
+        // JSON-LD fiyatı NOKTA ondalıklı ("3589.76"); Türkçe kültürle
+        // ayrıştırılsaydı 358976 çıkardı.
         if (!decimal.TryParse(priceValue, NumberStyles.Number, CultureInfo.InvariantCulture, out var price)
             || price <= 0m)
         {
             return null;
         }
+
+        // Mağazanın beyan ettiği eski fiyat hâlâ DOM'da, <strike> içinde.
+        // Sayfada on tane <strike> var (benzer ürünler dahil), o yüzden
+        // kapsam fiyat kutusuyla sınırlı tutuluyor.
+        var priceArea = detailRight.SelectSingleNode(
+            ".//div[contains(concat(' ', normalize-space(@class), ' '), ' detailPriceBlock ')]");
 
         var oldPriceText = WebUtility.HtmlDecode(
             priceArea?.SelectSingleNode(".//strike")?.InnerText ?? string.Empty).Trim();
@@ -171,9 +196,11 @@ public partial class MusclePumpScraper(
         if (oldPrice is null or <= 0m || oldPrice <= price)
             oldPrice = null;
 
-        var rawBrand = WebUtility.HtmlDecode(
-                detailRight.SelectSingleNode(".//a[@itemprop='brand']")?.InnerText ?? string.Empty)
-            .Trim();
+        var rawBrand = (urunDugumu.Value.TryGetProperty("brand", out var markaAlani)
+            && markaAlani.ValueKind == JsonValueKind.Object
+            && markaAlani.TryGetProperty("name", out var markaAdi)
+                ? WebUtility.HtmlDecode(markaAdi.GetString() ?? string.Empty)
+                : string.Empty).Trim();
         if (rawBrand.Length == 0)
             return null;
 
@@ -316,4 +343,68 @@ public partial class MusclePumpScraper(
 
     private sealed class MusclePumpRateLimitException()
         : InvalidOperationException("Muscle Pump hız sınırı (429) uyguladı; kaynak zorlanmamak için tarama durduruldu.");
+
+    /// <summary>
+    /// Sayfadaki JSON-LD bloklarından schema.org <c>Product</c> düğümünü
+    /// bulur.
+    ///
+    /// Muscle Pump düz bir Product nesnesi DEĞİL, <c>@graph</c> dizisi
+    /// yayınlıyor: WebSite, Organization, BreadcrumbList ve Product aynı
+    /// blokta tipli düğümler olarak duruyor. Bu yüzden hem düz nesne, hem
+    /// dizi, hem de @graph durumu ele alınıyor.
+    /// </summary>
+    private static JsonElement? SchemaOrgProductNode(HtmlDocument document)
+    {
+        var scripts = document.DocumentNode.SelectNodes(
+            "//script[contains(translate(@type,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'ld+json')]");
+        if (scripts is null)
+            return null;
+
+        foreach (var script in scripts)
+        {
+            JsonDocument belge;
+            try
+            {
+                belge = JsonDocument.Parse(WebUtility.HtmlDecode(script.InnerText));
+            }
+            catch (JsonException)
+            {
+                continue;
+            }
+
+            var kok = belge.RootElement;
+            IEnumerable<JsonElement> dugumler =
+                kok.ValueKind == JsonValueKind.Array ? kok.EnumerateArray()
+                : kok.ValueKind == JsonValueKind.Object && kok.TryGetProperty("@graph", out var graph)
+                  && graph.ValueKind == JsonValueKind.Array ? graph.EnumerateArray()
+                : [kok];
+
+            foreach (var dugum in dugumler)
+            {
+                if (dugum.ValueKind == JsonValueKind.Object
+                    && dugum.TryGetProperty("@type", out var tip)
+                    && tip.ValueKind == JsonValueKind.String
+                    && tip.GetString() == "Product")
+                {
+                    // JsonDocument burada bilinçli olarak dispose EDİLMİYOR:
+                    // döndürülen JsonElement onun tamponuna bakıyor.
+                    return dugum.Clone();
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>Product düğümünün ilk teklifi (tek nesne ya da dizi olabilir).</summary>
+    private static JsonElement? SchemaOrgOffer(JsonElement product)
+    {
+        if (!product.TryGetProperty("offers", out var offers))
+            return null;
+
+        if (offers.ValueKind == JsonValueKind.Array)
+            return offers.GetArrayLength() > 0 ? offers[0] : null;
+
+        return offers.ValueKind == JsonValueKind.Object ? offers : null;
+    }
 }
