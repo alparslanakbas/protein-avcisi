@@ -263,24 +263,23 @@ public static class DependencyInjection
         });
         services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<ProteinPazariScraper>());
 
-        // RENOVAFOOD DEVRE DIŞI — site sunucumuzun IP'sini ENGELLİYOR.
+        // RENOVAFOOD — SUNUCUDA TARANMIYOR, DIŞARIDAN GÖNDERİLİYOR.
         //
-        // 3 Eylül'de deploy sonrası ölçüldü: sitemap VM'den 200 dönüyor ama
-        // ÜRÜN SAYFALARI 403 (User-Agent'lı da, UA'sız da). Geliştirme
-        // makinesinden 38/38 ürün sorunsuz alınıyordu — yani kod doğru, engel
-        // ağ tarafında. Tarama turunda "38 adresin 38'inde hata" ile
-        // düşüyordu.
+        // Site sunucumuzun datacenter aralığını engelliyor: ürün sayfaları
+        // VM'den 403 (User-Agent'lı da, UA'sız da), ev bağlantısından 200.
+        // Supplementler'le aynı sebep, tek farkı oradaki engelin Cloudflare
+        // managed challenge, buradakinin düz 403 olması — çözüm aynı tünel.
+        // 4 Eylül'de ölçüldü: normal çıkıştan 403, tünelden 200 (750 kB).
         //
-        // Supplementler.com ile aynı durum. Kod duruyor; site IP izni verirse
-        // ya da engel kalkarsa aşağıdaki iki satırı açmak yeterli.
-        //
-        // services.AddHttpClient<RenovafoodScraper>(client =>
-        // {
-        //     client.BaseAddress = new Uri("https://renovafood.com.tr/");
-        //     client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
-        //     client.Timeout = TimeSpan.FromSeconds(30);
-        // });
-        // services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<RenovafoodScraper>());
+        // KAYIT BİLEREK YARIM: Supplementler'deki gerekçenin aynısı —
+        // IBrandScraper olarak kaydedilirse 6 saatlik tur bu kaynağı da
+        // denemeye kalkar ve her turda 403'e takılıp hata üretir.
+        services.AddHttpClient<RenovafoodScraper>(client =>
+        {
+            client.BaseAddress = new Uri("https://renovafood.com.tr/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
 
         services.AddHttpClient<TorqScraper>(client =>
         {

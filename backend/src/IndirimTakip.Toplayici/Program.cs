@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using IndirimTakip.Core.Scraping;
+using IndirimTakip.Infrastructure.Scraping.Renovafood;
 using IndirimTakip.Infrastructure.Scraping.Supplementler;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -20,8 +21,14 @@ using Microsoft.Extensions.Logging;
 // 200 dönüyor (ölçüldü). Böylece site isterse bizi User-Agent'a bakarak
 // engelleyebilir; gizlenmiyoruz.
 //
+// İKİ KAYNAK: Supplementler ve Renovafood. İkisi de aynı sebeple burada —
+// sunucunun datacenter aralığından engelleniyorlar, ev bağlantısından
+// açılıyorlar. Renovafood'un engeli düz 403 (Supplementler'inki gibi JS
+// challenge değil) ama sonuç aynı ve çözüm de aynı tünel.
+//
 // Kullanım:
 //   IndirimTakip.Toplayici.exe supplementler
+//   IndirimTakip.Toplayici.exe renovafood
 // Ortam değişkenleri:
 //   PA_INGEST_URL  (ör. https://api.proteinavcisi.com.tr)
 //   PA_INGEST_KEY  (sunucudaki IngestApiKey ile aynı)
@@ -41,9 +48,16 @@ using var loggerFactory = LoggerFactory.Create(b => b
     .SetMinimumLevel(LogLevel.Information));
 var log = loggerFactory.CreateLogger("Toplayici");
 
-if (!kaynak.Equals("supplementler", StringComparison.OrdinalIgnoreCase))
+var tanimliKaynaklar = new Dictionary<string, (Type Tip, string Adres)>(StringComparer.OrdinalIgnoreCase)
 {
-    log.LogError("Bilinmeyen kaynak: {Kaynak}. Tanımlı olan: supplementler.", kaynak);
+    ["supplementler"] = (typeof(SupplementlerScraper), "https://www.supplementler.com/"),
+    ["renovafood"] = (typeof(RenovafoodScraper), "https://renovafood.com.tr/"),
+};
+
+if (!tanimliKaynaklar.TryGetValue(kaynak, out var secilen))
+{
+    log.LogError("Bilinmeyen kaynak: {Kaynak}. Tanımlı olanlar: {Liste}.",
+        kaynak, string.Join(", ", tanimliKaynaklar.Keys));
     return 2;
 }
 
@@ -54,19 +68,31 @@ if (!kuruCalis && (string.IsNullOrWhiteSpace(ingestUrl) || string.IsNullOrWhiteS
     return 2;
 }
 
+// İki scraper da kaydediliyor; yalnızca seçilen çözümleniyor. Kayıt
+// maliyeti sıfır ve AddHttpClient<T> tipi derleme zamanında istediği için
+// döngüyle kurulamıyor.
 var services = new ServiceCollection();
 services.AddSingleton<ILoggerFactory>(loggerFactory);
 services.AddLogging();
-services.AddHttpClient<SupplementlerScraper>(client =>
-{
-    client.BaseAddress = new Uri("https://www.supplementler.com/");
-    client.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
-    // Toplama ~4 dakika sürüyor ama tek istek asla o kadar sürmemeli.
-    client.Timeout = TimeSpan.FromSeconds(60);
-});
+
+void KaynakKaydet<T>(string adres) where T : class =>
+    services.AddHttpClient<T>(client =>
+    {
+        client.BaseAddress = new Uri(adres);
+        client.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
+        // Toplama dakikalar sürüyor ama TEK istek asla o kadar sürmemeli.
+        client.Timeout = TimeSpan.FromSeconds(60);
+    });
+
+KaynakKaydet<SupplementlerScraper>(tanimliKaynaklar["supplementler"].Adres);
+KaynakKaydet<RenovafoodScraper>(tanimliKaynaklar["renovafood"].Adres);
 
 await using var provider = services.BuildServiceProvider();
-var scraper = provider.GetRequiredService<SupplementlerScraper>();
+if (provider.GetService(secilen.Tip) is not IBrandScraper scraper)
+{
+    log.LogError("{Kaynak} için scraper çözümlenemedi.", kaynak);
+    return 2;
+}
 
 // Görev zamanlayıcıdan çalışırken sonsuza kadar asılı kalmasın.
 using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(20));
@@ -96,7 +122,7 @@ log.LogInformation("Toplandı: {Adet} ürün, {Gorselli} tanesinde görsel var."
     urunler.Count, gorselli);
 
 // Boş sonuç GÖNDERİLMİYOR. Challenge'a takılan bir tur sıfır ürün döndürür;
-// bunu göndermek sunucudaki 545 ürünün hepsini bir anda "bayat" yapardı.
+// bunu göndermek o kaynağın TÜM ürünlerini bir anda "bayat" yapardı.
 if (urunler.Count == 0)
 {
     log.LogError("Sıfır ürün toplandı — gönderim yapılmadı. "

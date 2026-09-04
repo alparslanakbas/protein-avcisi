@@ -4,6 +4,7 @@ using IndirimTakip.Core.Scraping;
 using IndirimTakip.Core.Caching;
 using IndirimTakip.Infrastructure.Deals;
 using IndirimTakip.Infrastructure.Scraping;
+using IndirimTakip.Infrastructure.Scraping.Renovafood;
 using IndirimTakip.Infrastructure.Scraping.Supplementler;
 
 namespace IndirimTakip.Api.Endpoints;
@@ -42,6 +43,7 @@ internal static class CollectorEndpoints
         new(StringComparer.OrdinalIgnoreCase)
         {
             ["supplementler"] = typeof(SupplementlerScraper),
+            ["renovafood"] = typeof(RenovafoodScraper),
         };
 
     private const int MaxProducts = 5000;
