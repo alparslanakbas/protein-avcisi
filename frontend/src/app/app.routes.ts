@@ -117,4 +117,15 @@ export const routes: Routes = [
     path: 'karsilastir-urun/:pair',
     loadComponent: () => import('./product-comparison-page/product-comparison-page').then((m) => m.ProductComparisonPage),
   },
+  // EN SONDA OLMAK ZORUNDA: yakalayıcı rota, kendinden sonraki hiçbir rotanın
+  // eşleşmesine izin vermez.
+  //
+  // 4 Eylül'e kadar bu rota YOKTU ve sonucu görünmez bir hataydı: Angular
+  // adresi eşleştiremeyince istek SSR katmanına düşüyor, Express'in çıplak
+  // varsayılanı basılıyordu ("Cannot GET /...", <title>Error</title>).
+  // Durum kodu doğruydu ama sayfa sitenin hiçbir öğesini taşımıyordu.
+  {
+    path: '**',
+    loadComponent: () => import('./not-found-page/not-found-page').then((m) => m.NotFoundPage),
+  },
 ];

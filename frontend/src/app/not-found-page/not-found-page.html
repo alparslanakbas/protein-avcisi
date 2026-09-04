@@ -1,0 +1,45 @@
+<div class="noc-shell bg-[var(--noc-bg)] text-[var(--noc-text)]">
+  <app-site-header />
+
+  <main class="pa-404-main">
+    <header class="pa-404-head">
+      <p class="pa-404-code" aria-hidden="true">404</p>
+      <h1>Bu sayfayı bulamadık.</h1>
+      <p class="pa-404-lead">
+        Adres yanlış yazılmış olabilir ya da takip ettiğimiz bir ürün mağazadan kaldırılmış olabilir.
+        Aşağıdan devam edebilirsin.
+      </p>
+    </header>
+
+    <nav class="pa-404-links" aria-label="Devam edebileceğin sayfalar">
+      <a routerLink="/">
+        <span class="pa-404-icon" aria-hidden="true"><i class="ph ph-house"></i></span>
+        <span>
+          <strong>Güncel indirimler</strong>
+          Doğrulanmış indirimler ve 30 günün en düşük fiyatları
+        </span>
+      </a>
+      <a routerLink="/kategoriler">
+        <span class="pa-404-icon" aria-hidden="true"><i class="ph ph-squares-four"></i></span>
+        <span>
+          <strong>Kategoriler</strong>
+          Protein tozu, kreatin, amino asit, vitamin ve diğerleri
+        </span>
+      </a>
+      <a routerLink="/markalar">
+        <span class="pa-404-icon" aria-hidden="true"><i class="ph ph-storefront"></i></span>
+        <span>
+          <strong>Markalar</strong>
+          Takip ettiğimiz markaların tamamı ve ürün sayıları
+        </span>
+      </a>
+      <a routerLink="/rehber">
+        <span class="pa-404-icon" aria-hidden="true"><i class="ph ph-book-open"></i></span>
+        <span>
+          <strong>Rehberler</strong>
+          Ne, ne kadar, ne zaman — kaynaklı anlatımlar
+        </span>
+      </a>
+    </nav>
+  </main>
+</div>

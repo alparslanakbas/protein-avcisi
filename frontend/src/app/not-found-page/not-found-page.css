@@ -1,0 +1,111 @@
+:host { display: block; }
+
+.pa-404-main {
+  width: min(calc(100% - 56px), 900px);
+  margin-inline: auto;
+  padding-block: 56px 72px;
+}
+
+@media (max-width: 640px) {
+  .pa-404-main {
+    width: calc(100% - 32px);
+    padding-block: 36px 48px;
+  }
+}
+
+.pa-404-head {
+  text-align: center;
+}
+
+/* Kod büyük ama DEKORATİF: ekran okuyucudan gizli (aria-hidden), çünkü
+   "404" tek başına okunduğunda kullanıcıya hiçbir şey anlatmıyor —
+   anlamı taşıyan metin h1'de. */
+.pa-404-code {
+  margin: 0;
+  font-size: clamp(64px, 11vw, 104px);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.06em;
+  color: var(--noc-accent);
+  opacity: 0.22;
+}
+
+.pa-404-head h1 {
+  margin: 4px 0 12px;
+  font-size: clamp(30px, 4vw, 42px);
+  line-height: 1.06;
+  font-weight: 700;
+  letter-spacing: -0.05em;
+  color: var(--noc-text);
+}
+
+.pa-404-lead {
+  margin: 0 auto;
+  max-width: 560px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--noc-neutral-300);
+}
+
+@media (max-width: 640px) {
+  .pa-404-lead { font-size: 15px; }
+}
+
+.pa-404-links {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  margin-top: 40px;
+}
+
+@media (max-width: 720px) {
+  .pa-404-links { grid-template-columns: 1fr; }
+}
+
+.pa-404-links a {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: var(--noc-card);
+  border: 1px solid var(--noc-divider);
+  box-shadow: var(--noc-shadow-sm);
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow .18s ease, border-color .18s ease;
+}
+
+.pa-404-links a:hover,
+.pa-404-links a:focus-visible {
+  border-color: var(--noc-accent);
+  box-shadow: var(--noc-shadow-md);
+}
+
+.pa-404-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--noc-accent) 14%, transparent);
+  color: var(--noc-accent);
+  font-size: 20px;
+}
+
+.pa-404-links strong {
+  display: block;
+  font-size: 15px;
+  font-weight: 650;
+  color: var(--noc-text);
+  margin-bottom: 2px;
+}
+
+.pa-404-links span span,
+.pa-404-links a > span:last-child {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--noc-neutral-500);
+}
