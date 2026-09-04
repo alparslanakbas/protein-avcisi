@@ -24,6 +24,7 @@ import { slugify } from '../core/slugify';
 import { PROTEIN_REFERENCE_GRAMS, proteinRatioPercent, proteinReferenceCost } from '../core/value-metrics';
 import { buildAreaPath, buildLinePath, toCoordinates } from '../core/spark-chart';
 import { SiteHeader } from '../site-header/site-header';
+import { showNotFound } from '../core/not-found-navigation';
 
 const CHART = { width: 640, height: 160, paddingY: 16 };
 const HISTORY_DAYS = 30;
@@ -121,7 +122,7 @@ export class ProductReviewPage implements OnInit {
     this.route.paramMap.subscribe((params) => {
       const id = Number(params.get('id'));
       if (!Number.isInteger(id) || id <= 0) {
-        this.router.navigate(['/']);
+        showNotFound(this.router);
         return;
       }
       this.load(id);
@@ -164,9 +165,10 @@ export class ProductReviewPage implements OnInit {
       error: (err: HttpErrorResponse) => {
         this.loading.set(false);
         // deals-list.ts / product-comparison-page.ts'teki aynı ayrım:
-        // ürün gerçekten yoksa (404) ana sayfaya, geçici bir hataysa 503.
+        // ürün gerçekten yoksa 404, geçici bir hataysa 503. Ayrım korunuyor —
+        // geçici bir sorunda "artık yok" sinyali vermek kalıcı zarar verirdi.
         if (err.status === 404) {
-          this.router.navigate(['/']);
+          showNotFound(this.router);
           return;
         }
         this.loadError.set(true);

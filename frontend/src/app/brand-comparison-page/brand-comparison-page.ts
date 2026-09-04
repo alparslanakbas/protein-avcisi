@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { DecimalPipe } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -9,6 +10,7 @@ import { DealsService } from '../core/deals.service';
 import { CATEGORY_LABELS } from '../core/category-labels';
 import { PageMetaService } from '../core/page-meta.service';
 import { SiteHeader } from '../site-header/site-header';
+import { showNotFound } from '../core/not-found-navigation';
 
 @Component({
   selector: 'app-brand-comparison-page',
@@ -41,7 +43,7 @@ export class BrandComparisonPage implements OnInit {
     this.loading.set(true);
     const parts = pair.split('-vs-');
     if (parts.length !== 2 || !parts[0] || !parts[1]) {
-      this.router.navigate(['/']);
+      showNotFound(this.router);
       return;
     }
 
@@ -67,7 +69,17 @@ export class BrandComparisonPage implements OnInit {
         this.setMeta(result);
         this.loading.set(false);
       },
-      error: () => this.router.navigate(['/']),
+      // 404 ile GEÇİCİ hata ayrılıyor. Önceden her hata ana sayfaya
+      // yönlendiriyordu; backend'in bir anlık 5xx'i yüzünden arama motoruna
+      // "bu sayfa yok" demek kalıcı zarar verirdi. Bu sayfada henüz bir hata
+      // ekranı yok, o yüzden geçici hatada eski davranış korunuyor.
+      error: (err: HttpErrorResponse) => {
+        if (err.status === 404) {
+          showNotFound(this.router);
+          return;
+        }
+        void this.router.navigate(['/']);
+      },
     });
   }
 

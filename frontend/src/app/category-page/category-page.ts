@@ -17,6 +17,7 @@ import { PriceHistoryService } from '../core/price-history.service';
 import { formatRelativeTime } from '../core/relative-time';
 import { ProductModal } from '../product-modal/product-modal';
 import { SiteHeader } from '../site-header/site-header';
+import { showNotFound } from '../core/not-found-navigation';
 
 type ViewMode = 'deals' | 'store' | 'all';
 const PAGE_SIZE = 24;
@@ -137,8 +138,7 @@ export class CategoryPage implements OnInit {
         const match = options.categories.find((c) => c.toLowerCase() === slug.toLowerCase());
         const label = match ? CATEGORY_LABELS[match] : undefined;
         if (!match || !label) {
-          // Soft-404 yerine gerçek yönlendirme (bkz. marka sayfalarındaki aynı karar).
-          this.router.navigate(['/']);
+          showNotFound(this.router);
           return;
         }
 

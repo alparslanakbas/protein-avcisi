@@ -117,6 +117,13 @@ export const routes: Routes = [
     path: 'karsilastir-urun/:pair',
     loadComponent: () => import('./product-comparison-page/product-comparison-page').then((m) => m.ProductComparisonPage),
   },
+  // İçeriği bulunamayan sayfalar buraya `skipLocationChange` ile geliyor
+  // (bkz. core/not-found-navigation.ts) — adres çubuğunda istenen adres
+  // kalıyor, yalnızca gösterilen bileşen değişiyor.
+  {
+    path: 'bulunamadi',
+    loadComponent: () => import('./not-found-page/not-found-page').then((m) => m.NotFoundPage),
+  },
   // EN SONDA OLMAK ZORUNDA: yakalayıcı rota, kendinden sonraki hiçbir rotanın
   // eşleşmesine izin vermez.
   //

@@ -35,6 +35,7 @@ import { ThemePreference, ThemeService } from '../core/theme.service';
 import { ProductCardSparkline } from '../product-card-sparkline/product-card-sparkline';
 import { ProductModal } from '../product-modal/product-modal';
 import { PreferredProducts } from '../preferred-products/preferred-products';
+import { showNotFound } from '../core/not-found-navigation';
 
 type ViewMode = 'deals' | 'all' | 'store';
 
@@ -597,7 +598,7 @@ export class DealsList implements OnInit {
         },
         error: (err: HttpErrorResponse) => {
           if (err.status === 404) {
-            this.router.navigate(['/']);
+            showNotFound(this.router);
             return;
           }
           // Geçici sorun (ağ hatası, backend 5xx/erişilemez) — "artık yok"

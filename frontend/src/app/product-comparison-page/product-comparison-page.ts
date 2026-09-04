@@ -19,6 +19,7 @@ import { formatRelativeTime } from '../core/relative-time';
 import { slugify } from '../core/slugify';
 import { buildAreaPath, buildLinePath, toCoordinates } from '../core/spark-chart';
 import { SiteHeader } from '../site-header/site-header';
+import { showNotFound } from '../core/not-found-navigation';
 
 // Karşılaştırma grafiği — iki ürün için aynı ölçüler, yan yana okunabilsin.
 const CHART = { width: 320, height: 100, paddingY: 10 };
@@ -162,7 +163,7 @@ export class ProductComparisonPage implements OnInit {
     this.route.paramMap.subscribe((params) => {
       const ids = this.parsePair(params.get('pair'));
       if (!ids) {
-        this.router.navigate(['/']);
+        showNotFound(this.router);
         return;
       }
 
@@ -212,7 +213,7 @@ export class ProductComparisonPage implements OnInit {
         // olmayan bir sorun için "artık yok" sinyali vermiyoruz.
         // deals-list.ts'teki aynı ayrım.
         if (err.status === 404) {
-          this.router.navigate(['/']);
+          showNotFound(this.router);
           return;
         }
 

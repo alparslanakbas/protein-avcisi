@@ -19,6 +19,7 @@ import { displayName } from '../core/display-name';
 import { PageMetaService, upsertJsonLdScript } from '../core/page-meta.service';
 import { PricePoint } from '../core/price-history.model';
 import { PriceHistoryService } from '../core/price-history.service';
+import { showNotFound } from '../core/not-found-navigation';
 import { formatRelativeTime } from '../core/relative-time';
 import { ProductCardSparkline } from '../product-card-sparkline/product-card-sparkline';
 import { ProductModal } from '../product-modal/product-modal';
@@ -205,10 +206,7 @@ export class BrandPage implements OnInit {
         // Türkçe karakterli eski adresler de çözülmeye devam ediyor.
         const match = resolveBrandFromSlug(slug, options.brands);
         if (!match) {
-          // Soft-404 yerine gerçek yönlendirme — geçersiz bir marka slug'ı
-          // arama motorlarına 200 + "bulunamadı" metniyle değil, / adresine
-          // yönlendirmeyle (SSR'da gerçek bir HTTP 302) dönmeli.
-          this.router.navigate(['/']);
+          showNotFound(this.router);
           return;
         }
 
