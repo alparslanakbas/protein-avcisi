@@ -70,6 +70,10 @@ services:
       # AYRI anahtar: bu değer geliştirme makinesinde de duruyor, sızarsa
       # admin uçlarına erişim vermemeli. Tanımlı değilse uç tamamen kapalı.
       - IngestApiKey=${INGEST_API_KEY}
+      # Kaynak tazeliği alarmının eşiği (saat). Tanımlanmazsa 26.
+      # Deploy yapmadan ayarlanabilsin diye burada: bir alarmın eşiği,
+      # yanlış ayarlandığında kod değişikliği beklemeden düzeltilebilmeli.
+      - Health__StaleHours=${HEALTH_STALE_HOURS:-26}
       - Brevo__ApiKey=${BREVO_API_KEY}
       # Arama motoru bildirimi (Bing/Yandex/Seznam). Anahtar gizli değil —
       # site sahipliğini doğrulamak için /{key}.txt adresinde zaten açıkta.
