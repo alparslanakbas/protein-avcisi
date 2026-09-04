@@ -6,7 +6,7 @@ import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
 import { dedupeSameDaySamePrice, hoverAlign, nearestPointIndex, tooltipDateLabel } from '../core/chart-hover';
-import { buildPageTitle, clampDescription } from '../core/meta-description';
+import { buildPageTitle, buildReviewDescription, formatPriceText } from '../core/meta-description';
 import { buildProductFacts, buildProductJsonLdDescription } from '../core/product-facts';
 import { buildBreadcrumbJsonLd } from '../core/breadcrumb';
 import { canonicalOrigin } from '../core/canonical-link';
@@ -142,7 +142,7 @@ export class ProductReviewPage implements OnInit {
         // Aynı gün + aynı fiyat tekrarlarını ele — yoksa hover art arda
         // aynı tarihi gösteriyor (modalda yaşanan hatanın aynısı).
         this.points.set(dedupeSameDaySamePrice(history.points));
-        this.setMeta(deal);
+        this.setMeta(deal, this.points().length);
         this.loading.set(false);
 
         this.bestValueInCategory.set([]);
@@ -365,18 +365,23 @@ export class ProductReviewPage implements OnInit {
     return ['/urun', String(d.productId), slugify(d.productName)];
   }
 
-  private setMeta(deal: Deal): void {
+  private setMeta(deal: Deal, gecmisGunSayisi: number): void {
     const slug = slugify(deal.productName);
     const name = displayName(deal.productName);
     // Yıl bilinçli olarak title'da YOK — hardcode "2026" 2027'de tüm
     // title'ları bakımsız/yalan gösterirdi, Google zaten tarihi lastmod/
     // yayın tarihinden okuyor (dış kod incelemesinde bulundu).
     const title = buildPageTitle(name, 'İncelemesi', deal.brandName);
-    // Google ~155 karakterde kesiyor; kuyruktaki jenerik cümle zaten
-    // görünmüyordu (denetimde 238 karaktere kadar çıkan örnek vardı).
-    const description = clampDescription(
-      `${name} için gerçek fiyat geçmişi, besin değeri ve kategori karşılaştırmasına dayanan bağımsız inceleme.`,
-    );
+    // Açıklama artık ÜRÜNE ÖZEL. Eskiden 247 sayfanın hepsinde birebir aynı
+    // cümle vardı ve içinde tek bir somut sayı yoktu; arama yapan kişi ürün
+    // adını yazıp fiyat arıyor. Gün sayısı ve indirim iddiası ancak veriyle
+    // destekleniyorsa yazılıyor — bkz. core/meta-description.ts.
+    const description = buildReviewDescription({
+      displayName: name,
+      priceText: formatPriceText(deal.currentPrice),
+      discountPercent: deal.discountPercent,
+      gecmisGunSayisi,
+    });
 
     this.pageMeta.set({
       title,

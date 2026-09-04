@@ -28,7 +28,7 @@ import { PwaInstallService } from '../core/pwa-install.service';
 import { formatRelativeTime } from '../core/relative-time';
 import { slugify } from '../core/slugify';
 import { productPath } from '../core/product-link';
-import { buildPageTitle, buildProductDescription } from '../core/meta-description';
+import { buildPageTitle, buildProductDescription, formatPriceText } from '../core/meta-description';
 import { buildAreaPath, buildLinePath, toCoordinates } from '../core/spark-chart';
 import { SubscribeService } from '../core/subscribe.service';
 import { ThemePreference, ThemeService } from '../core/theme.service';
@@ -339,7 +339,7 @@ export class DealsList implements OnInit {
       this.faqStructuredDataEl = null;
 
       const displayedName = displayName(deal.productName);
-      const priceText = `${deal.currentPrice.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TL`;
+      const priceText = formatPriceText(deal.currentPrice);
       // Title'da fiyat BİLİNÇLİ OLARAK yok — fiyat günde 4 kez değişebiliyor,
       // her değişimde title'ı yeniden yazmak Google'ın snippet'i sürekli
       // güncellemesine/tarama bütçesini boşa harcamasına yol açıyordu (dış

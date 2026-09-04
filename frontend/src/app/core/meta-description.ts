@@ -21,12 +21,12 @@ export function buildProductDescription(input: ProductDescriptionInput): string 
   if (!intro) {
     // Açıklaması olmayan ürünlerde eski şablon aynen kalıyor — boş bırakmıyoruz.
     return input.discountPercent > 0
-      ? `${input.displayName} şu an ${input.priceText} — ${input.brandName} markasında %${input.discountPercent} doğrulanmış indirim. Fiyat geçmişini ProteinAvcısı'nda takip et.`
+      ? `${input.displayName} şu an ${input.priceText} — ${input.brandName} markasında %${formatDiscountPercent(input.discountPercent)} doğrulanmış indirim. Fiyat geçmişini ProteinAvcısı'nda takip et.`
       : `${input.displayName} güncel fiyatı ${input.priceText}. ${input.brandName} markasının fiyat geçmişini ProteinAvcısı'nda takip et.`;
   }
 
   const priceSentence = input.discountPercent > 0
-    ? `${input.priceText}, %${input.discountPercent} doğrulanmış indirim.`
+    ? `${input.priceText}, %${formatDiscountPercent(input.discountPercent)} doğrulanmış indirim.`
     : `Güncel fiyatı ${input.priceText}.`;
 
   const full = `${intro} ${priceSentence} Fiyat geçmişi ProteinAvcısı'nda.`;
@@ -180,4 +180,92 @@ export function clampTitle(text: string, max = 65): string {
   }
 
   return kelimeSinirindaKirp(text, max);
+}
+
+// --- Ortak yardımcılar ----------------------------------------------------
+
+/**
+ * Meta metinlerinde kullanılan fiyat biçimi.
+ *
+ * `deals-list` içinde satır içi yazılıydı; inceleme sayfası da aynı biçime
+ * ihtiyaç duyunca ortağa taşındı. Bu depoda meta mantığının sayfalara
+ * kopyalanması daha önce beş sayfada eksik etikete yol açmıştı, üçüncü bir
+ * kopya çıkarmak yerine tek yer.
+ *
+ * tr-TR biçimlendirmesi BİLİNÇLİ: bu metin kullanıcıya gösteriliyor
+ * (makineden okunan sayı değil), yani binlik/ondalık ayracı Türkçe olmalı.
+ */
+/**
+ * Meta metinlerinde indirim yüzdesi TAM SAYI yazılıyor.
+ *
+ * Ham değer ondalıklı geliyor ve şablonlara doğrudan konduğunda arama
+ * sonucunda "%30.8" çıkıyordu: hem NOKTA ayraçlı (Türkçe metinde virgül
+ * olmalı) hem de bir SERP parçacığı için gereksiz hassasiyet. Ürün sayfası
+ * açıklamasında da aynı kusur vardı, ikisi de buradan geçiyor.
+ */
+export function formatDiscountPercent(percent: number): string {
+  return String(Math.round(percent));
+}
+
+export function formatPriceText(price: number): string {
+  return `${price.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TL`;
+}
+
+// --- İnceleme sayfası açıklaması ------------------------------------------
+
+/**
+ * Bir gün sayısının açıklamada ANILMAYA değer sayılması için alt sınır.
+ *
+ * 5 Eylül'de canlıda ölçüldü ve tasarımı bu belirledi: 4825 ürünün yalnızca
+ * 515'inde 14+ günlük fiyat geçmişi var (katalog çok hızlı büyüdü, tek günde
+ * 1100+ ürün eklendi). "30 günün en düşük fiyatı" ölçütü ürünlerin %95'inde
+ * teknik olarak DOĞRU çıkıyor ama çoğunda 1-2 günlük veriye dayanıyor, yani
+ * içi boş. Rakiplerin indirimi olmayan üründe "indirim" yazmasıyla aynı
+ * aileden bir iddia olurdu; bu sitenin varlık sebebi tam olarak onu teşhir
+ * etmek, o yüzden gün sayısı ancak gerçekten varsa anılıyor.
+ */
+const ANLAMLI_GECMIS_GUNU = 14;
+
+/**
+ * "Doğrulanmış indirim" demek için gereken en az geçmiş.
+ *
+ * Ayrı ve daha düşük bir eşik: indirim iddiası bir ARALIK değil, gözlenmiş
+ * bir düşüş. Yine de iki günlük veriye "doğrulanmış" demek kelimenin
+ * taşıyabileceğinden fazlası — ölçüldü, indirimli 71 üründen 8'i bu eşiği
+ * geçiyor. Geçmeyenlerde indirim İDDİA EDİLMİYOR, sadece fiyat yazılıyor.
+ */
+const INDIRIM_ICIN_GEREKEN_GUN = 7;
+
+export interface ReviewDescriptionInput {
+  displayName: string;
+  priceText: string;
+  discountPercent: number;
+  /** Kaç FARKLI günde fiyat noktamız var (aynı günün tekrarları sayılmaz). */
+  gecmisGunSayisi: number;
+}
+
+/**
+ * İnceleme sayfasının arama sonucu açıklaması.
+ *
+ * NEDEN DEĞİŞTİ: eskiden 247 sayfanın hepsinde birebir aynı cümle vardı
+ * ("… gerçek fiyat geçmişi, besin değeri ve kategori karşılaştırmasına
+ * dayanan bağımsız inceleme") ve içinde TEK BİR SOMUT SAYI yoktu. İnceleme
+ * sayfaları sitenin en çok gösterim alan tipi (gösterimin %42'si) ama TO
+ * %1,3'te kalıyordu. Arama yapan kişi ürün adını yazıp fiyat arıyor; fiyatı
+ * göstermek elimizdeki en dürüst ve en güçlü koz.
+ */
+export function buildReviewDescription(input: ReviewDescriptionInput): string {
+  const gecmisAnlamli = input.gecmisGunSayisi >= ANLAMLI_GECMIS_GUNU;
+  const indirimSoylenebilir =
+    input.discountPercent > 0 && input.gecmisGunSayisi >= INDIRIM_ICIN_GEREKEN_GUN;
+
+  const kuyruk = gecmisAnlamli
+    ? `${input.gecmisGunSayisi} günlük fiyat geçmişi, besin değeri ve kategori karşılaştırmasıyla bağımsız inceleme.`
+    : 'Besin değeri ve kategori karşılaştırmasıyla bağımsız inceleme.';
+
+  const bas = indirimSoylenebilir
+    ? `${input.displayName} ${input.priceText} — markanın etiketine değil, kendi fiyat geçmişimize göre %${formatDiscountPercent(input.discountPercent)} doğrulanmış indirim.`
+    : `${input.displayName} güncel fiyatı ${input.priceText}.`;
+
+  return clampDescription(`${bas} ${kuyruk}`);
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildPageTitle, buildProductDescription, clampTitle } from './meta-description';
+import { buildPageTitle, buildProductDescription, buildReviewDescription, clampTitle } from './meta-description';
 
 // Örnek metinler gerçek üretim verisinden alındı — üç markanın da kendine
 // özgü bir baş kalıbı var ve regex'ler bu kalıplara göre yazıldı.
@@ -171,5 +171,77 @@ describe('buildPageTitle', () => {
       'Torq Nutrition',
     );
     expect(sonuc).not.toMatch(/\s\d+…/);
+  });
+});
+
+describe('buildReviewDescription', () => {
+  const temel = {
+    displayName: 'Hardline Whey 3 Matrix 2300 Gr',
+    priceText: '1.899,00 TL',
+    discountPercent: 0,
+    gecmisGunSayisi: 30,
+  };
+
+  it('fiyatı öne alıyor — eskiden 247 sayfada aynı cümle vardı ve tek sayı yoktu', () => {
+    const d = buildReviewDescription(temel);
+    expect(d).toContain('1.899,00 TL');
+    expect(d.indexOf('1.899,00 TL')).toBeLessThan(d.indexOf('bağımsız inceleme'));
+  });
+
+  it('yeterli geçmiş varsa gün sayısını anıyor', () => {
+    expect(buildReviewDescription({ ...temel, gecmisGunSayisi: 30 })).toContain('30 günlük fiyat geçmişi');
+  });
+
+  // Asıl koruma: veri inceyken iddia BÜYÜTÜLMÜYOR. Katalogda 4825 ürünün
+  // yalnızca 515'inde 14+ gün veri var.
+  it('geçmiş inceyse gün sayısını ANMIYOR', () => {
+    const d = buildReviewDescription({ ...temel, gecmisGunSayisi: 2 });
+    expect(d).not.toContain('günlük fiyat geçmişi');
+    expect(d).toContain('1.899,00 TL');
+  });
+
+  it('indirim + yeterli geçmiş varsa indirimi öne alıyor', () => {
+    const d = buildReviewDescription({ ...temel, discountPercent: 18, gecmisGunSayisi: 20 });
+    expect(d).toContain('%18 doğrulanmış indirim');
+    expect(d).toContain('markanın etiketine değil');
+  });
+
+  // En önemli test: iki günlük veriye "doğrulanmış indirim" demiyoruz.
+  // Bu sitenin varlık sebebi markaların dayanaksız indirim iddiasını
+  // teşhir etmek; aynısını yapmak markayı içeriden çürütürdü.
+  it('geçmiş inceyken indirim İDDİA ETMİYOR', () => {
+    const d = buildReviewDescription({ ...temel, discountPercent: 40, gecmisGunSayisi: 2 });
+    expect(d).not.toContain('indirim');
+    expect(d).toContain('güncel fiyatı');
+  });
+
+  it('Google sınırını aşmıyor', () => {
+    const d = buildReviewDescription({
+      ...temel,
+      displayName: 'Çok Uzun Bir Ürün Adı '.repeat(8),
+      discountPercent: 25,
+      gecmisGunSayisi: 30,
+    });
+    expect(d.length).toBeLessThanOrEqual(155);
+  });
+});
+
+describe('indirim yüzdesi biçimi', () => {
+  // Canlıda "%30.8 doğrulanmış indirim" çıkıyordu: nokta ayraçlı ve bir SERP
+  // parçacığı için gereksiz hassasiyette.
+  it('inceleme açıklamasında tam sayı', () => {
+    const d = buildReviewDescription({
+      displayName: 'X', priceText: '10,00 TL', discountPercent: 30.8, gecmisGunSayisi: 28,
+    });
+    expect(d).toContain('%31 doğrulanmış indirim');
+    expect(d).not.toContain('30.8');
+  });
+
+  it('ürün açıklamasında da tam sayı', () => {
+    const d = buildProductDescription({
+      displayName: 'X', brandName: 'Y', priceText: '10,00 TL', discountPercent: 7.2, description: null,
+    });
+    expect(d).toContain('%7 doğrulanmış indirim');
+    expect(d).not.toContain('7.2');
   });
 });
