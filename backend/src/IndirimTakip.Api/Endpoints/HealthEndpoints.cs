@@ -58,7 +58,16 @@ internal static class HealthEndpoints
         var bayatlikSaati = app.Configuration.GetValue<int?>("Health:StaleHours")
                             ?? VarsayilanBayatlikSaati;
 
-        app.MapGet("/api/health/sources", async (AppDbContext db, CancellationToken ct) =>
+        // GET *ve* HEAD — ikisi birden ZORUNLU.
+        //
+        // UptimeRobot (ve birçok izleme aracı) HTTP monitörlerinde varsayılan
+        // olarak HEAD atıyor. MapGet'e gelen HEAD isteğini ASP.NET Core
+        // karşılamıyor ve 405 dönüyor; izleyici bunu "down" sayıyor, üstelik
+        // gövde olmadığı için yanıt süresi bile ölçülemiyor. Canlıda tam bu
+        // oldu: uç GET ile 200 dönerken monitör sürekli kırmızıydı ve sorun
+        // izleyicide sanıldı. HEAD'de gövde gönderilmiyor ama durum kodu aynı,
+        // yani 200/503 ayrımı korunuyor — izleme için gereken de bu.
+        app.MapMethods("/api/health/sources", ["GET", "HEAD"], async (AppDbContext db, CancellationToken ct) =>
         {
             var simdi = DateTimeOffset.UtcNow;
             var bayatlikSiniri = simdi.AddHours(-bayatlikSaati);
