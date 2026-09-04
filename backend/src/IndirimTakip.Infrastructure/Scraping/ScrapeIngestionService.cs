@@ -115,8 +115,18 @@ public class ScrapeIngestionService(
             brandsByFoldedName.TryAdd(FoldBrandName(existingBrand.Name), existingBrand);
         }
 
-        Brand ResolveBrand(string name)
+        Brand ResolveBrand(string rawName)
         {
+            // Takma ad sözlüğü BURADA uygulanıyor, scraper'larda değil.
+            // Scraper'ların tek tek çağırması gerekiyordu ve bu sessizce
+            // atlanabiliyor: Supplementler scraper'ı BrandNameNormalizer'dan
+            // ÖNCE yazılmıştı, hiç çağırmıyordu ve o kaynakta takma adların
+            // HİÇBİRİ çalışmıyordu ("Kingsize Nutrition" 65 ürünle ikinci bir
+            // marka kaydı oluşturdu). Merkezî çağrı bunu her kaynak için
+            // garanti ediyor; scraper'ların kendi çağrıları zararsız, çünkü
+            // normalizasyon idempotent.
+            var name = BrandNameNormalizer.Normalize(rawName);
+
             if (brandsByName.TryGetValue(name, out var existing))
                 return existing;
 
