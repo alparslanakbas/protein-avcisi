@@ -28,6 +28,14 @@ import { SiteHeader } from '../site-header/site-header';
 
 type ViewMode = 'deals' | 'store' | 'all';
 const PAGE_SIZE = 24;
+// Bayi görünümünde markanın kendi vitrinine karışmayan, YALNIZCA bayilerden
+// gelen kayıtlar listeleniyor. Değer backend'deki
+// `DealsQueryService.DealerSellerLabel` ile BİREBİR aynı olmak zorunda —
+// filtre orada bu metinle eşleştiriliyor.
+const BAYI_ETIKETI = 'Bayiden satılanlar';
+// Blokta gösterilen örnek sayısı. Amaç listeyi taşımak değil, bayi
+// görünümüne bir kapı açmak; tamamına oradaki sayfalamayla ulaşılıyor.
+const BAYI_ORNEK_SAYISI = 6;
 const SEARCH_DEBOUNCE_MS = 350;
 
 @Component({
@@ -138,6 +146,31 @@ export class BrandPage implements OnInit {
   protected readonly currentPage = signal(1);
   // Sayfalama çubuğunda gösterilecek numaralar (null = "…").
   protected readonly sayfaOgeleri = computed(() => sayfaPenceresi(this.currentPage(), this.totalPages()));
+
+  // --- Bayi kayıtları ---------------------------------------------------
+  //
+  // NEDEN VAR: marka sayfası markanın KENDİ vitrini (bkz. 7faad22) ve markanın
+  // kendi mağazası varsa bayideki kopyaları listeden çıkarılıyor. Doğru bir
+  // karardı ama yan etkisi 5 Eylül'de ölçüldü: katalogun %59'u (4.825'te
+  // 2.840) bayi kaydı ve bunların çoğu SİTEDE HİÇBİR SAYFADAN BAĞLANTI
+  // ALMIYORDU — ne ana sayfada, ne kategoride, ne marka sayfasında. Google
+  // onları yalnızca sitemap'ten biliyor ve "Keşfedildi - dizine eklenmemiş"
+  // diye bırakıyordu (sitemap keşif sağlar, öncelik sağlamaz).
+  //
+  // Çözüm marka vitrinini bozmuyor: bayi kayıtları AYRI bir görünümde
+  // (`?satici=bayi`) listeleniyor, ana listede yalnızca bir blok ve o
+  // görünüme bir bağlantı duruyor. Bayi görünümü de sayfalanıyor, yani
+  // markanın bütün bayi kayıtları taranabilir hale geliyor.
+  protected readonly bayiGorunumu = signal(false);
+  protected readonly bayiOrnekleri = signal<Deal[]>([]);
+  protected readonly bayiToplam = signal(0);
+  // Marka kendi sitesinden satıyor mu? Bilinmiyorsa blok GÖSTERİLMİYOR:
+  // kendi mağazası olmayan markalarda bayi kayıtları zaten ana listede
+  // duruyor, blok onları ikinci kez göstermiş olurdu.
+  private readonly markaninKendiVitrini = signal(false);
+  protected readonly bayiBlogunuGoster = computed(
+    () => !this.bayiGorunumu() && this.markaninKendiVitrini() && this.bayiToplam() > 0,
+  );
   protected readonly sortBy = signal<string>('');
 
   // Kullanıcı geri bildirimi: kategori sayfasındaki gibi bu sayfada da
@@ -171,8 +204,10 @@ export class BrandPage implements OnInit {
       // Sayfa numarası ADRESTEN geliyor — bkz. category-page.ts'teki aynı
       // gerekçe: bu sayfada da "?page=" tamamen yok sayılıyordu.
       const sayfa = adrestenSayfa(params.get('page'));
-      if (sayfa !== this.currentPage()) {
+      const bayi = params.get('satici') === 'bayi';
+      if (sayfa !== this.currentPage() || bayi !== this.bayiGorunumu()) {
         this.currentPage.set(sayfa);
+        this.bayiGorunumu.set(bayi);
         // Marka henüz çözülmediyse yükleme loadBrand'den gelecek.
         if (this.brandName()) {
           this.loadItems();
@@ -206,6 +241,10 @@ export class BrandPage implements OnInit {
     // Doğrudan "?page=3" ile gelinmiş olabilir; sabit 1 yazmak o adresi
     // sessizce 1. sayfaya düşürüyordu (5 Eylül'de ölçüldü).
     this.currentPage.set(adrestenSayfa(this.route.snapshot.queryParamMap.get('page')));
+    this.bayiGorunumu.set(this.route.snapshot.queryParamMap.get('satici') === 'bayi');
+    this.bayiOrnekleri.set([]);
+    this.bayiToplam.set(0);
+    this.markaninKendiVitrini.set(false);
     this.searchQuery.set('');
     this.selectedCategories.set(new Set());
     this.priceMin.set(null);
@@ -244,6 +283,30 @@ export class BrandPage implements OnInit {
         // Marka sayfaları birbirine link vermiyordu — diğer marka sayfalarına
         // iç linkleme için mevcut marka çıkarılmış listeyi ayrıca tutuyoruz.
         this.otherBrands.set(options.brands.filter((b) => b !== match));
+
+        // Bayi kayıtlarının özeti. Zaten bayi görünümündeysek gereksiz —
+        // liste onları hâlâ gösteriyor. Hata durumunda blok hiç çıkmıyor:
+        // eksik bir bölüm, yanlış bir bölümden iyidir.
+        if (!this.bayiGorunumu()) {
+          this.dealsService
+            .getAllProducts({
+              brands: [match],
+              sellers: [BAYI_ETIKETI],
+              categories: categorySlug ? [categorySlug] : [],
+              page: 1,
+              pageSize: BAYI_ORNEK_SAYISI,
+            })
+            .subscribe({
+              next: (sonuc) => {
+                this.bayiOrnekleri.set(sonuc.items);
+                this.bayiToplam.set(sonuc.totalCount);
+              },
+              error: () => {
+                this.bayiOrnekleri.set([]);
+                this.bayiToplam.set(0);
+              },
+            });
+        }
         this.availableCategories.set(options.categories);
         this.setMeta(match);
 
@@ -300,11 +363,16 @@ export class BrandPage implements OnInit {
     this.hasActiveFilters.set(
       this.selectedCategories().size > 0 || this.priceMin() !== null || this.priceMax() !== null || !!this.searchQuery().trim(),
     );
+    const bayi = this.bayiGorunumu();
     const query = {
       brands: [brand],
       // Marka sayfası markanın kendi vitrini: kendi ürünü varsa bayideki
       // kopyası burada listelenmiyor (bkz. DealsQuery.preferBrandStore).
-      preferBrandStore: true,
+      // Bayi görünümünde tam TERSİ isteniyor, o yüzden vitrin önceliği
+      // kapatılıp satıcı filtresi veriliyor (backend zaten satıcı filtresi
+      // varken preferBrandStore'u uygulamıyor, ikisi çakışmıyor).
+      preferBrandStore: !bayi,
+      sellers: bayi ? [BAYI_ETIKETI] : [],
       categories: [...this.selectedCategories()],
       search: this.searchQuery().trim() || undefined,
       minPrice: this.priceMin(),
@@ -333,6 +401,14 @@ export class BrandPage implements OnInit {
         // çağrısında değil — bu yüzden gerekince tekrar çağrılıyor.
         if (result.totalPages > 0 && this.currentPage() > result.totalPages) {
           this.setMeta(this.brandName());
+        }
+
+        // Markanın kendi mağazası var mı? Ayrı bir istek atmak yerine gelen
+        // listeden okunuyor: `preferBrandStore` açıkken kendi ürünü olan
+        // markada dönen kayıtların HEPSİNDE satıcı boş olur. Boş sayfada
+        // karar VERİLMİYOR (koşul boş kümede yanıltıcı biçimde doğru çıkar).
+        if (!bayi && result.items.length > 0) {
+          this.markaninKendiVitrini.set(result.items.every((d) => !d.seller));
         }
 
         this.loadSparklines(result.items);
@@ -422,6 +498,23 @@ export class BrandPage implements OnInit {
     this.loadItems();
   }
 
+  /**
+   * Sayfalama bağlantısının sorgu dizesi.
+   *
+   * `satici` KORUNMAK ZORUNDA: korunmadığı ilk sürümde bayi görünümünde
+   * 2. sayfaya basmak marka vitrinine dönüyordu — hem yanlış içerik, hem de
+   * bayi kayıtlarının tarama zinciri 1. sayfada kopuyordu (bu görünümün
+   * varlık sebebi tam olarak o zincir). `urun` bilerek taşınmıyor: açık bir
+   * modalla sayfa değiştirmek anlamsız ve arama motoruna gereksiz adres
+   * üretirdi, o yüzden "merge" kullanılmadı.
+   */
+  protected sayfaSorgusu(sayfa: number): Record<string, string | null> {
+    return {
+      page: sayfa <= 1 ? null : String(sayfa),
+      satici: this.bayiGorunumu() ? 'bayi' : null,
+    };
+  }
+
   /** Sayfalama bağlantısına tıklanınca listenin başına dön (gezinmeyi routerLink yapıyor). */
   protected sayfayaKaydir(): void {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -440,13 +533,25 @@ export class BrandPage implements OnInit {
     // clampTitle son " | " ayıracından sonrasını atıyor (bkz. 540ec17).
     const toplam = this.totalPages();
     const sayfa = toplam > 0 && this.currentPage() > toplam ? 1 : this.currentPage();
-    const sayfaSorgusu = sayfa > 1 ? `?page=${sayfa}` : '';
+    const bayi = this.bayiGorunumu();
+    // Bayi görünümü AYRI bir sayfa: kendi başlığı ve kendi canonical'ı var.
+    // Marka vitrinine canonical verilseydi kopya sayılır ve içindeki bayi
+    // ürünleri yine taranmazdı — bu görünümün var olma sebebi tam da o.
+    const sorguParcalari = [bayi ? 'satici=bayi' : '', sayfa > 1 ? `page=${sayfa}` : ''].filter(Boolean);
+    const sayfaSorgusu = sorguParcalari.length > 0 ? `?${sorguParcalari.join('&')}` : '';
 
     if (category) {
       const label = this.fixedCategoryLabel();
       this.pageMeta.set({
-        title: sayfaliBaslik(`${brand} ${label} Fiyatları ve İndirimleri 2026 | ProteinAvcısı`, sayfa),
-        description: `${brand} markasının ${label.toLocaleLowerCase('tr')} ürünleri, güncel fiyatları ve gerçek fiyat geçmişine dayanan doğrulanmış indirimleri tek sayfada.`,
+        title: sayfaliBaslik(
+          bayi
+            ? `${brand} ${label} Bayi Fiyatları 2026 | ProteinAvcısı`
+            : `${brand} ${label} Fiyatları ve İndirimleri 2026 | ProteinAvcısı`,
+          sayfa,
+        ),
+        description: bayi
+          ? `${brand} markasının ${label.toLocaleLowerCase('tr')} ürünlerini satan bayiler ve güncel bayi fiyatları. Aynı ürün için satıcılar arasındaki fiyat farkını tek sayfada karşılaştır.`
+          : `${brand} markasının ${label.toLocaleLowerCase('tr')} ürünleri, güncel fiyatları ve gerçek fiyat geçmişine dayanan doğrulanmış indirimleri tek sayfada.`,
         canonicalPath: `/marka/${brandSlugValue}/${category}${sayfaSorgusu}`,
       });
       this.breadcrumbEl = upsertJsonLdScript(
@@ -461,8 +566,15 @@ export class BrandPage implements OnInit {
       return;
     }
 
-    const title = sayfaliBaslik(`${brand} İndirim Kodu ve Kampanyaları 2026 | ProteinAvcısı`, sayfa);
-    const description = `${brand} için güncel kupon kodları ve gerçek fiyat geçmişine dayanan doğrulanmış indirimler. ProteinAvcısı, ${brand} markasının fiyatlarını düzenli olarak takip ediyor.`;
+    const title = sayfaliBaslik(
+      bayi
+        ? `${brand} Bayi Fiyatları ve Satıcıları 2026 | ProteinAvcısı`
+        : `${brand} İndirim Kodu ve Kampanyaları 2026 | ProteinAvcısı`,
+      sayfa,
+    );
+    const description = bayi
+      ? `${brand} ürünlerini satan bayiler ve güncel bayi fiyatları. Aynı ürün için satıcılar arasındaki fiyat farkını tek sayfada karşılaştır.`
+      : `${brand} için güncel kupon kodları ve gerçek fiyat geçmişine dayanan doğrulanmış indirimler. ProteinAvcısı, ${brand} markasının fiyatlarını düzenli olarak takip ediyor.`;
 
     this.pageMeta.set({
       title,

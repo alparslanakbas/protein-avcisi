@@ -21,18 +21,36 @@
               <a [routerLink]="['/marka', brandSlug(brandName()), 'indirim-kodu']" class="hover:text-[var(--noc-accent)]">{{ brandName() }}</a> /
               {{ fixedCategoryLabel() }}
             </nav>
-            <h1 class="text-[38px] font-medium tracking-[-0.03em] sm:text-[42px]">{{ brandName() }} {{ fixedCategoryLabel() }} Fiyatları</h1>
-            <p class="mt-2 max-w-2xl text-[15px] text-[var(--noc-neutral-300)]">
-              {{ brandName() }} markasının {{ totalCount() }} {{ fixedCategoryLabel().toLowerCase() }} ürünü, günde 4 kez
-              taranan güncel fiyatlarıyla. İndirim etiketleri markanın beyanına değil, kendi topladığımız gerçek fiyat
-              geçmişine dayanıyor.
-            </p>
+            @if (bayiGorunumu()) {
+              <h1 class="text-[38px] font-medium tracking-[-0.03em] sm:text-[42px]">{{ brandName() }} {{ fixedCategoryLabel() }} Bayi Fiyatları</h1>
+              <p class="mt-2 max-w-2xl text-[15px] text-[var(--noc-neutral-300)]">
+                {{ brandName() }} markasının {{ fixedCategoryLabel().toLowerCase() }} ürünlerini satan bayilerdeki
+                {{ totalCount() }} kayıt. Markanın kendi sitesindeki fiyatlar için
+                <a [routerLink]="[]" [queryParams]="{ satici: null, page: null }" queryParamsHandling="merge" class="text-[var(--noc-accent)] hover:underline">marka sayfasına</a> bak.
+              </p>
+            } @else {
+              <h1 class="text-[38px] font-medium tracking-[-0.03em] sm:text-[42px]">{{ brandName() }} {{ fixedCategoryLabel() }} Fiyatları</h1>
+              <p class="mt-2 max-w-2xl text-[15px] text-[var(--noc-neutral-300)]">
+                {{ brandName() }} markasının {{ totalCount() }} {{ fixedCategoryLabel().toLowerCase() }} ürünü, günde 4 kez
+                taranan güncel fiyatlarıyla. İndirim etiketleri markanın beyanına değil, kendi topladığımız gerçek fiyat
+                geçmişine dayanıyor.
+              </p>
+            }
           } @else {
-            <h1 class="text-[38px] font-medium tracking-[-0.03em] sm:text-[42px]">{{ brandName() }} İndirim Kodu ve Kampanyaları</h1>
-            <p class="mt-2 max-w-2xl text-[15px] text-[var(--noc-neutral-300)]">
-              {{ totalCount() }} ürün, günde 4 kez taranıyor. {{ brandName() }} markasının fiyatlarını düzenli olarak
-              takip ediyoruz — markanın beyanına değil, kendi topladığımız gerçek fiyat geçmişine dayanan indirimler.
-            </p>
+            @if (bayiGorunumu()) {
+              <h1 class="text-[38px] font-medium tracking-[-0.03em] sm:text-[42px]">{{ brandName() }} Bayi Fiyatları</h1>
+              <p class="mt-2 max-w-2xl text-[15px] text-[var(--noc-neutral-300)]">
+                {{ brandName() }} ürünlerini satan bayilerdeki {{ totalCount() }} kayıt, günde 4 kez taranan güncel
+                fiyatlarıyla. Markanın kendi sitesindeki fiyatlar için
+                <a [routerLink]="[]" [queryParams]="{ satici: null, page: null }" queryParamsHandling="merge" class="text-[var(--noc-accent)] hover:underline">marka sayfasına</a> bak.
+              </p>
+            } @else {
+              <h1 class="text-[38px] font-medium tracking-[-0.03em] sm:text-[42px]">{{ brandName() }} İndirim Kodu ve Kampanyaları</h1>
+              <p class="mt-2 max-w-2xl text-[15px] text-[var(--noc-neutral-300)]">
+                {{ totalCount() }} ürün, günde 4 kez taranıyor. {{ brandName() }} markasının fiyatlarını düzenli olarak
+                takip ediyoruz — markanın beyanına değil, kendi topladığımız gerçek fiyat geçmişine dayanan indirimler.
+              </p>
+            }
           }
         </div>
       </div>
@@ -295,7 +313,7 @@
         @if (totalPages() > 1) {
           <nav class="mt-10 flex flex-wrap items-center justify-center gap-2" aria-label="Sayfalama">
             @if (currentPage() > 1) {
-              <a [routerLink]="[]" [queryParams]="{ page: currentPage() - 1 === 1 ? null : currentPage() - 1 }" (click)="sayfayaKaydir()" rel="prev" title="Önceki Sayfa" class="flex h-9 w-9 items-center justify-center rounded-[8px] border border-[var(--noc-divider)] text-[var(--noc-neutral-500)] hover:text-[var(--noc-accent)]">
+              <a [routerLink]="[]" [queryParams]="sayfaSorgusu(currentPage() - 1)" (click)="sayfayaKaydir()" rel="prev" title="Önceki Sayfa" class="flex h-9 w-9 items-center justify-center rounded-[8px] border border-[var(--noc-divider)] text-[var(--noc-neutral-500)] hover:text-[var(--noc-accent)]">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" d="M15 18l-6-6 6-6" /></svg>
               </a>
             } @else {
@@ -310,12 +328,12 @@
               } @else if (oge === currentPage()) {
                 <span aria-current="page" class="flex h-9 min-w-9 items-center justify-center rounded-[8px] border border-[var(--noc-accent)] px-2 text-sm font-medium text-[var(--noc-accent)]">{{ oge }}</span>
               } @else {
-                <a [routerLink]="[]" [queryParams]="{ page: oge === 1 ? null : oge }" (click)="sayfayaKaydir()" [attr.aria-label]="'Sayfa ' + oge" class="flex h-9 min-w-9 items-center justify-center rounded-[8px] border border-[var(--noc-divider)] px-2 text-sm text-[var(--noc-neutral-500)] hover:text-[var(--noc-accent)]">{{ oge }}</a>
+                <a [routerLink]="[]" [queryParams]="sayfaSorgusu(oge)" (click)="sayfayaKaydir()" [attr.aria-label]="'Sayfa ' + oge" class="flex h-9 min-w-9 items-center justify-center rounded-[8px] border border-[var(--noc-divider)] px-2 text-sm text-[var(--noc-neutral-500)] hover:text-[var(--noc-accent)]">{{ oge }}</a>
               }
             }
 
             @if (currentPage() < totalPages()) {
-              <a [routerLink]="[]" [queryParams]="{ page: currentPage() + 1 }" (click)="sayfayaKaydir()" rel="next" title="Sonraki Sayfa" class="flex h-9 w-9 items-center justify-center rounded-[8px] border border-[var(--noc-divider)] text-[var(--noc-neutral-500)] hover:text-[var(--noc-accent)]">
+              <a [routerLink]="[]" [queryParams]="sayfaSorgusu(currentPage() + 1)" (click)="sayfayaKaydir()" rel="next" title="Sonraki Sayfa" class="flex h-9 w-9 items-center justify-center rounded-[8px] border border-[var(--noc-divider)] text-[var(--noc-neutral-500)] hover:text-[var(--noc-accent)]">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" d="M9 18l6-6-6-6" /></svg>
               </a>
             } @else {
@@ -355,6 +373,42 @@
       <!-- Marka × kategori kesişimine özel SSS. Ayrı bir blok: sorular da,
            başlık da marka ana sayfasındakinden farklı (orası kupon odaklı,
            burası fiyat konumu odaklı). -->
+      <!-- BAYİ KAYITLARI BLOĞU.
+           Marka sayfası markanın kendi vitrini (7faad22) ve kendi mağazası
+           olan markalarda bayideki kopyalar listeden çıkarılıyor. Ölçüldü
+           (5 Eylül): katalogun %59'u bayi kaydı ve büyük kısmı sitede
+           HİÇBİR sayfadan bağlantı almıyordu — Google onları yalnızca
+           sitemap'ten biliyor, "Keşfedildi ama taranmadı" durumunda
+           bırakıyordu. Bu blok vitrini bozmadan o kayıtlara kapı açıyor;
+           tamamına bayi görünümündeki sayfalamayla ulaşılıyor. -->
+      @if (bayiBlogunuGoster()) {
+        <section class="mt-[45px]">
+          <div class="mb-4 flex flex-wrap items-end justify-between gap-2">
+            <div>
+              <h2 class="text-lg font-medium">{{ brandName() }} ürünlerini satan bayiler</h2>
+              <p class="mt-1 text-sm text-[var(--noc-neutral-500)]">
+                Yukarıdaki liste markanın kendi sitesindeki fiyatları gösteriyor. Aynı ürünler bayilerde farklı
+                fiyatlarla da satılıyor — {{ bayiToplam() }} kayıt.
+              </p>
+            </div>
+            <a [routerLink]="[]" [queryParams]="{ satici: 'bayi', page: null }" queryParamsHandling="merge" class="shrink-0 rounded-[8px] border border-[var(--noc-divider)] px-3 py-[7px] text-[13px] hover:text-[var(--noc-accent)]">
+              Tümünü gör ({{ bayiToplam() }})
+            </a>
+          </div>
+          <ul class="flex flex-col divide-y divide-[var(--noc-divider)] rounded-[10px] border border-[var(--noc-divider)]">
+            @for (bayiUrun of bayiOrnekleri(); track bayiUrun.productId) {
+              <li>
+                <a [href]="productPath(bayiUrun)" (click)="onProductClick($event, bayiUrun)" class="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-3 hover:text-[var(--noc-accent)]">
+                  <span class="min-w-0 flex-1 text-[14px] leading-snug">{{ displayName(bayiUrun.productName) }}</span>
+                  <span class="text-[12px] text-[var(--noc-neutral-500)]">{{ bayiUrun.seller }}</span>
+                  <span class="text-[15px] font-medium tabular-nums">{{ bayiUrun.currentPrice | number: '1.2-2' }} ₺</span>
+                </a>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+
       @if (brandCategoryFaqs().length > 0) {
         <section class="mt-[45px]">
           <h2 class="mb-4 text-lg font-medium">{{ brandName() }} {{ fixedCategoryLabel() }} Hakkında Sık Sorulanlar</h2>
