@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Net.Http.Json;
 using System.Text.RegularExpressions;
 using System.Web;
@@ -220,20 +219,7 @@ public partial class BigJoyScraper(HttpClient httpClient) : IBrandScraper, IProd
         if (text is null)
             return null;
 
-        var match = ServingGramsRegex().Match(text);
-        if (!match.Success)
-            return null;
-
-        return decimal.TryParse(
-                match.Groups[1].Value.Replace(',', '.'),
-                NumberStyles.Number,
-                CultureInfo.InvariantCulture,
-                out var grams)
-            // Porsiyon için makul aralık; dışındaki eşleşme yanlış satır
-            // yakalandığına işaret eder (uydurma değer yazmaktansa boş bırak).
-            && grams > 0 && grams <= 500
-            ? grams
-            : null;
+        return NutritionServingParser.Grams(text);
     }
 
     /// <summary>"Porsiyon Sayısı: 68" satırından servis adedini okur.</summary>
@@ -243,10 +229,7 @@ public partial class BigJoyScraper(HttpClient httpClient) : IBrandScraper, IProd
         if (text is null)
             return null;
 
-        var match = ServingCountRegex().Match(text);
-        return match.Success && int.TryParse(match.Groups[1].Value, out var count) && count is > 0 and <= 1000
-            ? count
-            : null;
+        return NutritionServingParser.Count(text);
     }
 
     /// <summary>
@@ -295,9 +278,4 @@ public partial class BigJoyScraper(HttpClient httpClient) : IBrandScraper, IProd
     [GeneratedRegex("<[^>]+>")]
     private static partial Regex TagRegex();
 
-    [GeneratedRegex(@"(\d+(?:[.,]\d+)?)\s*g", RegexOptions.IgnoreCase)]
-    private static partial Regex ServingGramsRegex();
-
-    [GeneratedRegex(@"(\d+)")]
-    private static partial Regex ServingCountRegex();
 }

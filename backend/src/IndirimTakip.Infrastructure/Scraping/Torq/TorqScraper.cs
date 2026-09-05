@@ -9,13 +9,18 @@ namespace IndirimTakip.Infrastructure.Scraping.Torq;
 /// veriyor, bu yüzden hem daha az istek atıyoruz hem de kategori listesini
 /// elle güncel tutma yükü doğmuyor.
 /// </summary>
-/// Not: IProductDetailFetcher BİLİNÇLİ olarak uygulanmadı. Torq'un ürün
-/// detay sayfasında açıklama tablosu boş geliyor (içerik muhtemelen sonradan
-/// yükleniyor); boş dönen bir çekici, detay tamamlama servisinin "kontrol
-/// edildi" damgasını atmasına ve o ürünün bir daha hiç denenmemesine yol
-/// açardı — hiç uygulamamaktan kötü olurdu. İçeriğin nereden geldiği
-/// çözülünce eklenebilir.
-public class TorqScraper(HttpClient httpClient) : IBrandScraper
+/// IProductDetailFetcher uzun süre BİLİNÇLİ olarak uygulanmamıştı: ürün
+/// sayfasındaki AÇIKLAMA tablosu boş geliyor (içerik sonradan yükleniyor) ve
+/// boş dönen bir çekici, detay tamamlama servisinin "kontrol edildi" damgasını
+/// atıp ürünü sonsuza kadar dışlamasına yol açardı.
+///
+/// 5 Eylül'de yeniden ölçüldü ve gerekçe yalnızca AÇIKLAMA için geçerliymiş:
+/// BESİN DEĞERİ sunucudan gelen HTML'de eksiksiz duruyor
+/// (div.satirlar > span.baslik + span.deger), ayrıca porsiyon büyüklüğü ve
+/// servis sayısı da div.ust_bilgiler içinde yazılı. Çekici artık var ama
+/// yalnızca bunları dolduruyor; Description hâlâ null dönüyor — yani eski
+/// gerekçe korunuyor, kapsamı daralıyor.
+public class TorqScraper(HttpClient httpClient) : IBrandScraper, IProductDetailFetcher
 {
     public string BrandName => "Torq Nutrition";
     public string BaseUrl => "https://www.torqnutrition.com.tr";
@@ -38,6 +43,71 @@ public class TorqScraper(HttpClient httpClient) : IBrandScraper
     [
         "solgar", "nature's bounty", "natures bounty", "nutripure", "ocean ", "nutraxin",
     ];
+
+
+    /// <summary>
+    /// Besin değeri ve porsiyon bilgisi — yalnızca ürün DETAY sayfasında var.
+    /// </summary>
+    /// <remarks>
+    /// Yapı Hardline ve BigJoy ile aynı aileden: besin satırları
+    /// <c>div.satirlar</c>, porsiyon bilgisi <c>div.ust_bilgiler</c>, ikisinde
+    /// de etiket <c>span.baslik</c> ve değer <c>span.deger</c>.
+    ///
+    /// <b>Açıklama BİLEREK çekilmiyor</b> (null dönüyor): sınıf yorumundaki
+    /// eski ölçüm hâlâ geçerli, açıklama sunucu HTML'inde boş. Detay tamamlama
+    /// servisi <c>??=</c> kullandığı için null hiçbir şeyi silmiyor.
+    /// </remarks>
+    public async Task<ProductDetails> FetchDetailsAsync(string productUrl, CancellationToken cancellationToken = default)
+    {
+        var html = await httpClient.GetStringAsync(productUrl, cancellationToken);
+        var doc = new HtmlDocument();
+        doc.LoadHtml(html);
+
+        var nutritionJson = NutritionParser.BuildNutritionJson(
+            HtmlNutritionExtractor.FromRowElements(doc.DocumentNode, "//div[contains(@class,'satirlar')]"));
+
+        return new ProductDetails(
+            Description: null,
+            NutritionJson: nutritionJson,
+            ProteinPerServingGrams: NutritionParser.ExtractProteinGrams(nutritionJson),
+            ServingSizeGrams: NutritionServingParser.Grams(UstBilgi(doc, "Porsiyon Büyüklüğü")),
+            ServingsPerPackage: NutritionServingParser.Count(UstBilgi(doc, "Porsiyon Sayısı")));
+    }
+
+    /// <summary>
+    /// <c>div.ust_bilgiler</c> satırlarından etiketi eşleşenin DEĞER kısmını
+    /// döndürür.
+    /// </summary>
+    /// <remarks>
+    /// Yalnızca <c>span.deger</c> okunuyor, satırın tamamı değil: "Porsiyon
+    /// Büyüklüğü: 30 Gram" metninin tamamı verilseydi etiketteki bir sayı
+    /// (ileride eklenebilecek "1. Porsiyon" gibi) değer sanılabilirdi.
+    ///
+    /// Karşılaştırma ORDINAL — <c>IgnoreCase</c> Türkçe noktalı İ'yi
+    /// katlamıyor, aranan metin sayfada geçtiği gibi yazılıyor.
+    /// </remarks>
+    private static string? UstBilgi(HtmlDocument doc, string label)
+    {
+        var rows = doc.DocumentNode.SelectNodes("//div[contains(@class,'ust_bilgiler')]");
+        if (rows is null)
+            return null;
+
+        foreach (var row in rows)
+        {
+            var baslik = row.SelectSingleNode(".//span[contains(@class,'baslik')]");
+            if (baslik is null)
+                continue;
+
+            var text = HtmlEntity.DeEntitize(baslik.InnerText) ?? string.Empty;
+            if (!text.Contains(label, StringComparison.Ordinal))
+                continue;
+
+            var deger = row.SelectSingleNode(".//span[contains(@class,'deger')]");
+            return deger is null ? null : HtmlEntity.DeEntitize(deger.InnerText)?.Trim();
+        }
+
+        return null;
+    }
 
     public async Task<IReadOnlyList<ScrapedProduct>> ScrapeAsync(CancellationToken cancellationToken = default)
     {
