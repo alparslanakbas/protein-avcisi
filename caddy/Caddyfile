@@ -61,6 +61,15 @@
 #             s4u.com.tr, westnutrition.com.tr, musclepump.com.tr ...
 #   satır içi: 5 Angular script'i + 3 ld+json + 2 <style>
 #
+# RAPOR MODUNDA GERÇEK TARAYICIDA ÖLÇÜLDÜ (4 sayfa tipi: ana sayfa,
+# kategori, ürün, inceleme). Çıkan ihlallerin TAMAMI AdSense'in reklam
+# kalitesi altyapısıydı ve ilk taslakta eksikti:
+#   ep1/ep2.adtrafficquality.google (connect + script + frame)
+#   www.google.com (frame)
+# Görsel, font, stil ve kendi script'lerimizde TEK İHLAL YOK — img-src'nin
+# "https:" olması ve style/font listeleri doğruymuş. Zorlayıcı modda
+# yayınlansaydı AdSense kısmen bozulacaktı; başvuru 13 Ekim'de.
+#
 # img-src NEDEN "https:" (yani her HTTPS host)? Ürün görselleri markaların
 # kendi CDN'lerinden geliyor ve o liste HER YENİ KAYNAKLA BÜYÜYOR — bugün
 # 36 kaynak var. Host listesi tutmak, yeni bir marka eklendiği gün o markanın
@@ -76,7 +85,7 @@
 # listeye indi.
 (csp-rapor) {
 	header {
-		Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self' 'unsafe-inline' https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.googleadservices.com https://*.doubleclick.net https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.proteinavcisi.com.tr https://cloudflareinsights.com https://*.google-analytics.com; frame-src https://*.googlesyndication.com https://*.doubleclick.net; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
+		Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self' 'unsafe-inline' https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.googleadservices.com https://*.doubleclick.net https://*.adtrafficquality.google https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.proteinavcisi.com.tr https://cloudflareinsights.com https://*.google-analytics.com https://*.adtrafficquality.google; frame-src https://*.googlesyndication.com https://*.doubleclick.net https://*.adtrafficquality.google https://www.google.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
 	}
 }
 
