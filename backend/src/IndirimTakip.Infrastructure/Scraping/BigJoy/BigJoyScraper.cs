@@ -1,6 +1,8 @@
+using System.Globalization;
 using System.Net.Http.Json;
 using System.Text.RegularExpressions;
 using System.Web;
+using HtmlAgilityPack;
 using IndirimTakip.Core.Scraping;
 
 namespace IndirimTakip.Infrastructure.Scraping.BigJoy;
@@ -15,7 +17,7 @@ namespace IndirimTakip.Infrastructure.Scraping.BigJoy;
 /// Yanıt zengin: fiyat, indirimli fiyat, gramaj, aroma, üretici, açıklama ve
 /// görsel tek istekte geliyor — ürün detay sayfasına ayrıca gitmeye gerek yok.
 /// </summary>
-public partial class BigJoyScraper(HttpClient httpClient) : IBrandScraper
+public partial class BigJoyScraper(HttpClient httpClient) : IBrandScraper, IProductDetailFetcher
 {
     public string BrandName => "BigJoy";
     public string BaseUrl => "https://www.bigjoy.com.tr";
@@ -173,6 +175,103 @@ public partial class BigJoyScraper(HttpClient httpClient) : IBrandScraper
             : null;
     }
 
+
+    /// <summary>
+    /// Besin değeri tablosu ve porsiyon bilgisi — yalnızca ürün DETAY
+    /// sayfasında var, kategori ucunda yok.
+    /// </summary>
+    /// <remarks>
+    /// <b>Neden sonradan eklendi.</b> 5 Eylül'de ölçüldü: inceleme sayfası
+    /// olan 663 üründen 335'inde açıklama vardı ama besin değeri yoktu ve
+    /// bunların 105'i BigJoy'du. Kaynakta veri EKSİK DEĞİL — sayfa Enerji,
+    /// Yağ, Karbonhidrat, Protein satırlarını ve "Porsiyon Büyüklüğü / Sayısı"
+    /// bilgisini eksiksiz yayınlıyor; sadece <c>&lt;table&gt;</c> yerine
+    /// <c>div.bdegersatir</c> satırları kullanıyor.
+    ///
+    /// <b>Açıklama BİLİNÇLİ olarak null dönüyor.</b> BigJoy'un açıklaması
+    /// zaten normal taramada (kategori ucunda) geliyor ve daha temiz; burada
+    /// tekrar okumak aynı veriyi ikinci bir biçimde üretme riski taşırdı.
+    /// Detay tamamlama servisi <c>??=</c> kullandığı için null hiçbir şeyi
+    /// silmiyor.
+    /// </remarks>
+    public async Task<ProductDetails> FetchDetailsAsync(string productUrl, CancellationToken cancellationToken = default)
+    {
+        var html = await httpClient.GetStringAsync(productUrl, cancellationToken);
+        var doc = new HtmlDocument();
+        doc.LoadHtml(html);
+
+        var nutritionJson = NutritionParser.BuildNutritionJson(
+            HtmlNutritionExtractor.FromRowElements(
+                doc.DocumentNode,
+                "//div[contains(@class,'bdegersatir')]"));
+
+        return new ProductDetails(
+            Description: null,
+            NutritionJson: nutritionJson,
+            ProteinPerServingGrams: NutritionParser.ExtractProteinGrams(nutritionJson),
+            ServingSizeGrams: ReadServingSizeGrams(doc),
+            ServingsPerPackage: ReadServingsPerPackage(doc));
+    }
+
+    /// <summary>"Porsiyon Büyüklüğü: 32g" satırından gramajı okur.</summary>
+    private static decimal? ReadServingSizeGrams(HtmlDocument doc)
+    {
+        var text = ReadNutritionTitle(doc, "Porsiyon Büyüklüğü");
+        if (text is null)
+            return null;
+
+        var match = ServingGramsRegex().Match(text);
+        if (!match.Success)
+            return null;
+
+        return decimal.TryParse(
+                match.Groups[1].Value.Replace(',', '.'),
+                NumberStyles.Number,
+                CultureInfo.InvariantCulture,
+                out var grams)
+            // Porsiyon için makul aralık; dışındaki eşleşme yanlış satır
+            // yakalandığına işaret eder (uydurma değer yazmaktansa boş bırak).
+            && grams > 0 && grams <= 500
+            ? grams
+            : null;
+    }
+
+    /// <summary>"Porsiyon Sayısı: 68" satırından servis adedini okur.</summary>
+    private static int? ReadServingsPerPackage(HtmlDocument doc)
+    {
+        var text = ReadNutritionTitle(doc, "Porsiyon Sayısı");
+        if (text is null)
+            return null;
+
+        var match = ServingCountRegex().Match(text);
+        return match.Success && int.TryParse(match.Groups[1].Value, out var count) && count is > 0 and <= 1000
+            ? count
+            : null;
+    }
+
+    /// <summary>
+    /// Porsiyon bilgisi <c>div.nutrition-title</c> içinde "etiket: değer"
+    /// olarak duruyor. Etiket Türkçe karakterli olduğu için karşılaştırma
+    /// KÜLTÜRE BIRAKILMIYOR: aranan metin sayfada birebir geçtiği gibi
+    /// yazılıyor ve ordinal karşılaştırılıyor — <c>IgnoreCase</c> Türkçe
+    /// noktalı İ'yi katlamıyor, "PORSİYON" ile "Porsiyon" eşleşmezdi.
+    /// </summary>
+    private static string? ReadNutritionTitle(HtmlDocument doc, string label)
+    {
+        var nodes = doc.DocumentNode.SelectNodes("//div[contains(@class,'nutrition-title')]");
+        if (nodes is null)
+            return null;
+
+        foreach (var node in nodes)
+        {
+            var text = HtmlEntity.DeEntitize(node.InnerText) ?? string.Empty;
+            if (text.Contains(label, StringComparison.Ordinal))
+                return text;
+        }
+
+        return null;
+    }
+
     private static string? CleanDescription(string? html)
     {
         if (string.IsNullOrWhiteSpace(html))
@@ -195,4 +294,10 @@ public partial class BigJoyScraper(HttpClient httpClient) : IBrandScraper
 
     [GeneratedRegex("<[^>]+>")]
     private static partial Regex TagRegex();
+
+    [GeneratedRegex(@"(\d+(?:[.,]\d+)?)\s*g", RegexOptions.IgnoreCase)]
+    private static partial Regex ServingGramsRegex();
+
+    [GeneratedRegex(@"(\d+)")]
+    private static partial Regex ServingCountRegex();
 }

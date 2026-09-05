@@ -18,7 +18,11 @@ public class DescriptionBackfillBackgroundService(
             return;
         }
 
-        var intervalDays = configuration.GetValue("DescriptionBackfill:IntervalDays", 7);
+        // Varsayılan 7 günden 2 güne indirildi (5 Eylül): tur başına ürün
+        // sayısıyla birlikte, birikmiş eksiği 11 hafta yerine ~9 günde
+        // kapatıyor. Ayarla değiştirilebilir olması bilinçli — bir kaynak
+        // şikâyet ederse deploy beklemeden yavaşlatılabilir.
+        var intervalDays = configuration.GetValue("DescriptionBackfill:IntervalDays", 2);
 
         // Timer artık periyodun kendisini DEĞİL, yalnızca kontrol sıklığını
         // belirliyor; "sırası geldi mi" kararı DB'deki son çalışma damgasından

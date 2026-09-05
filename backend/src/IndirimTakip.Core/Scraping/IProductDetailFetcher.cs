@@ -5,7 +5,19 @@ namespace IndirimTakip.Core.Scraping;
 // çağrıda birlikte dönüyorlar — ayrı arayüzler olsaydı her ürün sayfası
 // iki kez indirilir, markalar gereksiz yere yorulurdu.
 // Bulunamayan alanlar null kalır; tahmin/uydurma değer üretilmez.
-public record ProductDetails(string? Description, string? NutritionJson, decimal? ProteinPerServingGrams);
+// ServingSizeGrams / ServingsPerPackage VARSAYILAN null: mevcut üç çekici
+// (Hardline, SSN, ProteinOcean) bunları vermiyor ve imzayı bozmamaları
+// gerekiyordu. Kaynak DOĞRUDAN beyan ediyorsa doldurulur — BigJoy ürün
+// sayfasında "Porsiyon Büyüklüğü: 32g" ve "Porsiyon Sayısı: 68" yazıyor.
+// Açıklama metninden çıkarım YAPILMAZ; o iş zaten
+// ProductAttributeParser.ExtractServingSizeGrams'ta ve türetilmiş bir
+// değerin kaynağın kendi beyanını ezmemesi gerekiyor.
+public record ProductDetails(
+    string? Description,
+    string? NutritionJson,
+    decimal? ProteinPerServingGrams,
+    decimal? ServingSizeGrams = null,
+    int? ServingsPerPackage = null);
 
 // Bu bilgiler sadece ürün DETAY sayfasında olduğu için, bu arayüzü
 // implemente eden scraper'lar ürün başına ayrı bir istek atar.

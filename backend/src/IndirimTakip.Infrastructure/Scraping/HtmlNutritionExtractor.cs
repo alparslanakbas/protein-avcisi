@@ -42,6 +42,40 @@ internal static class HtmlNutritionExtractor
         }
     }
 
+    /// <summary>
+    /// Besin değerini <c>&lt;table&gt;</c> yerine div satırlarıyla veren
+    /// kaynaklar için: her satırda İLK çocuk öğe etiketi, SONUNCUSU değeri
+    /// taşıyor.
+    /// </summary>
+    /// <remarks>
+    /// <b>Neden gerekti.</b> 5 Eylül'de ölçüldü: katalogda besin değeri olan
+    /// ürün 4.918'de 328 (%6,7) ve eksiklerin bir kısmı "kaynakta veri yok"
+    /// değil, "kaynak tablo kullanmıyor" yüzündendi. BigJoy'un ürün sayfası
+    /// besin değerlerini eksiksiz yayınlıyor (Enerji, Yağ, Karbonhidrat,
+    /// Protein…) ama sayfada tek bir <c>&lt;table&gt;</c> yok — hepsi
+    /// <c>div.bdegersatir</c> içinde etiket/değer çifti. <see cref="FromTables"/>
+    /// bunu göremiyordu.
+    ///
+    /// Satır seçici ÇAĞIRANDAN geliyor, burada tahmin edilmiyor: "iki çocuğu
+    /// olan her div" gibi genel bir kural sayfadaki her yerleşim satırını
+    /// besin satırı sanardı.
+    /// </remarks>
+    public static IEnumerable<(string Label, string Value)> FromRowElements(HtmlNode container, string rowXPath)
+    {
+        foreach (var row in container.SelectNodes(rowXPath) ?? Enumerable.Empty<HtmlNode>())
+        {
+            var cells = row.SelectNodes("./*");
+            if (cells is null || cells.Count < 2)
+                continue;
+
+            var label = HtmlEntity.DeEntitize(cells[0].InnerText).Trim();
+            var value = HtmlEntity.DeEntitize(cells[^1].InnerText).Trim();
+
+            if (label.Length > 0 && value.Length > 0)
+                yield return (label, value);
+        }
+    }
+
     // SSN besin değerini HTML <table> olarak değil, tek bir açıklama
     // paragrafının içinde "<strong>Etiket</strong> — değer<br>" satırları
     // olarak veriyor (gerçek bir ürün sayfasında doğrulandı). "—" öncesi

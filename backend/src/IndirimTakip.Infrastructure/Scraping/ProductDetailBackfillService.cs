@@ -21,10 +21,17 @@ public class ProductDetailBackfillService(
     // Marka sitesini yormamak için ürün istekleri arası nezaket beklemesi.
     private static readonly TimeSpan DelayBetweenProducts = TimeSpan.FromMilliseconds(750);
 
-    // Tek bir çalışmada en fazla bu kadar ürün denenir — 3 markanın tüm
-    // eksiklerini tek seferde çekmek yerine kademeli ilerlemek hem bir
-    // çalışmanın süresini makul tutar hem de bir sorun çıkarsa etkiyi sınırlar.
-    private const int MaxProductsPerRun = 60;
+    // Tek bir çalışmada en fazla bu kadar ürün denenir — tüm eksikleri tek
+    // seferde çekmek yerine kademeli ilerlemek hem bir çalışmanın süresini
+    // makul tutar hem de bir sorun çıkarsa etkiyi sınırlar.
+    //
+    // 60'tan 150'ye çıkarıldı (5 Eylül). Gerekçe ölçüm: katalog 4.918 ürüne
+    // büyümüşken haftada 60 ürünlük hız, o günkü birikmiş eksiği (Hardline
+    // 287 + ProteinOcean 241 + yeni eklenen BigJoy 143 = ~671) ancak 11
+    // haftada kapatırdı. Yük yine küçük: 150 ürün dört markaya bölününce
+    // marka başına ~38 istek, aralarında 750 ms bekleme — kaynak başına
+    // yaklaşık yarım dakikalık trafik.
+    private const int MaxProductsPerRun = 150;
 
     // Bu işin "en son ne zaman çalıştığı" için ayrı bir kayıt tutmaya gerek yok:
     // NutritionCheckedAt damgasını YALNIZCA bu servis yazdığı için, en yeni damga
@@ -43,10 +50,28 @@ public class ProductDetailBackfillService(
         var totalUpdated = 0;
         var totalAttempted = 0;
 
-        foreach (var scraper in scrapers.OfType<IProductDetailFetcher>())
+        // KOTA MARKALAR ARASINDA EŞİT BÖLÜŞÜLÜYOR.
+        //
+        // Önceden döngü kotayı SIRAYLA tüketiyordu: listedeki ilk markanın
+        // eksiği bitmediği sürece sonrakilere hiç sıra gelmiyordu. Canlıda
+        // ölçüldü (5 Eylül) — bakılan ürün sayısı Hardline 278, SSN 114,
+        // ProteinOcean 47; ProteinOcean 288 ürününün %84'üne haftalarca
+        // sıra gelmemişti. Tur başına 60 ürün ve haftalık periyotla bu,
+        // sıradaki markanın aylarca beklemesi demek.
+        //
+        // Pay tavan bölme ile veriliyor: 3 marka / 60 ürün = 20. Payını
+        // kullanmayan marka (eksiği bitmiş olan) kotayı serbest bırakıyor,
+        // çünkü `remaining` gerçekleşen denemeye göre yeniden hesaplanıyor.
+        var fetchers = scrapers.OfType<IProductDetailFetcher>().ToList();
+        if (fetchers.Count == 0)
+            return 0;
+
+        var perBrandQuota = (int)Math.Ceiling((double)MaxProductsPerRun / fetchers.Count);
+
+        foreach (var scraper in fetchers)
         {
             var brandScraper = (IBrandScraper)scraper;
-            var remaining = MaxProductsPerRun - totalAttempted;
+            var remaining = Math.Min(perBrandQuota, MaxProductsPerRun - totalAttempted);
             if (remaining <= 0)
                 break;
 
@@ -76,6 +101,12 @@ public class ProductDetailBackfillService(
                     product.Description ??= details.Description;
                     product.NutritionJson ??= details.NutritionJson;
                     product.ProteinPerServingGrams ??= details.ProteinPerServingGrams;
+
+                    // Kaynağın DOĞRUDAN beyan ettiği porsiyon bilgisi önce
+                    // geliyor; metinden çıkarım yalnızca o yoksa devreye
+                    // giriyor (türetilmiş değer, beyanı ezmemeli).
+                    product.ServingSizeGrams ??= details.ServingSizeGrams;
+                    product.ServingsPerPackage ??= details.ServingsPerPackage;
 
                     // Açıklama metninde porsiyon büyüklüğü de geçiyor olabilir
                     // ("1 ölçek (30 g)" gibi) — scraper yapısal bir değer
