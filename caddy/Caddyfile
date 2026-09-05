@@ -1,3 +1,51 @@
+# Tarayıcı seviyesinde güvenlik başlıkları.
+#
+# NEDEN CADDY'DE: bunlar taşıma/tarayıcı katmanına ait ve üç host için de
+# aynı. Angular'ın SSR sunucusuna (Express) eklemek, aynı kuralı ikinci bir
+# yerde tutmak olurdu; kök domainin yönlendirme yanıtı ise oradan hiç
+# geçmiyor. API'nin KENDİ başlıkları var (Program.cs) ve onlar burada
+# TEKRARLANMIYOR — aynı başlık iki kez gönderilirse tarayıcı ilkini alır,
+# yani sessizce hangisinin geçerli olduğu belirsizleşirdi.
+#
+# 5 Eylül'de securityheaders.com taraması F verdi: frontend'de bu
+# başlıkların HİÇBİRİ yoktu (API'de zaten vardı).
+(guvenlik-basliklari) {
+	header {
+		# HTTPS zorunluluğu tarayıcıda hatırlansın. includeSubDomains
+		# güvenli: www ve api'nin ikisi de HTTPS, kök adres de HTTPS'e
+		# yönleniyor.
+		#
+		# "preload" BİLİNÇLİ OLARAK YOK. Preload listesine girmek TEK
+		# YÖNLÜ bir kapı: çıkmak aylar sürüyor ve bu arada HTTPS'i bir
+		# sebeple kapatmak zorunda kalırsak site hiç açılmaz. Gerekirse
+		# ayrıca karar verilir.
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+
+		# Tarayıcı içerik tipini "tahmin etmesin" — yanlış tahmin, metin
+		# olarak sunulan bir dosyanın script gibi çalıştırılmasına yol
+		# açabiliyor.
+		X-Content-Type-Options "nosniff"
+
+		# Siteyi başka bir sayfanın iframe'ine koymayı engelliyor
+		# (clickjacking). SAMEORIGIN, DENY değil: kendi sayfalarımızı
+		# ileride kendi içimizde çerçevelemek gerekirse kırılmasın.
+		X-Frame-Options "SAMEORIGIN"
+
+		# Dışarıya çıkan bağlantılarda tam adres sızmasın; yalnızca origin
+		# gidiyor ve HTTPS'ten HTTP'ye hiç gitmiyor. Mağaza bağlantıları
+		# ortaklık kodunu ADRESTE taşıdığı için bu önemli.
+		Referrer-Policy "strict-origin-when-cross-origin"
+
+		# Kullanmadığımız cihaz API'lerini kapatıyor. Sitede kamera,
+		# mikrofon, konum, ödeme, USB kullanan hiçbir özellik yok.
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+
+		# Express'in kendini tanıtan başlığı. Sunucu yazılımını ve
+		# sürümünü duyurmak saldırgana bedava bilgi veriyor; işlevi yok.
+		-X-Powered-By
+	}
+}
+
 # Kök domain kanonik adrese kalıcı olarak yönlendiriliyor.
 # Önceden ikisi de doğrudan frontend'e proxy'leniyordu; bu, server.ts'teki
 # "kanonik host dışı isteklere noindex" korumasının kök domaine de
@@ -5,10 +53,12 @@
 # AdSense tarayıcısına "Disallow: /" veriyordu. Yönlendirme, korumayı
 # yalnızca gerçekten yabancı hostlara bırakıyor.
 proteinavcisi.com.tr {
+	import guvenlik-basliklari
 	redir https://www.proteinavcisi.com.tr{uri} permanent
 }
 
 www.proteinavcisi.com.tr {
+	import guvenlik-basliklari
 	reverse_proxy frontend:4000
 }
 
