@@ -46,12 +46,12 @@
 	}
 }
 
-# İçerik Güvenliği Politikası — ÖNCE RAPOR MODUNDA.
+# İçerik Güvenliği Politikası — ZORLAYICI.
 #
-# Rapor modu bilinçli bir ara adım: yanlış bir CSP siteyi SESSİZCE bozar
-# (görsel gelmez, script çalışmaz, hata sayfası da çıkmaz). Bu modda tarayıcı
-# hiçbir şeyi engellemiyor, yalnızca konsola ihlali yazıyor; gerçek sayfalarda
-# ihlal görülmediği doğrulandıktan sonra zorlayıcıya çevrilecek.
+# ÖNCE RAPOR MODUNDA yayınlandı ve gerçek tarayıcıda doğrulandıktan sonra
+# çevrildi. Bu ara adım bilinçliydi: yanlış bir CSP siteyi SESSİZCE bozar
+# (görsel gelmez, script çalışmaz, hata sayfası da çıkmaz) ve işe yaradı —
+# ilk taslak AdSense'in reklam kalitesi altyapısını kaçırmıştı.
 #
 # ÖLÇÜLEREK yazıldı (5 Eylül, canlı ana sayfa tarandı):
 #   script  : yalnızca pagead2.googlesyndication.com (AdSense)
@@ -83,9 +83,9 @@
 # üretemiyor. Yine de kazanç gerçek: object/embed tamamen kapalı, base-uri
 # ve form-action kendi originimizle sınırlı, script kaynakları bilinen bir
 # listeye indi.
-(csp-rapor) {
+(csp) {
 	header {
-		Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self' 'unsafe-inline' https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.googleadservices.com https://*.doubleclick.net https://*.adtrafficquality.google https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.proteinavcisi.com.tr https://cloudflareinsights.com https://*.google-analytics.com https://*.adtrafficquality.google; frame-src https://*.googlesyndication.com https://*.doubleclick.net https://*.adtrafficquality.google https://www.google.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.googleadservices.com https://*.doubleclick.net https://*.adtrafficquality.google https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.proteinavcisi.com.tr https://cloudflareinsights.com https://*.google-analytics.com https://*.adtrafficquality.google; frame-src https://*.googlesyndication.com https://*.doubleclick.net https://*.adtrafficquality.google https://www.google.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
 	}
 }
 
@@ -102,7 +102,7 @@ proteinavcisi.com.tr {
 
 www.proteinavcisi.com.tr {
 	import guvenlik-basliklari
-	import csp-rapor
+	import csp
 	reverse_proxy frontend:4000
 }
 
