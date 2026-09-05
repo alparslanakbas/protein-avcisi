@@ -1,6 +1,8 @@
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Text.Json.Serialization;
+using HtmlAgilityPack;
 using IndirimTakip.Core.Scraping;
 
 namespace IndirimTakip.Infrastructure.Scraping.Fellas;
@@ -21,7 +23,7 @@ namespace IndirimTakip.Infrastructure.Scraping.Fellas;
 /// Gigi's ile aynı kategoride; <c>saglikli-atistirmaliklar</c> kategorimize
 /// oturuyor.
 /// </summary>
-public sealed class FellasScraper(HttpClient httpClient) : IBrandScraper
+public sealed partial class FellasScraper(HttpClient httpClient) : IBrandScraper, IProductDetailFetcher
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -82,4 +84,78 @@ public sealed class FellasScraper(HttpClient httpClient) : IBrandScraper
 
         return result;
     }
+
+    /// <summary>
+    /// Besin değeri ve porsiyon bilgisi — yalnızca ürün SAYFASINDA var.
+    /// </summary>
+    /// <remarks>
+    /// <b>Neden ayrı istek gerekiyor.</b> Shopify markalarında besin tablosu
+    /// genelde <c>body_html</c> içinde gelir (HIQ böyle) ve ek istek
+    /// gerekmez. Fellas'ta ÖLÇÜLDÜ: kataloğun tamamı (123 ürün) çekildi ve
+    /// <c>body_html</c>'lerin HİÇBİRİNDE besin tablosu yok — blok temanın
+    /// kendi alanından geliyor ve sadece ürün sayfasında basılıyor.
+    ///
+    /// Yapı diğerleriyle aynı aileden: <c>div.nutrition-row</c> içinde iki
+    /// <c>span</c> (etiket, değer).
+    ///
+    /// <b>Kapsam beklentisi ~%67</b> (12 üründe ölçüldü: 8 dolu). Boş
+    /// dönenler çoklu paketler ("karma kutu", "deneme paketi") ve shaker —
+    /// yani gerçekten tek bir besin tablosu OLMAYAN ürünler. Bu yüzden boş
+    /// sonuç bir hata değil; detay tamamlama servisi damgayı atıp geçiyor.
+    ///
+    /// Açıklama BİLEREK çekilmiyor: normal taramada <c>body_html</c>'den
+    /// zaten geliyor.
+    /// </remarks>
+    public async Task<ProductDetails> FetchDetailsAsync(string productUrl, CancellationToken cancellationToken = default)
+    {
+        var html = await httpClient.GetStringAsync(productUrl, cancellationToken);
+        var doc = new HtmlDocument();
+        doc.LoadHtml(html);
+
+        var nutritionJson = NutritionParser.BuildNutritionJson(
+            HtmlNutritionExtractor.FromRowElements(doc.DocumentNode, "//div[contains(@class,'nutrition-row')]"));
+
+        var bilgi = doc.DocumentNode
+            .SelectSingleNode("//*[contains(@class,'nutrition-info')]")?.InnerText;
+        bilgi = bilgi is null ? null : HtmlEntity.DeEntitize(bilgi);
+
+        return new ProductDetails(
+            Description: null,
+            NutritionJson: nutritionJson,
+            ProteinPerServingGrams: NutritionParser.ExtractProteinGrams(nutritionJson),
+            ServingSizeGrams: NutritionServingParser.Grams(bilgi),
+            ServingsPerPackage: PorsiyonSayisi(bilgi));
+    }
+
+    /// <summary>
+    /// "1 paket (300 g) yaklaşık 10 porsiyondur" cümlesinden porsiyon
+    /// sayısını okur.
+    /// </summary>
+    /// <remarks>
+    /// Ortak <see cref="NutritionServingParser.Count"/> BURADA KULLANILAMAZ:
+    /// o, metindeki İLK sayıyı alıyor ve bu cümleler "Değerler 1 porsiyon…"
+    /// diye başladığı için sonuç her üründe 1 çıkardı — sessizce yanlış bir
+    /// servis sayısı, servis başı fiyatı paketin tamamına eşitlerdi.
+    /// Bu yüzden "yaklaşık N porsiyon" kalıbı açıkça aranıyor; cümlede yoksa
+    /// (bar gibi tek porsiyonluk ürünlerde yok) null kalıyor.
+    /// </remarks>
+    private static int? PorsiyonSayisi(string? bilgi)
+    {
+        if (string.IsNullOrWhiteSpace(bilgi))
+            return null;
+
+        var match = PorsiyonSayisiRegex().Match(bilgi);
+        return match.Success && int.TryParse(match.Groups[1].Value, out var adet) && adet is > 0 and <= 1000
+            ? adet
+            : null;
+    }
+
+    // Harf sınıfları AÇIK yazıldı, IgnoreCase'e bırakılmadı: .NET'in
+    // büyük/küçük harf katlaması Türkçe i/I çiftini bilmiyor ve sayfa
+    // "YAKLAŞIK" diye yazsaydı 'I' -> 'i' olup desendeki 'ı' ile
+    // eşleşmezdi (bu depoda aynı hata daha önce kategori ve marka
+    // eşleştirmesini bozdu, bkz. 15897c0 ve 15eb010).
+    [GeneratedRegex(@"yakla[şŞ][ıIiİ]k\s*(\d+)\s*porsiyon", RegexOptions.IgnoreCase)]
+    private static partial Regex PorsiyonSayisiRegex();
+
 }
