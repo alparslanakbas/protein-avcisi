@@ -16,6 +16,7 @@ import { CookieConsentBanner } from './cookie-consent-banner/cookie-consent-bann
 import { MobileTabBar } from './mobile-tab-bar/mobile-tab-bar';
 import { NewsletterSignup } from './newsletter-signup/newsletter-signup';
 import { UpdateBanner } from './update-banner/update-banner';
+import { WebAnalyticsService } from './core/web-analytics.service';
 
 // Route ağacının en derinindeki component referansını buluyor —
 // DealsRouteReuseStrategy'nin "aynı component mi" kontrolüyle aynı mantık.
@@ -43,6 +44,10 @@ export class App implements OnInit {
   private readonly router = inject(Router);
   private readonly document = inject(DOCUMENT);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+  // Enjekte edilmesi YETERLİ: servis kendi effect'iyle çerez onayını izliyor
+  // ve beacon'ı yalnızca onay verildiğinde yüklüyor. Burada başka bir çağrı
+  // yok, çünkü karar tek yerde (bkz. WebAnalyticsService).
+  private readonly webAnalytics = inject(WebAnalyticsService);
   // null = henüz hiç gezinme olmadı (bkz. shouldResetScroll).
   private lastNavigation: NavigationSnapshot | null = null;
 
