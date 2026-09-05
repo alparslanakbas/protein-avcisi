@@ -100,6 +100,34 @@ public class MusclePumpNutritionTests
         Assert.Equal("YAĞ DOYMUŞ YAĞ", satirlar[0].Label);
     }
 
+
+    // SWISS'TEN GELEN TUZAK: başlık satırı İLK satır olmayabilir. Swiss'in
+    // makro tablosu tek hücreli bir ürün başlığıyla başlıyor. Kod önce ilk
+    // satıra bakıp "2 hücreden az" diye TABLOYU TAMAMEN ATLIYORDU; canlıda
+    // makro tablosu düşüyor ve geriye değerleri "**" olan enzim tablosu
+    // kalıyordu, yani sonuç sessizce boş dönüyordu.
+    [Fact]
+    public void BaslikIlkSatirDegilse_TabloAtlanmiyor()
+    {
+        const string basliklaBaslayan = """
+            <html><body><table>
+            <tr><td colspan="4">Yüksek Karbonhidratlı Sporcu Gıdası</td></tr>
+            <tr><td>Besin Ögeleri</td><td>100 g</td><td>150 g</td><td>%Günlük Değer</td></tr>
+            <tr><td>Protein</td><td>20 g</td><td>30 g</td><td>**</td></tr>
+            <tr><td>Karbonhidrat</td><td>77 g</td><td>115.5 g</td><td>**</td></tr>
+            </table></body></html>
+            """;
+
+        var tablo = HtmlNutritionExtractor.FromMultiColumnTable(Kok(basliklaBaslayan))
+            .ToDictionary(x => x.Label, x => x.Value);
+
+        // Porsiyon sütunu (150 g) seçilmeli; yüzde sütunu ("**") değil.
+        Assert.Equal("30 g", tablo["Protein"]);
+        Assert.Equal("115.5 g", tablo["Karbonhidrat"]);
+        Assert.DoesNotContain("Besin Ögeleri", tablo.Keys);
+        Assert.Equal("150 g", HtmlNutritionExtractor.MultiColumnPortionHeader(Kok(basliklaBaslayan)));
+    }
+
     [Fact]
     public async Task TabloYoksaNullDonuyor()
     {

@@ -99,9 +99,11 @@ internal static class HtmlNutritionExtractor
     /// eşleşiyorsa satır bölünüyor; eşleşmiyorsa BÖLÜNMÜYOR (yanlış
     /// eşleştirmektense birleşik bırak).
     ///
-    /// Başlık satırı <c>&lt;th&gt;</c> olmayabilir (Muscle Pump'ta
-    /// <c>&lt;td&gt;&lt;strong&gt;</c>), bu yüzden ilk satır her tabloda
-    /// başlık kabul ediliyor.
+    /// <b>BAŞLIK SATIRI SABİT DEĞİL.</b> <c>&lt;th&gt;</c> olmayabilir
+    /// (Muscle Pump'ta <c>&lt;td&gt;&lt;strong&gt;</c>) ve İLK SATIR DA
+    /// olmayabilir (Swiss'in tablosu tek hücreli bir ürün başlığıyla
+    /// başlıyor). Başlık, en az iki hücresi olan ilk satır kabul ediliyor;
+    /// öncesindeki satırlar atlanıyor.
     /// </remarks>
     public static IEnumerable<(string Label, string Value)> FromMultiColumnTable(HtmlNode container)
     {
@@ -115,13 +117,23 @@ internal static class HtmlNutritionExtractor
             if (rows is null || rows.Count < 2)
                 continue;
 
-            var headerCells = rows[0].SelectNodes("./td|./th");
+            // Başlık HER ZAMAN ilk satır değil: Swiss'in tablosu tek hücreli
+            // bir ürün başlığıyla başlıyor ("Yüksek Karbonhidratlı Sporcu
+            // Gıdası"). İlk satıra bakıp tabloyu atlamak, o tabloyu tamamen
+            // kaybetmek demekti — canlıda ölçüldü, makro tablosu düşüyor ve
+            // geriye yalnızca değerleri "**" olan enzim tablosu kalıyordu.
+            var headerIndex = rows
+                .Select((row, index) => (row, index))
+                .FirstOrDefault(x => (x.row.SelectNodes("./td|./th")?.Count ?? 0) >= 2)
+                .index;
+
+            var headerCells = rows[headerIndex].SelectNodes("./td|./th");
             if (headerCells is null || headerCells.Count < 2)
                 continue;
 
             var targetIndex = SecilecekSutun(headerCells);
 
-            foreach (var row in rows.Skip(1))
+            foreach (var row in rows.Skip(headerIndex + 1))
             {
                 var cells = row.SelectNodes("./td|./th");
                 if (cells is null || cells.Count <= targetIndex)
@@ -163,7 +175,10 @@ internal static class HtmlNutritionExtractor
     {
         foreach (var table in container.SelectNodes(".//table | self::table") ?? Enumerable.Empty<HtmlNode>())
         {
-            var headerCells = table.SelectNodes(".//tr")?.FirstOrDefault()?.SelectNodes("./td|./th");
+            // Başlık satırı ilk satır olmayabilir (bkz. FromMultiColumnTable).
+            var headerCells = table.SelectNodes(".//tr")
+                ?.Select(row => row.SelectNodes("./td|./th"))
+                .FirstOrDefault(cells => (cells?.Count ?? 0) >= 2);
             if (headerCells is null || headerCells.Count < 2)
                 continue;
 

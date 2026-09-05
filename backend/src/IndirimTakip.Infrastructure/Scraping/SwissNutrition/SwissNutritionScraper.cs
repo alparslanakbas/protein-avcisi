@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using HtmlAgilityPack;
 using IndirimTakip.Core.Scraping;
 using IndirimTakip.Infrastructure.Scraping.ProteinOcean;
 
@@ -25,7 +26,7 @@ namespace IndirimTakip.Infrastructure.Scraping.SwissNutrition;
 ///    belirleniyor: markanın kendi ürünü null (kendi sitesinden alınıyor),
 ///    başkasının ürünü ise "swissnutrition.com" (Swiss burada BAYİ).
 /// </summary>
-public class SwissNutritionScraper(HttpClient httpClient) : IBrandScraper
+public class SwissNutritionScraper(HttpClient httpClient) : IBrandScraper, IProductDetailFetcher
 {
     public string BrandName => "Swiss Nutrition";
     public string BaseUrl => "https://swissnutrition.com";
@@ -101,6 +102,52 @@ public class SwissNutritionScraper(HttpClient httpClient) : IBrandScraper
           }
         }
         """;
+
+
+    /// <summary>
+    /// Besin değeri — <c>__NEXT_DATA__</c> içindeki "Besin İçeriği" alanından.
+    /// </summary>
+    /// <remarks>
+    /// <b>ALAN ADI YANILTICI, İÇERİĞE BAKILIYOR.</b> ProteinOcean'da aynı
+    /// adlı alan ("BESİN İÇERİĞİ") aslında İÇİNDEKİLER listesiydi ve o yüzden
+    /// orada besin çekilmiyor. Swiss'te ölçüldü: alan ürünlerin çoğunda
+    /// gerçek makro tablosu taşıyor, bir kısmında ise yine içindekiler metni.
+    /// Ayrım koda gömülü DEĞİL — tablo yoksa <c>BuildNutritionJson</c> zaten
+    /// null döndürüyor, yani içindekiler metni sessizce elenmiş oluyor.
+    ///
+    /// <b>%GÜNLÜK DEĞER TUZAĞI.</b> Tablo dört sütunlu:
+    /// <c>Besin Ögeleri | 100 g | 150 g | %Günlük Değer</c> — son sütun
+    /// yüzde. <see cref="HtmlNutritionExtractor.FromMultiColumnTable"/> onu
+    /// eleyip porsiyon sütununu (150 g) seçiyor; düz <c>FromTables</c>
+    /// yüzdeleri değer sanardı.
+    ///
+    /// Sayfadaki DİĞER besin tabloları öneri listesinden geliyor ve
+    /// okunmuyor (bkz. <see cref="IkasProductAttributes"/>).
+    ///
+    /// Açıklama çekilmiyor — normal taramada zaten geliyor.
+    /// </remarks>
+    public async Task<ProductDetails> FetchDetailsAsync(string productUrl, CancellationToken cancellationToken = default)
+    {
+        var html = await httpClient.GetStringAsync(productUrl, cancellationToken);
+        var besinHtml = IkasProductAttributes.ValueOf(IkasProductAttributes.Read(html), "besin");
+        if (string.IsNullOrWhiteSpace(besinHtml))
+            return new ProductDetails(null, null, null);
+
+        var doc = new HtmlDocument();
+        doc.LoadHtml(besinHtml);
+
+        var nutritionJson = NutritionParser.BuildNutritionJson(
+            HtmlNutritionExtractor.FromMultiColumnTable(doc.DocumentNode));
+
+        return new ProductDetails(
+            Description: null,
+            NutritionJson: nutritionJson,
+            ProteinPerServingGrams: NutritionParser.ExtractProteinGrams(nutritionJson),
+            ServingSizeGrams: nutritionJson is null
+                ? null
+                : NutritionServingParser.Grams(HtmlNutritionExtractor.MultiColumnPortionHeader(doc.DocumentNode)),
+            ServingsPerPackage: null);
+    }
 
     public async Task<IReadOnlyList<ScrapedProduct>> ScrapeAsync(CancellationToken cancellationToken = default)
     {

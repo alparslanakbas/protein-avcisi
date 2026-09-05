@@ -17,6 +17,14 @@ public abstract class SitemapSchemaOrgScraper(HttpClient httpClient, ILogger log
     public abstract string BaseUrl { get; }
 
     /// <summary>Ürün adreslerini taşıyan sitemap.</summary>
+    /// <summary>
+    /// Türeyen sınıfların (ör. besin değeri için ürün sayfasını ayrıca okuyan
+    /// çekiciler) kullanabilmesi için. Birincil oluşturucu parametresini
+    /// türeyen sınıfta ayrıca yakalamak derleyici uyarısı üretiyor (CS9107)
+    /// ve aynı örneğe ikinci bir referans tutuyordu.
+    /// </summary>
+    protected HttpClient Http { get; } = httpClient;
+
     protected abstract string SitemapUrl { get; }
 
     /// <summary>
