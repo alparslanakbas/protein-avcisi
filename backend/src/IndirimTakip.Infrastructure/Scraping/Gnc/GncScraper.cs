@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Net.Http.Json;
 using System.Text.RegularExpressions;
+using HtmlAgilityPack;
 using IndirimTakip.Core.Scraping;
 using IndirimTakip.Infrastructure.Scraping.ProteinOcean;
 
@@ -27,7 +28,7 @@ namespace IndirimTakip.Infrastructure.Scraping.Gnc;
 //
 // SATICI: GNC kendi sitesinden satıyor, yani `Seller` null kalıyor
 // (bayi değil). Marka sayfası bu ürünlerin kendi vitrini olur.
-public partial class GncScraper(HttpClient httpClient) : IBrandScraper
+public partial class GncScraper(HttpClient httpClient) : IBrandScraper, IProductDetailFetcher
 {
     public string BrandName => "GNC";
     public string BaseUrl => "https://gnc.com.tr";
@@ -63,6 +64,60 @@ public partial class GncScraper(HttpClient httpClient) : IBrandScraper
           }
         }
         """;
+
+
+    /// <summary>
+    /// Porsiyon başına etken madde tablosu — <c>__NEXT_DATA__</c> içindeki
+    /// "İçindekiler" alanından.
+    /// </summary>
+    /// <remarks>
+    /// <b>ALAN ADI "İÇİNDEKİLER" AMA İÇERİĞİ TABLO.</b> GNC'nin kataloğu
+    /// ağırlıkla vitamin/kapsül ve orada "besin değeri"nin karşılığı, porsiyon
+    /// başına etken madde miktarı: <c>Etken Madde | 1 Yumuşak Kapsüldeki
+    /// Miktar</c> → <c>Koenzim Q10 | 100 mg</c>. Kaynağın kendi beyanı,
+    /// makine okunur ve porsiyon başına — sakladığımız şeyin tanımına uyuyor.
+    ///
+    /// <b>Aynı adlı alan başka kaynakta DÜZ METİN olabiliyor</b>
+    /// (ProteinOcean'da içindekiler listesi). Ayrım koda gömülmedi: tablo
+    /// yoksa <c>BuildNutritionJson</c> zaten null döndürüyor, yani metin
+    /// kendiliğinden eleniyor.
+    ///
+    /// <b>Porsiyon gramajı YAZILMIYOR:</b> başlık "1 Yumuşak Kapsüldeki
+    /// Miktar" diyor, gram vermiyor. Kapsül sayısından gram uydurmak yasak,
+    /// alan boş kalıyor.
+    ///
+    /// Sayfadaki diğer ürünlerin verisi okunmuyor (bkz.
+    /// <see cref="IkasProductAttributes"/>). Açıklama da çekilmiyor — normal
+    /// taramada zaten geliyor.
+    /// </remarks>
+    public async Task<ProductDetails> FetchDetailsAsync(string productUrl, CancellationToken cancellationToken = default)
+    {
+        var html = await httpClient.GetStringAsync(productUrl, cancellationToken);
+        var attributes = IkasProductAttributes.Read(html);
+
+        // Önce "besin" adlı bir alan varsa o (protein tozu gibi ürünlerde),
+        // yoksa etken madde tablosu.
+        var tabloHtml = IkasProductAttributes.ValueOf(attributes, "besin")
+            ?? IkasProductAttributes.ValueOf(attributes, "içindekiler");
+
+        if (string.IsNullOrWhiteSpace(tabloHtml))
+            return new ProductDetails(null, null, null);
+
+        var doc = new HtmlDocument();
+        doc.LoadHtml(tabloHtml);
+
+        var nutritionJson = NutritionParser.BuildNutritionJson(
+            HtmlNutritionExtractor.FromMultiColumnTable(doc.DocumentNode));
+
+        return new ProductDetails(
+            Description: null,
+            NutritionJson: nutritionJson,
+            ProteinPerServingGrams: NutritionParser.ExtractProteinGrams(nutritionJson),
+            ServingSizeGrams: nutritionJson is null
+                ? null
+                : NutritionServingParser.Grams(HtmlNutritionExtractor.MultiColumnPortionHeader(doc.DocumentNode)),
+            ServingsPerPackage: null);
+    }
 
     public async Task<IReadOnlyList<ScrapedProduct>> ScrapeAsync(CancellationToken cancellationToken = default)
     {
