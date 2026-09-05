@@ -41,14 +41,25 @@ fi
 
 # Yalnızca markanın KENDİ sitesinden gelen ürünler: besin değeri sadece
 # onlarda mümkün (bayi sayfalarından çekilmiyor).
+#
+# "Bakılmış olma" koşulu WHERE'de DEĞİL HAVING'de: WHERE'de olduğunda
+# COUNT(*) da yalnızca bakılanları sayıyor ve "kendi_urunu" sütunu
+# "bakildi" ile aynı sayıyı tekrarlıyordu (ilk sürümde öyleydi, çıktı
+# okunurken görüldü — Fellas 118 ürünlükken 82 yazıyordu). Toplam ürün
+# sayısı ilerlemenin paydası, doğru olmak zorunda.
+#
+# HIQ bu seride YOK ve bu doğru: onun besin değeri normal taramadan
+# geliyor, detay tamamlama ona hiç dokunmuyor. Seri bu işin izlenmesi için.
 OKU=$(docker compose exec -T db psql -U protein -d indirim_takip -tAF, -c "
 SELECT b.\"Name\",
        COUNT(*),
        COUNT(p.\"NutritionJson\"),
        COUNT(p.\"NutritionCheckedAt\")
 FROM \"Products\" p JOIN \"Brands\" b ON b.\"Id\" = p.\"BrandId\"
-WHERE p.\"Seller\" IS NULL AND p.\"NutritionCheckedAt\" IS NOT NULL
-GROUP BY b.\"Name\" ORDER BY b.\"Name\";" </dev/null | sed '/^$/d')
+WHERE p.\"Seller\" IS NULL
+GROUP BY b.\"Name\"
+HAVING COUNT(p.\"NutritionCheckedAt\") > 0
+ORDER BY b.\"Name\";" </dev/null | sed '/^$/d')
 
 if [ -z "$OKU" ]; then
   echo "HATA: besin kapsami okunamadi" >&2
