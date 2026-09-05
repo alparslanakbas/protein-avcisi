@@ -78,8 +78,20 @@ public class ProductDetailBackfillService(
             // Açıklaması VEYA besin değeri henüz hiç bakılmamış ürünler.
             // (Açıklama backfill'i daha önce çalıştığı için bir kısmında
             // açıklama dolu ama NutritionCheckedAt null — onlar da hedefte.)
+            // Seller == null ŞART: bu, ürünün MARKANIN KENDİ SİTESİNDEN
+            // geldiği anlamına geliyor ve scraper yalnızca o sitenin
+            // yapısını tanıyor.
+            //
+            // Bu koşul yokken (5 Eylül'e kadar) seçim sadece marka adına
+            // bakıyordu ve bayilerin listelediği kopyalar da hedefe
+            // giriyordu: canlıda ölçüldü, BigJoy için bakılan 38 üründen
+            // 37'si protein7.com adresiydi ve BigJoy parser'ıyla çekildiği
+            // için hepsi boş döndü. İki ayrı zarar veriyordu — üçüncü
+            // tarafın sitesine boşuna istek gidiyor, ve o satırlar
+            // "bakıldı" damgası yediği için BİR DAHA HİÇ denenmiyordu.
             var missingProducts = await db.Products
                 .Where(p => p.Brand!.Name == brandScraper.BrandName
+                    && p.Seller == null
                     && (p.Description == null || p.NutritionCheckedAt == null))
                 .Take(remaining)
                 .ToListAsync(cancellationToken);
