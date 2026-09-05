@@ -46,6 +46,40 @@
 	}
 }
 
+# İçerik Güvenliği Politikası — ÖNCE RAPOR MODUNDA.
+#
+# Rapor modu bilinçli bir ara adım: yanlış bir CSP siteyi SESSİZCE bozar
+# (görsel gelmez, script çalışmaz, hata sayfası da çıkmaz). Bu modda tarayıcı
+# hiçbir şeyi engellemiyor, yalnızca konsola ihlali yazıyor; gerçek sayfalarda
+# ihlal görülmediği doğrulandıktan sonra zorlayıcıya çevrilecek.
+#
+# ÖLÇÜLEREK yazıldı (5 Eylül, canlı ana sayfa tarandı):
+#   script  : yalnızca pagead2.googlesyndication.com (AdSense)
+#   style   : fonts.googleapis.com
+#   font    : fonts.gstatic.com
+#   img     : cdn.myikas.com, cdn.shopify.com, hardlinenutrition.com,
+#             s4u.com.tr, westnutrition.com.tr, musclepump.com.tr ...
+#   satır içi: 5 Angular script'i + 3 ld+json + 2 <style>
+#
+# img-src NEDEN "https:" (yani her HTTPS host)? Ürün görselleri markaların
+# kendi CDN'lerinden geliyor ve o liste HER YENİ KAYNAKLA BÜYÜYOR — bugün
+# 36 kaynak var. Host listesi tutmak, yeni bir marka eklendiği gün o markanın
+# bütün görsellerinin sessizce kaybolması demekti. "https:" en azından
+# karışık içeriği (http) engelliyor.
+#
+# script-src'de 'unsafe-inline' VAR ve bu politikayı zayıflatıyor; dürüst
+# olmak gerekirse bu CSP XSS'e karşı sıkı bir savunma DEĞİL. Angular'ın SSR
+# hidrasyon script'leri ve AdSense satır içi çalışıyor; nonce'a geçmek
+# Angular tarafında ayrı bir iş (ngCspNonce) ve Caddy istek başına nonce
+# üretemiyor. Yine de kazanç gerçek: object/embed tamamen kapalı, base-uri
+# ve form-action kendi originimizle sınırlı, script kaynakları bilinen bir
+# listeye indi.
+(csp-rapor) {
+	header {
+		Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self' 'unsafe-inline' https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.googleadservices.com https://*.doubleclick.net https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.proteinavcisi.com.tr https://cloudflareinsights.com https://*.google-analytics.com; frame-src https://*.googlesyndication.com https://*.doubleclick.net; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
+	}
+}
+
 # Kök domain kanonik adrese kalıcı olarak yönlendiriliyor.
 # Önceden ikisi de doğrudan frontend'e proxy'leniyordu; bu, server.ts'teki
 # "kanonik host dışı isteklere noindex" korumasının kök domaine de
@@ -59,6 +93,7 @@ proteinavcisi.com.tr {
 
 www.proteinavcisi.com.tr {
 	import guvenlik-basliklari
+	import csp-rapor
 	reverse_proxy frontend:4000
 }
 
