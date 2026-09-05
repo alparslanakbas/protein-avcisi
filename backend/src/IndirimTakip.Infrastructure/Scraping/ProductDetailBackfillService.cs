@@ -89,10 +89,25 @@ public class ProductDetailBackfillService(
             // için hepsi boş döndü. İki ayrı zarar veriyordu — üçüncü
             // tarafın sitesine boşuna istek gidiyor, ve o satırlar
             // "bakıldı" damgası yediği için BİR DAHA HİÇ denenmiyordu.
+            // SIRALAMA ŞART, yoksa liste ilerlemiyor.
+            //
+            // Koşuldaki "Description == null" bazı markalarda HİÇBİR ZAMAN
+            // yanlış olmuyor: Torq'un açıklaması sunucu HTML'inde yok ve
+            // çekici bilerek null dönüyor. Sırasız sorgu her turda aynı ilk
+            // satırları getiriyordu — canlıda ölçüldü, Torq'a 25 istek gitti
+            // ve bakılan ürün sayısı 30'dan hiç artmadı; aynı 25 sayfa
+            // tekrar tekrar indiriliyordu.
+            //
+            // Hiç bakılmamışlar önce, sonra en eski bakılanlar: her tur
+            // ilerliyor ve zamanla eski kayıtlar da tazeleniyor (marka
+            // sonradan besin tablosu eklemiş olabilir).
             var missingProducts = await db.Products
                 .Where(p => p.Brand!.Name == brandScraper.BrandName
                     && p.Seller == null
                     && (p.Description == null || p.NutritionCheckedAt == null))
+                .OrderBy(p => p.NutritionCheckedAt == null ? 0 : 1)
+                .ThenBy(p => p.NutritionCheckedAt)
+                .ThenBy(p => p.Id)
                 .Take(remaining)
                 .ToListAsync(cancellationToken);
 
