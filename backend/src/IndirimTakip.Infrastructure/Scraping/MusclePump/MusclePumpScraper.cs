@@ -22,7 +22,7 @@ namespace IndirimTakip.Infrastructure.Scraping.MusclePump;
 /// </summary>
 public partial class MusclePumpScraper(
     HttpClient httpClient,
-    ILogger<MusclePumpScraper> logger) : IBrandScraper
+    ILogger<MusclePumpScraper> logger) : IBrandScraper, IProductDetailFetcher
 {
     public string BrandName => "Muscle Pump";
     public string BaseUrl => "https://musclepump.com.tr";
@@ -31,6 +31,47 @@ public partial class MusclePumpScraper(
     private const string SellerName = "musclepump.com.tr";
     private const double MaxFailureRatio = 0.2;
     private static readonly TimeSpan DelayBetweenRequests = TimeSpan.FromMilliseconds(300);
+
+
+    /// <summary>
+    /// Besin değeri — yalnızca ürün DETAY sayfasındaki açıklama sekmesinde.
+    /// </summary>
+    /// <remarks>
+    /// Kaynak klasik bir <c>&lt;table&gt;</c> kullanıyor ama iki tuzağı var,
+    /// ikisi de <see cref="HtmlNutritionExtractor.FromMultiColumnTable"/>
+    /// içinde ele alınıyor:
+    /// <list type="number">
+    /// <item>Sütunlar <c>BESİN | 100gr İÇİN | 100gr RA* % | 30gr İÇİN |
+    /// 30gr RA* %</c> — SON sütun yüzde. Genel <c>FromTables</c> son sütunu
+    /// aldığı için burada sessizce yanlış değer yazardı.</item>
+    /// <item>Bazı satırlar iki besini tek hücreye <c>&lt;br&gt;</c> ile
+    /// koyuyor (YAĞ / DOYMUŞ YAĞ).</item>
+    /// </list>
+    ///
+    /// <b>Porsiyon büyüklüğü uydurulmuyor:</b> seçilen sütunun başlığında
+    /// yazılı ("30gr İÇİN"), yani kaynağın kendi beyanı. Başlıkta gramaj
+    /// yoksa alan boş kalıyor.
+    ///
+    /// Açıklama BİLEREK çekilmiyor — normal taramada zaten geliyor.
+    /// </remarks>
+    public async Task<ProductDetails> FetchDetailsAsync(string productUrl, CancellationToken cancellationToken = default)
+    {
+        var html = await httpClient.GetStringAsync(productUrl, cancellationToken);
+        var doc = new HtmlDocument();
+        doc.LoadHtml(html);
+
+        var nutritionJson = NutritionParser.BuildNutritionJson(
+            HtmlNutritionExtractor.FromMultiColumnTable(doc.DocumentNode));
+
+        return new ProductDetails(
+            Description: null,
+            NutritionJson: nutritionJson,
+            ProteinPerServingGrams: NutritionParser.ExtractProteinGrams(nutritionJson),
+            ServingSizeGrams: nutritionJson is null
+                ? null
+                : NutritionServingParser.Grams(HtmlNutritionExtractor.MultiColumnPortionHeader(doc.DocumentNode)),
+            ServingsPerPackage: null);
+    }
 
     public async Task<IReadOnlyList<ScrapedProduct>> ScrapeAsync(CancellationToken cancellationToken = default)
     {

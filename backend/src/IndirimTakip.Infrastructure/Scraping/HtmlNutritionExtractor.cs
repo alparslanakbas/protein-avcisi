@@ -76,6 +76,142 @@ internal static class HtmlNutritionExtractor
         }
     }
 
+    /// <summary>
+    /// Çok sütunlu besin tabloları: hem "%RDA" sütunlarını eleyip doğru
+    /// sütunu seçer, hem de tek hücreye <c>&lt;br&gt;</c> ile sıkıştırılmış
+    /// birden çok besini ayırır.
+    /// </summary>
+    /// <remarks>
+    /// <b>NEDEN <see cref="FromTables"/> YETMİYOR.</b> O metot SON sütunu
+    /// alıyor ve bu HIQ için doğru karar (orada son sütun porsiyon başına
+    /// değer). Muscle Pump'ta ise sütunlar şöyle:
+    /// <c>BESİN | 100gr İÇİN | 100gr İÇİN RA* % | 30gr İÇİN | 30gr İÇİN RA* %</c>
+    /// — son sütun YÜZDE. Son sütunu almak "Protein: 6" gibi sessizce yanlış
+    /// bir değer yazardı; sayı olduğu için hiçbir süzgeç de yakalamazdı.
+    /// Kural: başlığında "%" GEÇMEYEN en sağdaki sütun (yani en dar
+    /// porsiyon), hepsinde geçiyorsa son sütun.
+    ///
+    /// <b>İKİNCİ TUZAK — br ile paketlenmiş satırlar.</b> Kaynak iki besini
+    /// tek satıra koyabiliyor: etiket <c>YAĞ&lt;br&gt;DOYMUŞ YAĞ</c>, değer
+    /// <c>1,32gr&lt;br&gt;0,81gr</c>. Düz metin okumak "YAĞ DOYMUŞ YAĞ =
+    /// 1,32gr 0,81gr" üretirdi — değerde sayı olduğu için bu da süzgeçten
+    /// geçer ve tabloya saçma bir satır olarak girerdi. Parça sayıları
+    /// eşleşiyorsa satır bölünüyor; eşleşmiyorsa BÖLÜNMÜYOR (yanlış
+    /// eşleştirmektense birleşik bırak).
+    ///
+    /// Başlık satırı <c>&lt;th&gt;</c> olmayabilir (Muscle Pump'ta
+    /// <c>&lt;td&gt;&lt;strong&gt;</c>), bu yüzden ilk satır her tabloda
+    /// başlık kabul ediliyor.
+    /// </remarks>
+    public static IEnumerable<(string Label, string Value)> FromMultiColumnTable(HtmlNode container)
+    {
+        var tables = container.SelectNodes(".//table | self::table");
+        if (tables is null)
+            yield break;
+
+        foreach (var table in tables)
+        {
+            var rows = table.SelectNodes(".//tr");
+            if (rows is null || rows.Count < 2)
+                continue;
+
+            var headerCells = rows[0].SelectNodes("./td|./th");
+            if (headerCells is null || headerCells.Count < 2)
+                continue;
+
+            var targetIndex = SecilecekSutun(headerCells);
+
+            foreach (var row in rows.Skip(1))
+            {
+                var cells = row.SelectNodes("./td|./th");
+                if (cells is null || cells.Count <= targetIndex)
+                    continue;
+
+                var labels = SatirlaraBol(cells[0]);
+                var values = SatirlaraBol(cells[targetIndex]);
+
+                // Parça sayıları tutuyorsa besin başına ayrı satır; tutmuyorsa
+                // birleşik hâliyle tek satır (yanlış eşleştirme yapma).
+                if (labels.Count == values.Count && labels.Count > 1)
+                {
+                    for (var i = 0; i < labels.Count; i++)
+                    {
+                        if (labels[i].Length > 0 && values[i].Length > 0)
+                            yield return (labels[i], values[i]);
+                    }
+                    continue;
+                }
+
+                var label = string.Join(" ", labels).Trim();
+                var value = string.Join(" ", values).Trim();
+                if (label.Length > 0 && value.Length > 0)
+                    yield return (label, value);
+            }
+        }
+    }
+
+    /// <summary>
+    /// <see cref="FromMultiColumnTable"/>'ın SEÇTİĞİ sütunun başlığı.
+    /// </summary>
+    /// <remarks>
+    /// Porsiyon büyüklüğü bazı kaynaklarda ayrı bir alanda değil, tam da bu
+    /// başlıkta yazılı ("30gr İÇİN"). Sütun seçme kuralını scraper'a ikinci
+    /// kez yazmamak için buradan veriliyor — iki kopya zamanla ayrışır ve
+    /// porsiyon yanlış sütundan okunmaya başlardı.
+    /// </remarks>
+    public static string? MultiColumnPortionHeader(HtmlNode container)
+    {
+        foreach (var table in container.SelectNodes(".//table | self::table") ?? Enumerable.Empty<HtmlNode>())
+        {
+            var headerCells = table.SelectNodes(".//tr")?.FirstOrDefault()?.SelectNodes("./td|./th");
+            if (headerCells is null || headerCells.Count < 2)
+                continue;
+
+            return HtmlEntity.DeEntitize(headerCells[SecilecekSutun(headerCells)].InnerText)?.Trim();
+        }
+
+        return null;
+    }
+
+    /// <summary>Başlığında "%" geçmeyen en sağdaki sütun; yoksa son sütun.</summary>
+    private static int SecilecekSutun(HtmlNodeCollection headerCells)
+    {
+        for (var i = headerCells.Count - 1; i >= 1; i--)
+        {
+            var baslik = HtmlEntity.DeEntitize(headerCells[i].InnerText) ?? string.Empty;
+            if (!baslik.Contains('%'))
+                return i;
+        }
+
+        return headerCells.Count - 1;
+    }
+
+    /// <summary>Hücreyi &lt;br&gt; sınırlarından parçalara ayırır.</summary>
+    private static List<string> SatirlaraBol(HtmlNode cell)
+    {
+        var parcalar = new List<string>();
+        var tampon = new System.Text.StringBuilder();
+
+        void Bitir()
+        {
+            var metin = HtmlEntity.DeEntitize(tampon.ToString()).Trim();
+            if (metin.Length > 0)
+                parcalar.Add(metin);
+            tampon.Clear();
+        }
+
+        foreach (var node in cell.DescendantsAndSelf())
+        {
+            if (node.Name == "br")
+                Bitir();
+            else if (node.NodeType == HtmlNodeType.Text)
+                tampon.Append(node.InnerText);
+        }
+
+        Bitir();
+        return parcalar;
+    }
+
     // SSN besin değerini HTML <table> olarak değil, tek bir açıklama
     // paragrafının içinde "<strong>Etiket</strong> — değer<br>" satırları
     // olarak veriyor (gerçek bir ürün sayfasında doğrulandı). "—" öncesi
