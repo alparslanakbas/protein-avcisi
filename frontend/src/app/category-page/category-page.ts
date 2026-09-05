@@ -1,5 +1,5 @@
 import { DOCUMENT, DecimalPipe } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
@@ -13,6 +13,7 @@ import { productPath, shouldHandleInApp } from '../core/product-link';
 import { DealsService } from '../core/deals.service';
 import { displayName } from '../core/display-name';
 import { PageMetaService, upsertJsonLdScript } from '../core/page-meta.service';
+import { adrestenSayfa, sayfaliBaslik, sayfaPenceresi } from '../core/pagination-window';
 import { PriceHistoryService } from '../core/price-history.service';
 import { formatRelativeTime } from '../core/relative-time';
 import { ProductModal } from '../product-modal/product-modal';
@@ -71,6 +72,8 @@ export class CategoryPage implements OnInit {
   protected readonly totalCount = signal(0);
   protected readonly totalPages = signal(0);
   protected readonly currentPage = signal(1);
+  // Sayfalama çubuğunda gösterilecek numaralar (null = "…").
+  protected readonly sayfaOgeleri = computed(() => sayfaPenceresi(this.currentPage(), this.totalPages()));
   protected readonly sortBy = signal<string>('');
   // Kullanıcı geri bildirimi: kategori sayfasında (ana sayfanın aksine)
   // arama kutusu hiç yoktu — bir kategori içinde ürün ismine göre daraltmak
@@ -103,6 +106,21 @@ export class CategoryPage implements OnInit {
     });
 
     this.route.queryParamMap.subscribe((params) => {
+      // Sayfa numarası ADRESTEN geliyor. 5 Eylül'e kadar yalnızca bileşen
+      // içi bir signal'di: "?page=3" ile gelen ziyaretçi (ve tarayıcı)
+      // her zaman 1. sayfayı görüyordu — ölçüldü, 3. sayfa 1. sayfayla
+      // birebir aynı ürünleri döndürüyordu.
+      const sayfa = adrestenSayfa(params.get('page'));
+      if (sayfa !== this.currentPage()) {
+        this.currentPage.set(sayfa);
+        // Kategori henüz çözülmediyse yükleme zaten loadCategory'den
+        // gelecek; burada ikinci bir istek atmıyoruz.
+        if (this.categorySlug()) {
+          this.loadItems();
+          this.setMeta(this.categoryLabel(), this.categorySlug());
+        }
+      }
+
       const idParam = params.get('urun');
       if (!idParam) {
         this.selectedDeal.set(null);
@@ -126,7 +144,10 @@ export class CategoryPage implements OnInit {
   private loadCategory(slug: string): void {
     this.loading.set(true);
     this.viewMode.set('all');
-    this.currentPage.set(1);
+    // Doğrudan "?page=3" ile gelinmiş olabilir (arama sonucu, paylaşılan
+    // bağlantı, tarayıcı). Sabit 1 yazmak o adresi sessizce 1. sayfaya
+    // düşürüyordu.
+    this.currentPage.set(adrestenSayfa(this.route.snapshot.queryParamMap.get('page')));
     this.searchQuery.set('');
     this.selectedBrands.set(new Set());
     this.priceMin.set(null);
@@ -196,6 +217,14 @@ export class CategoryPage implements OnInit {
         this.totalCount.set(result.totalCount);
         this.totalPages.set(result.totalPages);
         this.loading.set(false);
+        // Aralık dışı sayfa (katalog küçülmüş, elle yazılmış adres) KENDİNİ
+        // canonical göstermemeli: boş bir sayfaya "geçerli sayfa" demek,
+        // azaltmaya çalıştığımız "tarandı ama dizine eklenmedi" kutusunu
+        // besler. Toplam sayfa ancak burada biliniyor, setMeta'nın ilk
+        // çağrısında değil — bu yüzden gerekince tekrar çağrılıyor.
+        if (result.totalPages > 0 && this.currentPage() > result.totalPages) {
+          this.setMeta(this.categoryLabel(), this.categorySlug());
+        }
       },
       error: () => {
         this.itemsError.set(true);
@@ -207,22 +236,19 @@ export class CategoryPage implements OnInit {
   protected setViewMode(mode: ViewMode): void {
     if (this.viewMode() === mode) return;
     this.viewMode.set(mode);
-    this.currentPage.set(1);
-    this.loadItems();
+    this.ilkSayfayaDon();
   }
 
   protected onSortChange(value: string): void {
     this.sortBy.set(value);
-    this.currentPage.set(1);
-    this.loadItems();
+    this.ilkSayfayaDon();
   }
 
   protected onSearchChange(value: string): void {
     this.searchQuery.set(value);
     if (this.searchDebounceHandle) clearTimeout(this.searchDebounceHandle);
     this.searchDebounceHandle = setTimeout(() => {
-      this.currentPage.set(1);
-      this.loadItems();
+      this.ilkSayfayaDon();
     }, SEARCH_DEBOUNCE_MS);
   }
 
@@ -230,20 +256,17 @@ export class CategoryPage implements OnInit {
     const current = new Set(this.selectedBrands());
     current.has(brand) ? current.delete(brand) : current.add(brand);
     this.selectedBrands.set(current);
-    this.currentPage.set(1);
-    this.loadItems();
+    this.ilkSayfayaDon();
   }
 
   protected onPriceMinChange(value: number | null): void {
     this.priceMin.set(value);
-    this.currentPage.set(1);
-    this.loadItems();
+    this.ilkSayfayaDon();
   }
 
   protected onPriceMaxChange(value: number | null): void {
     this.priceMax.set(value);
-    this.currentPage.set(1);
-    this.loadItems();
+    this.ilkSayfayaDon();
   }
 
   protected clearFilters(): void {
@@ -251,14 +274,39 @@ export class CategoryPage implements OnInit {
     this.priceMin.set(null);
     this.priceMax.set(null);
     this.searchQuery.set('');
+    this.ilkSayfayaDon();
+  }
+
+  /**
+   * Filtre/arama/sıralama değişince ilk sayfaya dön.
+   *
+   * Adresteki `page` de TEMİZLENMEK ZORUNDA: temizlenmezse bileşen 1.
+   * sayfayı gösterirken adres hâlâ "?page=7" der ve ziyaretçi 7 numaralı
+   * bağlantıya bastığında hiçbir şey olmaz — `queryParamMap` değer
+   * değişmediği için yayın yapmaz.
+   */
+  private ilkSayfayaDon(): void {
     this.currentPage.set(1);
+    if (this.route.snapshot.queryParamMap.get('page')) {
+      this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { page: null },
+        queryParamsHandling: 'merge',
+        // Her filtre tıklaması ayrı bir "geri" durağı olmasın.
+        replaceUrl: true,
+      });
+    }
     this.loadItems();
   }
 
-  protected goToPage(page: number): void {
-    if (page < 1 || page > this.totalPages() || page === this.currentPage()) return;
-    this.currentPage.set(page);
-    this.loadItems();
+  /**
+   * Sayfalama bağlantısına tıklanınca listenin başına dön.
+   *
+   * Gezinmenin kendisini `routerLink` yapıyor (bkz. şablon) — burada
+   * yalnızca kaydırma var. Sayfa değişimi adres üzerinden aktığı için
+   * bu metot olmasa da liste doğru yüklenir.
+   */
+  protected sayfayaKaydir(): void {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -287,13 +335,20 @@ export class CategoryPage implements OnInit {
   }
 
   private setMeta(label: string, slug: string): void {
-    const title = `${label} Fiyatları ve İndirimleri 2026 | ProteinAvcısı`;
+    // Sayfalanmış adresler KENDİLERİNİ canonical gösteriyor.
+    // 1. sayfaya canonical vermek Google'ın dokümantasyonunda açıkça
+    // önerilmiyor: seri "kopya" sayılır, taranması seyrekleşir ve tam da
+    // erişilebilir kılmaya çalıştığımız derin ürünler yine erişilemez
+    // kalır. Başlık da ayrışmalı, yoksa 200+ adres aynı başlığı taşır.
+    const toplam = this.totalPages();
+    const sayfa = toplam > 0 && this.currentPage() > toplam ? 1 : this.currentPage();
+    const title = sayfaliBaslik(`${label} Fiyatları ve İndirimleri 2026 | ProteinAvcısı`, sayfa);
     const description = `${label} kategorisindeki güncel fiyatlar, gerçek fiyat geçmişine dayanan doğrulanmış indirimler ve mağaza kampanyaları. ProteinAvcısı, fiyatları düzenli olarak takip ediyor.`;
 
     this.pageMeta.set({
       title,
       description,
-      canonicalPath: `/kategori/${slug}`,
+      canonicalPath: sayfa > 1 ? `/kategori/${slug}?page=${sayfa}` : `/kategori/${slug}`,
     });
 
     this.breadcrumbEl = upsertJsonLdScript(

@@ -17,6 +17,7 @@ import { productPath, shouldHandleInApp } from '../core/product-link';
 import { DealsService } from '../core/deals.service';
 import { displayName } from '../core/display-name';
 import { PageMetaService, upsertJsonLdScript } from '../core/page-meta.service';
+import { adrestenSayfa, sayfaliBaslik, sayfaPenceresi } from '../core/pagination-window';
 import { PricePoint } from '../core/price-history.model';
 import { PriceHistoryService } from '../core/price-history.service';
 import { showNotFound } from '../core/not-found-navigation';
@@ -135,6 +136,8 @@ export class BrandPage implements OnInit {
   protected readonly totalCount = signal(0);
   protected readonly totalPages = signal(0);
   protected readonly currentPage = signal(1);
+  // Sayfalama çubuğunda gösterilecek numaralar (null = "…").
+  protected readonly sayfaOgeleri = computed(() => sayfaPenceresi(this.currentPage(), this.totalPages()));
   protected readonly sortBy = signal<string>('');
 
   // Kullanıcı geri bildirimi: kategori sayfasındaki gibi bu sayfada da
@@ -165,6 +168,18 @@ export class BrandPage implements OnInit {
     });
 
     this.route.queryParamMap.subscribe((params) => {
+      // Sayfa numarası ADRESTEN geliyor — bkz. category-page.ts'teki aynı
+      // gerekçe: bu sayfada da "?page=" tamamen yok sayılıyordu.
+      const sayfa = adrestenSayfa(params.get('page'));
+      if (sayfa !== this.currentPage()) {
+        this.currentPage.set(sayfa);
+        // Marka henüz çözülmediyse yükleme loadBrand'den gelecek.
+        if (this.brandName()) {
+          this.loadItems();
+          this.setMeta(this.brandName());
+        }
+      }
+
       const idParam = params.get('urun');
       if (!idParam) {
         this.selectedDeal.set(null);
@@ -188,7 +203,9 @@ export class BrandPage implements OnInit {
   private loadBrand(slug: string, categorySlug: string | null): void {
     this.loading.set(true);
     this.viewMode.set('all');
-    this.currentPage.set(1);
+    // Doğrudan "?page=3" ile gelinmiş olabilir; sabit 1 yazmak o adresi
+    // sessizce 1. sayfaya düşürüyordu (5 Eylül'de ölçüldü).
+    this.currentPage.set(adrestenSayfa(this.route.snapshot.queryParamMap.get('page')));
     this.searchQuery.set('');
     this.selectedCategories.set(new Set());
     this.priceMin.set(null);
@@ -309,6 +326,15 @@ export class BrandPage implements OnInit {
         this.totalCount.set(result.totalCount);
         this.totalPages.set(result.totalPages);
         this.loading.set(false);
+        // Aralık dışı sayfa (katalog küçülmüş, elle yazılmış adres) KENDİNİ
+        // canonical göstermemeli: boş bir sayfaya "geçerli sayfa" demek,
+        // azaltmaya çalıştığımız "tarandı ama dizine eklenmedi" kutusunu
+        // besler. Toplam sayfa ancak burada biliniyor, setMeta'nın ilk
+        // çağrısında değil — bu yüzden gerekince tekrar çağrılıyor.
+        if (result.totalPages > 0 && this.currentPage() > result.totalPages) {
+          this.setMeta(this.brandName());
+        }
+
         this.loadSparklines(result.items);
       },
       error: () => {
@@ -333,22 +359,19 @@ export class BrandPage implements OnInit {
   protected setViewMode(mode: ViewMode): void {
     if (this.viewMode() === mode) return;
     this.viewMode.set(mode);
-    this.currentPage.set(1);
-    this.loadItems();
+    this.ilkSayfayaDon();
   }
 
   protected onSortChange(value: string): void {
     this.sortBy.set(value);
-    this.currentPage.set(1);
-    this.loadItems();
+    this.ilkSayfayaDon();
   }
 
   protected onSearchChange(value: string): void {
     this.searchQuery.set(value);
     if (this.searchDebounceHandle) clearTimeout(this.searchDebounceHandle);
     this.searchDebounceHandle = setTimeout(() => {
-      this.currentPage.set(1);
-      this.loadItems();
+      this.ilkSayfayaDon();
     }, SEARCH_DEBOUNCE_MS);
   }
 
@@ -356,20 +379,17 @@ export class BrandPage implements OnInit {
     const current = new Set(this.selectedCategories());
     current.has(category) ? current.delete(category) : current.add(category);
     this.selectedCategories.set(current);
-    this.currentPage.set(1);
-    this.loadItems();
+    this.ilkSayfayaDon();
   }
 
   protected onPriceMinChange(value: number | null): void {
     this.priceMin.set(value);
-    this.currentPage.set(1);
-    this.loadItems();
+    this.ilkSayfayaDon();
   }
 
   protected onPriceMaxChange(value: number | null): void {
     this.priceMax.set(value);
-    this.currentPage.set(1);
-    this.loadItems();
+    this.ilkSayfayaDon();
   }
 
   protected clearFilters(): void {
@@ -377,18 +397,33 @@ export class BrandPage implements OnInit {
     this.priceMin.set(null);
     this.priceMax.set(null);
     this.searchQuery.set('');
-    this.currentPage.set(1);
-    this.loadItems();
+    this.ilkSayfayaDon();
   }
 
   protected categoryLabel(slug: string): string {
     return CATEGORY_LABELS[slug] ?? slug;
   }
 
-  protected goToPage(page: number): void {
-    if (page < 1 || page > this.totalPages() || page === this.currentPage()) return;
-    this.currentPage.set(page);
+  /**
+   * Filtre/arama/sıralama değişince ilk sayfaya dön ve adresteki `page`'i
+   * TEMİZLE — bkz. category-page.ts'teki aynı metot: temizlenmezse durum
+   * ile adres ayrışıyor ve sayfa bağlantıları ölü kalıyor.
+   */
+  private ilkSayfayaDon(): void {
+    this.currentPage.set(1);
+    if (this.route.snapshot.queryParamMap.get('page')) {
+      this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { page: null },
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+      });
+    }
     this.loadItems();
+  }
+
+  /** Sayfalama bağlantısına tıklanınca listenin başına dön (gezinmeyi routerLink yapıyor). */
+  protected sayfayaKaydir(): void {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -399,12 +434,20 @@ export class BrandPage implements OnInit {
     // Kesişim sayfası ("Hardline Protein Tozu Fiyatları") ile marka indirim
     // kodu sayfası tamamen farklı arama niyetlerini hedefliyor — başlık,
     // açıklama ve canonical ayrı.
+    // Sayfalanmış adresler KENDİLERİNİ canonical gösteriyor ve başlıkları
+    // ayrışıyor — 1. sayfaya canonical vermek seriyi "kopya" yapar ve
+    // taranmasını seyreltir. Ek " | " ile DEĞİL tire ile ekleniyor:
+    // clampTitle son " | " ayıracından sonrasını atıyor (bkz. 540ec17).
+    const toplam = this.totalPages();
+    const sayfa = toplam > 0 && this.currentPage() > toplam ? 1 : this.currentPage();
+    const sayfaSorgusu = sayfa > 1 ? `?page=${sayfa}` : '';
+
     if (category) {
       const label = this.fixedCategoryLabel();
       this.pageMeta.set({
-        title: `${brand} ${label} Fiyatları ve İndirimleri 2026 | ProteinAvcısı`,
+        title: sayfaliBaslik(`${brand} ${label} Fiyatları ve İndirimleri 2026 | ProteinAvcısı`, sayfa),
         description: `${brand} markasının ${label.toLocaleLowerCase('tr')} ürünleri, güncel fiyatları ve gerçek fiyat geçmişine dayanan doğrulanmış indirimleri tek sayfada.`,
-        canonicalPath: `/marka/${brandSlugValue}/${category}`,
+        canonicalPath: `/marka/${brandSlugValue}/${category}${sayfaSorgusu}`,
       });
       this.breadcrumbEl = upsertJsonLdScript(
         this.document,
@@ -418,13 +461,13 @@ export class BrandPage implements OnInit {
       return;
     }
 
-    const title = `${brand} İndirim Kodu ve Kampanyaları 2026 | ProteinAvcısı`;
+    const title = sayfaliBaslik(`${brand} İndirim Kodu ve Kampanyaları 2026 | ProteinAvcısı`, sayfa);
     const description = `${brand} için güncel kupon kodları ve gerçek fiyat geçmişine dayanan doğrulanmış indirimler. ProteinAvcısı, ${brand} markasının fiyatlarını düzenli olarak takip ediyor.`;
 
     this.pageMeta.set({
       title,
       description,
-      canonicalPath: `/marka/${brandSlugValue}/indirim-kodu`,
+      canonicalPath: `/marka/${brandSlugValue}/indirim-kodu${sayfaSorgusu}`,
     });
     this.breadcrumbEl = upsertJsonLdScript(
       this.document,

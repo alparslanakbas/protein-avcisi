@@ -290,12 +290,36 @@
           }
         </section>
 
+        <!-- Sayfalama GERÇEK BAĞLANTI (<a href>), buton değil: buton hâliyle
+             sunucudan gelen HTML'de hiçbir sayfa adresi yoktu ve tarayıcılar
+             ana sayfada yalnızca ilk 24 ürünü görebiliyordu. Filtreler de
+             adreste yaşadığı için bağlantılar "merge" ile mevcut sorguyu
+             koruyor — aksi halde 2. sayfaya geçmek filtreleri silerdi. -->
         @if (totalPages() > 1) {
-          <nav class="mt-8 flex items-center justify-center gap-2" aria-label="Sayfalama">
-            <button type="button" class="pa-secondary-button h-10 w-10 disabled:opacity-40" [disabled]="currentPage() === 1" (click)="goToPage(currentPage() - 1)" aria-label="Önceki sayfa"><i class="ph ph-caret-left" aria-hidden="true"></i></button>
-            <span class="px-3 text-sm text-[var(--noc-neutral-600)]">{{ currentPage() }} / {{ totalPages() }} <span class="hidden sm:inline">· {{ totalCount() }} ürün</span></span>
-            <button type="button" class="pa-secondary-button h-10 w-10 disabled:opacity-40" [disabled]="currentPage() === totalPages()" (click)="goToPage(currentPage() + 1)" aria-label="Sonraki sayfa"><i class="ph ph-caret-right" aria-hidden="true"></i></button>
+          <nav class="mt-8 flex flex-wrap items-center justify-center gap-2" aria-label="Sayfalama">
+            @if (currentPage() > 1) {
+              <a [routerLink]="[]" [queryParams]="{ page: currentPage() - 1 === 1 ? null : currentPage() - 1 }" queryParamsHandling="merge" (click)="sayfayaKaydir()" rel="prev" class="pa-secondary-button h-10 w-10" aria-label="Önceki sayfa"><i class="ph ph-caret-left" aria-hidden="true"></i></a>
+            } @else {
+              <span class="pa-secondary-button h-10 w-10 opacity-40" aria-hidden="true"><i class="ph ph-caret-left"></i></span>
+            }
+
+            @for (oge of sayfaOgeleri(); track $index) {
+              @if (oge === null) {
+                <span class="px-1 text-sm text-[var(--noc-neutral-600)]" aria-hidden="true">…</span>
+              } @else if (oge === currentPage()) {
+                <span aria-current="page" class="pa-secondary-button h-10 min-w-10 px-2 border-[var(--noc-accent)] text-[var(--noc-accent)]">{{ oge }}</span>
+              } @else {
+                <a [routerLink]="[]" [queryParams]="{ page: oge === 1 ? null : oge }" queryParamsHandling="merge" (click)="sayfayaKaydir()" [attr.aria-label]="'Sayfa ' + oge" class="pa-secondary-button h-10 min-w-10 px-2">{{ oge }}</a>
+              }
+            }
+
+            @if (currentPage() < totalPages()) {
+              <a [routerLink]="[]" [queryParams]="{ page: currentPage() + 1 }" queryParamsHandling="merge" (click)="sayfayaKaydir()" rel="next" class="pa-secondary-button h-10 w-10" aria-label="Sonraki sayfa"><i class="ph ph-caret-right" aria-hidden="true"></i></a>
+            } @else {
+              <span class="pa-secondary-button h-10 w-10 opacity-40" aria-hidden="true"><i class="ph ph-caret-right"></i></span>
+            }
           </nav>
+          <p class="mt-3 text-center text-sm text-[var(--noc-neutral-600)]">Sayfa {{ currentPage() }} / {{ totalPages() }} · {{ totalCount() }} ürün</p>
         }
       }
 

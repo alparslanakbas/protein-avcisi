@@ -22,6 +22,7 @@ import { displayName } from '../core/display-name';
 import { FavoritesService } from '../core/favorites.service';
 import { HomepageStats } from '../core/homepage-stats.model';
 import { PageMetaService, upsertJsonLdScript } from '../core/page-meta.service';
+import { sayfaliBaslik, sayfaPenceresi } from '../core/pagination-window';
 import { PricePoint } from '../core/price-history.model';
 import { PriceHistoryService } from '../core/price-history.service';
 import { PwaInstallService } from '../core/pwa-install.service';
@@ -316,10 +317,26 @@ export class DealsList implements OnInit {
       const deal = this.selectedDeal();
 
       if (!deal) {
+        // Sayfalanmış ana sayfa KENDİNİ canonical gösteriyor, yoksa
+        // "?page=2..205" tamamen kopya sayılır ve o sayfalardaki ürün
+        // bağlantıları taranmaz — sayfalamayı taranabilir yapmanın amacı
+        // tam olarak buydu.
+        //
+        // FİLTRELİ adresler bunun DIŞINDA: marka/kategori/fiyat/arama
+        // kombinasyonları sonsuz sayıda adres üretir, hepsi ayrı sayfa
+        // sayılırsa tarama bütçesi anlamsız yere dağılır. Onlarda
+        // canonical kök adres olarak kalıyor (mevcut davranış).
+        const sayfa = this.currentPage();
+        const toplam = this.totalPages();
+        // Aralık dışı sayfa kendini canonical göstermemeli (bkz. kategori
+        // sayfasındaki aynı gerekçe). Burada ayrıca ucuz: bu bir effect,
+        // totalPages dolunca kendiliğinden yeniden çalışıyor.
+        const aralikta = toplam === 0 || sayfa <= toplam;
+        const sayfalanmisSade = sayfa > 1 && aralikta && !this.hasActiveFilters();
         this.pageMeta.set({
-          title: DEFAULT_TITLE,
+          title: sayfalanmisSade ? sayfaliBaslik(DEFAULT_TITLE, sayfa) : DEFAULT_TITLE,
           description: DEFAULT_DESCRIPTION,
-          canonicalPath: '/',
+          canonicalPath: sayfalanmisSade ? `/?page=${sayfa}` : '/',
         });
         this.structuredDataEl?.remove();
         this.structuredDataEl = null;
@@ -775,17 +792,21 @@ export class DealsList implements OnInit {
     this.syncUrlState(1, false);
   }
 
-  protected goToPage(page: number): void {
-    if (page < 1 || page > this.totalPages() || page === this.currentPage()) return;
-    this.currentPage.set(page);
-    this.load();
-    // Yeni bir tarayıcı geçmişi kaydı oluştur (push) — geri/ileri tuşlarıyla
-    // sayfalar arasında doğru gezinilsin diye. Filtre/arama/sıralama
-    // değişiklikleri bunun aksine replaceUrl kullanıyor (bkz. syncPageQueryParam
-    // çağrıları yukarıda) — her filtre tıklaması ayrı bir "geri" durağı
-    // olmasın diye.
-    this.syncUrlState(page, true);
-    // Sayfa değişince en üste dön, kullanıcı grid'in ortasında kalmasın.
+  /**
+   * Sayfalama çubuğunda gösterilecek numaralar (null = "…").
+   *
+   * Ana sayfada ~205 sayfa var; yalnızca ileri/geri bağlantısı olsaydı
+   * son sayfa o kadar tıklama derinliğinde kalırdı. Bkz.
+   * `core/pagination-window.ts`.
+   */
+  protected readonly sayfaOgeleri = computed(() => sayfaPenceresi(this.currentPage(), this.totalPages()));
+
+  /**
+   * Sayfalama artık `<a href>` ile yapılıyor (şablona bak): gezinmeyi
+   * routerLink, durum güncellemesini de adresi dinleyen abonelik yapıyor.
+   * Burada yalnızca listenin başına dönülüyor.
+   */
+  protected sayfayaKaydir(): void {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 

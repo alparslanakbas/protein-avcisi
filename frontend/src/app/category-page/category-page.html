@@ -178,22 +178,44 @@
           </table>
         </div>
 
+        <!-- Sayfalama GERÇEK BAĞLANTI olmak zorunda (<a href>), buton değil:
+             buton hâliyle sunucudan gelen HTML'de hiçbir sayfalama adresi
+             yoktu ve tarayıcılar her listede yalnızca ilk 24 ürünü
+             görebiliyordu. Numaralar da bilerek var — sadece ileri/geri
+             olsaydı son sayfa onlarca tıklama derinliğinde kalırdı. -->
         @if (totalPages() > 1) {
-          <div class="mt-10 flex items-center justify-center gap-2">
-            <button type="button" title="İlk Sayfa" class="flex h-9 w-9 items-center justify-center rounded-[8px] border border-[var(--noc-divider)] text-[var(--noc-neutral-500)] enabled:hover:text-[var(--noc-accent)] disabled:cursor-not-allowed disabled:opacity-45" [disabled]="currentPage() === 1" (click)="goToPage(1)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18l-6-6 6-6M11 18l-6-6 6-6" /></svg>
-            </button>
-            <button type="button" title="Önceki Sayfa" class="flex h-9 w-9 items-center justify-center rounded-[8px] border border-[var(--noc-divider)] text-[var(--noc-neutral-500)] enabled:hover:text-[var(--noc-accent)] disabled:cursor-not-allowed disabled:opacity-45" [disabled]="currentPage() === 1" (click)="goToPage(currentPage() - 1)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" d="M15 18l-6-6 6-6" /></svg>
-            </button>
-            <span class="px-1 text-sm text-[var(--noc-neutral-500)]">Sayfa {{ currentPage() }} / {{ totalPages() }} <span>({{ totalCount() }} ürün)</span></span>
-            <button type="button" title="Sonraki Sayfa" class="flex h-9 w-9 items-center justify-center rounded-[8px] border border-[var(--noc-divider)] text-[var(--noc-neutral-500)] enabled:hover:text-[var(--noc-accent)] disabled:cursor-not-allowed disabled:opacity-45" [disabled]="currentPage() === totalPages()" (click)="goToPage(currentPage() + 1)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" d="M9 18l6-6-6-6" /></svg>
-            </button>
-            <button type="button" title="Son Sayfa" class="flex h-9 w-9 items-center justify-center rounded-[8px] border border-[var(--noc-divider)] text-[var(--noc-neutral-500)] enabled:hover:text-[var(--noc-accent)] disabled:cursor-not-allowed disabled:opacity-45" [disabled]="currentPage() === totalPages()" (click)="goToPage(totalPages())">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18l6-6-6-6M13 18l6-6-6-6" /></svg>
-            </button>
-          </div>
+          <nav class="mt-10 flex flex-wrap items-center justify-center gap-2" aria-label="Sayfalama">
+            @if (currentPage() > 1) {
+              <a [routerLink]="[]" [queryParams]="{ page: currentPage() - 1 === 1 ? null : currentPage() - 1 }" (click)="sayfayaKaydir()" rel="prev" title="Önceki Sayfa" class="flex h-9 w-9 items-center justify-center rounded-[8px] border border-[var(--noc-divider)] text-[var(--noc-neutral-500)] hover:text-[var(--noc-accent)]">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" d="M15 18l-6-6 6-6" /></svg>
+              </a>
+            } @else {
+              <span class="flex h-9 w-9 items-center justify-center rounded-[8px] border border-[var(--noc-divider)] text-[var(--noc-neutral-500)] opacity-45" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" d="M15 18l-6-6 6-6" /></svg>
+              </span>
+            }
+
+            @for (oge of sayfaOgeleri(); track $index) {
+              @if (oge === null) {
+                <span class="px-1 text-sm text-[var(--noc-neutral-500)]" aria-hidden="true">…</span>
+              } @else if (oge === currentPage()) {
+                <span aria-current="page" class="flex h-9 min-w-9 items-center justify-center rounded-[8px] border border-[var(--noc-accent)] px-2 text-sm font-medium text-[var(--noc-accent)]">{{ oge }}</span>
+              } @else {
+                <a [routerLink]="[]" [queryParams]="{ page: oge === 1 ? null : oge }" (click)="sayfayaKaydir()" [attr.aria-label]="'Sayfa ' + oge" class="flex h-9 min-w-9 items-center justify-center rounded-[8px] border border-[var(--noc-divider)] px-2 text-sm text-[var(--noc-neutral-500)] hover:text-[var(--noc-accent)]">{{ oge }}</a>
+              }
+            }
+
+            @if (currentPage() < totalPages()) {
+              <a [routerLink]="[]" [queryParams]="{ page: currentPage() + 1 }" (click)="sayfayaKaydir()" rel="next" title="Sonraki Sayfa" class="flex h-9 w-9 items-center justify-center rounded-[8px] border border-[var(--noc-divider)] text-[var(--noc-neutral-500)] hover:text-[var(--noc-accent)]">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" d="M9 18l6-6-6-6" /></svg>
+              </a>
+            } @else {
+              <span class="flex h-9 w-9 items-center justify-center rounded-[8px] border border-[var(--noc-divider)] text-[var(--noc-neutral-500)] opacity-45" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" d="M9 18l6-6-6-6" /></svg>
+              </span>
+            }
+          </nav>
+          <p class="mt-3 text-center text-sm text-[var(--noc-neutral-500)]">Sayfa {{ currentPage() }} / {{ totalPages() }} ({{ totalCount() }} ürün)</p>
         }
       }
 
