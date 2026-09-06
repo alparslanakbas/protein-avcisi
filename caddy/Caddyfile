@@ -1,3 +1,26 @@
+# Erisim logu.
+#
+# NEDEN GEREKLI: .NET tarafindaki guvenlik olayi kaydi YALNIZCA
+# api.proteinavcisi.com.tr trafigini goruyor. Siteye gelen acik taramalarini
+# (wp-admin, .env, phpmyadmin...) Caddy karsiliyor ve backend onlari hic
+# gormuyor. Kotuye kullanimin buyuk kismi bu katmanda.
+#
+# SAKLAMA SINIRI ZORUNLU ve iki sebebi var: (a) sinirsiz buyuyen log, saldiri
+# trafigi altinda diskin kendisini ariza kaynagina cevirir; (b) kisisel veri
+# iceren bir kaydin suresiz tutulmasi savunulabilir degil. 90 gun, veritabani
+# tarafindaki SecurityLog:RetentionDays ile AYNI deger - iki kaydin farkli
+# surelerde tutulmasi acikladigimiz politikayi celiskiye dusururdu.
+(erisim-logu) {
+	log {
+		output file /var/log/caddy/erisim.log {
+			roll_size 20MiB
+			roll_keep 12
+			roll_keep_for 2160h
+		}
+		format json
+	}
+}
+
 # Tarayıcı seviyesinde güvenlik başlıkları.
 #
 # NEDEN CADDY'DE: bunlar taşıma/tarayıcı katmanına ait ve üç host için de
@@ -97,15 +120,18 @@
 # yalnızca gerçekten yabancı hostlara bırakıyor.
 proteinavcisi.com.tr {
 	import guvenlik-basliklari
+	import erisim-logu
 	redir https://www.proteinavcisi.com.tr{uri} permanent
 }
 
 www.proteinavcisi.com.tr {
 	import guvenlik-basliklari
+	import erisim-logu
 	import csp
 	reverse_proxy frontend:4000
 }
 
 api.proteinavcisi.com.tr {
+	import erisim-logu
 	reverse_proxy backend:8080
 }

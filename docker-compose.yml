@@ -131,6 +131,11 @@ services:
       # için container eski içeriği görmeye devam ediyordu — yapılandırma
       # değişiklikleri container yeniden oluşturulmadan hiç ulaşmıyordu.
       - ./caddy:/etc/caddy
+      # Erisim logu HOST'A baglaniyor, isimli volume'e degil: bu kayit
+      # gerektiginde delil olarak disari verilecek. Host dizininde durunca
+      # normal araclarla (grep/arsivle/kopyala) erisilebiliyor; isimli
+      # volume icin her seferinde konteynere girmek gerekirdi.
+      - ./caddy-log:/var/log/caddy
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
