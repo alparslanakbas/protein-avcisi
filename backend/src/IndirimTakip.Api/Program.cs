@@ -42,6 +42,16 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 // e-posta bazlı 5 dakikalık cooldown — aynı adrese art arda mail gitmesini
 // bağımsız olarak engelliyor), bu yüzden IP limitini 10'a çıkarmak o korumayı
 // zayıflatmıyor, sadece normal kullanım için nefes payı veriyor.
+// Data Protection ELLE KAYITLI OLMAK ZORUNDA. Bu proje Minimal API ve
+// AddControllers/AddAuthentication kullanmıyor; o çağrılar Data Protection'ı
+// yan etki olarak kaydettiği için çoğu projede "kendiliğinden var" sanılıyor.
+// Burada yoktu ve yönetim oturumu ucu çalışma anında patladı (6 Eylül).
+//
+// Anahtarlar konteynerin içinde duruyor, yani her deploy'da değişiyor ve açık
+// oturumlar kapanıyor. Bilinçli: oturum ömrü zaten 12 saat ve açık kalmış bir
+// yönetim oturumunun deploy'da kendiliğinden kapanması istenen davranış.
+builder.Services.AddDataProtection();
+
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
