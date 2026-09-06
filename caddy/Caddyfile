@@ -37,10 +37,56 @@
 	log {
 		output file /var/log/caddy/erisim.log {
 			roll_size 20MiB
-			roll_keep 12
+			# 150 dosya x 20 MiB = 3 GB tavan. SATIR KUCULTULDUKTEN SONRA
+			# hesaplandi: eski satir 2.500 bayt ve gunde ~100 MB uretiyordu,
+			# 12 dosyalik tavanla saklama 90 gun degil ~2,4 GUN ediyordu -
+			# yani gizlilik metninde yazan sure ile gercek tutmuyordu ve
+			# kaydin varlik sebebi (gecmise bakabilmek) karsilanmiyordu.
+			# Baglayici olan DOSYA SAYISI, sure degil; roll_keep_for tek
+			# basina hicbir sey garanti etmiyor.
+			roll_keep 150
 			roll_keep_for 2160h
 		}
-		format json
+		# Alanlar OLCULEREK secildi (7 Eylul, canli satir uzerinde):
+		#   resp_headers    1.348 bayt (%53)  <- kendi guvenlik basliklarimiz
+		#   request>headers   686 bayt (%27)
+		#   request>tls       125 bayt (%5)
+		# resp_headers bir erisim kaydinda ise yaramiyor: her satirda kendi
+		# CSP'mizi tekrar yaziyorduk. TLS ayrintisi da oyle.
+		#
+		# ISTEK BASLIKLARINDA SADECE ISE YARAYANLAR KALIYOR: User-Agent
+		# (tarayici mi tarayici botu mu), Cf-Ipcountry (rapor icin ulke),
+		# Referer (nereden geldi), Cf-Ray (Cloudflare ile eslestirme).
+		# Gerisi gurultu; adres zaten client_ip alaninda ve o alan artik
+		# GERCEK ziyaretciyi gosteriyor (trusted_proxies).
+		#
+		# Cf-Access-Jwt-Assertion SILINIYOR VE BU ONEMLI: o bir oturum
+		# kimligi. Logu eline geciren biri suresi dolana kadar kullanabilir;
+		# kimlik bilgisi erisim kaydinda durmamali. (Cookie'yi Caddy zaten
+		# kendisi gizliyor.)
+		format filter {
+			wrap json
+			fields {
+				resp_headers delete
+				request>tls delete
+				request>headers>Cf-Access-Jwt-Assertion delete
+				request>headers>Accept delete
+				request>headers>Accept-Encoding delete
+				request>headers>Accept-Language delete
+				request>headers>Cdn-Loop delete
+				request>headers>Cf-Connecting-Ip delete
+				request>headers>Cf-Visitor delete
+				request>headers>X-Forwarded-For delete
+				request>headers>X-Forwarded-Proto delete
+				request>headers>Sec-Fetch-Mode delete
+				request>headers>Sec-Fetch-Dest delete
+				request>headers>Sec-Fetch-Site delete
+				request>headers>Sec-Fetch-User delete
+				request>headers>Upgrade-Insecure-Requests delete
+				request>headers>If-Modified-Since delete
+				request>headers>If-None-Match delete
+			}
+		}
 	}
 }
 
