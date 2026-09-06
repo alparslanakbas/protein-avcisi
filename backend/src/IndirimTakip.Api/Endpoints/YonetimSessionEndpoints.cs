@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using IndirimTakip.Infrastructure.Security;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Mvc;
 
 namespace IndirimTakip.Api.Endpoints;
 
@@ -32,9 +33,15 @@ internal static class YonetimSessionEndpoints
 
     public static void MapYonetimSession(this WebApplication app, string? adminApiKey)
     {
+        // [FromServices] ZORUNLU, kaldirilmamali. Minimal API gövdeden gelen
+        // parametre varken IDataProtectionProvider'i servis olarak ÇIKARAMIYOR
+        // ve "Failure to infer one or more parameters" ile patlıyor. Hata
+        // derlemede değil, uçlar sayılırken ortaya çıkıyor — ve uç listesinin
+        // tamamını düşürdüğü için API'nin HER ucu 500 veriyor.
+        // 6 Eylül'de canlıda tam bu yaşandı.
         app.MapPost("/api/dev/session", (
             GirisIstegi istek,
-            IDataProtectionProvider dataProtection,
+            [FromServices] IDataProtectionProvider dataProtection,
             HttpContext context) =>
         {
             if (string.IsNullOrEmpty(adminApiKey) || !SabitZamanliEsit(istek.Key, adminApiKey))
