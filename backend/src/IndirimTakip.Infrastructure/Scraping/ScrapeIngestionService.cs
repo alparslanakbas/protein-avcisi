@@ -161,7 +161,11 @@ public class ScrapeIngestionService(
         // kararında kullanılıyor. Korelasyonlu alt sorgu + FirstOrDefault
         // kalıbı bu projede EF Core'un sorunsuz çevirdiği, kanıtlanmış yol
         // (bkz. DealsQueryService'teki DealRow notu).
+        // IgnoreQueryFilters ZORUNLU: gizlenmis bir urun burada gorunmezse
+        // asagida "yeni urun" sanilip KOPYASI olusturulur. Kopya kayit bu
+        // depoda tekrar tekrar sorun cikarmis bir arizadir.
         var lastPrices = await db.Products
+            .IgnoreQueryFilters()
             .Where(p => scrapedUrls.Contains(p.Url))
             .Select(p => new
             {
@@ -187,6 +191,8 @@ public class ScrapeIngestionService(
         // yeniden adlandırdığı durumda eski satırı öksüz bırakıp yenisini
         // oluştururdu.
         var existingByUrl = (await db.Products
+                // Ayni sebep: gizli urun burada gorunmezse kopyasi olusur.
+                .IgnoreQueryFilters()
                 .Where(p => scrapedUrls.Contains(p.Url))
                 .ToListAsync(cancellationToken))
             .GroupBy(p => p.Url)

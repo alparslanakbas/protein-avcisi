@@ -24,6 +24,32 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             b.Property(x => x.BaseUrl).HasMaxLength(500);
         });
 
+        // GIZLENEN URUNLER HER SORGUDAN OTOMATIK DUSUYOR.
+        //
+        // Neden global filtre: urun sorgulari 12 dosyaya yayilmis ve tek
+        // basina DealsQueryService'te 20 tane var (liste, kategori, marka,
+        // arama, karsilastirma, sitemap, urun sayfasi...). Her birine elle
+        // kosul eklemek, birini atlayip gizlenen urunu sitemap'te birakmanin
+        // en kolay yoluydu. Filtre tek yerde duruyor ve unutulamiyor.
+        //
+        // GORMESI GEREKENLER IgnoreQueryFilters() KULLANIYOR:
+        //   - ScrapeIngestionService: gizli urunu bulamazsa KOPYASINI olusturur
+        //   - Yonetim paneli: gizli urunu listeleyip geri acabilmeli
+        modelBuilder.Entity<Product>().HasQueryFilter(p => p.IsActive);
+
+        // URUNE BAGLI KAYITLARA DA ESLESEN FILTRE (EF bunu acikca uyariyor).
+        //
+        // Bunlar urune ZORUNLU bagli: filtre yalnizca Product'ta olsaydi,
+        // gizlenmis bir urunun takip/favori/fiyat kaydi sorguya girip
+        // navigasyonu bos donerdi - "unexpected results" dedigi tam olarak bu.
+        //
+        // Davranis dogru olan: gizlenen urun kullanicinin takip listesinden de
+        // dusuyor. Satirlar SILINMIYOR; urun geri acilinca kayitlar da geri
+        // geliyor.
+        modelBuilder.Entity<ProductWatch>().HasQueryFilter(w => w.Product!.IsActive);
+        modelBuilder.Entity<ProductFavorite>().HasQueryFilter(f => f.Product!.IsActive);
+        modelBuilder.Entity<PriceHistory>().HasQueryFilter(ph => ph.Product!.IsActive);
+
         modelBuilder.Entity<Product>(p =>
         {
             p.Property(x => x.Name).HasMaxLength(500);

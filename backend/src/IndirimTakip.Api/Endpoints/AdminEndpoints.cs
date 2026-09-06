@@ -128,7 +128,9 @@ internal static class AdminEndpoints
         // geri gelmiyor.
         app.MapDelete("/api/dev/products/{id:int}", async (int id, AppDbContext db, CancellationToken ct) =>
         {
-            var product = await db.Products.FindAsync([id], ct);
+            // FindAsync global filtreden etkilenmiyor ama acikca belirtiyoruz:
+            // gizlenmis bir urun de silinebilmeli.
+            var product = await db.Products.IgnoreQueryFilters().FirstOrDefaultAsync(p => p.Id == id, ct);
             if (product is null) return Results.NotFound();
             db.Products.Remove(product);
             await db.SaveChangesAsync(ct);
@@ -196,7 +198,9 @@ internal static class AdminEndpoints
         // Burada yalnizca HAM son tarama zamanlari donuyor, yorumu arayuz yapiyor.
         app.MapGet("/api/dev/durum", async (AppDbContext db, CancellationToken ct) =>
         {
+            // Panel gercegi gostermeli: gizlenmis urunler de katalogun parcasi.
             var urunler = await db.Products
+                .IgnoreQueryFilters()
                 .GroupBy(_ => 1)
                 .Select(g => new
                 {
@@ -222,6 +226,7 @@ internal static class AdminEndpoints
             // tanim. En eskiden baslayarak ilk 12 kaynak yeterli; panel bir
             // izleme araci degil, hizli bakis.
             var kaynaklar = await db.Products
+                .IgnoreQueryFilters()
                 .Where(p => p.LatestScrapedAt != null)
                 .GroupBy(p => p.Seller ?? p.Brand!.Name)
                 .Select(g => new { kaynak = g.Key, sonTarama = g.Max(p => p.LatestScrapedAt) })
@@ -258,6 +263,114 @@ internal static class AdminEndpoints
                 kaynaklar,
                 sonGunOlaylari = olayOzeti,
             });
+        }).RequireAdminKey(adminApiKey);
+
+        // --- Marka ve urun gorunurlugu (yonetim paneli) ---
+        //
+        // MARKA TARAFI ZATEN CALISIYORDU: Brand.IsActive alani bastan beri var
+        // ve DealsQueryService 14 ayri sorguda kontrol ediyor. Eksik olan
+        // yalnizca onu acip kapatacak bir arayuzdu.
+        //
+        // URUN TARAFI YENI: Product.IsActive + AppDbContext'te global sorgu
+        // filtresi. Filtre tek yerde durdugu icin gizlenen urun butun
+        // sayfalardan ve sitemap'ten kendiliginden dusuyor.
+        app.MapGet("/api/dev/markalar", async (AppDbContext db, CancellationToken ct) =>
+        {
+            var markalar = await db.Brands
+                .AsNoTracking()
+                .Select(b => new
+                {
+                    b.Id,
+                    b.Name,
+                    b.IsActive,
+                    // Gizli urunler de sayiliyor: panelde "kac urunu var"
+                    // sorusunun cevabi katalogun tamami olmali.
+                    urunSayisi = db.Products.IgnoreQueryFilters().Count(p => p.BrandId == b.Id),
+                    gizliUrun = db.Products.IgnoreQueryFilters().Count(p => p.BrandId == b.Id && !p.IsActive),
+                })
+                .OrderBy(b => b.Name)
+                .ToListAsync(ct);
+
+            return Results.Ok(markalar);
+        }).RequireAdminKey(adminApiKey);
+
+        app.MapPut("/api/dev/markalar/{id:int}", async (
+            int id, GorunurlukIstegi istek, AppDbContext db, IPublicCacheRefresher cache, CancellationToken ct) =>
+        {
+            var marka = await db.Brands.FirstOrDefaultAsync(b => b.Id == id, ct);
+            if (marka is null)
+                return Results.NotFound();
+
+            marka.IsActive = istek.IsActive;
+            await db.SaveChangesAsync(ct);
+
+            // Onbellek tazelenmezse degisiklik bir saat boyunca sitede
+            // gorunmuyor ve "calismadi" sanilir (cikti onbellegi 1 saat).
+            await cache.RefreshAsync(ct);
+            return Results.Ok(new { marka.Id, marka.Name, marka.IsActive });
+        }).RequireAdminKey(adminApiKey);
+
+        // Katalogda 4.900+ urun var; listeleme ARAMAYA bagli.
+        app.MapGet("/api/dev/urunler", async (
+            AppDbContext db, string? ara, bool? yalnizGizli, CancellationToken ct) =>
+        {
+            var sorgu = db.Products.IgnoreQueryFilters().AsNoTracking();
+
+            if (yalnizGizli == true)
+                sorgu = sorgu.Where(p => !p.IsActive);
+
+            if (!string.IsNullOrWhiteSpace(ara))
+            {
+                // Turkce buyuk/kucuk harf tuzagi: ILIKE yerine iki tarafi da
+                // ayni sekilde kucultmek gerekiyor. Postgres'in lower()'i
+                // veritabani locale'ine gore calisiyor ve bu projede locale
+                // C.UTF-8 (builtin) - yani ASCII disi harflerde katlama YOK.
+                // Bu yuzden arama, kullanicinin yazdigi bicimle eslesecek
+                // sekilde hem ham hem kucultulmus haliyle deneniyor.
+                var ham = ara.Trim();
+                var kucuk = ham.ToLowerInvariant();
+                sorgu = sorgu.Where(p =>
+                    EF.Functions.ILike(p.Name, "%" + ham + "%")
+                    || EF.Functions.ILike(p.Name, "%" + kucuk + "%")
+                    || EF.Functions.ILike(p.Brand!.Name, "%" + ham + "%"));
+            }
+            else if (yalnizGizli != true)
+            {
+                // Arama da yoksa liste anlamsiz derecede buyuk olurdu.
+                return Results.Ok(Array.Empty<object>());
+            }
+
+            var urunler = await sorgu
+                .OrderBy(p => p.Brand!.Name)
+                .ThenBy(p => p.Name)
+                .Take(200)
+                .Select(p => new
+                {
+                    p.Id,
+                    p.Name,
+                    marka = p.Brand!.Name,
+                    p.Seller,
+                    p.IsActive,
+                    p.LatestPrice,
+                })
+                .ToListAsync(ct);
+
+            return Results.Ok(urunler);
+        }).RequireAdminKey(adminApiKey);
+
+        app.MapPut("/api/dev/urunler/{id:int}", async (
+            int id, GorunurlukIstegi istek, AppDbContext db, IPublicCacheRefresher cache, CancellationToken ct) =>
+        {
+            var urun = await db.Products.IgnoreQueryFilters().FirstOrDefaultAsync(p => p.Id == id, ct);
+            if (urun is null)
+                return Results.NotFound();
+
+            urun.IsActive = istek.IsActive;
+            await db.SaveChangesAsync(ct);
+
+            // Ayni sebep: urun gizlenince liste onbellegi tazelenmeli.
+            await cache.RefreshAsync(ct);
+            return Results.Ok(new { urun.Id, urun.Name, urun.IsActive });
         }).RequireAdminKey(adminApiKey);
 
         // Kupon listesi - panelin duzenleme ekrani icin.
@@ -445,3 +558,5 @@ internal static class AdminEndpoints
         }).RequireAdminKey(adminApiKey);
     }
 }
+
+internal record GorunurlukIstegi(bool IsActive);

@@ -20,6 +20,20 @@ public class Product
     // veriyor; diğerlerinde alan boş kalır ve arayüzde hiçbir rozet
     // gösterilmez. Üç durumlu olması bilinçli: bilinmeyeni "stokta var"
     // saymak uydurma veri olurdu.
+    /// <summary>
+    /// Ürün sitede görünsün mü. Yönetim panelinden kapatılabiliyor.
+    /// </summary>
+    /// <remarks>
+    /// Süzme GLOBAL SORGU FİLTRESİYLE yapılıyor (bkz. AppDbContext), her
+    /// sorguya elle eklenmiyor: yalnızca DealsQueryService içinde 20 ayrı
+    /// ürün sorgusu var ve birini atlamak, gizlenmiş bir ürünün başka bir
+    /// sayfada ya da sitemap'te görünmeye devam etmesi demekti.
+    ///
+    /// Markanın <c>IsActive</c> alanı BUNDAN AYRI ve zaten çalışıyor;
+    /// o sorgularda açıkça kontrol ediliyor.
+    /// </remarks>
+    public bool IsActive { get; set; } = true;
+
     public bool? InStock { get; set; }
 
     // Ürünü SATAN mağaza; Brand (üretici) alanından ayrı.

@@ -78,7 +78,13 @@ internal static class HealthEndpoints
             // gruplamak tek başına yetmezdi: bayilerden gelmeyen ~50 markanın
             // scraper'ı tek tek bozulabilir ve hepsi "markanın kendi sitesi"
             // adlı tek bir kovaya düşerdi, biri çalıştığı sürece arıza görünmezdi.
+            // IgnoreQueryFilters: gizlenmis urunler de TARANMAYA devam ediyor
+            // (yutma servisi filtreyi atliyor). Bu uc "tarama hala calisiyor
+            // mu" sorusunu cevapladigi icin gerceği yansitmali; aksi halde bir
+            // kaynagin butun urunleri gizlense o kaynak listeden dusup alarm
+            // uretemez hale gelirdi.
             var kaynaklar = await db.Products
+                .IgnoreQueryFilters()
                 .Where(p => p.LatestScrapedAt != null)
                 .GroupBy(p => p.Seller ?? p.Brand!.Name)
                 .Select(g => new
