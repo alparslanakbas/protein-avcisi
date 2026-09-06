@@ -14,6 +14,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Article> Articles => Set<Article>();
     public DbSet<ProductFavorite> ProductFavorites => Set<ProductFavorite>();
     public DbSet<SecurityEvent> SecurityEvents => Set<SecurityEvent>();
+    public DbSet<BackgroundJobRun> BackgroundJobRuns => Set<BackgroundJobRun>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -118,6 +119,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasIndex(x => new { x.Ip, x.OccurredAt });
 
             e.HasIndex(x => x.Kind);
+        });
+
+        modelBuilder.Entity<BackgroundJobRun>(j =>
+        {
+            j.Property(x => x.JobName).HasMaxLength(60);
+            // Is basina TEK satir olmali: iki satir olusursa "sirasi geldi mi"
+            // sorusu hangisine bakildigina gore farkli cevap verirdi.
+            j.HasIndex(x => x.JobName).IsUnique();
         });
     }
 }

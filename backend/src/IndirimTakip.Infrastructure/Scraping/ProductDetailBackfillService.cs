@@ -1,3 +1,4 @@
+using IndirimTakip.Core.Entities;
 using IndirimTakip.Core.Scraping;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -33,16 +34,26 @@ public class ProductDetailBackfillService(
     // yaklaşık yarım dakikalık trafik.
     private const int MaxProductsPerRun = 150;
 
-    // Bu işin "en son ne zaman çalıştığı" için ayrı bir kayıt tutmaya gerek yok:
-    // NutritionCheckedAt damgasını YALNIZCA bu servis yazdığı için, en yeni damga
-    // doğrudan son çalışma zamanını veriyor. Zamanlamanın süreç belleğinde değil
-    // burada durması önemli — periyot günler mertebesinde olduğu için, bellekte
-    // tutulsaydı deploy'lar periyodun dolmasına hiç izin vermezdi (bültende tam
-    // olarak bu yaşandı, bkz. DigestBackgroundService).
+    // SIRA KARARI ÜRÜN DAMGASINDAN DEĞİL, TURUN KENDİ TAMAMLANMA KAYDINDAN
+    // VERİLİYOR (6 Eylül'de değiştirildi).
+    //
+    // Önceden MAX(Products.NutritionCheckedAt) kullanılıyordu ve gerekçesi
+    // makuldü: o damgayı yalnızca bu servis yazıyor. Ama bir durumu
+    // kaçırıyordu — tur yarıda kesilirse. 6 Eylül'de canlıda yaşandı: tur
+    // başladı, TEK ürün işledi, deploy konteyneri yenileyince iptal oldu ve
+    // o tek damga sırayı tam bir aralık öteledi. Yoğun deploy yapılan bir
+    // günde iş hiç ilerlemeden sürekli ertelenebilirdi.
+    //
+    // Zamanlama yine VERİTABANINDA (bellekte değil): periyot günler
+    // mertebesinde ve bellekte tutulsaydı her deploy sayacı sıfırlardı.
     public async Task<bool> IsDueAsync(int intervalDays, CancellationToken cancellationToken = default)
     {
-        var lastRun = await db.Products.MaxAsync(p => p.NutritionCheckedAt, cancellationToken);
-        return lastRun is null || lastRun < DateTimeOffset.UtcNow.AddDays(-intervalDays);
+        var lastCompleted = await db.BackgroundJobRuns
+            .Where(j => j.JobName == BackgroundJobNames.DetayTamamlama)
+            .Select(j => (DateTimeOffset?)j.LastCompletedAt)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return lastCompleted is null || lastCompleted < DateTimeOffset.UtcNow.AddDays(-intervalDays);
     }
 
     public async Task<int> BackfillAsync(CancellationToken cancellationToken = default)
@@ -159,6 +170,36 @@ public class ProductDetailBackfillService(
             await db.SaveChangesAsync(cancellationToken);
         }
 
+        // TAMAMLANMA DAMGASI BURADA, DÖNGÜNÜN SONUNDA ATILIYOR.
+        //
+        // Buraya yalnızca tur baştan sona bittiyse geliniyor: iptal edilen bir
+        // tur (deploy, konteyner yenileme) ürünler arasındaki `Task.Delay`
+        // noktasında istisna fırlatıp metottan çıkıyor ve bu satıra hiç
+        // ulaşmıyor. Yani yarıda kesilen tur sırayı İLERLETMİYOR, bir sonraki
+        // kontrolde yeniden "sırası geldi" diyor.
+        await TamamlandiIsaretleAsync(cancellationToken);
+
         return totalUpdated;
+    }
+
+    private async Task TamamlandiIsaretleAsync(CancellationToken cancellationToken)
+    {
+        var kayit = await db.BackgroundJobRuns
+            .FirstOrDefaultAsync(j => j.JobName == BackgroundJobNames.DetayTamamlama, cancellationToken);
+
+        if (kayit is null)
+        {
+            db.BackgroundJobRuns.Add(new BackgroundJobRun
+            {
+                JobName = BackgroundJobNames.DetayTamamlama,
+                LastCompletedAt = DateTimeOffset.UtcNow,
+            });
+        }
+        else
+        {
+            kayit.LastCompletedAt = DateTimeOffset.UtcNow;
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
     }
 }
