@@ -151,7 +151,28 @@ www.proteinavcisi.com.tr {
 	import guvenlik-basliklari
 	import erisim-logu
 	import csp
-	reverse_proxy frontend:4000
+
+	# YONETIM PANELI VE API'SI AYNI ORIGIN ALTINDA.
+	#
+	# NEDEN: Cloudflare Access bir ALAN ADI + YOL koruyor. Panel www'de ama
+	# API cagrilari api.proteinavcisi.com.tr'ye gitseydi o cagrilar Access'in
+	# DISINDA kalirdi - sayfa korunur, verinin kendisi korunmazdi. Ayrica
+	# capraz origin oldugu icin CORS ve cerez sorunlari cikardi (CORS bu
+	# projede bilerek kapali).
+	#
+	# Boylece TEK bir Access kurali (www.proteinavcisi.com.tr/yonetim*) hem
+	# sayfayi hem veriyi kapsiyor.
+	#
+	# handle_path onegi soyuyor: /yonetim/api/security-events -> /security-events
+	# rewrite ise backend'in bekledigi yola geri koyuyor: /api/dev/security-events
+	handle_path /yonetim/api/* {
+		rewrite * /api/dev{uri}
+		reverse_proxy backend:8080
+	}
+
+	handle {
+		reverse_proxy frontend:4000
+	}
 }
 
 api.proteinavcisi.com.tr {

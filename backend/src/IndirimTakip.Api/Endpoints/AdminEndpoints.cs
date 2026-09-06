@@ -182,6 +182,35 @@ internal static class AdminEndpoints
         // OZET LISTEDEN AYRI SORGULANIYOR: liste `take` ile kirpiliyor ve
         // kirpilmis listeden sayi cikarmak yaniltir ("3 saldiri var" derken
         // aslinda 3.000 olabilir).
+        // Kupon listesi - panelin duzenleme ekrani icin.
+        // Genel /api/coupons ucu YALNIZCA aktif ve suresi gecmemis kuponlari
+        // donduruyor (ziyaretcinin gormesi gereken bu). Panelde pasif ve
+        // suresi gecmis olanlar da gorunmeli, yoksa bir kupon kapatildiginda
+        // yonetim ekranindan da kaybolur ve geri acilamaz.
+        app.MapGet("/api/dev/coupons", async (AppDbContext db, CancellationToken ct) =>
+        {
+            var kuponlar = await db.Coupons
+                .AsNoTracking()
+                .Include(c => c.Brand)
+                .OrderByDescending(c => c.IsActive)
+                .ThenByDescending(c => c.LastVerifiedAt)
+                .Select(c => new
+                {
+                    c.Id,
+                    c.Code,
+                    c.Description,
+                    c.BrandId,
+                    brandName = c.Brand != null ? c.Brand.Name : null,
+                    c.Seller,
+                    c.ValidUntil,
+                    c.LastVerifiedAt,
+                    c.IsActive,
+                })
+                .ToListAsync(ct);
+
+            return Results.Ok(kuponlar);
+        }).RequireAdminKey(adminApiKey);
+
         app.MapGet("/api/dev/security-events", async (
             AppDbContext db, string? kind, string? ip, int? limit, int? days, CancellationToken ct) =>
         {

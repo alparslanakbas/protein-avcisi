@@ -59,6 +59,18 @@ builder.Services.AddRateLimiter(options =>
     // gevşek, genel bir limit — gerçek bir kullanıcının dakikada 60'tan fazla
     // ürün tıklaması/oylaması olağan değil, ama sayfada gezinirken rahatsız
     // etmeyecek kadar cömert.
+    // Yönetim paneline giriş denemeleri. Sınır BİLEREK çok dar: bu uç bir
+    // parolayı doğruluyor ve tek amacı deneme yanılmayı işlevsiz kılmak.
+    // Başarısız her deneme ayrıca güvenlik olayı olarak kaydediliyor (401).
+    options.AddPolicy("yonetim-giris", httpContext => RateLimitPartition.GetFixedWindowLimiter(
+        partitionKey: RequestLoggingExtensions.GetClientIp(httpContext),
+        factory: _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 5,
+            Window = TimeSpan.FromMinutes(15),
+            QueueLimit = 0,
+        }));
+
     options.AddPolicy("General", httpContext => RateLimitPartition.GetFixedWindowLimiter(
         partitionKey: RequestLoggingExtensions.GetClientIp(httpContext),
         factory: _ => new FixedWindowRateLimiterOptions
@@ -247,6 +259,7 @@ app.Use(async (context, next) =>
 // satıra çıkmıştı ve 42 uç tek dosyadaydı; bu bölme yalnızca organizasyon —
 // rotalar, önbellek politikaları, hız sınırları ve filtreler birebir aynı.
 app.MapAdminEndpoints(adminApiKey);
+app.MapYonetimSession(adminApiKey);
 app.MapCollectorEndpoints(ingestApiKey);
 app.MapHealthEndpoints();
 app.MapDealsEndpoints(PublicDataCachePolicy);

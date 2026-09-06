@@ -1,17 +1,40 @@
+using Microsoft.AspNetCore.DataProtection;
+
 namespace IndirimTakip.Api.Endpoints;
 
 
 internal static class AdminAuthExtensions
 {
+    /// <summary>
+    /// Admin uçlarını korur: ya <c>X-Admin-Key</c> başlığı ya da yönetim
+    /// panelinin HttpOnly oturum çerezi.
+    /// </summary>
+    /// <remarks>
+    /// Çerez yolu 6 Eylül'de eklendi. Alternatifi, panelin admin anahtarını
+    /// tarayıcıda tutup her istekte başlık olarak göndermesiydi — o anahtar
+    /// bütün abonelere e-posta gönderebildiği için JavaScript'in erişebildiği
+    /// bir yerde durmamalı. Başlık yolu KALDIRILMADI: betikler, cron ve elle
+    /// yapılan çağrılar onu kullanıyor.
+    /// </remarks>
     public static RouteHandlerBuilder RequireAdminKey(this RouteHandlerBuilder builder, string? expectedKey)
     {
         return builder.AddEndpointFilter(async (context, next) =>
         {
-            var providedKey = context.HttpContext.Request.Headers["X-Admin-Key"].FirstOrDefault();
-            if (string.IsNullOrEmpty(expectedKey) || providedKey != expectedKey)
+            if (string.IsNullOrEmpty(expectedKey))
                 return Results.Unauthorized();
 
-            return await next(context);
+            var providedKey = context.HttpContext.Request.Headers["X-Admin-Key"].FirstOrDefault();
+            if (providedKey == expectedKey)
+                return await next(context);
+
+            var dataProtection = context.HttpContext.RequestServices.GetService<IDataProtectionProvider>();
+            if (dataProtection is not null
+                && YonetimSessionEndpoints.GecerliOturum(context.HttpContext, dataProtection))
+            {
+                return await next(context);
+            }
+
+            return Results.Unauthorized();
         });
     }
 }
