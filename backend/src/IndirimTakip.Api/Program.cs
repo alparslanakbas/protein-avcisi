@@ -52,6 +52,11 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 // yönetim oturumunun deploy'da kendiliğinden kapanması istenen davranış.
 builder.Services.AddDataProtection();
 
+// Cloudflare Access jeton dogrulayicisi. TEKIL: indirdigi imza anahtarlarini
+// onbellekte tutuyor, istek basina yeniden indirmek gereksiz yuk olurdu.
+builder.Services.AddHttpClient();
+builder.Services.AddSingleton<CloudflareAccessValidator>();
+
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;

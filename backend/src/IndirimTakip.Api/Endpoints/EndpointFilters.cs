@@ -34,6 +34,17 @@ internal static class AdminAuthExtensions
                 return await next(context);
             }
 
+            // Cloudflare Access'in imzalı kimlik jetonu. Access zaten kimliği
+            // doğrulayıp bunu isteğe ekliyor; jetonu doğrulamak, elle girilen
+            // bir anahtarı kabul etmekten daha sağlam. Yapılandırılmamışsa bu
+            // yol tamamen kapalı (bkz. CloudflareAccessValidator).
+            var access = context.HttpContext.RequestServices.GetService<CloudflareAccessValidator>();
+            if (access is not null
+                && await access.GecerliMi(context.HttpContext, context.HttpContext.RequestAborted))
+            {
+                return await next(context);
+            }
+
             return Results.Unauthorized();
         });
     }
