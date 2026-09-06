@@ -167,6 +167,11 @@ if (app.Environment.IsDevelopment())
 // bkz. CLAUDE.md 2026-08-15).
 app.UseForwardedHeaders();
 
+// Guvenlik olaylarini kaydeden katman. UseForwardedHeaders'tan SONRA, hata
+// yakalayicidan ONCE duruyor: gercek istemci adresine ihtiyaci var ve
+// hata yakalayicinin urettigi 500'leri de gormesi gerekiyor.
+app.UseSecurityEventLogging();
+
 // Global hata yakalama — önceden yoktu, herhangi bir endpoint'te beklenmeyen
 // bir exception çıplak, tutarsız bir 500 olarak dönüyordu (hiç loglanmadan).
 // Exception detayını istemciye sızdırmıyoruz, sadece loglayıp genel bir JSON

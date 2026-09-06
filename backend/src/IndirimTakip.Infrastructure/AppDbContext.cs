@@ -13,6 +13,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<ProductWatch> ProductWatches => Set<ProductWatch>();
     public DbSet<Article> Articles => Set<Article>();
     public DbSet<ProductFavorite> ProductFavorites => Set<ProductFavorite>();
+    public DbSet<SecurityEvent> SecurityEvents => Set<SecurityEvent>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -97,6 +98,26 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .HasForeignKey(x => x.ProductId)
                 .OnDelete(DeleteBehavior.Cascade);
             f.HasIndex(x => new { x.SubscriberId, x.ProductId }).IsUnique();
+        });
+
+        modelBuilder.Entity<SecurityEvent>(e =>
+        {
+            e.Property(x => x.Ip).HasMaxLength(45);          // IPv6 tam uzunluk
+            e.Property(x => x.Kind).HasMaxLength(30);
+            e.Property(x => x.Method).HasMaxLength(10);
+            e.Property(x => x.Path).HasMaxLength(500);
+            e.Property(x => x.UserAgent).HasMaxLength(500);
+            e.Property(x => x.Country).HasMaxLength(2);
+
+            // Panelde varsayilan gorunum "en yeniden eskiye".
+            e.HasIndex(x => x.OccurredAt).IsDescending();
+
+            // ASIL SORGU BU: "su adres neler yapmis". Bir suc duyurusunda
+            // tek bir IP'nin butun gecmisini cikarmak gerekiyor; tarihe gore
+            // index bunu karsilamaz.
+            e.HasIndex(x => new { x.Ip, x.OccurredAt });
+
+            e.HasIndex(x => x.Kind);
         });
     }
 }

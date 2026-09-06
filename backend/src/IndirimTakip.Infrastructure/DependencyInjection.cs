@@ -5,6 +5,7 @@ using IndirimTakip.Infrastructure.Coupons;
 using IndirimTakip.Infrastructure.Deals;
 using IndirimTakip.Infrastructure.Scraping;
 using IndirimTakip.Infrastructure.Scraping.Hardline;
+using IndirimTakip.Infrastructure.Security;
 using IndirimTakip.Infrastructure.Scraping.Hiq;
 using IndirimTakip.Infrastructure.Scraping.BigJoy;
 using IndirimTakip.Infrastructure.Scraping.Biofitle;
@@ -455,6 +456,12 @@ public static class DependencyInjection
         services.AddHostedService<DailyScrapingBackgroundService>();
         services.AddHostedService<DescriptionBackfillBackgroundService>();
         services.AddHostedService<RatingRefreshBackgroundService>();
+
+        // Guvenlik olayi kaydi. Sayac bellekte tutuldugu icin MemoryCache sart;
+        // TTL sayesinde sozluk kendi kendini temizliyor (bkz. SecurityEventRecorder).
+        services.AddMemoryCache();
+        services.AddScoped<SecurityEventRecorder>();
+        services.AddHostedService<SecurityEventRetentionService>();
 
         services.AddHttpClient<IEmailSender, BrevoEmailSender>(client =>
         {

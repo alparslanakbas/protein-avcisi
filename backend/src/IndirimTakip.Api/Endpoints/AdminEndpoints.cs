@@ -177,6 +177,51 @@ internal static class AdminEndpoints
             return Results.Ok(new { updatedCount = updated });
         }).RequireAdminKey(adminApiKey);
 
+        // Guvenlik olaylari - panelin "akis" gorunumunun kaynagi.
+        //
+        // OZET LISTEDEN AYRI SORGULANIYOR: liste `take` ile kirpiliyor ve
+        // kirpilmis listeden sayi cikarmak yaniltir ("3 saldiri var" derken
+        // aslinda 3.000 olabilir).
+        app.MapGet("/api/dev/security-events", async (
+            AppDbContext db, string? kind, string? ip, int? limit, int? days, CancellationToken ct) =>
+        {
+            var since = DateTimeOffset.UtcNow.AddDays(-Math.Clamp(days ?? 7, 1, 365));
+            var take = Math.Clamp(limit ?? 200, 1, 1000);
+
+            var query = db.SecurityEvents.AsNoTracking().Where(x => x.OccurredAt >= since);
+            if (!string.IsNullOrWhiteSpace(kind))
+                query = query.Where(x => x.Kind == kind);
+            if (!string.IsNullOrWhiteSpace(ip))
+                query = query.Where(x => x.Ip == ip);
+
+            var events = await query
+                .OrderByDescending(x => x.OccurredAt)
+                .Take(take)
+                .ToListAsync(ct);
+
+            var summary = await query
+                .GroupBy(x => x.Kind)
+                .Select(g => new { kind = g.Key, count = g.Count() })
+                .ToListAsync(ct);
+
+            // Bir suc duyurusunda ilk sorulan sey "hangi adres, kac kez, ne zaman".
+            var topIps = await query
+                .GroupBy(x => x.Ip)
+                .Select(g => new
+                {
+                    ip = g.Key,
+                    count = g.Count(),
+                    firstSeen = g.Min(x => x.OccurredAt),
+                    lastSeen = g.Max(x => x.OccurredAt),
+                })
+                .OrderByDescending(x => x.count)
+                .Take(10)
+                .ToListAsync(ct);
+
+            return Results.Ok(new { events, summary, topIps });
+        }).RequireAdminKey(adminApiKey);
+
+
         // Porsiyon (servis) büyüklüğü çıkarımı, açıklamalar DB'ye yazıldıktan SONRA
         // eklendi — bu endpoint, zaten kayıtlı açıklamaları yeniden okuyup eksik
         // ServingSizeGrams'ları tek seferde dolduruyor. Markalara hiç istek atmıyor
