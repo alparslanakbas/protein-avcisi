@@ -55,6 +55,17 @@ export class App implements OnInit {
   /** Footer marka listesi bu sayfada gösterilsin mi (bkz. core/footer-brand-links.ts). */
   protected readonly footerMarkaListesi = signal(true);
 
+  /**
+   * Yönetim panelindeyiz — site kabuğu (footer, çerez bandı, karşılaştırma
+   * çubuğu, mobil sekmeler) gizleniyor.
+   *
+   * Panel bir ziyaretçi sayfası değil, araç ekranı: pazarlama alt bilgisi,
+   * bülten formu ve marka listesi orada yalnızca yer kaplıyor ve ekranın
+   * yarısını dolduruyor. Çerez bandı da anlamsız — panelde reklam/analitik
+   * tercihi sorulacak bir ziyaretçi yok.
+   */
+  protected readonly yonetimSayfasi = signal(false);
+
   protected readonly brands = signal<string[]>([]);
   protected readonly categories = signal<{ slug: string; label: string }[]>([]);
 
@@ -135,6 +146,7 @@ export class App implements OnInit {
       };
 
       this.footerMarkaListesi.set(showFooterBrandLinks(next.path));
+      this.yonetimSayfasi.set(next.path === '/yonetim' || next.path.startsWith('/yonetim/'));
 
       if (this.isBrowser && shouldResetScroll(this.lastNavigation, next)) {
         window.scrollTo(0, 0);

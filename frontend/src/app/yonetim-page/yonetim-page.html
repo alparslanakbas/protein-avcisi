@@ -1,0 +1,269 @@
+<div class="yonetim">
+  <header class="ust">
+    <h1>Yönetim</h1>
+    @if (girisYapildi()) {
+      <button type="button" class="cikis" (click)="cikisYap()">Çıkış</button>
+    }
+  </header>
+
+  @if (yukleniyor()) {
+    <p class="bilgi">Yükleniyor…</p>
+  } @else if (!girisYapildi()) {
+    <!-- Giriş ekranı. Cloudflare Access bu sayfaya ulaşmayı zaten kısıtlıyor;
+         burası ikinci kapı. -->
+    <form class="giris" (ngSubmit)="girisYap()">
+      <label for="anahtar">Yönetim anahtarı</label>
+      <input
+        id="anahtar"
+        type="password"
+        autocomplete="off"
+        [ngModel]="anahtar()"
+        (ngModelChange)="anahtar.set($event)"
+        name="anahtar"
+      />
+      <button type="submit" [disabled]="girisDeneniyor()">
+        {{ girisDeneniyor() ? 'Kontrol ediliyor…' : 'Giriş yap' }}
+      </button>
+      @if (girisHatasi()) {
+        <p class="hata">{{ girisHatasi() }}</p>
+      }
+      <p class="not">
+        Anahtar tarayıcıda saklanmıyor. Doğrulandıktan sonra oturum, JavaScript'in
+        okuyamadığı bir çerezle sürüyor ve 12 saat sonra kendiliğinden kapanıyor.
+      </p>
+    </form>
+  } @else {
+    <nav class="sekmeler">
+      <button type="button" [class.aktif]="sekme() === 'durum'" (click)="sekme.set('durum')">Durum</button>
+      <button type="button" [class.aktif]="sekme() === 'olaylar'" (click)="sekme.set('olaylar')">Olaylar</button>
+      <button type="button" [class.aktif]="sekme() === 'kuponlar'" (click)="sekme.set('kuponlar')">Kuponlar</button>
+    </nav>
+
+    @if (hata()) {
+      <p class="hata">{{ hata() }}</p>
+    }
+
+    <!-- ================= DURUM ================= -->
+    @if (sekme() === 'durum') {
+      @if (durum(); as d) {
+        <section class="kartlar">
+          <article class="kart">
+            <span class="etiket">Ürün</span>
+            <strong>{{ d.urun.toplam }}</strong>
+            <span class="alt">{{ d.urun.markaSayisi }} marka</span>
+          </article>
+          <article class="kart">
+            <span class="etiket">Besin değeri</span>
+            <strong>%{{ besinYuzde() }}</strong>
+            <span class="alt">{{ d.urun.besinli }} ürün</span>
+          </article>
+          <article class="kart">
+            <span class="etiket">Mağazaya gidiş</span>
+            <strong>{{ d.tiklamaToplam }}</strong>
+            <span class="alt">toplam</span>
+          </article>
+          <article class="kart">
+            <span class="etiket">Abone</span>
+            <strong>{{ d.abone.onayli }}</strong>
+            <span class="alt">{{ d.abone.bekleyen }} onay bekliyor</span>
+          </article>
+        </section>
+
+        <section class="blok">
+          <h2>Besin değeri tamamlama</h2>
+          <p>
+            Son tur: <b>{{ tarih(d.besin.sonTur) }}</b> ({{ saatFarki(d.besin.sonTur) }})<br />
+            Sıradaki tur: <b>{{ tarih(d.besin.siradakiTur) }}</b>
+          </p>
+          <p class="not">Tamamlama 2 günde bir çalışıyor; ara günlerde sayıların değişmemesi normal.</p>
+        </section>
+
+        <section class="blok">
+          <h2>En eski taranan kaynaklar</h2>
+          <p class="not">
+            Alarm bu ekrandan değil, sağlık ucundan geliyor (UptimeRobot izliyor). Burası hızlı bakış.
+          </p>
+          <table>
+            <thead>
+              <tr><th>Kaynak</th><th>Son tarama</th></tr>
+            </thead>
+            <tbody>
+              @for (k of d.kaynaklar; track k.kaynak) {
+                <tr>
+                  <td>{{ k.kaynak }}</td>
+                  <td>{{ saatFarki(k.sonTarama) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </section>
+
+        <section class="blok">
+          <h2>Son 24 saatteki olaylar</h2>
+          @if (d.sonGunOlaylari.length === 0) {
+            <p class="bilgi">Kayda değer bir şey yok.</p>
+          } @else {
+            <ul class="ozet">
+              @for (o of d.sonGunOlaylari; track o.kind) {
+                <li><span>{{ turEtiketi(o.kind) }}</span><b>{{ o.count }}</b></li>
+              }
+            </ul>
+          }
+        </section>
+      }
+    }
+
+    <!-- ================= OLAYLAR ================= -->
+    @if (sekme() === 'olaylar') {
+      <section class="blok">
+        <div class="suzgec">
+          <div>
+            @for (g of [1, 7, 30, 90]; track g) {
+              <button type="button" [class.aktif]="olayGun() === g" (click)="olayGunSec(g)">{{ g }} gün</button>
+            }
+          </div>
+          <div>
+            <button type="button" [class.aktif]="olayTur() === null" (click)="olayTuruSec(null)">Hepsi</button>
+            @for (t of ['unauthorized', 'rate-limited', 'probe', 'server-error']; track t) {
+              <button type="button" [class.aktif]="olayTur() === t" (click)="olayTuruSec(t)">{{ turEtiketi(t) }}</button>
+            }
+          </div>
+        </div>
+
+        @if (suzulenAdres(); as ip) {
+          <p class="bilgi">
+            <b>{{ ip }}</b> adresinin 90 günlük geçmişi gösteriliyor.
+            <button type="button" class="baglanti" (click)="olaylariYukle()">Filtreyi kaldır</button>
+          </p>
+        }
+
+        @if (olaylar(); as o) {
+          @if (o.topIps.length > 0 && !suzulenAdres()) {
+            <h2>En çok olay üreten adresler</h2>
+            <table>
+              <thead>
+                <tr><th>Adres</th><th>Olay</th><th>İlk</th><th>Son</th><th></th></tr>
+              </thead>
+              <tbody>
+                @for (a of o.topIps; track a.ip) {
+                  <tr>
+                    <td class="tek-aralik">{{ a.ip }}</td>
+                    <td>{{ a.count }}</td>
+                    <td>{{ tarih(a.firstSeen) }}</td>
+                    <td>{{ tarih(a.lastSeen) }}</td>
+                    <td>
+                      <button type="button" class="baglanti" (click)="adreseGoreFiltrele(a.ip)">geçmişi</button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+
+          <h2>Olaylar ({{ o.events.length }})</h2>
+          @if (o.events.length === 0) {
+            <p class="bilgi">Bu aralıkta kayıt yok.</p>
+          } @else {
+            <table>
+              <thead>
+                <tr><th>Zaman</th><th>Tür</th><th>Adres</th><th>Ülke</th><th>Yol</th><th>Kod</th></tr>
+              </thead>
+              <tbody>
+                @for (e of o.events; track e.id) {
+                  <tr>
+                    <td>{{ tarih(e.occurredAt) }}</td>
+                    <td>{{ turEtiketi(e.kind) }}</td>
+                    <td class="tek-aralik">{{ e.ip }}</td>
+                    <td>{{ e.country || '—' }}</td>
+                    <td class="tek-aralik">{{ e.method }} {{ e.path }}</td>
+                    <td>{{ e.statusCode }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        }
+      </section>
+    }
+
+    <!-- ================= KUPONLAR ================= -->
+    @if (sekme() === 'kuponlar') {
+      <section class="blok">
+        <h2>Yeni kupon</h2>
+        <form class="kupon-form" (ngSubmit)="kuponEkle()">
+          <label>
+            Hedef
+            <select
+              name="hedefTip"
+              [ngModel]="yeniKupon().hedefTip"
+              (ngModelChange)="yeniKupon.set({ ...yeniKupon(), hedefTip: $event })"
+            >
+              <option value="marka">Marka</option>
+              <option value="satici">Satıcı</option>
+            </select>
+          </label>
+          <label>
+            {{ yeniKupon().hedefTip === 'marka' ? 'Marka adı' : 'Satıcı adresi' }}
+            <input
+              name="hedef"
+              [ngModel]="yeniKupon().hedef"
+              (ngModelChange)="yeniKupon.set({ ...yeniKupon(), hedef: $event })"
+            />
+          </label>
+          <label>
+            Kod <small>(kodu yoksa boş bırak)</small>
+            <input
+              name="code"
+              [ngModel]="yeniKupon().code"
+              (ngModelChange)="yeniKupon.set({ ...yeniKupon(), code: $event })"
+            />
+          </label>
+          <label>
+            Açıklama
+            <input
+              name="description"
+              [ngModel]="yeniKupon().description"
+              (ngModelChange)="yeniKupon.set({ ...yeniKupon(), description: $event })"
+            />
+          </label>
+          <label>
+            Geçerlilik <small>(boş = süresiz)</small>
+            <input
+              type="date"
+              name="validUntil"
+              [ngModel]="yeniKupon().validUntil"
+              (ngModelChange)="yeniKupon.set({ ...yeniKupon(), validUntil: $event })"
+            />
+          </label>
+          <button type="submit">Ekle</button>
+        </form>
+        @if (kuponMesaji()) {
+          <p class="bilgi">{{ kuponMesaji() }}</p>
+        }
+
+        <h2>Kuponlar ({{ kuponlar().length }})</h2>
+        <table>
+          <thead>
+            <tr><th>Durum</th><th>Hedef</th><th>Kod</th><th>Açıklama</th><th>Bitiş</th><th></th></tr>
+          </thead>
+          <tbody>
+            @for (k of kuponlar(); track k.id) {
+              <tr [class.pasif]="!k.isActive">
+                <td>{{ k.isActive ? 'Aktif' : 'Pasif' }}</td>
+                <td>{{ k.brandName || k.seller }}</td>
+                <td class="tek-aralik">{{ k.code || 'kod yok' }}</td>
+                <td>{{ k.description }}</td>
+                <td>{{ k.validUntil ? tarih(k.validUntil) : 'süresiz' }}</td>
+                <td>
+                  <button type="button" class="baglanti" (click)="kuponDurumDegistir(k)">
+                    {{ k.isActive ? 'pasife al' : 'aktife al' }}
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </section>
+    }
+  }
+</div>

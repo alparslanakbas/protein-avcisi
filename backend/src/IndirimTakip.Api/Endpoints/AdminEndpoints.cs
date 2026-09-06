@@ -182,6 +182,84 @@ internal static class AdminEndpoints
         // OZET LISTEDEN AYRI SORGULANIYOR: liste `take` ile kirpiliyor ve
         // kirpilmis listeden sayi cikarmak yaniltir ("3 saldiri var" derken
         // aslinda 3.000 olabilir).
+        // Yonetim panelinin "Durum" ekrani - TEK istekte ozet.
+        //
+        // NEDEN AYRI BIR UC: panel /yonetim/api/* uzerinden geliyor ve Caddy o
+        // yolu /api/dev/* olarak yeniden yaziyor, yani panel /api/stats ya da
+        // /api/health/sources gibi /api/dev disindaki uclara ULASAMIYOR. Caddy'ye
+        // ikinci bir kural eklemek yerine tek bir ozet ucu yazildi: panel tek
+        // istek atiyor ve hangi verinin panele acildigi TEK YERDE gorunuyor.
+        //
+        // KAYNAK TAZELIGI BURADA YENIDEN YORUMLANMIYOR. Bayat/emekli esikleri
+        // /api/health/sources'ta tanimli ve alarm oradan (UptimeRobot) geliyor;
+        // ayni kurali ikinci kez yazmak, iki kopyanin zamanla ayrismasi demekti.
+        // Burada yalnizca HAM son tarama zamanlari donuyor, yorumu arayuz yapiyor.
+        app.MapGet("/api/dev/durum", async (AppDbContext db, CancellationToken ct) =>
+        {
+            var urunler = await db.Products
+                .GroupBy(_ => 1)
+                .Select(g => new
+                {
+                    toplam = g.Count(),
+                    besinli = g.Count(p => p.NutritionJson != null),
+                    tiklama = g.Sum(p => p.ClickCount),
+                    sonBesinTuru = g.Max(p => p.NutritionCheckedAt),
+                })
+                .FirstOrDefaultAsync(ct);
+
+            var markaSayisi = await db.Brands.CountAsync(ct);
+
+            var aboneler = await db.Subscribers
+                .GroupBy(_ => 1)
+                .Select(g => new
+                {
+                    onayli = g.Count(x => x.IsConfirmed && x.UnsubscribedAt == null),
+                    bekleyen = g.Count(x => !x.IsConfirmed && x.UnsubscribedAt == null),
+                })
+                .FirstOrDefaultAsync(ct);
+
+            // Kaynak birimi COALESCE(Seller, Brand.Name) - saglik ucuyla ayni
+            // tanim. En eskiden baslayarak ilk 12 kaynak yeterli; panel bir
+            // izleme araci degil, hizli bakis.
+            var kaynaklar = await db.Products
+                .Where(p => p.LatestScrapedAt != null)
+                .GroupBy(p => p.Seller ?? p.Brand!.Name)
+                .Select(g => new { kaynak = g.Key, sonTarama = g.Max(p => p.LatestScrapedAt) })
+                .OrderBy(x => x.sonTarama)
+                .Take(12)
+                .ToListAsync(ct);
+
+            var gunOnce = DateTimeOffset.UtcNow.AddDays(-1);
+            var olayOzeti = await db.SecurityEvents
+                .Where(x => x.OccurredAt >= gunOnce)
+                .GroupBy(x => x.Kind)
+                .Select(g => new { kind = g.Key, count = g.Count() })
+                .ToListAsync(ct);
+
+            return Results.Ok(new
+            {
+                urun = new
+                {
+                    toplam = urunler?.toplam ?? 0,
+                    besinli = urunler?.besinli ?? 0,
+                    markaSayisi,
+                },
+                tiklamaToplam = urunler?.tiklama ?? 0,
+                besin = new
+                {
+                    sonTur = urunler?.sonBesinTuru,
+                    siradakiTur = urunler?.sonBesinTuru?.AddDays(2),
+                },
+                abone = new
+                {
+                    onayli = aboneler?.onayli ?? 0,
+                    bekleyen = aboneler?.bekleyen ?? 0,
+                },
+                kaynaklar,
+                sonGunOlaylari = olayOzeti,
+            });
+        }).RequireAdminKey(adminApiKey);
+
         // Kupon listesi - panelin duzenleme ekrani icin.
         // Genel /api/coupons ucu YALNIZCA aktif ve suresi gecmemis kuponlari
         // donduruyor (ziyaretcinin gormesi gereken bu). Panelde pasif ve

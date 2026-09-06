@@ -1,0 +1,244 @@
+/* Panel bilerek sade: site kabuğunu (SiteHeader / alt çubuk) kullanmıyor.
+   Burası ziyaretçi sayfası değil, bir araç ekranı — menüler ve pazarlama
+   öğeleri yalnızca yer kaplardı. Renkler yine sitenin tokenlarından geliyor,
+   böylece tema değişirse panel de birlikte değişiyor. */
+
+.yonetim {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 4rem;
+  color: var(--noc-text);
+}
+
+.ust {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.ust h1 {
+  font-size: 1.35rem;
+  margin: 0;
+}
+
+.cikis,
+.sekmeler button,
+.suzgec button {
+  background: var(--noc-surface);
+  color: var(--noc-text);
+  border: 1px solid color-mix(in srgb, var(--noc-text) 18%, transparent);
+  border-radius: 8px;
+  padding: 0.4rem 0.8rem;
+  cursor: pointer;
+  font: inherit;
+}
+
+.sekmeler {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.sekmeler button.aktif,
+.suzgec button.aktif {
+  background: var(--noc-accent);
+  color: var(--noc-bg);
+  border-color: transparent;
+}
+
+/* --- giriş --- */
+.giris {
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  background: var(--noc-surface);
+  padding: 1.25rem;
+  border-radius: 12px;
+}
+
+.giris input,
+.kupon-form input,
+.kupon-form select {
+  background: var(--noc-bg);
+  color: var(--noc-text);
+  border: 1px solid color-mix(in srgb, var(--noc-text) 20%, transparent);
+  border-radius: 8px;
+  padding: 0.5rem 0.7rem;
+  font: inherit;
+  width: 100%;
+}
+
+.giris button[type='submit'],
+.kupon-form button[type='submit'] {
+  background: var(--noc-accent);
+  color: var(--noc-bg);
+  border: none;
+  border-radius: 8px;
+  padding: 0.55rem 1rem;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+}
+
+.giris button[disabled] {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* --- kartlar --- */
+.kartlar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.kart {
+  background: var(--noc-surface);
+  border-radius: 12px;
+  padding: 0.9rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.kart strong {
+  font-size: 1.6rem;
+  line-height: 1.1;
+}
+
+.etiket {
+  font-size: 0.78rem;
+  opacity: 0.7;
+}
+
+.alt {
+  font-size: 0.78rem;
+  opacity: 0.6;
+}
+
+/* --- bloklar --- */
+.blok {
+  background: var(--noc-surface);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.blok h2 {
+  font-size: 1rem;
+  margin: 0 0 0.6rem;
+}
+
+.suzgec {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 0.9rem;
+}
+
+.suzgec > div {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+/* Tablolar dar ekranda TAŞMIYOR, kendi içinde kayıyor: adresler ve yollar
+   uzun ve kırpılmaları veriyi okunmaz yapardı. */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.87rem;
+  display: block;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--noc-text) 12%, transparent);
+}
+
+th {
+  font-weight: 600;
+  opacity: 0.75;
+}
+
+.tek-aralik {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.82rem;
+}
+
+tr.pasif {
+  opacity: 0.5;
+}
+
+.ozet {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.ozet li {
+  background: var(--noc-bg);
+  border-radius: 8px;
+  padding: 0.4rem 0.7rem;
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+}
+
+/* --- kupon formu --- */
+.kupon-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.7rem;
+  align-items: end;
+  margin-bottom: 1rem;
+}
+
+.kupon-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.82rem;
+}
+
+.kupon-form small {
+  opacity: 0.6;
+}
+
+/* --- yardımcılar --- */
+.baglanti {
+  background: none;
+  border: none;
+  color: var(--noc-accent);
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.bilgi {
+  font-size: 0.88rem;
+  opacity: 0.8;
+}
+
+.not {
+  font-size: 0.78rem;
+  opacity: 0.6;
+  margin: 0.4rem 0 0;
+}
+
+.hata {
+  color: var(--pa-negative, #ff6b6b);
+  font-size: 0.88rem;
+}

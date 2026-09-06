@@ -1,6 +1,7 @@
 <app-update-banner />
 <router-outlet />
 
+@if (!yonetimSayfasi()) {
 <footer class="pa-footer noc-shell border-t border-white/10">
   <div class="pa-container pb-[92px] pt-10 sm:pb-8">
     <div class="grid gap-9 border-b border-white/10 pb-9 md:grid-cols-[1.35fr_1fr_1fr_1.15fr]">
@@ -80,3 +81,4 @@
 <app-comparison-bar />
 <app-cookie-consent-banner />
 <app-mobile-tab-bar />
+}

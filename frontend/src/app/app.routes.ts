@@ -117,6 +117,14 @@ export const routes: Routes = [
     path: 'karsilastir-urun/:pair',
     loadComponent: () => import('./product-comparison-page/product-comparison-page').then((m) => m.ProductComparisonPage),
   },
+  // Yonetim paneli. Siteden HICBIR YERDEN baglanti almiyor ve sitemap'te de
+  // yok; ayrica bilesen noIndex veriyor. Asil koruma bunlar degil, onundeki
+  // Cloudflare Access ve ardindaki oturum cerezi - bunlar yalnizca sayfanin
+  // arama sonuclarinda gorunmemesi icin.
+  {
+    path: 'yonetim',
+    loadComponent: () => import('./yonetim-page/yonetim-page').then((m) => m.YonetimPage),
+  },
   // İçeriği bulunamayan sayfalar buraya `skipLocationChange` ile geliyor
   // (bkz. core/not-found-navigation.ts) — adres çubuğunda istenen adres
   // kalıyor, yalnızca gösterilen bileşen değişiyor.
