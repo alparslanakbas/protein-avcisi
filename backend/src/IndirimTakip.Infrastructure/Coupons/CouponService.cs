@@ -74,7 +74,7 @@ public class CouponService(AppDbContext db)
             // biçimde saklanıyor ki arayüz iki ayrı boşluk durumu kontrol etmesin.
             Code = string.IsNullOrWhiteSpace(request.Code) ? null : request.Code.Trim(),
             Description = request.Description.Trim(),
-            ValidUntil = request.ValidUntil,
+            ValidUntil = UtcyeCevir(request.ValidUntil),
             LastVerifiedAt = DateTimeOffset.UtcNow,
             IsActive = true,
         };
@@ -96,13 +96,29 @@ public class CouponService(AppDbContext db)
         if (request.ValidUntilTemizle == true)
             coupon.ValidUntil = null;
         else if (request.ValidUntil is not null)
-            coupon.ValidUntil = request.ValidUntil;
+            coupon.ValidUntil = UtcyeCevir(request.ValidUntil);
         if (request.IsActive is not null) coupon.IsActive = request.IsActive.Value;
 
         await db.SaveChangesAsync(cancellationToken);
 
         return ToDto(coupon, coupon.Brand?.Name);
     }
+
+    /// <summary>Tarihi UTC'ye çevirir.</summary>
+    /// <remarks>
+    /// <b>ZORUNLU.</b> Npgsql, <c>timestamp with time zone</c> kolonuna
+    /// yalnızca offset'i 0 olan bir <see cref="DateTimeOffset"/> yazabiliyor;
+    /// Türkiye saatiyle ("+03:00") gelen bir tarih
+    /// <c>"only offset 0 (UTC) is supported"</c> ile PATLIYOR ve istek 500
+    /// dönüyor. 7 Eylül'de canlıda yaşandı.
+    ///
+    /// Tuzak, gönderenin biçimine bağlı olduğu için sinsi: tarayıcının
+    /// <c>&lt;input type="date"&gt;</c> alanı offset'siz ("2026-12-31")
+    /// gönderdiği için panel üzerinden hata GÖRÜNMÜYOR, ama aynı ucu bir
+    /// betikten ya da farklı bir istemciden çağırmak patlatıyor.
+    /// </remarks>
+    private static DateTimeOffset? UtcyeCevir(DateTimeOffset? deger) =>
+        deger?.ToUniversalTime();
 
     private static CouponDto ToDto(Coupon coupon, string? brandName) =>
         new(
