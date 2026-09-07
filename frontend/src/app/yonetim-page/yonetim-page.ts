@@ -71,6 +71,15 @@ export class YonetimPage implements OnInit {
   });
   readonly kuponMesaji = signal<string | null>(null);
 
+  /** Satır içi düzenlenen kupon; null ise düzenleme kapalı. */
+  readonly duzenlenenKupon = signal<{
+    id: number;
+    code: string;
+    description: string;
+    validUntil: string;
+  } | null>(null);
+  readonly kuponKaydediliyor = signal(false);
+
   readonly gorunurlukGorunumu = signal<GorunurlukGorunumu>('markalar');
   readonly markalar = signal<YonetimMarka[]>([]);
   readonly markalarYukleniyor = signal(false);
@@ -186,6 +195,7 @@ export class YonetimPage implements OnInit {
         this.durum.set(null);
         this.olaylar.set(null);
         this.kuponlar.set([]);
+        this.duzenlenenKupon.set(null);
         this.markalar.set([]);
         this.urunler.set([]);
         this.markalarIlkKezYuklendi = false;
@@ -204,7 +214,7 @@ export class YonetimPage implements OnInit {
   durumYukle(): void {
     this.api.durum().subscribe({
       next: (d) => this.durum.set(d),
-      error: () => this.hata.set('Durum bilgisi alınamadı.'),
+      error: (e) => this.hata.set(this.hataMetni(e, 'Durum bilgisi alınamadı.')),
     });
   }
 
@@ -212,14 +222,14 @@ export class YonetimPage implements OnInit {
     this.suzulenAdres.set(null);
     this.api.olaylar(this.olayGun(), this.olayTur()).subscribe({
       next: (o) => this.olaylar.set(o),
-      error: () => this.hata.set('Olaylar alınamadı.'),
+      error: (e) => this.hata.set(this.hataMetni(e, 'Olaylar alınamadı.')),
     });
   }
 
   kuponlariYukle(): void {
     this.api.kuponlar().subscribe({
       next: (k) => this.kuponlar.set(k),
-      error: () => this.hata.set('Kuponlar alınamadı.'),
+      error: (e) => this.hata.set(this.hataMetni(e, 'Kuponlar alınamadı.')),
     });
   }
 
@@ -243,6 +253,87 @@ export class YonetimPage implements OnInit {
     });
   }
 
+  kuponDuzenlemeBaslat(kupon: Kupon): void {
+    this.kuponMesaji.set(null);
+    this.duzenlenenKupon.set({
+      id: kupon.id,
+      code: kupon.code ?? '',
+      description: kupon.description,
+      // <input type="date"> yalnızca YYYY-MM-DD kabul ediyor; API tam
+      // zaman damgası döndürdüğü için kırpılıyor.
+      validUntil: kupon.validUntil ? kupon.validUntil.slice(0, 10) : '',
+    });
+  }
+
+  kuponDuzenlemeIptal(): void {
+    if (this.kuponKaydediliyor()) return;
+    this.duzenlenenKupon.set(null);
+  }
+
+  kuponAlanGuncelle(alan: 'code' | 'description' | 'validUntil', deger: string): void {
+    const mevcut = this.duzenlenenKupon();
+    if (!mevcut) return;
+    this.duzenlenenKupon.set({ ...mevcut, [alan]: deger });
+  }
+
+  kuponDuzenlemeKaydet(): void {
+    const d = this.duzenlenenKupon();
+    if (!d) return;
+
+    if (!d.description.trim()) {
+      this.kuponMesaji.set('Açıklama boş olamaz.');
+      return;
+    }
+
+    this.kuponKaydediliyor.set(true);
+    this.api
+      .kuponGuncelle(d.id, {
+        // BOŞ METİN gönderiliyor, null DEĞİL. Bu uçta null "bu alana
+        // dokunma" demek; kullanıcı kodu silmek isteyip alanı boşalttığında
+        // null göndersek kod olduğu gibi kalır ve "kaydettim ama değişmedi"
+        // olurdu. Boş metin backend'de kodu gerçekten siliyor.
+        code: d.code.trim(),
+        description: d.description.trim(),
+        validUntil: d.validUntil || null,
+        // Tarih için boş metin diye bir şey yok, açık bayrak gerekiyor.
+        validUntilTemizle: d.validUntil ? undefined : true,
+        // isActive BİLEREK gönderilmiyor: metni düzeltmek yayın durumunu
+        // değiştirmemeli.
+      })
+      .subscribe({
+        next: () => {
+          this.kuponKaydediliyor.set(false);
+          this.duzenlenenKupon.set(null);
+          this.kuponMesaji.set('Kupon güncellendi.');
+          this.kuponlariYukle();
+        },
+        error: (e) => {
+          this.kuponKaydediliyor.set(false);
+          this.kuponMesaji.set(this.hataMetni(e, 'Kupon güncellenemedi.'));
+        },
+      });
+  }
+
+  /**
+   * Hata kodunu kullanıcının anlayacağı bir cümleye çevirir.
+   *
+   * NEDEN: panel her başarısızlıkta "500" diyordu. Kullanıcı bir deploy
+   * sırasında 502 aldı (backend yenilenirken üç saniyelik pencere) ama
+   * ekranda 500 yazdığı için kalıcı bir arıza sandı. Geçici olanı kalıcı
+   * sanmak, olmayan bir hatayı aramaya yol açıyor.
+   */
+  private hataMetni(e: unknown, varsayilan: string): string {
+    const kod = (e as { status?: number } | null)?.status;
+
+    if (kod === 0) return 'Sunucuya ulaşılamadı. Bağlantını kontrol et.';
+    if (kod === 401) return 'Oturum kapandı. Sayfayı yenileyip tekrar gir.';
+    if (kod === 429) return 'Çok fazla istek gönderildi, biraz bekle.';
+    if (kod === 502 || kod === 503 || kod === 504)
+      return 'Sunucu şu an güncelleniyor. Birkaç saniye sonra tekrar dene.';
+
+    return kod ? varsayilan + ' (kod ' + kod + ')' : varsayilan;
+  }
+
   kuponDurumDegistir(kupon: Kupon): void {
     this.api
       .kuponGuncelle(kupon.id, {
@@ -253,7 +344,7 @@ export class YonetimPage implements OnInit {
       })
       .subscribe({
         next: () => this.kuponlariYukle(),
-        error: () => this.kuponMesaji.set('Kupon güncellenemedi.'),
+        error: (e) => this.kuponMesaji.set(this.hataMetni(e, 'Kupon güncellenemedi.')),
       });
   }
 

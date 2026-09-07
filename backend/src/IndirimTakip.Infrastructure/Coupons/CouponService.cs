@@ -17,7 +17,17 @@ public record CreateCouponRequest(
 
 // IsActive dahil — süresi geçen/yanlış çıkan bir kuponu deaktive etmenin
 // API üzerinden hiçbir yolu yoktu, sadece doğrudan DB erişimiyle mümkündü.
-public record UpdateCouponRequest(string? Code, string? Description, DateTimeOffset? ValidUntil, bool? IsActive);
+// ValidUntilTemizle NEDEN AYRI BIR ALAN: bu uçta null "dokunma" demek,
+// "boşalt" demek değil. Kod için sorun yok — boş METİN göndermek kodu
+// siliyor. Ama tarih alanında boş metin diye bir şey yok, dolayısıyla
+// süresi olan bir kuponu tekrar "süresiz" yapmanın hiçbir yolu yoktu.
+// Açık bir bayrak, sessizce çalışmayan bir alandan iyidir.
+public record UpdateCouponRequest(
+    string? Code,
+    string? Description,
+    DateTimeOffset? ValidUntil,
+    bool? IsActive,
+    bool? ValidUntilTemizle = null);
 
 public class CouponService(AppDbContext db)
 {
@@ -83,7 +93,10 @@ public class CouponService(AppDbContext db)
         if (request.Code is not null)
             coupon.Code = string.IsNullOrWhiteSpace(request.Code) ? null : request.Code.Trim();
         if (request.Description is not null) coupon.Description = request.Description;
-        if (request.ValidUntil is not null) coupon.ValidUntil = request.ValidUntil;
+        if (request.ValidUntilTemizle == true)
+            coupon.ValidUntil = null;
+        else if (request.ValidUntil is not null)
+            coupon.ValidUntil = request.ValidUntil;
         if (request.IsActive is not null) coupon.IsActive = request.IsActive.Value;
 
         await db.SaveChangesAsync(cancellationToken);

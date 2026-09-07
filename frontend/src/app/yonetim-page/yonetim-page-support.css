@@ -590,3 +590,55 @@
     width: 100%;
   }
 }
+
+/* Tablo satırındaki eylemler.
+   Düz bağlantı (.baglanti) fazla sade duruyordu ve tıklanabilir olduğu
+   yeterince belli değildi; artık kenarlıklı küçük butonlar. */
+.satir-eylemleri {
+  display: inline-flex;
+  gap: 7px;
+  white-space: nowrap;
+}
+.satir-eylem {
+  min-height: 32px;
+  padding-inline: 11px;
+  border: 1px solid var(--noc-divider);
+  border-radius: 8px;
+  background: var(--noc-card);
+  color: var(--noc-text);
+  font-size: 11px;
+  font-weight: 650;
+}
+.satir-eylem:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--noc-accent) 60%, var(--noc-divider));
+  color: var(--noc-accent);
+}
+.satir-eylem.birincil {
+  border-color: transparent;
+  background: var(--noc-accent);
+  color: var(--noc-bg);
+}
+.satir-eylem:disabled {
+  opacity: 0.55;
+}
+
+/* Satır içi düzenleme */
+tr.duzenleniyor {
+  background: color-mix(in srgb, var(--noc-accent) 7%, transparent);
+}
+.satir-girdi {
+  width: 100%;
+  min-width: 110px;
+  min-height: 32px;
+  padding-inline: 9px;
+  border: 1px solid var(--noc-divider);
+  border-radius: 7px;
+  background: var(--noc-bg);
+  color: var(--noc-text);
+  font-size: 12px;
+}
+.satir-girdi:focus {
+  border-color: var(--noc-accent);
+  outline: 0;
+  box-shadow: 0 0 0 3px var(--pa-focus);
+}

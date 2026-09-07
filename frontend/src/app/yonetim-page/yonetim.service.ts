@@ -125,7 +125,17 @@ export interface KuponGuncelleme {
   code: string | null;
   description: string;
   validUntil: string | null;
-  isActive: boolean;
+  /**
+   * Gönderilmezse kuponun yayın durumu DEĞİŞMİYOR — backend yalnızca
+   * gelen alanları güncelliyor. Düzenleme sırasında bilerek atlanıyor:
+   * metni düzeltmek, pasif bir kuponu yanlışlıkla yayına almamalı.
+   */
+  isActive?: boolean;
+  /**
+   * Bitiş tarihini SİLMEK için. `validUntil: null` göndermek yetmiyor:
+   * backend'de null "bu alana dokunma" anlamına geliyor, "boşalt" değil.
+   */
+  validUntilTemizle?: boolean;
 }
 
 export interface YonetimMarka {

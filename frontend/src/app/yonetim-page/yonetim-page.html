@@ -410,22 +410,90 @@
               </thead>
               <tbody>
                 @for (k of kuponlar(); track k.id) {
-                  <tr [class.pasif]="!k.isActive">
-                    <td>
-                      <span class="satir-durumu" [class.gizli]="!k.isActive"
-                        ><span></span>{{ k.isActive ? 'Aktif' : 'Pasif' }}</span
-                      >
-                    </td>
-                    <td>{{ k.brandName || k.seller }}</td>
-                    <td class="tek-aralik">{{ k.code || 'kod yok' }}</td>
-                    <td>{{ k.description }}</td>
-                    <td>{{ k.validUntil ? tarih(k.validUntil) : 'süresiz' }}</td>
-                    <td>
-                      <button type="button" class="baglanti" (click)="kuponDurumDegistir(k)">
-                        {{ k.isActive ? 'Pasife al' : 'Aktife al' }}
-                      </button>
-                    </td>
-                  </tr>
+                  @if (duzenlenenKupon()?.id === k.id) {
+                    <!-- Satır içi düzenleme. Hedef (marka/satıcı) DEĞİŞTİRİLEMİYOR
+                         ve bu bilinçli: backend de onu güncellemiyor, düzenlenebilir
+                         göstermek kaydedilmeyen bir alan olurdu. -->
+                    <tr class="duzenleniyor">
+                      <td>
+                        <span class="satir-durumu" [class.gizli]="!k.isActive"
+                          ><span></span>{{ k.isActive ? 'Aktif' : 'Pasif' }}</span
+                        >
+                      </td>
+                      <td>{{ k.brandName || k.seller }}</td>
+                      <td>
+                        <input
+                          class="satir-girdi tek-aralik"
+                          [ngModel]="duzenlenenKupon()!.code"
+                          (ngModelChange)="kuponAlanGuncelle('code', $event)"
+                          [ngModelOptions]="{ standalone: true }"
+                          placeholder="kod yok"
+                          aria-label="Kupon kodu"
+                        />
+                      </td>
+                      <td>
+                        <input
+                          class="satir-girdi"
+                          [ngModel]="duzenlenenKupon()!.description"
+                          (ngModelChange)="kuponAlanGuncelle('description', $event)"
+                          [ngModelOptions]="{ standalone: true }"
+                          aria-label="Açıklama"
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="date"
+                          class="satir-girdi"
+                          [ngModel]="duzenlenenKupon()!.validUntil"
+                          (ngModelChange)="kuponAlanGuncelle('validUntil', $event)"
+                          [ngModelOptions]="{ standalone: true }"
+                          aria-label="Bitiş tarihi"
+                        />
+                      </td>
+                      <td>
+                        <div class="satir-eylemleri">
+                          <button
+                            type="button"
+                            class="satir-eylem birincil"
+                            [disabled]="kuponKaydediliyor()"
+                            (click)="kuponDuzenlemeKaydet()"
+                          >
+                            {{ kuponKaydediliyor() ? 'Kaydediliyor…' : 'Kaydet' }}
+                          </button>
+                          <button
+                            type="button"
+                            class="satir-eylem"
+                            [disabled]="kuponKaydediliyor()"
+                            (click)="kuponDuzenlemeIptal()"
+                          >
+                            Vazgeç
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  } @else {
+                    <tr [class.pasif]="!k.isActive">
+                      <td>
+                        <span class="satir-durumu" [class.gizli]="!k.isActive"
+                          ><span></span>{{ k.isActive ? 'Aktif' : 'Pasif' }}</span
+                        >
+                      </td>
+                      <td>{{ k.brandName || k.seller }}</td>
+                      <td class="tek-aralik">{{ k.code || 'kod yok' }}</td>
+                      <td>{{ k.description }}</td>
+                      <td>{{ k.validUntil ? tarih(k.validUntil) : 'süresiz' }}</td>
+                      <td>
+                        <div class="satir-eylemleri">
+                          <button type="button" class="satir-eylem" (click)="kuponDuzenlemeBaslat(k)">
+                            Düzenle
+                          </button>
+                          <button type="button" class="satir-eylem" (click)="kuponDurumDegistir(k)">
+                            {{ k.isActive ? 'Pasife al' : 'Aktife al' }}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  }
                 }
               </tbody>
             </table>
