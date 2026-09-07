@@ -48,6 +48,26 @@ export class YonetimService {
   kuponGuncelle(id: number, kupon: KuponGuncelleme): Observable<unknown> {
     return this.http.put(`${this.base}/coupons/${id}`, kupon);
   }
+
+  markalar(): Observable<YonetimMarka[]> {
+    return this.http.get<YonetimMarka[]>(`${this.base}/markalar`);
+  }
+
+  markaDurumuGuncelle(id: number, isActive: boolean): Observable<YonetimDurumGuncelleme> {
+    return this.http.put<YonetimDurumGuncelleme>(`${this.base}/markalar/${id}`, { isActive });
+  }
+
+  urunler(ara: string, yalnizGizli: boolean): Observable<YonetimUrun[]> {
+    const params = new URLSearchParams();
+    if (ara.trim()) params.set('ara', ara.trim());
+    if (yalnizGizli) params.set('yalnizGizli', 'true');
+    const sorgu = params.toString();
+    return this.http.get<YonetimUrun[]>(`${this.base}/urunler${sorgu ? `?${sorgu}` : ''}`);
+  }
+
+  urunDurumuGuncelle(id: number, isActive: boolean): Observable<YonetimDurumGuncelleme> {
+    return this.http.put<YonetimDurumGuncelleme>(`${this.base}/urunler/${id}`, { isActive });
+  }
 }
 
 export interface Durum {
@@ -105,5 +125,28 @@ export interface KuponGuncelleme {
   code: string | null;
   description: string;
   validUntil: string | null;
+  isActive: boolean;
+}
+
+export interface YonetimMarka {
+  id: number;
+  name: string;
+  isActive: boolean;
+  urunSayisi: number;
+  gizliUrun: number;
+}
+
+export interface YonetimUrun {
+  id: number;
+  name: string;
+  marka: string;
+  seller: string | null;
+  isActive: boolean;
+  latestPrice: number | null;
+}
+
+export interface YonetimDurumGuncelleme {
+  id: number;
+  name: string;
   isActive: boolean;
 }
