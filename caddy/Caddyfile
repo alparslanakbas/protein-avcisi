@@ -67,6 +67,29 @@
 		format filter {
 			wrap json
 			fields {
+				# ABONE JETONLARI MASKELENIYOR.
+				#
+				# Abonelik onayi, listeden cikma ve favori kurtarma baglantilari
+				# jetonu ADRESTE tasiyor:
+				#   /api/subscribe/confirm/<jeton>
+				#   /api/subscribe/unsubscribe/<jeton>
+				#   /api/favorites?token=<jeton>
+				#   /favorilerim?recover=<jeton>
+				# O jeton kisinin KIMLIGI: takip listesini okumaya ve aboneligini
+				# iptal etmeye yariyor. Maskelenmeseydi 120 gun saklanan bir
+				# dosyada duracakti ve log bir gun delil olarak disari verilirse
+				# abonelerin kimlikleri de verilmis olurdu.
+				#
+				# 7 Eylul'de olculdu: logda 6 adet "favorites?token=" kaydi vardi.
+				# Ayni aile Cf-Access-Jwt-Assertion icin daha once kapatilmisti,
+				# ama yalnizca BASLIK dusunulmustu; adreste tasinanlar atlanmisti.
+				#
+				# Yerine gecen metin "$1-GIZLENDI" ve tire BILEREK: Go'nun regexp
+				# degistirmesinde "$1GIZLENDI" yazmak "1GIZLENDI" adli bir grup
+				# aranmasina yol acar ve sessizce BOS string uretir. Tire grup
+				# adini sonlandiriyor. Suslu parantezli ${1} yazimi da Caddyfile'da
+				# yer tutucu sanilabilecegi icin kullanilmadi.
+				request>uri regexp "(token=|recover=|confirm/|unsubscribe/)[0-9a-f]+" "$1-GIZLENDI"
 				resp_headers delete
 				request>tls delete
 				request>headers>Cf-Access-Jwt-Assertion delete
