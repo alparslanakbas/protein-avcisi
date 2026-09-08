@@ -145,4 +145,61 @@ public class NonSupplementProductFilterTests
     {
         Assert.True(NonSupplementProductFilter.IsAccessoryOrApparel("Protein Paketi - Spor Çantası Hediyeli"));
     }
+
+    /// <summary>
+    /// 8 Eylül'de canlıda görülen dört sızıntı. Listede giysilerin İNGİLİZCE
+    /// adları vardı (t-shirt, hoodie, sweatshirt) ama Türkçeleri yoktu;
+    /// kaynak Türkçe yazınca hiçbiri tutmadı.
+    /// </summary>
+    [Theory]
+    [InlineData("Just Raw Edge Series Oversize Kolsuz Kapşonlu")]
+    [InlineData("GRİZZONE İMZALI OVERSIZE JOGGERS")]
+    [InlineData("Grizzone Joggers")]
+    [InlineData("Dijital Ölçü Kaşığı")]
+    // Aynı türün kaçmış olabilecek diğer yazımları — kalıp ürünün TÜRÜNE
+    // göre yazıldığı için gördüğüm tek biçimle sınırlı kalmamalı.
+    [InlineData("Hardline Kapüşonlu Sweatshirt")]
+    [InlineData("Space Oversize Tişört")]
+    [InlineData("Grizzone Kadın Tayt")]
+    [InlineData("Nois Sweatpants Siyah")]
+    public void TurkceGiysiVeAksesuarAdlariEleniyor(string ad)
+    {
+        Assert.True(NonSupplementProductFilter.IsAccessoryOrApparel(ad));
+    }
+
+    /// <summary>
+    /// "OVERSIZE" BİLEREK kalıba girmedi: beden sıfatı, ürün türü değil.
+    /// Bir kilo aldırıcının adında geçmesi mümkün ve o ürün elenmemeli —
+    /// gerçek giysiler zaten "kolsuz"/"joggers" gibi TÜR kelimeleriyle
+    /// yakalanıyor.
+    /// </summary>
+    [Fact]
+    public void OversizeTekBasinaElemiyor()
+    {
+        Assert.False(NonSupplementProductFilter.IsAccessoryOrApparel("Oversize Mass Gainer 3000 gr"));
+    }
+
+    /// <summary>
+    /// Yanlış pozitif taramasında çıkan gerçek tuzak: buradaki "Kap."
+    /// KAPSÜL kısaltması, kap değil. Genel bir "kap" kalıbı bu takviyeyi
+    /// sessizce elerdi — kalıba bu yüzden girmedi.
+    /// </summary>
+    [Fact]
+    public void KapsulKisaltmasiElenmiyor()
+    {
+        Assert.False(NonSupplementProductFilter.IsAccessoryOrApparel(
+            "Bağışıklık Paketi-1 (ZMA+Arginine-Multivitamin 90 Kap.)"));
+    }
+
+    /// <summary>
+    /// "kapşonlu" kalıbı kapsülü yakalamamalı: fold sonrası "kapsul",
+    /// kalıp ise "kap(u)?son..." — çakışma yok, ama bu sınır teste bağlı.
+    /// </summary>
+    [Theory]
+    [InlineData("Hardline Omega 3 100 Kapsül")]
+    [InlineData("Multivitamin 60 Kapsul")]
+    public void KapsulUrunleriElenmiyor(string ad)
+    {
+        Assert.False(NonSupplementProductFilter.IsAccessoryOrApparel(ad));
+    }
 }

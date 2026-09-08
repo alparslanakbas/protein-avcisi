@@ -148,8 +148,33 @@ public static partial class NonSupplementProductFilter
     // "Flavor Chocolate" BİLİNÇLİ OLARAK eklenmedi: tek bir üründe geçiyor ve
     // "flavor/chocolate" gibi genel kelimeler gerçek aromalı ürünleri elerdi.
     // Bir çeşni ürününü kaçırmak, bir protein tozunu elemekten iyidir.
+    // 8 EYLÜL: GİYSİ GRUBUNUN TÜRKÇESİ EKSİKTİ. Kullanıcı canlıda bir ürün
+    // gördü — "Just Raw Edge Series Oversize Kolsuz Kapşonlu"
+    // (provitamin.com.tr). Listede İngilizce giysi adları (t-shirt, hoodie,
+    // sweatshirt) vardı ama Türkçe karşılıkları yoktu; kaynak Türkçe yazdığı
+    // için hiçbiri tutmadı.
+    //
+    // Tek örneği düzeltmek yerine katalog tarandı, DÖRT sızıntı çıktı:
+    //   1986 Just Raw Edge Series Oversize Kolsuz Kapşonlu (provitamin)
+    //   3208 GRİZZONE İMZALI OVERSIZE JOGGERS
+    //   3216 Grizzone Joggers
+    //    294 Dijital Ölçü Kaşığı (Hardline)
+    // Sonuncusu giysi değil ama aynı boşluktan geçmiş bir aksesuar.
+    //
+    // "OVERSIZE" BİLİNÇLİ OLARAK EKLENMEDİ, oysa iki üründe de geçiyor.
+    // O bir BEDEN sıfatı, ürün türü değil — bir kilo aldırıcının adında
+    // "OVERSIZE" geçmesi gayet mümkün. "performans" ve "pirinç" için verilen
+    // kararın aynısı. İki ürün de zaten "kolsuz"/"joggers" ile eleniyor,
+    // yani kalıp ürünün TÜRÜNE bakıyor, gördüğüm sıfata değil.
+    //
+    // YANLIŞ POZİTİF TARAMASI ÖNCE YAPILDI (4.918 adın tamamı): aday
+    // kelimeler yalnızca yukarıdaki dört ürünü yakalıyor, başka hiçbir şeyi.
+    // Tarama sırasında gerçek bir tuzak görüldü ve kalıba GİRMEDİ:
+    // "Bağışıklık Paketi-1 (ZMA+Arginine-Multivitamin 90 Kap.)" — oradaki
+    // "Kap." KAPSÜL kısaltması, kap değil. Genel bir "kap" kalıbı gerçek bir
+    // takviyeyi sessizce elerdi. (Testi var: KapsulKisaltmasiElenmiyor.)
     [GeneratedRegex(
-        @"\b(t-?shirt|sweatshirt|hoodie|sapka[a-z]*|beyzbol|pillbox|pill ?box|powder ?box|saklama kabi|bileklik[a-z]*|havlu[a-z]*|buff|atlet(i|ler|leri)?|anahtarlik[a-z]*|maskot|huni[a-z]*|shaker[a-z]*|sort[a-z]*|korse[a-z]*|esofman[a-z]*|canta(si|lar|lari)?|handbag|direnc band[a-z]*|loop band[a-z]*|strap[a-z]*|wrist wrap[a-z]*|agirlik kemer[a-z]*|dip belt[a-z]*|eldiven[a-z]*|hap kutusu|bakim seti|seyahat seti|kase(si|ler|leri)?|kuru yemislik|basmati|himalaya tuzu|hardal|sriracha|sweet drops|sos(u|lar|lari)?|ketcap|ketchup|garlic powder|hot chili|cajun|chicken mix|vegetable mix|bbq|sprey yag[i]?|tatlandirici)\b",
+        @"\b(t-?shirt|tisort[a-z]*|sweatshirt|sweatpant[a-z]*|hoodie|kap[u]?son[a-z]*|kolsuz|jogger[a-z]*|tayt|legging[a-z]*|sapka[a-z]*|beyzbol|pillbox|pill ?box|powder ?box|saklama kabi|bileklik[a-z]*|havlu[a-z]*|buff|atlet(i|ler|leri)?|anahtarlik[a-z]*|maskot|huni[a-z]*|shaker[a-z]*|sort[a-z]*|korse[a-z]*|esofman[a-z]*|canta(si|lar|lari)?|handbag|direnc band[a-z]*|loop band[a-z]*|strap[a-z]*|wrist wrap[a-z]*|agirlik kemer[a-z]*|dip belt[a-z]*|eldiven[a-z]*|hap kutusu|olcu kasig[a-z]*|olcek kasig[a-z]*|bakim seti|seyahat seti|kase(si|ler|leri)?|kuru yemislik|basmati|himalaya tuzu|hardal|sriracha|sweet drops|sos(u|lar|lari)?|ketcap|ketchup|garlic powder|hot chili|cajun|chicken mix|vegetable mix|bbq|sprey yag[i]?|tatlandirici)\b",
         RegexOptions.IgnoreCase)]
     private static partial Regex AccessoryKeywordRegex();
 
@@ -173,7 +198,7 @@ public static partial class NonSupplementProductFilter
     /// Mevcut kural: "hediyeli de olsa çanta çantadır".
     /// Kalıp ASCII, çünkü ad zaten ASCII'ye indirgenmiş olarak geliyor.
     /// </summary>
-    [GeneratedRegex(@"\b(t-?shirt|sweatshirt|hoodie|sapka[a-z]*|sort[a-z]*|korse[a-z]*|esofman[a-z]*|canta(si|lar|lari)?|handbag|atlet(i|ler|leri)?|maskot)\b",
+    [GeneratedRegex(@"\b(t-?shirt|tisort[a-z]*|sweatshirt|sweatpant[a-z]*|hoodie|kap[u]?son[a-z]*|kolsuz|jogger[a-z]*|tayt|legging[a-z]*|sapka[a-z]*|sort[a-z]*|korse[a-z]*|esofman[a-z]*|canta(si|lar|lari)?|handbag|atlet(i|ler|leri)?|maskot)\b",
         RegexOptions.IgnoreCase)]
     private static partial Regex ApparelOrBagRegex();
 
