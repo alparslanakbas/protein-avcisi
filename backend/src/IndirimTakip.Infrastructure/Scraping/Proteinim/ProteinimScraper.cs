@@ -34,6 +34,7 @@ public sealed class ProteinimScraper(HttpClient httpClient, ILogger<ProteinimScr
     public async Task<IReadOnlyList<ScrapedProduct>> ScrapeAsync(CancellationToken cancellationToken = default)
     {
         var result = new List<ScrapedProduct>();
+        var eksikGorseller = new List<(int Sira, int VaryasyonId)>();
         var filtered = 0;
 
         for (var page = 1; page <= 20; page++)
@@ -51,9 +52,17 @@ public sealed class ProteinimScraper(HttpClient httpClient, ILogger<ProteinimScr
                 count++;
                 var product = ParseProduct(node);
                 if (product is null)
+                {
                     filtered++;
-                else
-                    result.Add(product);
+                    continue;
+                }
+
+                // Görseli olmayan ürünün varyasyon kimliği not ediliyor;
+                // istek sonra, tek seferde atılıyor.
+                if (product.ImageUrl is null && IlkVaryasyonId(node) is { } varyasyonId)
+                    eksikGorseller.Add((result.Count, varyasyonId));
+
+                result.Add(product);
             }
 
             if (count < PageSize)
@@ -62,6 +71,8 @@ public sealed class ProteinimScraper(HttpClient httpClient, ILogger<ProteinimScr
 
         if (result.Count == 0)
             throw new InvalidOperationException("proteinim: hiç ürün alınamadı.");
+
+        await GorselleriVaryasyondanTamamlaAsync(result, eksikGorseller, cancellationToken);
 
         logger.LogInformation(
             "proteinim: {Found} ürün alındı, {Filtered} takviye dışı süzüldü.", result.Count, filtered);
@@ -100,14 +111,7 @@ public sealed class ProteinimScraper(HttpClient httpClient, ILogger<ProteinimScr
                 brand = BrandNameNormalizer.Normalize(raw);
         }
 
-        string? image = null;
-        if (node.TryGetProperty("images", out var images)
-            && images.ValueKind == JsonValueKind.Array
-            && images.GetArrayLength() > 0
-            && images[0].TryGetProperty("src", out var src))
-        {
-            image = src.GetString();
-        }
+        var image = IlkGorsel(node);
 
         bool? inStock = node.TryGetProperty("is_in_stock", out var stock)
             && stock.ValueKind is JsonValueKind.True or JsonValueKind.False
@@ -130,6 +134,97 @@ public sealed class ProteinimScraper(HttpClient httpClient, ILogger<ProteinimScr
             BrandName: brand,
             InStock: inStock,
             Seller: SellerName);
+    }
+
+    /// <summary>Kayıttaki ilk görselin adresi; yoksa null.</summary>
+    private static string? IlkGorsel(JsonElement node)
+    {
+        if (node.TryGetProperty("images", out var images)
+            && images.ValueKind == JsonValueKind.Array
+            && images.GetArrayLength() > 0
+            && images[0].TryGetProperty("src", out var src))
+        {
+            var deger = src.GetString();
+            return string.IsNullOrWhiteSpace(deger) ? null : deger;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Görseli olmayan bir kaydın İLK VARYASYONUNUN kimliği; kayıtta zaten
+    /// görsel varsa ya da varyasyon yoksa null.
+    /// </summary>
+    /// <remarks>
+    /// <b>NEDEN GEREKTİ (8 Eylül).</b> Kullanıcı listede görselsiz ürünler
+    /// gördü. Ölçüldü: kaynağın Store API'si 51 ürünün 13'ünde
+    /// <c>images: []</c> dönüyor — hepsi <c>type: variable</c>, yani ana
+    /// kayda öne çıkan görsel atanmamış, görsel yalnızca varyasyonda duruyor.
+    /// Scraper hatası değildi, kaynağın veri şekli böyle.
+    ///
+    /// <b>NEDEN HTML DEĞİL.</b> Ürün sayfası da görseli taşıyor ama sayfada
+    /// ÖNERİ bloklarındaki BAŞKA ürünlerin görselleri de var — "sayfadaki ilk
+    /// resmi al" yaklaşımı yanlış ürünün resmini yazardı (aynı tuzak
+    /// Grizzone'un besin tablolarında yaşandı). Varyasyon kimliği ürüne
+    /// YAPISAL olarak bağlı, tahmin payı yok. Üstelik varyasyon kaydı küçük
+    /// bir JSON; ürün sayfası ~170 kB.
+    ///
+    /// İstek yalnızca görseli EKSİK kayıtlar için atılıyor: bugün 13 istek,
+    /// kaynak görselleri ana kayda taşırsa kendiliğinden sıfıra iner.
+    /// </remarks>
+    internal static int? IlkVaryasyonId(JsonElement node)
+    {
+        if (IlkGorsel(node) is not null)
+            return null;
+
+        if (!node.TryGetProperty("variations", out var variations)
+            || variations.ValueKind != JsonValueKind.Array
+            || variations.GetArrayLength() == 0)
+        {
+            return null;
+        }
+
+        return variations[0].TryGetProperty("id", out var id) && id.TryGetInt32(out var deger)
+            ? deger
+            : null;
+    }
+
+    private async Task GorselleriVaryasyondanTamamlaAsync(
+        List<ScrapedProduct> urunler,
+        List<(int Sira, int VaryasyonId)> eksikler,
+        CancellationToken cancellationToken)
+    {
+        if (eksikler.Count == 0)
+            return;
+
+        var tamamlanan = 0;
+        foreach (var (sira, varyasyonId) in eksikler)
+        {
+            try
+            {
+                var json = await httpClient.GetStringAsync(
+                    $"wp-json/wc/store/v1/products/{varyasyonId}", cancellationToken);
+
+                using var document = JsonDocument.Parse(json);
+                if (IlkGorsel(document.RootElement) is { } gorsel)
+                {
+                    urunler[sira] = urunler[sira] with { ImageUrl = gorsel };
+                    tamamlanan++;
+                }
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                // Görsel tamamlama TURU DÜŞÜRMEMELİ: fiyat verisi zaten
+                // toplanmış durumda ve asıl değerli olan o. Görselsiz ürün
+                // sitede yer tutucuyla görünüyor, kaybolmuyor.
+                logger.LogWarning(ex,
+                    "proteinim: {VaryasyonId} varyasyonunun görseli alınamadı.", varyasyonId);
+            }
+        }
+
+        logger.LogInformation(
+            "proteinim: görseli olmayan {Toplam} üründen {Tamamlanan} tanesi varyasyondan tamamlandı.",
+            eksikler.Count, tamamlanan);
     }
 
     /// <summary>

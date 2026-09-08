@@ -108,4 +108,52 @@ public class ProteinimScraperTests
 
         Assert.Null(p);
     }
+    /// <summary>
+    /// 8 Eylül: kaynağın Store API'si 51 ürünün 13'ünde <c>images: []</c>
+    /// döndürüyordu (hepsi variable ürün, görsel yalnızca varyasyonda).
+    /// Bu yüzden görselsiz kayıtta varyasyon kimliği okunuyor.
+    /// </summary>
+    [Fact]
+    public void GorselsizKayitta_ilk_varyasyon_kimligi_okunuyor()
+    {
+        using var doc = JsonDocument.Parse("""
+        {
+          "name": "BCAA Xplode Powder",
+          "type": "variable",
+          "images": [],
+          "variations": [ { "id": 314 }, { "id": 315 } ]
+        }
+        """);
+
+        Assert.Equal(314, ProteinimScraper.IlkVaryasyonId(doc.RootElement));
+    }
+
+    /// <summary>
+    /// Görseli OLAN kayıtta ek istek atılmamalı — bugün 13 istek, kaynak
+    /// görselleri ana kayda taşırsa kendiliğinden sıfıra inmeli.
+    /// </summary>
+    [Fact]
+    public void Gorseli_olan_kayitta_varyasyon_istegi_yok()
+    {
+        using var doc = JsonDocument.Parse("""
+        {
+          "name": "Protein Breakfast",
+          "images": [ { "src": "https://proteinim.com/wp-content/uploads/2026/07/14.webp" } ],
+          "variations": [ { "id": 999 } ]
+        }
+        """);
+
+        Assert.Null(ProteinimScraper.IlkVaryasyonId(doc.RootElement));
+    }
+
+    [Fact]
+    public void Varyasyonu_olmayan_gorselsiz_kayit_null_donuyor()
+    {
+        using var doc = JsonDocument.Parse("""
+        { "name": "Basit Urun", "images": [], "variations": [] }
+        """);
+
+        Assert.Null(ProteinimScraper.IlkVaryasyonId(doc.RootElement));
+    }
+
 }
