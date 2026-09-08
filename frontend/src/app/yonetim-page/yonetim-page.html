@@ -349,11 +349,29 @@
             </label>
             <label
               >{{ yeniKupon().hedefTip === 'marka' ? 'Marka adı' : 'Satıcı adresi' }}
+              @if (yeniKupon().hedefTip === 'marka') {
+                <small>Listeden seç</small>
+              }
               <input
                 name="hedef"
                 [ngModel]="yeniKupon().hedef"
                 (ngModelChange)="yeniKupon.set({ ...yeniKupon(), hedef: $event })"
+                [attr.list]="yeniKupon().hedefTip === 'marka' ? 'marka-onerileri' : null"
+                [attr.placeholder]="
+                  yeniKupon().hedefTip === 'marka' ? 'ör. Dr Supplement' : 'ör. protein7.com'
+                "
+                autocomplete="off"
               />
+              <!-- Katalogdaki GERÇEK yazımlar. Marka adı elle yazıldığı için
+                   "DrSupplement" gibi bir yakın-yazım 404 üretiyordu; öneri
+                   kutusu doğru yazımı tek tıkla veriyor. Backend ayrıca
+                   harf/boşluk farkını affediyor, yani bu kutu tek savunma
+                   değil — yalnızca hatayı en baştan önlüyor. -->
+              <datalist id="marka-onerileri">
+                @for (m of markalar(); track m.id) {
+                  <option [value]="m.name"></option>
+                }
+              </datalist>
             </label>
             <label
               >Kod <small>Kodu yoksa boş bırak</small>

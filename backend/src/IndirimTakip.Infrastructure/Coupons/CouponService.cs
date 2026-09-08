@@ -1,3 +1,4 @@
+using IndirimTakip.Infrastructure.Scraping;
 using IndirimTakip.Core.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -57,7 +58,26 @@ public class CouponService(AppDbContext db)
         Brand? brand = null;
         if (!string.IsNullOrWhiteSpace(request.BrandName))
         {
-            brand = await db.Brands.FirstOrDefaultAsync(b => b.Name == request.BrandName.Trim(), cancellationToken);
+            var aranan = request.BrandName.Trim();
+            brand = await db.Brands.FirstOrDefaultAsync(b => b.Name == aranan, cancellationToken);
+
+            if (brand is null)
+            {
+                // BİREBİR EŞLEŞME YETMİYOR. Kupon marka adını ELLE yazarak
+                // ekleniyor ve katalogdaki yazım her zaman akılda kalmıyor:
+                // 8 Eylül'de "DrSupplement" yazıldı, katalogdaki ad
+                // "Dr Supplement" (boşluklu) olduğu için 404 döndü.
+                //
+                // Aynı sorun tarama tarafında ÇOK ÖNCE çözülmüş: FoldBrandName
+                // Türkçe harfleri elle katlıyor, boşluk ve noktayı atıyor,
+                // tireyi koruyor. Kendi kopyasını yazmak yerine o kullanılıyor —
+                // iki kopya zamanla ayrışır ve "tarama buluyor, kupon bulmuyor"
+                // gibi anlaşılmaz bir fark doğardı.
+                var katlanmis = ScrapeIngestionService.FoldBrandName(aranan);
+                brand = (await db.Brands.ToListAsync(cancellationToken))
+                    .FirstOrDefault(b => ScrapeIngestionService.FoldBrandName(b.Name) == katlanmis);
+            }
+
             if (brand is null)
                 return null;
         }

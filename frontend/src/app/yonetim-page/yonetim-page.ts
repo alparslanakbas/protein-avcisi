@@ -206,8 +206,12 @@ export class YonetimPage implements OnInit {
   sekmeSec(yeniSekme: Sekme): void {
     this.sekme.set(yeniSekme);
     this.hata.set(null);
-    if (yeniSekme === 'gorunurluk' && !this.markalarIlkKezYuklendi) {
-      this.markalariYukle();
+    // Kupon sekmesinde de marka listesi lazım: marka adı ELLE yazılıyordu ve
+    // katalogdaki yazımı tutturmak gerekiyordu ("Dr Supplement" mi
+    // "DrSupplement" mi). Öneri kutusu bu tahmini ortadan kaldırıyor.
+    const markaListesiGerekli = yeniSekme === 'gorunurluk' || yeniSekme === 'kuponlar';
+    if (markaListesiGerekli && !this.markalarIlkKezYuklendi) {
+      this.markalariYukle(false);
     }
   }
 
@@ -315,6 +319,31 @@ export class YonetimPage implements OnInit {
   }
 
   /**
+   * Kupon ekleme hatası — BACKEND'İN KENDİ MESAJINI ÖNE ALIYOR.
+   *
+   * Panel önce her başarısızlıkta "Kupon eklenemedi." diyordu. 8 Eylül'de
+   * kullanıcı marka adını "DrSupplement" yazdı, katalogdaki ad
+   * "Dr Supplement" olduğu için backend 404 ve tam olarak
+   * "'DrSupplement' adında marka bulunamadı." döndü — ama panel o cümleyi
+   * çöpe atıp genel mesajı gösterdi. Sebep ekranda yazıyordu ve biz onu
+   * sakladık; kullanıcı neden olduğunu bilemedi.
+   */
+  private kuponEklemeHatasi(e: unknown): string {
+    const yanit = e as { status?: number; error?: unknown } | null;
+
+    // Backend düz metin ya da { message } döndürebiliyor; ikisini de al.
+    const govde = yanit?.error;
+    const mesaj =
+      typeof govde === 'string'
+        ? govde
+        : ((govde as { message?: string } | null)?.message ?? null);
+
+    if (mesaj && mesaj.trim().length > 0) return mesaj.trim();
+    if (yanit?.status === 400) return 'Marka veya satıcıdan yalnızca biri dolu olmalı.';
+    return this.hataMetni(e, 'Kupon eklenemedi.');
+  }
+
+  /**
    * Hata kodunu kullanıcının anlayacağı bir cümleye çevirir.
    *
    * NEDEN: panel her başarısızlıkta "500" diyordu. Kullanıcı bir deploy
@@ -375,12 +404,7 @@ export class YonetimPage implements OnInit {
           });
           this.kuponlariYukle();
         },
-        error: (e) =>
-          this.kuponMesaji.set(
-            e?.status === 400
-              ? 'Marka veya satıcıdan yalnızca biri dolu olmalı.'
-              : 'Kupon eklenemedi.',
-          ),
+        error: (e) => this.kuponMesaji.set(this.kuponEklemeHatasi(e)),
       });
   }
 
