@@ -1,5 +1,6 @@
 using IndirimTakip.Core.Entities;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace IndirimTakip.Infrastructure.Security;
@@ -7,8 +8,22 @@ namespace IndirimTakip.Infrastructure.Security;
 /// <summary>
 /// Güvenlik olaylarını veritabanına yazar.
 /// </summary>
+/// <remarks>
+/// <b>KENDİ KAPSAMINI AÇIYOR — 8 Eylül'de kanıtlanmış bir kayıp yüzünden.</b>
+/// Önceden isteğin kendi <c>AppDbContext</c>'i kullanılıyordu. Kaydedilen
+/// olayların bir türü — 5xx — tam da bir <c>SaveChangesAsync</c> patladığı
+/// için oluşuyor ve o anda bağlam KİRLİ: başarısız varlıklar hâlâ izleniyor.
+/// Aynı bağlamdan kayıt atmak, başarısız yazmayı TEKRAR denemek demekti;
+/// aynı hataya takılıp olay sessizce kayboluyordu.
+///
+/// <b>Varsayım değil, ölçüm:</b> canlıda bilerek bir kolon sınırı aşıldı,
+/// istek 500 döndü ve olay tabloya HİÇ girmedi — konteyner logunda
+/// "Güvenlik olayı kaydedilemedi ... value too long" uyarısı duruyordu.
+/// Yani sunucu hatalarının en ilginç sınıfı (veritabanına yazarken patlayan
+/// istekler) kayda hiç girmiyordu ve bu hiçbir yerde hata olarak görünmüyordu.
+/// </remarks>
 public class SecurityEventRecorder(
-    AppDbContext db,
+    IServiceScopeFactory scopeFactory,
     IMemoryCache cache,
     ILogger<SecurityEventRecorder> logger)
 {
@@ -31,6 +46,9 @@ public class SecurityEventRecorder(
 
         try
         {
+            using var scope = scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
             db.SecurityEvents.Add(olay);
             await db.SaveChangesAsync(cancellationToken);
         }

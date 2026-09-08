@@ -460,9 +460,9 @@ public static class DependencyInjection
         // Guvenlik olayi kaydi. Sayac bellekte tutuldugu icin MemoryCache sart;
         // TTL sayesinde sozluk kendi kendini temizliyor (bkz. SecurityEventRecorder).
         services.AddMemoryCache();
-        services.AddScoped<SecurityEventRecorder>();
+        // Kendi kapsamini actigi icin singleton; bkz. SecurityEventRecorder.
+        services.AddSingleton<SecurityEventRecorder>();
 
-        // Kendi kapsamini actigi icin singleton; bkz. AdminFailureRecorder.
         services.AddSingleton<AdminFailureRecorder>();
         services.AddHostedService<SecurityEventRetentionService>();
 
