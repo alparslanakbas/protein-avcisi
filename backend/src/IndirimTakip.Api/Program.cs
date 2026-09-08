@@ -1,14 +1,16 @@
-﻿using Microsoft.Extensions.Options;
-using IndirimTakip.Api.Caching;
+﻿using IndirimTakip.Api.Caching;
 using IndirimTakip.Api.Endpoints;
 using IndirimTakip.Core.Caching;
-using IndirimTakip.Infrastructure;
 using IndirimTakip.Infrastructure.Deals;
+using IndirimTakip.Infrastructure.Images;
 using IndirimTakip.Infrastructure.Scraping;
+using IndirimTakip.Infrastructure;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Options;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -193,6 +195,38 @@ if (app.Environment.IsDevelopment())
 // ve HSTS header'ı sessizce hiç eklenmez (gerçek bir bug olarak yakalandı,
 // bkz. CLAUDE.md 2026-08-15).
 app.UseForwardedHeaders();
+
+// ÜRÜN GÖRSELLERİ — kendi sunucumuzdaki küçültülmüş kopyalar.
+//
+// NEDEN CADDY'DE DEĞİL: Caddyfile'da bilerek HİÇ `root`/`file_server`
+// direktifi yok ve `.git`, `.env`, `appsettings` gibi yolların 404 dönmesi
+// "şans eseri" değil, tam olarak bunun sonucu. Oraya bir dosya sunucusu
+// eklemek o mimari özelliği zayıflatırdı; ayrıca hatalı bir Caddyfile
+// siteyi bütünüyle kapatıyor. Burada FileProvider tek bir dizine kilitli,
+// dizin listeleme kapalı ve yol dışına çıkış (../) çerçeve tarafından
+// engelleniyor.
+//
+// Dizin yoksa katman hiç eklenmiyor: PhysicalFileProvider var olmayan bir
+// yola kurulunca AÇILIŞTA patlıyor — yani yerel geliştirmede uygulamayı
+// tamamen başlatılamaz hâle getirirdi.
+{
+    var gorselAyarlari = app.Services.GetRequiredService<ProductImageOptions>();
+    Directory.CreateDirectory(gorselAyarlari.Dizin);
+
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new PhysicalFileProvider(Path.GetFullPath(gorselAyarlari.Dizin)),
+        RequestPath = "/api/gorsel",
+        ServeUnknownFileTypes = false,
+        OnPrepareResponse = ctx =>
+        {
+            // Dosya adı içeriğin özeti olduğu için içerik ASLA değişmiyor:
+            // adres değişirse ad da değişiyor. Bu yüzden immutable ve uzun
+            // süreli önbellek güvenli — Cloudflare de kenarda tutabiliyor.
+            ctx.Context.Response.Headers.CacheControl = "public, max-age=31536000, immutable";
+        },
+    });
+}
 
 // Guvenlik olaylarini kaydeden katman. UseForwardedHeaders'tan SONRA, hata
 // yakalayicidan ONCE duruyor: gercek istemci adresine ihtiyaci var ve

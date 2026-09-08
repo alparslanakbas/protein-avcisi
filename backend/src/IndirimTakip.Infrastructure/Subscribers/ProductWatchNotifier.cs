@@ -1,5 +1,6 @@
 using System.Globalization;
 using IndirimTakip.Core.Entities;
+using IndirimTakip.Infrastructure.Images;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 
@@ -10,7 +11,11 @@ namespace IndirimTakip.Infrastructure.Subscribers;
 // ama henüz bildirilmemiş) izleme olan ürünleri kontrol ediyor — 600+ ürünün
 // tamamı için değil, sadece gerçekten izlenen küçük bir alt küme için sorgu
 // çalıştırıyor.
-public class ProductWatchNotifier(AppDbContext db, IEmailSender emailSender, IConfiguration configuration)
+public class ProductWatchNotifier(
+    AppDbContext db,
+    IEmailSender emailSender,
+    IConfiguration configuration,
+    ProductImageOptions gorselAyarlari)
 {
     private static readonly CultureInfo TurkishCulture = CultureInfo.GetCultureInfo("tr-TR");
 
@@ -50,7 +55,7 @@ public class ProductWatchNotifier(AppDbContext db, IEmailSender emailSender, ICo
 
             foreach (var watch in group)
             {
-                var html = BuildNotifyHtml(watch.Product!, oldPrice, newPrice, frontendBaseUrl);
+                var html = BuildNotifyHtml(watch.Product!, oldPrice, newPrice, frontendBaseUrl, gorselAyarlari.TabanAdres);
                 try
                 {
                     await emailSender.SendAsync(watch.Subscriber!.Email, $"{watch.Product!.Name} fiyatı düştü!", html, cancellationToken);
@@ -71,13 +76,18 @@ public class ProductWatchNotifier(AppDbContext db, IEmailSender emailSender, ICo
         }
     }
 
-    private static string BuildNotifyHtml(Product product, decimal oldPrice, decimal newPrice, string frontendBaseUrl)
+    private static string BuildNotifyHtml(Product product, decimal oldPrice, decimal newPrice, string frontendBaseUrl, string gorselTabani)
     {
         var productUrl = $"{frontendBaseUrl.TrimEnd('/')}/urun/{product.Id}";
         var signalImageUrl = EmailTemplate.AssetUrl(frontendBaseUrl, "confirmation-price-signal.jpg");
         var shieldIconUrl = EmailTemplate.AssetUrl(frontendBaseUrl, "trust-shield.png");
-        var imageHtml = product.ImageUrl is not null
-            ? $"""<img src="{EmailTemplate.Encode(product.ImageUrl)}" alt="{EmailTemplate.Encode(product.Name)}" width="112" height="112" style="display:block;width:112px;height:112px;object-fit:contain;background:#ffffff;margin:0 auto;" />"""
+        // Yerel kopya varsa o gönderiliyor: hem küçük hem de kaynağın
+        // hotlink politikasına bağlı değil (posta istemcileri görseli
+        // kendi vekilleri üzerinden çekiyor ve bazı kaynaklar buna 403
+        // veriyor).
+        var gorselAdresi = ProductImageStore.GenelAdres(product.LocalImagePath, gorselTabani) ?? product.ImageUrl;
+        var imageHtml = gorselAdresi is not null
+            ? $"""<img src="{EmailTemplate.Encode(gorselAdresi)}" alt="{EmailTemplate.Encode(product.Name)}" width="112" height="112" style="display:block;width:112px;height:112px;object-fit:contain;background:#ffffff;margin:0 auto;" />"""
             : """<div style="width:112px;height:112px;background:#f7f8fc;margin:0 auto;"></div>""";
 
         var content = $"""

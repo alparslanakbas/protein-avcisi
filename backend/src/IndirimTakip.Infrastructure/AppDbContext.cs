@@ -55,6 +55,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         {
             p.Property(x => x.Name).HasMaxLength(500);
             p.Property(x => x.Url).HasMaxLength(1000);
+            // Yalnizca dosya adi tutuluyor (24 hex + ".webp" = 29 karakter);
+            // dizin ve genel adres yapilandirmadan geliyor, veriye gomulmuyor.
+            p.Property(x => x.LocalImagePath).HasMaxLength(64);
             p.HasOne(x => x.Brand)
                 .WithMany(x => x.Products)
                 .HasForeignKey(x => x.BrandId)

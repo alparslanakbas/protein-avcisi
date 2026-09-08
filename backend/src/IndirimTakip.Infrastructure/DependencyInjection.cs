@@ -3,6 +3,7 @@ using IndirimTakip.Core.Scraping;
 using IndirimTakip.Infrastructure.Articles;
 using IndirimTakip.Infrastructure.Coupons;
 using IndirimTakip.Infrastructure.Deals;
+using IndirimTakip.Infrastructure.Images;
 using IndirimTakip.Infrastructure.Scraping;
 using IndirimTakip.Infrastructure.Scraping.Hardline;
 using IndirimTakip.Infrastructure.Security;
@@ -464,6 +465,27 @@ public static class DependencyInjection
         services.AddSingleton<SecurityEventRecorder>();
 
         services.AddSingleton<AdminFailureRecorder>();
+
+        // ÜRÜN GÖRSELLERİ. Ayarlar POCO olarak kaydediliyor (IOptions değil),
+        // çünkü DealsQueryService istek başına yaratılıyor ve yalnızca taban
+        // adresi okuyor — araya bir IOptions katmanı koymanın karşılığı yok.
+        var gorselAyarlari = new ProductImageOptions();
+        configuration.GetSection("ProductImages").Bind(gorselAyarlari);
+        if (string.IsNullOrWhiteSpace(gorselAyarlari.TabanAdres))
+            gorselAyarlari.TabanAdres = (configuration["PublicBaseUrl"] ?? string.Empty).TrimEnd('/') + "/api/gorsel";
+        services.AddSingleton(gorselAyarlari);
+        services.AddSingleton<ProductImageStore>();
+        services.AddHostedService<ProductImageBackgroundService>();
+
+        // Kaynakların CDN'lerinden indiriyor. Tarayıcı benzeri bir kimlik
+        // veriliyor: bazı kaynaklar UA'sız isteklere görsel vermiyor
+        // (Supplementler ve Renovafood'da ölçülmüş bir davranış).
+        services.AddHttpClient(ProductImageStore.HttpClientAdi, client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(30);
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(
+                "Mozilla/5.0 (compatible; ProteinAvcisiBot/1.0; +https://www.proteinavcisi.com.tr)");
+        });
         services.AddHostedService<SecurityEventRetentionService>();
 
         services.AddHttpClient<IEmailSender, BrevoEmailSender>(client =>

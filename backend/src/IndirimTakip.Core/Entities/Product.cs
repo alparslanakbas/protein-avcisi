@@ -9,6 +9,18 @@ public class Product
     public required string Name { get; set; }
     public required string Url { get; set; }
     public string? ImageUrl { get; set; }
+
+    /// <summary>
+    /// Kendi sunucumuzdaki küçültülmüş kopyanın dosya adı; henüz
+    /// indirilmediyse null.
+    /// </summary>
+    /// <remarks>
+    /// <b>ImageUrl'in YERİNE GEÇMİYOR, YANINDA DURUYOR.</b> Kaynak adres
+    /// tarama tarafının doğru kaydı bulması ve değişikliği görmesi için
+    /// gerekli; ayrıca yerel kopya henüz yokken ya da indirme başarısızken
+    /// gösterilecek adres o. Yani bu alan boşken site eskisi gibi çalışıyor.
+    /// </remarks>
+    public string? LocalImagePath { get; set; }
     public string? Category { get; set; }
     public string? Size { get; set; }
     public string? Flavor { get; set; }

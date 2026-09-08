@@ -91,6 +91,15 @@ services:
       - Affiliate__TrackingCodes__Hardline=${AFFILIATE_HARDLINE}
       - Affiliate__TrackingCodes__SSN=${AFFILIATE_SSN}
       - PublicBaseUrl=https://api.proteinavcisi.com.tr
+      # ÜRÜN GÖRSELLERİ kendi sunucumuzda tutuluyor. Kaynakların CDN'lerine
+      # doğrudan bağlanmak (hotlink) ortalama 280 kB, en kötüsü 2,35 MB
+      # görsel demekti; ayrıca erişilemeyen bir host tarayıcıda `onerror`
+      # tetiklemediği için yedek görsel hiç devreye girmiyor.
+      # Adres öneki API alan adı üzerinden: dosyaları .NET sunuyor, Caddy'ye
+      # bilerek dosya sunucusu eklenmedi (bkz. Program.cs'teki gerekçe).
+      - ProductImages__Enabled=true
+      - ProductImages__Dizin=/app/urun-gorsel
+      - ProductImages__TabanAdres=https://api.proteinavcisi.com.tr/api/gorsel
       - Cors__AllowedOrigins__0=https://proteinavcisi.com.tr
       - Cors__AllowedOrigins__1=https://www.proteinavcisi.com.tr
       - Scraping__Enabled=true
@@ -108,6 +117,12 @@ services:
     # kurallarına hiç girmiyor.
     ports:
       - "127.0.0.1:8080:8080"
+    # Görseller ADLANDIRILMIŞ VOLUME'da: konteyner her deploy'da yeniden
+    # oluşturuluyor ve imajın içinde tutulsalardı her deploy 4.900 görseli
+    # sıfırdan indirtirdi. `docker builder prune` (haftalık cron) adlandırılmış
+    # volume'lara dokunmuyor.
+    volumes:
+      - urun_gorsel:/app/urun-gorsel
     # Backend açılışta EF migration çalıştırıyor; veritabanı hazır değilken
     # başlarsa hata verir. Deploy workflow'u backend'i "--no-deps" ile
     # yenilediği için bu koşul orada devreye girmiyor (db zaten sürekli
@@ -151,6 +166,7 @@ services:
       - frontend
 
 volumes:
+  urun_gorsel:
   caddy_data:
   caddy_config:
   pg_data:

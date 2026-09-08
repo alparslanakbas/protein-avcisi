@@ -1,11 +1,14 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 using IndirimTakip.Core.Entities;
+using IndirimTakip.Infrastructure.Images;
 using IndirimTakip.Infrastructure.Scraping;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 namespace IndirimTakip.Infrastructure.Deals;
+
+
 
 // GetDealsAsync/GetProductByIdAsync/GetDealsByIdsAsync'in ortak DealDto'ya
 // çevirme mantığı (indirim yüzdesi vb.) burada tek yerde toplanıyor. ÖNEMLİ:
@@ -21,8 +24,13 @@ namespace IndirimTakip.Infrastructure.Deals;
 // dönüştükten sonra yapılıyor.
 internal sealed record DealRow(Product Product, string BrandName, PriceHistory Latest, decimal ReferencePrice, decimal ThirtyDayLowPrice);
 
-public partial class DealsQueryService(AppDbContext db, IOptions<AffiliateOptions> affiliateOptions)
+public partial class DealsQueryService(
+    AppDbContext db,
+    IOptions<AffiliateOptions> affiliateOptions,
+    ProductImageOptions gorselAyarlari)
 {
+    private string gorselTabanAdresi => gorselAyarlari.TabanAdres;
+
     // Markalar kendi sitelerinde bir ürünün SKU/URL'sini değiştirdiğinde
     // scraper eski kaydı bir daha bulamıyor, PriceHistory eklenmesi duruyor
     // — ama Product kaydı fiyat geçmişini kaybetmemek için veritabanında
@@ -84,7 +92,10 @@ public partial class DealsQueryService(AppDbContext db, IOptions<AffiliateOption
         var latest = row.Latest;
         var referencePrice = row.ReferencePrice;
         return new DealDto(
-            row.Product.Id, row.Product.Name, row.Product.Url, row.Product.ImageUrl,
+            row.Product.Id, row.Product.Name, row.Product.Url,
+            // Yerel kopya varsa o, yoksa kaynak adres. Sorgu değil, bellek
+            // içi eşleme — bu dosyanın SQL üreten kısmına dokunulmuyor.
+            ProductImageStore.GenelAdres(row.Product.LocalImagePath, gorselTabanAdresi) ?? row.Product.ImageUrl,
             row.Product.Category, row.Product.Size, row.Product.Flavor, row.Product.ServingSizeGrams,
             row.Product.ServingsPerPackage,
             row.Product.Description,

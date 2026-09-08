@@ -311,6 +311,12 @@ public class ScrapeIngestionService(
                 // scraped.BrandName göndermiyor, değer scraper'ın kendi adına
                 // düşüyor ve zaten aynı markayı veriyor.
                 product.Brand = ResolveBrand(scraped.BrandName ?? scraper.BrandName);
+                // KAYNAK ADRES DEĞİŞTİYSE YEREL KOPYA GEÇERSİZ. Bu satır
+                // olmasaydı marka görseli değiştirdiğinde sitede sonsuza
+                // kadar eski resim kalırdı — hiçbir yerde hata vermeden.
+                if (!string.Equals(product.ImageUrl, scraped.ImageUrl, StringComparison.Ordinal))
+                    product.LocalImagePath = null;
+
                 product.ImageUrl = scraped.ImageUrl;
                 product.Category = category;
                 product.Size = size;
