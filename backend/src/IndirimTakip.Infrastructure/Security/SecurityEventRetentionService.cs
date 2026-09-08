@@ -47,6 +47,17 @@ public class SecurityEventRetentionService(
 
                 if (silinen > 0)
                     logger.LogInformation("Güvenlik olayı temizliği: {Count} kayıt silindi ({Days} günden eski).", silinen, retentionDays);
+
+                // Yönetim hatası kaydı AYNI süreyle temizleniyor. İki kaydı
+                // farklı sürelerle tutmak, gizlilik metninde tek bir süre
+                // yazarken kendi içinde çelişmek olurdu; ayrıca ikinci bir
+                // ayar, unutulduğunda sınırsız büyüyen bir tablo demek.
+                var yonetimSilinen = await db.AdminOperationFailures
+                    .Where(x => x.OccurredAt < esik)
+                    .ExecuteDeleteAsync(stoppingToken);
+
+                if (yonetimSilinen > 0)
+                    logger.LogInformation("Yönetim hatası temizliği: {Count} kayıt silindi ({Days} günden eski).", yonetimSilinen, retentionDays);
             }
             catch (Exception ex)
             {

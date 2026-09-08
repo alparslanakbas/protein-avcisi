@@ -37,6 +37,15 @@ export class YonetimService {
     return this.http.get<OlayYaniti>(yol);
   }
 
+  /**
+   * Başarısız yönetim işlemleri. Olay ucundan AYRI, çünkü iki liste farklı
+   * sorulara cevap veriyor: biri "dışarıdan kim ne deniyor", diğeri "benim
+   * işlemim neden olmadı".
+   */
+  yonetimHatalari(gun: number): Observable<YonetimHatasi[]> {
+    return this.http.get<YonetimHatasi[]>(`${this.base}/admin-failures?days=${gun}`);
+  }
+
   kuponlar(): Observable<Kupon[]> {
     return this.http.get<Kupon[]>(`${this.base}/coupons`);
   }
@@ -95,6 +104,17 @@ export interface OlayYaniti {
   events: Olay[];
   summary: { kind: string; count: number }[];
   topIps: { ip: string; count: number; firstSeen: string; lastSeen: string }[];
+}
+
+export interface YonetimHatasi {
+  id: number;
+  occurredAt: string;
+  method: string;
+  path: string;
+  statusCode: number;
+  /** Ucun kendi cevabı ya da istisnanın metni; uç gövdesiz döndüyse null. */
+  reason: string | null;
+  ip: string | null;
 }
 
 export interface Kupon {

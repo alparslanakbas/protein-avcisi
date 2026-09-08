@@ -461,6 +461,9 @@ public static class DependencyInjection
         // TTL sayesinde sozluk kendi kendini temizliyor (bkz. SecurityEventRecorder).
         services.AddMemoryCache();
         services.AddScoped<SecurityEventRecorder>();
+
+        // Kendi kapsamini actigi icin singleton; bkz. AdminFailureRecorder.
+        services.AddSingleton<AdminFailureRecorder>();
         services.AddHostedService<SecurityEventRetentionService>();
 
         services.AddHttpClient<IEmailSender, BrevoEmailSender>(client =>

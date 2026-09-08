@@ -8,6 +8,7 @@ import {
   Durum,
   Kupon,
   OlayYaniti,
+  YonetimHatasi,
   YonetimMarka,
   YonetimService,
   YonetimUrun,
@@ -56,6 +57,7 @@ export class YonetimPage implements OnInit {
 
   readonly durum = signal<Durum | null>(null);
   readonly olaylar = signal<OlayYaniti | null>(null);
+  readonly yonetimHatalari = signal<YonetimHatasi[]>([]);
   readonly kuponlar = signal<Kupon[]>([]);
 
   readonly olayGun = signal(7);
@@ -194,6 +196,7 @@ export class YonetimPage implements OnInit {
         this.girisYapildi.set(false);
         this.durum.set(null);
         this.olaylar.set(null);
+        this.yonetimHatalari.set([]);
         this.kuponlar.set([]);
         this.duzenlenenKupon.set(null);
         this.markalar.set([]);
@@ -227,6 +230,19 @@ export class YonetimPage implements OnInit {
     this.api.olaylar(this.olayGun(), this.olayTur()).subscribe({
       next: (o) => this.olaylar.set(o),
       error: (e) => this.hata.set(this.hataMetni(e, 'Olaylar alınamadı.')),
+    });
+    this.yonetimHatalariniYukle();
+  }
+
+  /**
+   * Gün aralığını olay listesiyle paylaşıyor ama TÜR süzgecinden
+   * etkilenmiyor: o süzgeç güvenlik olayı türleri için ("probe" gibi) ve
+   * yönetim hatalarında karşılığı yok.
+   */
+  private yonetimHatalariniYukle(): void {
+    this.api.yonetimHatalari(this.olayGun()).subscribe({
+      next: (h) => this.yonetimHatalari.set(h),
+      error: (e) => this.hata.set(this.hataMetni(e, 'Yönetim hataları alınamadı.')),
     });
   }
 

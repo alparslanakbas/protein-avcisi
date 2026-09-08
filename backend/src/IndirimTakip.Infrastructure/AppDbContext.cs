@@ -15,6 +15,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<ProductFavorite> ProductFavorites => Set<ProductFavorite>();
     public DbSet<SecurityEvent> SecurityEvents => Set<SecurityEvent>();
     public DbSet<BackgroundJobRun> BackgroundJobRuns => Set<BackgroundJobRun>();
+    public DbSet<AdminOperationFailure> AdminOperationFailures => Set<AdminOperationFailure>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -145,6 +146,17 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasIndex(x => new { x.Ip, x.OccurredAt });
 
             e.HasIndex(x => x.Kind);
+        });
+
+        modelBuilder.Entity<AdminOperationFailure>(e =>
+        {
+            e.Property(x => x.Method).HasMaxLength(10);
+            e.Property(x => x.Path).HasMaxLength(500);
+            e.Property(x => x.Ip).HasMaxLength(45);
+            e.Property(x => x.Reason).HasMaxLength(2000);
+
+            // Tek gorunum "en yeniden eskiye"; baska bir sorgu sekli yok.
+            e.HasIndex(x => x.OccurredAt).IsDescending();
         });
 
         modelBuilder.Entity<BackgroundJobRun>(j =>

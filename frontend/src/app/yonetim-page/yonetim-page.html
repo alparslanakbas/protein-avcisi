@@ -209,11 +209,60 @@
           <div>
             <p class="sayfa-etiketi">Güvenlik</p>
             <h1>Olaylar</h1>
-            <p>Yetkisiz istekleri, hız sınırı kayıtlarını ve sunucu hatalarını incele.</p>
+            <p>
+              Kendi yönetim işlemlerinin başarısızlık sebeplerini, yetkisiz istekleri, hız
+              sınırı kayıtlarını ve sunucu hatalarını incele.
+            </p>
           </div>
           <span class="tarih"
             ><i class="ph ph-calendar-blank" aria-hidden="true"></i>{{ bugunEtiketi() }}</span
           >
+        </section>
+
+        <!-- Panelden yapılan bir işlem başarısız olduğunda ekranda yalnızca
+             kısa bir uyarı kalıyordu; gerçek sebep konteynerin stdout'unda
+             duruyor ve oraya bakmak SSH gerektiriyordu. Bu blok o sebebi
+             panele taşıyor. Güvenlik olaylarıyla AYNI SEKMEDE ama AYRI
+             TABLODA: ikisini birleştirmek, suç duyurusuna dayanak olan
+             listeyi kendi hatalarımızla kirletirdi. -->
+        <section class="blok">
+          <div class="blok-baslik">
+            <div>
+              <p class="sayfa-etiketi">Yönetim</p>
+              <h2>Başarısız işlemler</h2>
+            </div>
+            <p class="not">
+              Son {{ olayGun() }} gün. Aralığı aşağıdaki süzgeç belirliyor; tür süzgeci bu
+              listeyi etkilemez.
+            </p>
+          </div>
+
+          @if (yonetimHatalari().length === 0) {
+            <p class="bos-durum">Bu aralıkta başarısız bir yönetim işlemi yok.</p>
+          } @else {
+            <div class="tablo-kabugu">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Zaman</th>
+                    <th>İşlem</th>
+                    <th>Kod</th>
+                    <th>Sebep</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (h of yonetimHatalari(); track h.id) {
+                    <tr>
+                      <td>{{ tarih(h.occurredAt) }}</td>
+                      <td class="tek-aralik">{{ h.method }} {{ h.path }}</td>
+                      <td>{{ h.statusCode }}</td>
+                      <td>{{ h.reason || '—' }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
         </section>
 
         <section class="blok">

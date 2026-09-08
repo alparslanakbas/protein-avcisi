@@ -117,7 +117,7 @@ internal static class AdminEndpoints
         app.MapPut("/api/dev/coupons/{id:int}", async (int id, UpdateCouponRequest request, CouponService coupons, CancellationToken ct) =>
         {
             var result = await coupons.UpdateAsync(id, request, ct);
-            return result is null ? Results.NotFound() : Results.Ok(result);
+            return result is null ? Results.NotFound($"{id} numaralı kupon bulunamadı.") : Results.Ok(result);
         }).RequireAdminKey(adminApiKey);
 
         // Kapsam dışı kalan ürünleri (ör. bir markanın feed'inde karışan giyim/
@@ -131,7 +131,7 @@ internal static class AdminEndpoints
             // FindAsync global filtreden etkilenmiyor ama acikca belirtiyoruz:
             // gizlenmis bir urun de silinebilmeli.
             var product = await db.Products.IgnoreQueryFilters().FirstOrDefaultAsync(p => p.Id == id, ct);
-            if (product is null) return Results.NotFound();
+            if (product is null) return Results.NotFound($"{id} numaralı ürün bulunamadı.");
             db.Products.Remove(product);
             await db.SaveChangesAsync(ct);
             return Results.Ok();
@@ -148,7 +148,7 @@ internal static class AdminEndpoints
         app.MapPut("/api/dev/articles/{slug}", async (string slug, UpdateArticleRequest request, ArticleService articles, CancellationToken ct) =>
         {
             var result = await articles.UpdateAsync(slug, request, ct);
-            return result is null ? Results.NotFound() : Results.Ok(result);
+            return result is null ? Results.NotFound($"'{slug}' slug'ıyla yazı bulunamadı.") : Results.Ok(result);
         }).RequireAdminKey(adminApiKey);
 
         // Asıl gönderim artık DigestBackgroundService ile haftada bir otomatik
@@ -299,7 +299,7 @@ internal static class AdminEndpoints
         {
             var marka = await db.Brands.FirstOrDefaultAsync(b => b.Id == id, ct);
             if (marka is null)
-                return Results.NotFound();
+                return Results.NotFound($"{id} numaralı marka bulunamadı.");
 
             marka.IsActive = istek.IsActive;
             await db.SaveChangesAsync(ct);
@@ -363,7 +363,7 @@ internal static class AdminEndpoints
         {
             var urun = await db.Products.IgnoreQueryFilters().FirstOrDefaultAsync(p => p.Id == id, ct);
             if (urun is null)
-                return Results.NotFound();
+                return Results.NotFound($"{id} numaralı ürün bulunamadı.");
 
             urun.IsActive = istek.IsActive;
             await db.SaveChangesAsync(ct);
@@ -400,6 +400,26 @@ internal static class AdminEndpoints
                 .ToListAsync(ct);
 
             return Results.Ok(kuponlar);
+        }).RequireAdminKey(adminApiKey);
+
+        // Yonetim islemlerinin BASARISIZLIK sebepleri. Panelin "Olaylar"
+        // sekmesinde guvenlik olaylarinin YANINDA ama AYRI gosteriliyor:
+        // ikisi farkli sorulara cevap veriyor (biri "bana kim saldiriyor",
+        // digeri "benim islemim neden olmadi") ve tek listede birlestirmek
+        // suc duyurusuna dayanak olan listeyi kendi hatalarimizla kirletirdi.
+        app.MapGet("/api/dev/admin-failures", async (
+            AppDbContext db, int? limit, int? days, CancellationToken ct) =>
+        {
+            var since = DateTimeOffset.UtcNow.AddDays(-Math.Clamp(days ?? 7, 1, 365));
+            var take = Math.Clamp(limit ?? 100, 1, 500);
+
+            var kayitlar = await db.AdminOperationFailures.AsNoTracking()
+                .Where(x => x.OccurredAt >= since)
+                .OrderByDescending(x => x.OccurredAt)
+                .Take(take)
+                .ToListAsync(ct);
+
+            return Results.Ok(kayitlar);
         }).RequireAdminKey(adminApiKey);
 
         app.MapGet("/api/dev/security-events", async (
