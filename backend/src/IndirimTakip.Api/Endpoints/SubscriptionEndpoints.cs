@@ -49,21 +49,50 @@ internal static class SubscriptionEndpoints
         // JSON değil basit bir HTML sayfası dönüyor — ayrı bir frontend route'u
         // kurmak bu iki statik mesaj için gereksiz olurdu. charset=utf-8 elle
         // belirtilmezse tarayıcı Türkçe karakterleri bozuk gösterebiliyor.
+        //
+        // GET DURUMU DEĞİŞTİRMEZ. GET eskiden doğrudan onaylıyordu; aynı kodu
+        // taşıyan ABD sitesinde Gmail'in bağlantı tarayıcısı bir test aboneliğini
+        // alıcı tıklamadan bir saniye önce kendisi onayladı (13 Eylül) — yani
+        // çift onay hiçbir şey kanıtlamıyordu. GET artık düğmeli sayfa gösteriyor,
+        // onayı ya da çıkışı yalnızca o düğmenin gönderdiği POST yapıyor.
+        // Çıkış da aynı kurala bağlı; yoksa tarayıcılar bülten altbilgisindeki
+        // bağlantıyı açıp gerçek aboneleri sessizce listeden düşürürdü.
+        const string GecersizBaslik = "Bu bağlantı geçersiz.";
+        const string GecersizMesaj = "Bağlantı süresi geçmiş ya da daha önce kullanılmış olabilir.";
+
         app.MapGet("/api/subscribe/confirm/{token}", async (string token, SubscriberService subscribers, CancellationToken ct) =>
+        {
+            var html = await subscribers.TokenExistsAsync(token, ct)
+                ? EndpointHelpers.BuildActionPage("Aboneliğini onayla", "Tek tıkla haftanın gerçek fiyat düşüşleri e-postana gelmeye başlasın.",
+                    "Aboneliğimi onayla", $"/api/subscribe/confirm/{Uri.EscapeDataString(token)}", frontendBaseUrl)
+                : EndpointHelpers.BuildInfoPage(GecersizBaslik, GecersizMesaj, frontendBaseUrl);
+            return Results.Content(html, "text/html; charset=utf-8");
+        });
+
+        app.MapPost("/api/subscribe/confirm/{token}", async (string token, SubscriberService subscribers, CancellationToken ct) =>
         {
             var success = await subscribers.ConfirmAsync(token, ct);
             var html = success
                 ? EndpointHelpers.BuildSubscriptionConfirmedPage(frontendBaseUrl)
-                : EndpointHelpers.BuildInfoPage("Bu bağlantı geçersiz.", "Onay linki süresi geçmiş ya da daha önce kullanılmış olabilir.", frontendBaseUrl);
+                : EndpointHelpers.BuildInfoPage(GecersizBaslik, GecersizMesaj, frontendBaseUrl);
             return Results.Content(html, "text/html; charset=utf-8");
         });
 
         app.MapGet("/api/subscribe/unsubscribe/{token}", async (string token, SubscriberService subscribers, CancellationToken ct) =>
         {
+            var html = await subscribers.TokenExistsAsync(token, ct)
+                ? EndpointHelpers.BuildActionPage("Bültenden çıkmak istiyor musun?", "Haftalık fiyat düşüşleri artık gelmeyecek. İstediğin zaman tekrar abone olabilirsin.",
+                    "Bültenden çık", $"/api/subscribe/unsubscribe/{Uri.EscapeDataString(token)}", frontendBaseUrl)
+                : EndpointHelpers.BuildInfoPage(GecersizBaslik, GecersizMesaj, frontendBaseUrl);
+            return Results.Content(html, "text/html; charset=utf-8");
+        });
+
+        app.MapPost("/api/subscribe/unsubscribe/{token}", async (string token, SubscriberService subscribers, CancellationToken ct) =>
+        {
             var success = await subscribers.UnsubscribeAsync(token, ct);
             var html = success
                 ? EndpointHelpers.BuildInfoPage("Bültenden çıkarıldın.", "Fikrini değiştirirsen tekrar abone olabilirsin.", frontendBaseUrl)
-                : EndpointHelpers.BuildInfoPage("Bu bağlantı geçersiz.", "Bağlantı süresi geçmiş ya da daha önce kullanılmış olabilir.", frontendBaseUrl);
+                : EndpointHelpers.BuildInfoPage(GecersizBaslik, GecersizMesaj, frontendBaseUrl);
             return Results.Content(html, "text/html; charset=utf-8");
         });
     }

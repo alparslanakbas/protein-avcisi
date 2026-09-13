@@ -175,6 +175,11 @@ public class SubscriberService(
             content);
     }
 
+    // Yalnızca okuma: düğme isteyen sayfalar geçersiz bağlantıyı tıklamadan ÖNCE
+    // söyleyebilsin diye.
+    public Task<bool> TokenExistsAsync(string token, CancellationToken cancellationToken = default) =>
+        db.Subscribers.AnyAsync(s => s.Token == token, cancellationToken);
+
     public async Task<bool> ConfirmAsync(string token, CancellationToken cancellationToken = default)
     {
         var subscriber = await db.Subscribers.FirstOrDefaultAsync(s => s.Token == token, cancellationToken);
