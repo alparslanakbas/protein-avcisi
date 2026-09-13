@@ -161,9 +161,29 @@ services:
       - ./caddy-log:/var/log/caddy
       - caddy_data:/data
       - caddy_config:/config
+      # WheyProof (ABD sitesi) AYNI VM'de çalışıyor ve 80/443'ü yalnızca bu
+      # Caddy dinleyebildiği için onun alan adlarını da bu konteyner
+      # karşılıyor. Site tanımları WheyProof deposunda duruyor ve Caddyfile'ın
+      # sonundaki `import sites/*.caddy` ile içeri alınıyor. Salt okunur:
+      # bu konteynerin başka bir deponun dosyalarını değiştirmesi için sebep yok.
+      # Dizin henüz yoksa Docker boş bir dizin oluşturur ve boş import
+      # TR sitesini bozmaz (yerelde caddy validate ile ölçüldü).
+      - ../wheyproof/caddy/sites:/etc/caddy/sites:ro
+    # İki ağ: "default" TR servislerine (backend/frontend), "web-edge"
+    # WheyProof konteynerlerine ulaşmak için. WheyProof oraya
+    # "wheyproof-backend"/"wheyproof-frontend" takma adlarıyla katılıyor;
+    # düz "backend" adı çakışır ve istek yanlış siteye gidebilirdi.
+    # Ağ VM'de bir kez oluşturulmalı: docker network create web-edge
+    networks:
+      - default
+      - web-edge
     depends_on:
       - backend
       - frontend
+
+networks:
+  web-edge:
+    external: true
 
 volumes:
   urun_gorsel:

@@ -248,3 +248,11 @@ api.proteinavcisi.com.tr {
 	import erisim-logu
 	reverse_proxy backend:8080
 }
+
+# WheyProof (ABD sitesi) aynı VM'de çalışıyor; alan adlarını bu Caddy
+# karşılıyor. Site tanımları WheyProof deposunda (caddy/sites/*.caddy) ve
+# compose ile /etc/caddy/sites'e salt okunur bağlanıyor. EN SONDA duruyor:
+# yukarıdaki global ayarlar (trusted_proxies) oraya da uygulanıyor.
+# Dizin boşsa import hiçbir şey eklemiyor ve TR sitesi etkilenmiyor
+# (iki senaryo da yerelde caddy validate ile ölçüldü).
+import sites/*.caddy
