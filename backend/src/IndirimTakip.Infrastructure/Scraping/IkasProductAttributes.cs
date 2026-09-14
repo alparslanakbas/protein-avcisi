@@ -73,6 +73,43 @@ internal static partial class IkasProductAttributes
     }
 
     /// <summary>
+    /// GEÇERLİ ÜRÜNÜN açıklama HTML'i (<c>pageSpecificData.description</c>).
+    /// </summary>
+    /// <remarks>
+    /// Bazı ikas mağazaları besin/etken madde tablosunu özellik alanına değil
+    /// ürün açıklamasının içine koyuyor (Kiperin, 15 Eylül'de ölçüldü:
+    /// <c>attributes</c> dizisinde tablo yok, <c>description</c>'da var).
+    /// Aynı düğümden okunuyor, yani menü/öneri yükündeki başka ürünlerin
+    /// açıklamaları karışmıyor.
+    ///
+    /// <b><c>translations[].description</c> BİLEREK OKUNMUYOR.</b> Kiperin'in
+    /// kolajen sayfasında aynı tablonun İngilizce kopyası orada duruyor;
+    /// Türkçe sitede o değerlerin ve etiketlerin yayınlanması yanlış olurdu.
+    /// </remarks>
+    public static string? Description(string html)
+    {
+        var match = NextDataRegex().Match(html);
+        if (!match.Success)
+            return null;
+
+        try
+        {
+            using var doc = JsonDocument.Parse(match.Groups[1].Value);
+            return doc.RootElement.TryGetProperty("props", out var props)
+                && props.TryGetProperty("pageProps", out var pageProps)
+                && pageProps.TryGetProperty("pageSpecificData", out var pageData)
+                && pageData.TryGetProperty("description", out var description)
+                && description.ValueKind == JsonValueKind.String
+                    ? description.GetString()
+                    : null;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
     /// Adı verilen parçayı içeren ilk alanın değeri.
     /// </summary>
     /// <remarks>
