@@ -56,32 +56,30 @@ internal static class EmailTemplate
         </html>
         """;
 
+    // Metinle taklit değil, gerçek logo. "PROTEİN" beyaz ve arka plan saydam
+    // (design/logo/logo-dark.png'nin lacivert zemini saydamlığa çevrildi,
+    // 440x69, 2x ekran için), bu yüzden yalnızca koyu şerit üzerinde okunur.
+    // Görseli engelleyen istemcide alt metni markanın adını gösterir.
+    private static string Logo(string frontendBaseUrl) => $"""
+        <a href="{Encode(frontendBaseUrl)}" style="display:inline-block;text-decoration:none;">
+          <img src="{Encode(AssetUrl(frontendBaseUrl, "proteinavcisi-logo.png"))}" width="220" height="35" alt="ProteinAvcısı" style="display:block;width:220px;height:35px;border:0;color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:20px;font-weight:800;">
+        </a>
+        """;
+
+    // Ortalanmış koyu şerit; gövdesi beyaz olan e-postalar için.
     internal static string BrandHeader(string frontendBaseUrl) => $"""
         <tr>
-          <td align="center" bgcolor="#ffffff" style="padding:26px 24px;border-bottom:1px solid #eef0f6;">
-            <a href="{Encode(frontendBaseUrl)}" style="display:inline-block;text-decoration:none;color:#171a2e;">
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
-                <tr>
-                  <td align="center" valign="middle" width="44" height="44" bgcolor="#171b3f" style="width:44px;height:44px;border:1px solid #6556e8;border-radius:10px;color:#b5abfc;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:800;line-height:44px;text-align:center;">PA</td>
-                  <td valign="middle" style="padding-left:12px;font-family:Arial,Helvetica,sans-serif;font-size:20px;font-weight:800;line-height:24px;letter-spacing:-0.6px;color:#171a2e;white-space:nowrap;">PROTEİN<span style="color:#6556e8;">AVCISI</span></td>
-                </tr>
-              </table>
-            </a>
+          <td align="center" bgcolor="#0e1122" style="padding:24px 24px;background:#0e1122;">
+            {Logo(frontendBaseUrl)}
           </td>
         </tr>
         """;
 
+    // Sola hizalı; altındaki koyu ana bölüme akıyor.
     internal static string BrandHeaderDark(string frontendBaseUrl) => $"""
         <tr>
-          <td bgcolor="#0e1122" style="padding:26px 38px 8px;">
-            <a href="{Encode(frontendBaseUrl)}" style="display:inline-block;text-decoration:none;color:#ffffff;">
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
-                <tr>
-                  <td align="center" valign="middle" width="44" height="44" bgcolor="#171b3f" style="width:44px;height:44px;border:1px solid #6556e8;border-radius:10px;color:#b5abfc;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:800;line-height:44px;text-align:center;">PA</td>
-                  <td valign="middle" style="padding-left:12px;font-family:Arial,Helvetica,sans-serif;font-size:20px;font-weight:800;line-height:24px;letter-spacing:-0.6px;color:#ffffff;white-space:nowrap;">PROTEİN<span style="color:#9b8cff;">AVCISI</span></td>
-                </tr>
-              </table>
-            </a>
+          <td bgcolor="#0e1122" style="padding:26px 38px 8px;background:#0e1122;">
+            {Logo(frontendBaseUrl)}
           </td>
         </tr>
         """;

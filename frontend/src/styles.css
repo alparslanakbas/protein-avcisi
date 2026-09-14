@@ -1518,20 +1518,6 @@ body {
   content: '';
 }
 
-.pa-brand-mark {
-  display: inline-flex;
-  width: 36px;
-  height: 36px;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid #7c6cf2;
-  border-radius: 10px;
-  color: #a89dff;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-
 .pa-search {
   width: 100%;
   min-height: 46px;

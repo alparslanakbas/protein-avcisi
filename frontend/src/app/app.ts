@@ -105,7 +105,9 @@ export class App implements OnInit {
       '@type': 'Organization',
       name: SITE_NAME,
       url: origin,
-      logo: `${origin}/favicon.svg`,
+      // Google Organization logosu için raster ve en az 112 px istiyor; SVG
+      // desteklenmiyor. Yeni logodan üretilen 512 px ikon.
+      logo: `${origin}/icons/icon-512x512.png`,
       founder: {
         '@type': 'Person',
         name: FOUNDER.name,
