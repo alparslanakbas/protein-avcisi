@@ -59,32 +59,24 @@ public class ProductDetailBackfillService(
     public async Task<int> BackfillAsync(CancellationToken cancellationToken = default)
     {
         var totalUpdated = 0;
-        var totalAttempted = 0;
 
-        // KOTA MARKALAR ARASINDA EŞİT BÖLÜŞÜLÜYOR.
-        //
-        // Önceden döngü kotayı SIRAYLA tüketiyordu: listedeki ilk markanın
-        // eksiği bitmediği sürece sonrakilere hiç sıra gelmiyordu. Canlıda
-        // ölçüldü (5 Eylül) — bakılan ürün sayısı Hardline 278, SSN 114,
-        // ProteinOcean 47; ProteinOcean 288 ürününün %84'üne haftalarca
-        // sıra gelmemişti. Tur başına 60 ürün ve haftalık periyotla bu,
-        // sıradaki markanın aylarca beklemesi demek.
-        //
-        // Pay tavan bölme ile veriliyor: 3 marka / 60 ürün = 20. Payını
-        // kullanmayan marka (eksiği bitmiş olan) kotayı serbest bırakıyor,
-        // çünkü `remaining` gerçekleşen denemeye göre yeniden hesaplanıyor.
         var fetchers = scrapers.OfType<IProductDetailFetcher>().ToList();
         if (fetchers.Count == 0)
             return 0;
 
-        var perBrandQuota = (int)Math.Ceiling((double)MaxProductsPerRun / fetchers.Count);
+        var markaAdlari = fetchers.Select(f => ((IBrandScraper)f).BrandName).ToList();
+
+        // Kota, markaların GERÇEK iş yüküne göre dağıtılıyor (bkz. PayDagit).
+        var ihtiyaclar = await IhtiyacSorgusu(db, markaAdlari).ToListAsync(cancellationToken);
+
+        var paylar = PayDagit(ihtiyaclar, MaxProductsPerRun);
 
         foreach (var scraper in fetchers)
         {
             var brandScraper = (IBrandScraper)scraper;
-            var remaining = Math.Min(perBrandQuota, MaxProductsPerRun - totalAttempted);
+            var remaining = paylar.GetValueOrDefault(brandScraper.BrandName);
             if (remaining <= 0)
-                break;
+                continue;
 
             // Açıklaması VEYA besin değeri henüz hiç bakılmamış ürünler.
             // (Açıklama backfill'i daha önce çalıştığı için bir kısmında
@@ -130,7 +122,6 @@ public class ProductDetailBackfillService(
 
             foreach (var product in missingProducts)
             {
-                totalAttempted++;
                 try
                 {
                     var details = await scraper.FetchDetailsAsync(product.Url, cancellationToken);
@@ -180,6 +171,82 @@ public class ProductDetailBackfillService(
         await TamamlandiIsaretleAsync(cancellationToken);
 
         return totalUpdated;
+    }
+
+    internal sealed record MarkaIhtiyaci(string Marka, int HicBakilmamis, int YenidenKontrol);
+
+    // Aşağıdaki tur sorgusuyla AYNI koşul (Seller == null, açıklama ya da
+    // besin damgası eksik): pay, markanın gerçekten seçilebilecek ürün
+    // sayısını aşmasın. Ayrı metot, çünkü SQL'e çevrilebildiği testle
+    // sınanıyor (EF gruplu koşullu sayımı çeviremezse hata ancak çalışma
+    // anında çıkardı).
+    internal static IQueryable<MarkaIhtiyaci> IhtiyacSorgusu(AppDbContext db, IReadOnlyCollection<string> markaAdlari) =>
+        db.Products
+            .Where(p => p.Seller == null
+                && markaAdlari.Contains(p.Brand!.Name)
+                && (p.Description == null || p.NutritionCheckedAt == null))
+            .GroupBy(p => p.Brand!.Name)
+            .Select(g => new MarkaIhtiyaci(
+                g.Key,
+                g.Count(p => p.NutritionCheckedAt == null),
+                g.Count(p => p.NutritionCheckedAt != null)));
+
+    // Hiç bakılmamış ürünlerde bir markaya bir turda verilecek en fazla pay.
+    // West/Nois etiket görselini OCR'dan geçiriyor (ürün başına ~5 sn, ölçüldü
+    // 15 Eylül); tavan hem VM'i hem marka sitesini tek turda yormamak için.
+    internal const int YeniUrunMarkaTavani = 60;
+
+    // Zaten bakılmış ürünlerin yeniden kontrolünde marka başına pay: eski eşit
+    // bölüşümün değeri (150 / 13 çekici ≈ 12). Yeniden kontrol tazeleme işi,
+    // hiç bakılmamış ürünlerle yarışmamalı.
+    internal const int YenidenKontrolMarkaTavani = 12;
+
+    // KOTA İŞ YÜKÜNE GÖRE DAĞITILIYOR (15 Eylül).
+    //
+    // Önceden her markaya sabit pay veriliyordu (150 / 13 = 12). Payını
+    // kullanmayan marka onu kimseye devretmiyordu, bu yüzden canlıda ölçülen
+    // durum şuydu: West'te 161, ProteinOcean'da 121 hiç bakılmamış ürün
+    // beklerken ikisi de günde 12 alıyordu (West ~14 gün). Aynı turda
+    // açıklaması kaynakta hiç olmayan markalar (Torq 156, Fellas 118,
+    // Grizzone 80...) kendi 12'lerini aynı sayfaları yeniden indirmeye
+    // harcıyordu, yani kotanın ~100'ü tazelemeye gidiyordu.
+    //
+    // İki kademe: önce hiç bakılmamış ürünler, sonra artan kota yeniden
+    // kontrole. Her kademede "su doldurma": ihtiyacı küçük marka ihtiyacı
+    // kadar alır, artan pay kalan markalara eşit bölünür.
+    internal static Dictionary<string, int> PayDagit(IReadOnlyList<MarkaIhtiyaci> ihtiyaclar, int toplam)
+    {
+        var paylar = ihtiyaclar.ToDictionary(i => i.Marka, _ => 0);
+
+        var kalan = SuDoldur(
+            ihtiyaclar.ToDictionary(i => i.Marka, i => Math.Min(i.HicBakilmamis, YeniUrunMarkaTavani)),
+            toplam, paylar);
+
+        SuDoldur(
+            ihtiyaclar.ToDictionary(i => i.Marka, i => Math.Min(i.YenidenKontrol, YenidenKontrolMarkaTavani)),
+            kalan, paylar);
+
+        return paylar;
+    }
+
+    // `talepler` her markanın bu kademede alabileceği en fazla pay. Dağıtılan
+    // paylar `paylar`a eklenir, dağıtılamayan kota döner.
+    private static int SuDoldur(Dictionary<string, int> talepler, int kota, Dictionary<string, int> paylar)
+    {
+        // Sıralama sabit olsun diye adla: aynı veriyle her tur aynı dağılım.
+        var bekleyen = talepler.Where(t => t.Value > 0)
+            .OrderBy(t => t.Value).ThenBy(t => t.Key, StringComparer.Ordinal)
+            .ToList();
+
+        for (var i = 0; i < bekleyen.Count && kota > 0; i++)
+        {
+            var esitPay = kota / (bekleyen.Count - i);
+            var verilen = Math.Min(bekleyen[i].Value, Math.Max(esitPay, 1));
+            paylar[bekleyen[i].Key] += verilen;
+            kota -= verilen;
+        }
+
+        return kota;
     }
 
     private async Task TamamlandiIsaretleAsync(CancellationToken cancellationToken)
