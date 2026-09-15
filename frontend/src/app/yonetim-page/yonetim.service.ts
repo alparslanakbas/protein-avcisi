@@ -77,6 +77,42 @@ export class YonetimService {
   urunDurumuGuncelle(id: number, isActive: boolean): Observable<YonetimDurumGuncelleme> {
     return this.http.put<YonetimDurumGuncelleme>(`${this.base}/urunler/${id}`, { isActive });
   }
+
+  aboneler(): Observable<AbonelerYaniti> {
+    return this.http.get<AbonelerYaniti>(`${this.base}/aboneler`);
+  }
+
+  abonePasifeAl(id: number): Observable<unknown> {
+    return this.http.post(`${this.base}/aboneler/${id}/pasife-al`, {});
+  }
+
+  /**
+   * Bilerek "aktife al" YOK: çift onayda aboneliği yalnızca kişi kendisi
+   * açabilir. Panel yalnızca onay e-postasını yeniden gönderebilir.
+   */
+  aboneOnayGonder(id: number): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.base}/aboneler/${id}/onay-gonder`, {});
+  }
+}
+
+export type AboneDurumu = 'aktif' | 'bekliyor' | 'ayrildi';
+
+export interface Abone {
+  id: number;
+  email: string;
+  durum: AboneDurumu;
+  subscribedAt: string;
+  confirmedAt: string | null;
+  unsubscribedAt: string | null;
+  lastConfirmationEmailSentAt: string | null;
+  lastDigestSentAt: string | null;
+  takipSayisi: number;
+  favoriSayisi: number;
+}
+
+export interface AbonelerYaniti {
+  aboneler: Abone[];
+  ozet: { toplam: number; aktif: number; bekleyen: number; ayrilan: number };
 }
 
 export interface Durum {

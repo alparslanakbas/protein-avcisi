@@ -196,9 +196,49 @@ public class SubscriberService(
     public async Task<bool> UnsubscribeAsync(string token, CancellationToken cancellationToken = default)
     {
         var subscriber = await db.Subscribers.FirstOrDefaultAsync(s => s.Token == token, cancellationToken);
-        if (subscriber is null)
-            return false;
+        return subscriber is not null && await MarkUnsubscribedAsync(subscriber, cancellationToken);
+    }
 
+    // Yönetim paneli: kişinin kendi "listeden çık" bağlantısıyla BİREBİR AYNI
+    // durum değişikliği — bülten ve diğer akışlar ikisini ayırt etmesin diye.
+    public async Task<bool> DeactivateAsync(int id, CancellationToken cancellationToken = default)
+    {
+        var subscriber = await db.Subscribers.FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
+        return subscriber is not null && await MarkUnsubscribedAsync(subscriber, cancellationToken);
+    }
+
+    // PANELDE "AKTİFE AL" YOK. Çift onay gereği aboneliği yalnızca kişi kendi
+    // gelen kutusundaki düğmeyle açabilir; panelden açmak onaylamamış (ya da
+    // ayrılmış) birine e-posta gönderilmesi demek olurdu. Panel yalnızca onay
+    // e-postasını yeniden gönderebilir.
+    //
+    // Bekleme süresi "gönderildi" diye GEÇİŞTİRİLMİYOR: herkese açık akış süre
+    // içinde bilerek true dönüyor, ama burada yöneticiye gitmeyen bir e-posta
+    // "gitti" diye söylenmiş olurdu.
+    public async Task<AdminConfirmationResult> ResendConfirmationAsync(int id, string confirmBaseUrl, CancellationToken cancellationToken = default)
+    {
+        var subscriber = await db.Subscribers.FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
+        if (subscriber is null)
+            return AdminConfirmationResult.NotFound;
+        if (StatusOf(subscriber.IsConfirmed, subscriber.UnsubscribedAt) == SubscriberStatus.Active)
+            return AdminConfirmationResult.AlreadyActive;
+        if (subscriber.LastConfirmationEmailSentAt is { } lastSent && DateTimeOffset.UtcNow - lastSent < ConfirmationEmailCooldown)
+            return AdminConfirmationResult.CoolingDown;
+
+        return await SendConfirmationEmailAsync(subscriber, confirmBaseUrl, cancellationToken)
+            ? AdminConfirmationResult.Sent
+            : AdminConfirmationResult.Failed;
+    }
+
+    // "Aktif"in TEK tanımı: panel listesi ve yeniden gönderme kontrolü bunu
+    // kullanıyor; /api/dev/durum sayıları ve bülten de aynı iki koşula bakıyor.
+    public static SubscriberStatus StatusOf(bool isConfirmed, DateTimeOffset? unsubscribedAt) =>
+        unsubscribedAt is not null ? SubscriberStatus.Unsubscribed
+        : isConfirmed ? SubscriberStatus.Active
+        : SubscriberStatus.Pending;
+
+    private async Task<bool> MarkUnsubscribedAsync(Subscriber subscriber, CancellationToken cancellationToken)
+    {
         // IsConfirmed'ı da geri alıyoruz — aksi halde tekrar abone olmaya
         // çalıştığında SubscribeAsync'teki "zaten onaylı" kısayolu devreye
         // girip yeni bir onay maili hiç gitmezdi.
@@ -208,3 +248,7 @@ public class SubscriberService(
         return true;
     }
 }
+
+public enum SubscriberStatus { Active, Pending, Unsubscribed }
+
+public enum AdminConfirmationResult { NotFound, AlreadyActive, CoolingDown, Sent, Failed }

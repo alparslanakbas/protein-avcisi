@@ -5,6 +5,9 @@ import { FormsModule } from '@angular/forms';
 import { PageMetaService } from '../core/page-meta.service';
 import { SITE_NAME } from '../core/site-identity';
 import {
+  Abone,
+  AboneDurumu,
+  AbonelerYaniti,
   Durum,
   Kupon,
   OlayYaniti,
@@ -14,7 +17,8 @@ import {
   YonetimUrun,
 } from './yonetim.service';
 
-type Sekme = 'durum' | 'olaylar' | 'kuponlar' | 'gorunurluk';
+type Sekme = 'durum' | 'olaylar' | 'kuponlar' | 'gorunurluk' | 'aboneler';
+type AboneFiltresi = 'tumu' | AboneDurumu;
 type GorunurlukGorunumu = 'markalar' | 'urunler';
 type MarkaFiltresi = 'tumu' | 'gorunur' | 'gizli';
 
@@ -98,6 +102,23 @@ export class YonetimPage implements OnInit {
   readonly gorunurlukKilitli = signal(Date.now() < GORUNURLUK_KILIT_BITISI);
   readonly bekleyenDegisiklik = signal<BekleyenGorunurlukDegisikligi | null>(null);
   readonly degisiklikYapiliyor = signal(false);
+
+  readonly aboneVerisi = signal<AbonelerYaniti | null>(null);
+  readonly abonelerYukleniyor = signal(false);
+  readonly aboneArama = signal('');
+  readonly aboneFiltresi = signal<AboneFiltresi>('tumu');
+  readonly aboneMesaji = signal<string | null>(null);
+  readonly bekleyenPasifeAlma = signal<Abone | null>(null);
+  /** İsteği süren satırın kimliği; yalnızca o satırın düğmeleri kilitlensin. */
+  readonly aboneIslemdeId = signal<number | null>(null);
+
+  readonly suzulenAboneler = computed(() => {
+    const sorgu = this.aboneArama().trim().toLowerCase();
+    const filtre = this.aboneFiltresi();
+    return (this.aboneVerisi()?.aboneler ?? []).filter(
+      (a) => (filtre === 'tumu' || a.durum === filtre) && (!sorgu || a.email.includes(sorgu)),
+    );
+  });
 
   readonly suzulenMarkalar = computed(() => {
     const query = this.normalize(this.markaArama());
@@ -201,6 +222,7 @@ export class YonetimPage implements OnInit {
         this.duzenlenenKupon.set(null);
         this.markalar.set([]);
         this.urunler.set([]);
+        this.aboneVerisi.set(null);
         this.markalarIlkKezYuklendi = false;
       },
     });
@@ -215,6 +237,93 @@ export class YonetimPage implements OnInit {
     const markaListesiGerekli = yeniSekme === 'gorunurluk' || yeniSekme === 'kuponlar';
     if (markaListesiGerekli && !this.markalarIlkKezYuklendi) {
       this.markalariYukle(false);
+    }
+    // Bir kez değil HER ziyarette yükleniyor: panel açıkken biri gelen
+    // kutusundan aboneliğini onaylayabilir.
+    if (yeniSekme === 'aboneler') this.abonelerYukle();
+  }
+
+  abonelerYukle(): void {
+    this.abonelerYukleniyor.set(true);
+    this.api.aboneler().subscribe({
+      next: (veri) => {
+        this.aboneVerisi.set(veri);
+        this.abonelerYukleniyor.set(false);
+      },
+      error: (e) => {
+        this.abonelerYukleniyor.set(false);
+        this.aboneMesaji.set(this.hataMetni(e, 'Aboneler alınamadı.'));
+      },
+    });
+  }
+
+  /** Pasife almak birinin e-postasını keser; marka gizlemedeki gibi önce sorar. */
+  pasifeAlmaIste(abone: Abone): void {
+    this.aboneMesaji.set(null);
+    this.bekleyenPasifeAlma.set(abone);
+  }
+
+  pasifeAlmaIptal(): void {
+    if (this.aboneIslemdeId() !== null) return;
+    this.bekleyenPasifeAlma.set(null);
+  }
+
+  pasifeAlmaOnayla(): void {
+    const abone = this.bekleyenPasifeAlma();
+    if (!abone) return;
+
+    this.aboneIslemdeId.set(abone.id);
+    this.api.abonePasifeAl(abone.id).subscribe({
+      next: () => {
+        this.aboneIslemdeId.set(null);
+        this.bekleyenPasifeAlma.set(null);
+        this.aboneMesaji.set(`${abone.email} artık abone değil.`);
+        this.abonelerYukle();
+      },
+      error: (e) => {
+        this.aboneIslemdeId.set(null);
+        this.bekleyenPasifeAlma.set(null);
+        this.aboneMesaji.set(this.hataMetni(e, 'Abone pasife alınamadı.'));
+      },
+    });
+  }
+
+  onayGonder(abone: Abone): void {
+    this.aboneMesaji.set(null);
+    this.aboneIslemdeId.set(abone.id);
+    this.api.aboneOnayGonder(abone.id).subscribe({
+      next: () => {
+        this.aboneIslemdeId.set(null);
+        this.aboneMesaji.set(`${abone.email} adresine onay e-postası gönderildi.`);
+        this.abonelerYukle();
+      },
+      error: (e) => {
+        this.aboneIslemdeId.set(null);
+        // Bekleme süresini ve sağlayıcı hatasını backend kendi cümlesiyle
+        // anlatıyor; genel bir "gönderilemedi" hangisinin olduğunu gizlerdi
+        // (kupon eklemede yaşanan hatanın aynısı, bkz. kuponEklemeHatasi).
+        const govde = (e as { error?: unknown } | null)?.error;
+        const mesaj =
+          typeof govde === 'string' ? govde : (govde as { message?: string } | null)?.message;
+        this.aboneMesaji.set(mesaj?.trim() || this.hataMetni(e, 'Onay e-postası gönderilemedi.'));
+      },
+    });
+  }
+
+  aboneFiltresiSec(filtre: AboneFiltresi): void {
+    this.aboneFiltresi.set(filtre);
+  }
+
+  aboneDurumEtiketi(durum: AboneFiltresi): string {
+    switch (durum) {
+      case 'tumu':
+        return 'Tümü';
+      case 'aktif':
+        return 'Aktif';
+      case 'bekliyor':
+        return 'Onay bekliyor';
+      default:
+        return 'Ayrıldı';
     }
   }
 

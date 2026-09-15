@@ -402,6 +402,98 @@ internal static class AdminEndpoints
             return Results.Ok(kuponlar);
         }).RequireAdminKey(adminApiKey);
 
+        // --- Bulten aboneleri (yonetim paneli) ---
+        //
+        // OZET LISTEDEN AYRI SAYILIYOR (guvenlik olaylarindaki gerekceyle
+        // ayni): liste 1000 satirla sinirli, kirpilmis listeden sayi cikarmak
+        // toplami eksik gosterirdi.
+        app.MapGet("/api/dev/aboneler", async (AppDbContext db, CancellationToken ct) =>
+        {
+            var satirlar = await db.Subscribers
+                .AsNoTracking()
+                .OrderByDescending(s => s.SubscribedAt)
+                .Take(1000)
+                .Select(s => new
+                {
+                    s.Id,
+                    s.Email,
+                    s.IsConfirmed,
+                    s.SubscribedAt,
+                    s.ConfirmedAt,
+                    s.UnsubscribedAt,
+                    s.LastConfirmationEmailSentAt,
+                    s.LastDigestSentAt,
+                    // Ayni tablo fiyat alarmini ve takip listesini de tasiyor;
+                    // pasife almanin neyi etkileyecegini gosteriyor.
+                    takipSayisi = db.ProductWatches.Count(w => w.SubscriberId == s.Id),
+                    favoriSayisi = db.ProductFavorites.Count(f => f.SubscriberId == s.Id),
+                })
+                .ToListAsync(ct);
+
+            var aboneler = satirlar.Select(s => new
+            {
+                s.Id,
+                s.Email,
+                durum = SubscriberService.StatusOf(s.IsConfirmed, s.UnsubscribedAt) switch
+                {
+                    SubscriberStatus.Active => "aktif",
+                    SubscriberStatus.Pending => "bekliyor",
+                    _ => "ayrildi",
+                },
+                s.SubscribedAt,
+                s.ConfirmedAt,
+                s.UnsubscribedAt,
+                s.LastConfirmationEmailSentAt,
+                s.LastDigestSentAt,
+                s.takipSayisi,
+                s.favoriSayisi,
+            });
+
+            var ozet = await db.Subscribers
+                .GroupBy(_ => 1)
+                .Select(g => new
+                {
+                    toplam = g.Count(),
+                    aktif = g.Count(x => x.IsConfirmed && x.UnsubscribedAt == null),
+                    bekleyen = g.Count(x => !x.IsConfirmed && x.UnsubscribedAt == null),
+                    ayrilan = g.Count(x => x.UnsubscribedAt != null),
+                })
+                .FirstOrDefaultAsync(ct);
+
+            return Results.Ok(new
+            {
+                aboneler,
+                ozet = ozet ?? new { toplam = 0, aktif = 0, bekleyen = 0, ayrilan = 0 },
+            });
+        }).RequireAdminKey(adminApiKey);
+
+        app.MapPost("/api/dev/aboneler/{id:int}/pasife-al", async (int id, SubscriberService aboneler, CancellationToken ct) =>
+            await aboneler.DeactivateAsync(id, ct)
+                ? Results.Ok(new { id, durum = "ayrildi" })
+                : Results.NotFound($"{id} numarali abone bulunamadi.")).RequireAdminKey(adminApiKey);
+
+        app.MapPost("/api/dev/aboneler/{id:int}/onay-gonder", async (
+            int id, SubscriberService aboneler, IConfiguration config, CancellationToken ct) =>
+        {
+            // ISTEGIN ADRESI DEGIL: panel bu uca www.proteinavcisi.com.tr/yonetim/api
+            // uzerinden geliyor ve www, /api/subscribe yolunu backend'e tasimiyor;
+            // oradan kurulan onay baglantisi cikmaz sokak olurdu.
+            var confirmBaseUrl = (config["PublicBaseUrl"] ?? "https://api.proteinavcisi.com.tr").TrimEnd('/');
+
+            return await aboneler.ResendConfirmationAsync(id, confirmBaseUrl, ct) switch
+            {
+                AdminConfirmationResult.Sent => Results.Ok(new { message = "Onay e-postası gönderildi." }),
+                AdminConfirmationResult.NotFound => Results.NotFound($"{id} numaralı abone bulunamadı."),
+                AdminConfirmationResult.AlreadyActive => Results.Conflict("Bu abone zaten aktif."),
+                AdminConfirmationResult.CoolingDown => Results.Json(
+                    new { message = "Son 5 dakika içinde zaten bir onay e-postası gönderildi. Biraz sonra tekrar dene." },
+                    statusCode: StatusCodes.Status429TooManyRequests),
+                _ => Results.Json(
+                    new { message = "Onay e-postası şu anda gönderilemedi; e-posta sağlayıcısı yanıt vermedi." },
+                    statusCode: StatusCodes.Status502BadGateway),
+            };
+        }).RequireAdminKey(adminApiKey);
+
         // Yonetim islemlerinin BASARISIZLIK sebepleri. Panelin "Olaylar"
         // sekmesinde guvenlik olaylarinin YANINDA ama AYRI gosteriliyor:
         // ikisi farkli sorulara cevap veriyor (biri "bana kim saldiriyor",

@@ -62,6 +62,9 @@
         >
           Görünürlük
         </button>
+        <button type="button" [class.aktif]="sekme() === 'aboneler'" (click)="sekmeSec('aboneler')">
+          Aboneler
+        </button>
       </nav>
 
       <div class="yonetim-oturum">
@@ -895,6 +898,148 @@
           </aside>
         </div>
       }
+
+      @if (sekme() === 'aboneler') {
+        <section class="sayfa-basligi">
+          <div>
+            <p class="sayfa-etiketi">Bülten</p>
+            <h1>Aboneler</h1>
+            <p>Bültene ya da fiyat alarmına kayıt olan herkes, en yeniden eskiye.</p>
+          </div>
+          <span class="tarih"
+            ><i class="ph ph-calendar-blank" aria-hidden="true"></i>{{ bugunEtiketi() }}</span
+          >
+        </section>
+
+        @if (aboneVerisi(); as veri) {
+          <section class="kartlar" aria-label="Abone göstergeleri">
+            <article class="kart">
+              <span class="kart-ikonu"><i class="ph ph-check-circle" aria-hidden="true"></i></span>
+              <span class="etiket">Aktif</span>
+              <strong>{{ veri.ozet.aktif }}</strong>
+              <span class="alt">e-posta alıyor</span>
+            </article>
+            <article class="kart">
+              <span class="kart-ikonu"
+                ><i class="ph ph-envelope-simple" aria-hidden="true"></i
+              ></span>
+              <span class="etiket">Onay bekliyor</span>
+              <strong>{{ veri.ozet.bekleyen }}</strong>
+              <span class="alt">onaylayana kadar e-posta yok</span>
+            </article>
+            <article class="kart">
+              <span class="kart-ikonu"><i class="ph ph-minus-circle" aria-hidden="true"></i></span>
+              <span class="etiket">Ayrılan</span>
+              <strong>{{ veri.ozet.ayrilan }}</strong>
+              <span class="alt">toplam {{ veri.ozet.toplam }}</span>
+            </article>
+          </section>
+        }
+
+        <section class="blok">
+          <div class="gorunurluk-araclari">
+            <label class="arama-alani">
+              <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
+              <span class="sr-only">E-posta ara</span>
+              <input
+                type="search"
+                placeholder="E-posta ara…"
+                [ngModel]="aboneArama()"
+                (ngModelChange)="aboneArama.set($event)"
+              />
+            </label>
+            <div class="durum-filtreleri" aria-label="Abone durumu">
+              @for (f of ['tumu', 'aktif', 'bekliyor', 'ayrildi']; track f) {
+                <button
+                  type="button"
+                  [class.aktif]="aboneFiltresi() === f"
+                  (click)="aboneFiltresiSec($any(f))"
+                >
+                  {{ aboneDurumEtiketi($any(f)) }}
+                </button>
+              }
+            </div>
+          </div>
+
+          @if (aboneMesaji()) {
+            <p class="bilgi" role="status">{{ aboneMesaji() }}</p>
+          }
+
+          @if (abonelerYukleniyor() && !aboneVerisi()) {
+            <p class="bos-durum">Aboneler yükleniyor…</p>
+          } @else {
+            <div class="tablo-kabugu">
+              <table>
+                <thead>
+                  <tr>
+                    <th>E-posta</th>
+                    <th>Durum</th>
+                    <th>Kayıt</th>
+                    <th>Onay</th>
+                    <th>Son bülten</th>
+                    <th>Alarm</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (a of suzulenAboneler(); track a.id) {
+                    <tr [class.pasif]="a.durum !== 'aktif'">
+                      <td class="tek-aralik">{{ a.email }}</td>
+                      <td>
+                        <span class="satir-durumu" [class.gizli]="a.durum !== 'aktif'"
+                          ><span></span>{{ aboneDurumEtiketi(a.durum) }}</span
+                        >
+                      </td>
+                      <td>{{ tarih(a.subscribedAt) }}</td>
+                      <td>
+                        {{
+                          a.durum === 'ayrildi'
+                            ? 'ayrıldı ' + tarih(a.unsubscribedAt)
+                            : tarih(a.confirmedAt)
+                        }}
+                      </td>
+                      <td>{{ tarih(a.lastDigestSentAt) }}</td>
+                      <td>{{ a.takipSayisi }}</td>
+                      <td>
+                        <div class="satir-eylemleri">
+                          @if (a.durum === 'aktif') {
+                            <button
+                              type="button"
+                              class="satir-eylem"
+                              [disabled]="aboneIslemdeId() === a.id"
+                              (click)="pasifeAlmaIste(a)"
+                            >
+                              Pasife al
+                            </button>
+                          } @else {
+                            <button
+                              type="button"
+                              class="satir-eylem birincil"
+                              [disabled]="aboneIslemdeId() === a.id"
+                              (click)="onayGonder(a)"
+                            >
+                              {{ aboneIslemdeId() === a.id ? 'Gönderiliyor…' : 'Onay gönder' }}
+                            </button>
+                          }
+                        </div>
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="7"><p class="bos-durum">Eşleşen abone yok.</p></td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            <p class="etki-notu">
+              <i class="ph ph-info" aria-hidden="true"></i>Abonelik yalnızca kişi kendi gelen
+              kutusundan onaylayınca açılır; bu yüzden burada "aktife al" yok. "Onay gönder" onay
+              düğmesini tekrar e-postalar.
+            </p>
+          }
+        </section>
+      }
     </main>
 
     @if (bekleyenDegisiklik(); as degisiklik) {
@@ -929,6 +1074,46 @@
               (click)="degisikligiOnayla()"
             >
               {{ degisiklikYapiliyor() ? 'Kaydediliyor…' : 'Gizlemeyi onayla' }}
+            </button>
+          </div>
+        </section>
+      </div>
+    }
+
+    @if (bekleyenPasifeAlma(); as abone) {
+      <div class="onay-arkaplani" (click)="pasifeAlmaIptal()">
+        <section
+          class="onay-penceresi"
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="abone-onay-basligi"
+          (click)="$event.stopPropagation()"
+        >
+          <span class="onay-ikonu"><i class="ph ph-warning-circle" aria-hidden="true"></i></span>
+          <p class="sayfa-etiketi">Abonelik</p>
+          <h2 id="abone-onay-basligi">{{ abone.email }} pasife alınsın mı?</h2>
+          <p>
+            Bülten ve fiyat alarmı e-postaları duracak
+            @if (abone.takipSayisi > 0) {
+              ({{ abone.takipSayisi }} ürün alarmı dahil)
+            }. Tekrar açmak için kişinin aboneliğini yeniden onaylaması gerekir.
+          </p>
+          <div class="onay-islemleri">
+            <button
+              type="button"
+              class="vazgec"
+              [disabled]="aboneIslemdeId() !== null"
+              (click)="pasifeAlmaIptal()"
+            >
+              Vazgeç
+            </button>
+            <button
+              type="button"
+              class="gizlemeyi-onayla"
+              [disabled]="aboneIslemdeId() !== null"
+              (click)="pasifeAlmaOnayla()"
+            >
+              {{ aboneIslemdeId() !== null ? 'Kaydediliyor…' : 'Pasife al' }}
             </button>
           </div>
         </section>
