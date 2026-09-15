@@ -253,7 +253,8 @@ public class NoisLabelTests
         var d = await Scraper(Sayfa($"<p><img src=\"{GorselAdresi}\"></p>"), ocr).FetchDetailsAsync("https://nois.com/x");
 
         Assert.Null(d.NutritionJson);
-        Assert.Equal([6, 3], ocr.DenenenModlar);
+        // Önce 2 kat büyütmeyle psm 6 ve 3, sonra büyütmeden (bkz. NutritionLabelReader).
+        Assert.Equal([(true, 6), (true, 3), (false, 6), (false, 3)], ocr.Denemeler);
     }
 
     private sealed class SayfaVeGorselHandler(string sayfa) : HttpMessageHandler
@@ -268,14 +269,14 @@ public class NoisLabelTests
 internal sealed class SabitOcr(string? metin, bool kurulu = true) : INutritionLabelOcr
 {
     public string? OkunanGorsel { get; private set; }
-    public List<int> DenenenModlar { get; } = [];
+    public List<(bool Buyutme, int Mod)> Denemeler { get; } = [];
 
     public bool IsAvailable => kurulu;
 
-    public Task<string?> ReadAsync(byte[] image, int pageSegmentationMode, CancellationToken cancellationToken)
+    public Task<string?> ReadAsync(byte[] image, int pageSegmentationMode, bool upscale, CancellationToken cancellationToken)
     {
         OkunanGorsel = "https://cdn.myikas.com/images/x/etiket/image_1080.webp";
-        DenenenModlar.Add(pageSegmentationMode);
+        Denemeler.Add((upscale, pageSegmentationMode));
         return Task.FromResult(metin);
     }
 }

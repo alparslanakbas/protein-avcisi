@@ -15,7 +15,8 @@ public interface INutritionLabelOcr
     bool IsAvailable { get; }
 
     /// <summary>Görselin metni; OCR başarısızsa null.</summary>
-    Task<string?> ReadAsync(byte[] image, int pageSegmentationMode, CancellationToken cancellationToken);
+    /// <param name="upscale">Hazırlıkta 2 kat büyütülsün mü (bkz. <see cref="NutritionLabelReader"/>).</param>
+    Task<string?> ReadAsync(byte[] image, int pageSegmentationMode, bool upscale, CancellationToken cancellationToken);
 }
 
 /// <summary>
@@ -43,7 +44,7 @@ public sealed class TesseractLabelOcr(ILogger<TesseractLabelOcr> logger) : INutr
 
     public bool IsAvailable => installed ??= CheckInstalled();
 
-    public async Task<string?> ReadAsync(byte[] image, int pageSegmentationMode, CancellationToken cancellationToken)
+    public async Task<string?> ReadAsync(byte[] image, int pageSegmentationMode, bool upscale, CancellationToken cancellationToken)
     {
         var pngPath = Path.Combine(Path.GetTempPath(), $"etiket-{Guid.NewGuid():N}.png");
         try
@@ -51,7 +52,7 @@ public sealed class TesseractLabelOcr(ILogger<TesseractLabelOcr> logger) : INutr
             try
             {
                 await using var png = File.Create(pngPath);
-                await PrepareAsync(image, png, cancellationToken);
+                await PrepareAsync(image, png, upscale, cancellationToken);
             }
             catch (Exception ex) when (ex is ImageFormatException or UnknownImageFormatException or InvalidImageContentException)
             {
@@ -77,12 +78,12 @@ public sealed class TesseractLabelOcr(ILogger<TesseractLabelOcr> logger) : INutr
     /// Saydamlığı yazının rengine göre düzleştirir, gri tona çevirip büyütür.
     /// Ağdan ve süreçten ayrı: asıl karar teste bağlanabilsin diye.
     /// </summary>
-    internal static async Task PrepareAsync(byte[] bytes, Stream output, CancellationToken cancellationToken)
+    internal static async Task PrepareAsync(byte[] bytes, Stream output, bool upscale, CancellationToken cancellationToken)
     {
         using var image = Image.Load<Rgba32>(bytes);
 
         var (hasTransparency, lightText) = Inspect(image);
-        var scale = Math.Min(2.0, MaxOcrEdge / (double)Math.Max(image.Width, image.Height));
+        var scale = upscale ? Math.Min(2.0, MaxOcrEdge / (double)Math.Max(image.Width, image.Height)) : 1.0;
 
         image.Mutate(x =>
         {

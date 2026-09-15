@@ -91,13 +91,23 @@ internal static partial class TurkishLabelTextParser
             if (match.Pattern is null || accepted.ContainsKey(match.Kind))
                 continue;
 
-            var values = match.Kind == Kind.Energy ? Kcal(raw) : Masses(raw);
-            if (values.Count != 2 || values[0] is not { } first || values[1] is not { } second)
+            var columns = match.Kind == Kind.Energy ? Kcal(raw) : Masses(raw);
+            if (columns is not [var first, var second])
                 continue;
 
-            var (portion, per100) = baseFirst ? (second, first) : (first, second);
-            if (RowConsistent(portion, per100, ratio))
-                accepted[match.Kind] = portion;
+            var (portions, per100s) = baseFirst ? (second, first) : (first, second);
+
+            // Her sütunun olası okumaları çaprazlanıyor; oranı tutan porsiyon
+            // değerleri toplanıyor. TEK bir değer kalırsa kabul, farklı iki
+            // değer tutuyorsa hangisinin doğru olduğu bilinemez: ret.
+            var consistent = (
+                from portion in portions
+                from per100 in per100s
+                where RowConsistent(portion, per100, ratio)
+                select portion).ToList();
+
+            if (consistent.Count > 0 && consistent.All(p => p.Grams == consistent[0].Grams))
+                accepted[match.Kind] = consistent[0];
         }
 
         if (Required.Any(k => !accepted.ContainsKey(k)) || !CaloriesConsistent(accepted))
@@ -118,14 +128,22 @@ internal static partial class TurkishLabelTextParser
     }
 
     // "Porsiyon Miktarı: 30 Gr", "1 Servis = 60 g", "Servis Miktarı :(3 g)".
-    // "Servis Sayısı: 30" gram taşımıyor, eşleşmez.
+    // "Servis Sayısı: 30" gram taşımıyor, eşleşmez. West etiketi porsiyonu
+    // iki dilde basıyor; Türkçe satır "(30g)" yerine "(0g)" okunduğunda
+    // İngilizce "Serving size ... (30g)" satırı kullanılıyor, sıfır atlanıyor.
     private static decimal? ServingAbove(string[] lines, int headerIndex)
     {
         for (var i = headerIndex - 1; i >= 0; i--)
         {
             var folded = Fold(lines[i]);
-            if (PortionWordRegex().IsMatch(folded) && GramAmountRegex().Match(folded) is { Success: true } m)
-                return ParseNumber(m.Groups[1].Value);
+            if (!PortionWordRegex().IsMatch(folded) && !folded.Contains("serving", StringComparison.Ordinal))
+                continue;
+
+            foreach (Match m in GramAmountRegex().Matches(folded))
+            {
+                if (ParseNumber(m.Groups[1].Value) is > 0 and var grams)
+                    return grams;
+            }
         }
 
         return null;
@@ -136,23 +154,72 @@ internal static partial class TurkishLabelTextParser
     /// <param name="Display">Etikette basıldığı birim ve basamakla gösterim ("0,975 g", "1.277,25 mg").</param>
     private readonly record struct Amount(decimal Grams, int Decimals, string Display);
 
-    private static List<Amount?> Kcal(string raw) =>
+    // Her sütun için OLASI okumalar. Enerjide belirsizlik yok: kcal birimi okunmuş.
+    private static List<List<Amount>> Kcal(string raw) =>
         KcalRegex().Matches(NormalizeZeros(raw))
-            .Select(m => ToAmount(m.Groups[1].Value, "kcal"))
+            .Select(m => ToAmount(m.Groups[1].Value, "kcal") is { } a ? new List<Amount> { a } : [])
             .ToList();
 
-    private static List<Amount?> Masses(string raw)
+    /// <summary>Satırdaki iki kütle sütununun olası okumaları; iki sütun bulunamazsa boş.</summary>
+    /// <remarks>
+    /// <b>Neden tek okuma değil.</b> Birimi okunamamış ve 9 ile biten sayı iki
+    /// şey olabilir: "2,759" "2,75 g" demek, ama "29" hem "2 g" hem gerçek 29
+    /// olabilir. West etiketinde ölçüldü: "Yağ / Fat 6,8 g 29" (gerçekte 2 g),
+    /// "Doymuş Yağ 4g 1,29" (1,2 g), "Protein 73,8 9 22" (73,8 g, 22 g). Tek
+    /// kurallı düzeltme bunlardan birini mutlaka yanlış çözerdi. İki okuma
+    /// üretilip hangisinin satır kontrolünü geçtiğine bakılıyor.
+    ///
+    /// <b>Hangi sayılar sütun.</b> Önce birimi okunmuş sayılar; tam iki tane
+    /// değilse birimsizler de katılıyor. Yüzde işaretli sayı (DV/BRD) hiç
+    /// alınmıyor. Nois'te "Tuz 0,97g 0,04 | 0,29g 0,01" gibi yüzde işareti
+    /// düşmüş DV sütunları var; birimli iki sayı zaten bulunduğu için karışmıyor.
+    /// </remarks>
+    private static List<List<Amount>> Masses(string raw)
     {
-        var text = NormalizeZeros(raw);
+        // "10,7 9g" / "73,8 9": boşlukla ayrılmış tek başına 9, okunamamış "g".
+        var text = SpacedNineRegex().Replace(NormalizeZeros(raw), "$1g");
 
-        // "2,759" → "2,75g": birimi olmayan ondalık sayının sondaki 9'u
-        // okunamamış "g". Yalnızca birimsiz sayıya uygulanıyor; "0,59g" gibi
-        // birimi okunmuş değere dokunmuyor.
-        text = TrailingNineRegex().Replace(text, "$1g");
-
-        return MassTokenRegex().Matches(text)
-            .Select(m => ToAmount(FixLostComma(m.Groups[1].Value), m.Groups[2].Value.ToLowerInvariant()))
+        var tokens = NumberTokenRegex().Matches(text)
+            .Select(m => (Number: m.Groups[1].Value, Unit: m.Groups[2].Value.ToLowerInvariant()))
             .ToList();
+
+        // "0,/g" gibi basamağı kaybolmuş, ayraçla biten sayı KESİK okuma. 0
+        // sayılsaydı tam sayının ±0,5 yuvarlama payını alır ve porsiyondaki
+        // her küçük değerle "tutarlı" çıkardı (West tuz satırında görüldü).
+        // Satır kullanılmıyor.
+        if (tokens.Any(t => t.Number.EndsWith(',') || t.Number.EndsWith('.')))
+            return [];
+
+        // Sırayla: birimi okunmuşlar; birimli ya da 9 ile bitenler (sondaki 9
+        // okunamamış "g" olabilir — Nois'te yüzde işareti düşmüş DV sütunu
+        // "13,69 4,95% | 0,68g 0,24" satırında üçüncü birimsiz sayı oluyor);
+        // en son hepsi. Tam iki sütun veren ilk küme kullanılıyor.
+        var withUnit = tokens.Where(t => t.Unit.Length > 0).ToList();
+        var gramCandidates = tokens.Where(t => t.Unit.Length > 0 || t.Number.EndsWith('9')).ToList();
+        var chosen = withUnit.Count == 2 ? withUnit
+            : gramCandidates.Count == 2 ? gramCandidates
+            : tokens.Count == 2 ? tokens
+            : null;
+        if (chosen is null)
+            return [];
+
+        return chosen.Select(t => Readings(t.Number, t.Unit)).ToList();
+    }
+
+    private static List<Amount> Readings(string number, string unit)
+    {
+        var readings = new List<Amount>();
+        if (ToAmount(FixLostComma(number), unit.Length == 0 ? "g" : unit) is { } asPrinted)
+            readings.Add(asPrinted);
+
+        // Birimsiz ve 9 ile biten: sondaki 9 okunamamış "g" olabilir.
+        if (unit.Length == 0 && number.Length >= 2 && number[^1] == '9'
+            && ToAmount(FixLostComma(number[..^1].TrimEnd(',', '.')), "g") is { } withoutNine)
+        {
+            readings.Add(withoutNine);
+        }
+
+        return readings;
     }
 
     // "Og", "O gr", "O Kcal(Okj)" → 0. Harfin kelime içinde olmadığı yerde.
@@ -264,13 +331,14 @@ internal static partial class TurkishLabelTextParser
     [GeneratedRegex(@"(\d[\d.,]*)\s*kcal", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex KcalRegex();
 
-    // Birimsiz, ondalıklı ve 9 ile biten sayı; ardından birim ya da % gelmiyor.
-    [GeneratedRegex(@"(?<![\d.,])(\d+[.,]\d*)9(?=\s|\||$)(?!\s*(?:%|g|gr|mg|kcal|kj)\b)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
-    private static partial Regex TrailingNineRegex();
+    // Ondalıklı sayıdan sonra boşlukla gelen tek başına 9 (ardından g olabilir).
+    [GeneratedRegex(@"(\d+[.,]\d+)\s+9g?(?=\s|\||$)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex SpacedNineRegex();
 
-    // Kütle birimli sayı; ardından yüzde işareti gelen sayı DV sütunu, alınmıyor.
-    [GeneratedRegex(@"(?<![\d.,%])(\d[\d.,]*)\s*(mg|gr|g)\b(?!\s*%)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
-    private static partial Regex MassTokenRegex();
+    // Sayı ve (varsa) kütle birimi. Yüzde işaretinin önündeki ya da ardındaki
+    // sayı DV/BRD sütunu, alınmıyor. Harfe bitişik sayı ("B6", "4:1:1") da değil.
+    [GeneratedRegex(@"(?<![\d.,%:A-Za-z])(\d[\d.,]*)\s*(mg|gr|g)?(?![\d.,:A-Za-z]|\s*%)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex NumberTokenRegex();
 
     // Kelimenin parçası olmayan O: "Og", "O gr", "O Kcal(Okj)", "(Okj)".
     [GeneratedRegex(@"(?<![A-Za-zÇĞİÖŞÜçğıöşü])O(?=\s*(?:g|gr|kcal|kj|%)\b|kj)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]

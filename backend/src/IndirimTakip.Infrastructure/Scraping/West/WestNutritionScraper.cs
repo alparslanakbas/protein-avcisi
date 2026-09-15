@@ -1,5 +1,8 @@
+using System.Net;
+using System.Text.RegularExpressions;
 using HtmlAgilityPack;
 using IndirimTakip.Core.Scraping;
+using IndirimTakip.Infrastructure.Scraping.NutritionLabels;
 
 namespace IndirimTakip.Infrastructure.Scraping.West;
 
@@ -14,10 +17,12 @@ namespace IndirimTakip.Infrastructure.Scraping.West;
 /// showcase-price-new / showcase-price-old ikilisi ise tutarlı ve
 /// SSN'deki OpenCart kalıbının aynısı.
 /// </summary>
-public class WestNutritionScraper(HttpClient httpClient) : IBrandScraper
+public partial class WestNutritionScraper(HttpClient httpClient, INutritionLabelOcr labelOcr) : IBrandScraper, IProductDetailFetcher
 {
+    private const string SiteUrl = "https://www.westnutrition.com.tr";
+
     public string BrandName => "West Nutrition";
-    public string BaseUrl => "https://www.westnutrition.com.tr";
+    public string BaseUrl => SiteUrl;
 
     /// <summary>
     /// Taranacak kategoriler ve bizim kategori slug'ımıza eşlemesi. Sitedeki
@@ -160,4 +165,109 @@ public class WestNutritionScraper(HttpClient httpClient) : IBrandScraper
 
         return products.Values.ToList();
     }
+
+    /// <summary>
+    /// Besin değeri ürün galerisindeki ETİKET GÖRSELİNDEN, Türkçe OCR ile.
+    /// </summary>
+    /// <remarks>
+    /// <b>ÖLÇÜM (15 Eylül, 173 ürün).</b> West besin tablosunu metin olarak
+    /// yayınlamıyor; 66 üründe galeride dosya adı "enerji-besin-ogeleri"
+    /// benzeri bir görsel var. Canlı konteynerde okunan 70 görselde 14 kabul:
+    /// iki sütunlu (100 g | Porsiyonda) whey etiketleri. Amino/kreatin/BCAA/
+    /// karnitin etiketlerinin çoğu TEK sütun basıyor; satır kontrolü
+    /// yapılamadığı için bilerek reddediliyor.
+    ///
+    /// <b>YALNIZCA ÜRÜNÜN KENDİ KLASÖRÜ.</b> Sayfa "benzer ürünler" bloğunda
+    /// başka ürünlerin görsellerini de taşıyor ve onlar da
+    /// <c>myassets/products/&lt;n&gt;/</c> altında. Ölçüldü: 892 numaralı karnitin
+    /// sayfasında 083 (kendi) ve 488 (başka ürün) klasörlerinden iki etiket
+    /// vardı. Klasör, ürünün ana görselinden (<c>itemprop="image"</c>) alınıyor;
+    /// ana görsel yoksa etiket aranmıyor, tahmin edilmiyor.
+    ///
+    /// <b>Açıklama da döndürülüyor.</b> Normal tarama West'te açıklama
+    /// getirmiyor (173/173 boş) ve tamamlama servisi açıklaması boş ürünü her
+    /// turda yeniden seçiyor; dönmeseydi aynı görseller her turda OCR'lanırdı.
+    ///
+    /// <b>Tesseract yoksa hata atılıyor</b> — boş dönmek ürünü kalıcı olarak
+    /// "tablo yok" diye damgalatırdı (Nois ile aynı gerekçe).
+    /// </remarks>
+    public async Task<ProductDetails> FetchDetailsAsync(string productUrl, CancellationToken cancellationToken = default)
+    {
+        if (!labelOcr.IsAvailable)
+            throw new InvalidOperationException("Tesseract (Türkçe dil paketiyle) kurulu değil; West etiketleri okunamıyor.");
+
+        using var response = await httpClient.GetAsync(productUrl, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+            return new ProductDetails(null, null, null);
+
+        var html = await response.Content.ReadAsStringAsync(cancellationToken);
+        var doc = new HtmlDocument();
+        doc.LoadHtml(html);
+
+        var description = Description(doc);
+
+        foreach (var imageUrl in LabelImageUrls(doc, html).Take(2))
+        {
+            using var imageResponse = await httpClient.GetAsync(imageUrl, cancellationToken);
+            if (!imageResponse.IsSuccessStatusCode)
+                continue;
+
+            var image = await imageResponse.Content.ReadAsByteArrayAsync(cancellationToken);
+            if (await NutritionLabelReader.ReadAsync(labelOcr, image, cancellationToken) is not { } label)
+                continue;
+
+            var nutritionJson = NutritionParser.BuildNutritionJson(label.Rows);
+            return new ProductDetails(
+                Description: description,
+                NutritionJson: nutritionJson,
+                ProteinPerServingGrams: NutritionParser.ExtractProteinGrams(nutritionJson),
+                ServingSizeGrams: label.ServingGrams);
+        }
+
+        return new ProductDetails(description, null, null);
+    }
+
+    /// <summary>Ürün sekmesindeki açıklama metni ("Ürün Bilgisi").</summary>
+    internal static string? Description(HtmlDocument doc)
+    {
+        var node = doc.DocumentNode.SelectSingleNode(
+            "//div[contains(concat(' ', normalize-space(@class), ' '), ' product-detail-tab-content ')]" +
+            "/div[contains(concat(' ', normalize-space(@class), ' '), ' product-detail-tab-row ')]");
+        if (node is null)
+            return null;
+
+        var text = WhitespaceRegex().Replace(HtmlEntity.DeEntitize(node.InnerText), " ").Trim();
+        return text.Length == 0 ? null : text;
+    }
+
+    /// <summary>Ürünün KENDİ görsel klasöründeki etiket görsellerinin tam boy adresleri.</summary>
+    internal static IReadOnlyList<string> LabelImageUrls(HtmlDocument doc, string html)
+    {
+        var mainImage = doc.DocumentNode.SelectSingleNode("//img[@itemprop='image']")?.GetAttributeValue("src", "");
+        if (string.IsNullOrEmpty(mainImage) || ProductFolderRegex().Match(mainImage) is not { Success: true } folderMatch)
+            return [];
+
+        var folder = folderMatch.Groups[1].Value;
+        return ProductImageRegex().Matches(html)
+            .Where(m => m.Groups[1].Value == folder && LabelFileRegex().IsMatch(m.Groups[2].Value))
+            // "_min" küçük önizleme; tam boyu okunuyor.
+            .Select(m => $"{SiteUrl}/myassets/products/{folder}/{MinSuffixRegex().Replace(WebUtility.HtmlDecode(m.Groups[2].Value), "$1")}")
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    [GeneratedRegex(@"myassets/products/(\d+)/")]
+    private static partial Regex ProductFolderRegex();
+
+    [GeneratedRegex(@"myassets/products/(\d+)/([^""'?\s)]+)")]
+    private static partial Regex ProductImageRegex();
+
+    [GeneratedRegex(@"besin|enerji", RegexOptions.IgnoreCase)]
+    private static partial Regex LabelFileRegex();
+
+    [GeneratedRegex(@"_min(\.\w+)$", RegexOptions.IgnoreCase)]
+    private static partial Regex MinSuffixRegex();
+
+    [GeneratedRegex(@"\s+")]
+    private static partial Regex WhitespaceRegex();
 }

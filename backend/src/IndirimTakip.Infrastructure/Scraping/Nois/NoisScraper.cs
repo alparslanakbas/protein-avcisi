@@ -272,26 +272,16 @@ public partial class NoisScraper(HttpClient httpClient, INutritionLabelOcr label
 
         var image = await imageResponse.Content.ReadAsByteArrayAsync(cancellationToken);
 
-        // psm 6 (tek metin bloğu) etiketlerin çoğunu okudu; Whey Rex 2000'in
-        // görselinde yalnızca psm 3 (otomatik) şeker satırını ayırabildi.
-        foreach (var mode in PageSegmentationModes)
-        {
-            var text = await labelOcr.ReadAsync(image, mode, cancellationToken);
-            if (text is null || TurkishLabelTextParser.Parse(text) is not { } label)
-                continue;
+        if (await NutritionLabelReader.ReadAsync(labelOcr, image, cancellationToken) is not { } label)
+            return new ProductDetails(description, null, null);
 
-            var nutritionJson = NutritionParser.BuildNutritionJson(label.Rows);
-            return new ProductDetails(
-                Description: description,
-                NutritionJson: nutritionJson,
-                ProteinPerServingGrams: NutritionParser.ExtractProteinGrams(nutritionJson),
-                ServingSizeGrams: label.ServingGrams);
-        }
-
-        return new ProductDetails(description, null, null);
+        var nutritionJson = NutritionParser.BuildNutritionJson(label.Rows);
+        return new ProductDetails(
+            Description: description,
+            NutritionJson: nutritionJson,
+            ProteinPerServingGrams: NutritionParser.ExtractProteinGrams(nutritionJson),
+            ServingSizeGrams: label.ServingGrams);
     }
-
-    private static readonly int[] PageSegmentationModes = [6, 3];
 
     private static string? PlainText(string? html)
     {
