@@ -314,11 +314,24 @@ app.get('/robots.txt', (req, res) => {
 /**
  * Serve static files from /browser
  */
+//
+// 1 yıllık önbellek YALNIZCA adında içerik özeti olan dosyalara verilir
+// (chunk-BEZsFLJK.js, styles-….css, Phosphor-….woff2): içerik değişince ad da
+// değişir, eski kopyanın önbellekte kalması zararsızdır. Önceden bu süre
+// manifest, ikon ve logo gibi SABİT adlı dosyalara da uygulanıyordu; logo
+// değiştiğinde kullanıcılar eski ikonu uygulamayı silip yeniden kurduktan
+// sonra bile görmeye devam etti. Sabit adlı dosyalar artık 1 gün önbellekte.
+const HASHED_ASSET = /-[A-Za-z0-9_-]{8}\.(?:js|css|woff2?)$/;
 app.use(
   express.static(browserDistFolder, {
-    maxAge: '1y',
+    maxAge: '1d',
     index: false,
     redirect: false,
+    setHeaders: (res, filePath) => {
+      if (HASHED_ASSET.test(filePath)) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      }
+    },
   }),
 );
 
