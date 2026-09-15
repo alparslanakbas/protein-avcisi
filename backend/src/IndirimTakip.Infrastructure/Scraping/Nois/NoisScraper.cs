@@ -1,8 +1,10 @@
 using System.Globalization;
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using IndirimTakip.Core.Scraping;
+using IndirimTakip.Infrastructure.Scraping.NutritionLabels;
 
 namespace IndirimTakip.Infrastructure.Scraping.Nois;
 
@@ -14,7 +16,7 @@ namespace IndirimTakip.Infrastructure.Scraping.Nois;
 /// ürün paketleri katalogda kalır. Katalogdaki tek üçüncü taraf ürünün kaynak
 /// markası korunur ve Nois satıcı olarak işaretlenir.
 /// </summary>
-public partial class NoisScraper(HttpClient httpClient) : IBrandScraper
+public partial class NoisScraper(HttpClient httpClient, INutritionLabelOcr labelOcr) : IBrandScraper, IProductDetailFetcher
 {
     public string BrandName => "Nois Nutrition";
     public string BaseUrl => "https://nois.com";
@@ -221,8 +223,96 @@ public partial class NoisScraper(HttpClient httpClient) : IBrandScraper
         return await response.Content.ReadFromJsonAsync<NoisGraphQlResponse>(cancellationToken: cancellationToken);
     }
 
+    /// <summary>
+    /// Besin değeri ETİKET GÖRSELİNDEN, sunucudaki Tesseract ile okunuyor.
+    /// </summary>
+    /// <remarks>
+    /// <b>ÖLÇÜM (15 Eylül, 65 ürün).</b> Nois besin tablosunu metin olarak
+    /// yayınlamıyor; 55 üründe ikas özellik alanı "Besin Tablosu" içinde tek
+    /// bir <c>&lt;img&gt;</c> var. Görsel ürüne YAPISAL olarak bağlı (sayfanın
+    /// kendi <c>pageSpecificData</c> alanı), galeriden "etiket gibi duranı"
+    /// tahmin etmiyoruz. Sunucudan alınan OCR metinlerinde ayrıştırıcı 55
+    /// etiketin çoğunu kabul etti; reddettikleri etiketin kendisi tutarsız
+    /// olanlar (bkz. <see cref="TurkishLabelTextParser"/>).
+    ///
+    /// <b>Tesseract yoksa HATA atılıyor, boş sonuç dönmüyor.</b> Tamamlama
+    /// servisi başarılı her çağrıda "bakıldı" damgası atıyor ve damgalı ürüne
+    /// bir daha dönmüyor; kurulum eksik bir konteynerde boş dönmek 55 ürünü
+    /// kalıcı olarak "tablo yok" diye işaretlerdi. Hata atılınca damga atılmıyor.
+    ///
+    /// <b>Açıklama da döndürülüyor.</b> Tamamlama servisi açıklaması boş ürünü
+    /// her turda yeniden seçiyor; normal tarama Nois'te açıklama getirmediği
+    /// için açıklama dönmeseydi aynı 55 görsel her turda yeniden OCR'lanırdı.
+    /// Ölçüldü: 65 sayfanın 65'inde açıklama dolu.
+    /// </remarks>
+    public async Task<ProductDetails> FetchDetailsAsync(string productUrl, CancellationToken cancellationToken = default)
+    {
+        if (!labelOcr.IsAvailable)
+            throw new InvalidOperationException("Tesseract (Türkçe dil paketiyle) kurulu değil; Nois etiketleri okunamıyor.");
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, productUrl);
+        request.Headers.UserAgent.ParseAdd(
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36");
+
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+            return new ProductDetails(null, null, null);
+
+        var html = await response.Content.ReadAsStringAsync(cancellationToken);
+        var description = PlainText(IkasProductAttributes.Description(html));
+
+        var labelHtml = IkasProductAttributes.ValueOf(IkasProductAttributes.Read(html), "besin tablosu");
+        var imageUrl = labelHtml is null ? null : ImageSourceRegex().Match(labelHtml) is { Success: true } m ? WebUtility.HtmlDecode(m.Groups[1].Value) : null;
+        if (imageUrl is null)
+            return new ProductDetails(description, null, null);
+
+        using var imageResponse = await httpClient.GetAsync(imageUrl, cancellationToken);
+        if (!imageResponse.IsSuccessStatusCode)
+            return new ProductDetails(description, null, null);
+
+        var image = await imageResponse.Content.ReadAsByteArrayAsync(cancellationToken);
+
+        // psm 6 (tek metin bloğu) etiketlerin çoğunu okudu; Whey Rex 2000'in
+        // görselinde yalnızca psm 3 (otomatik) şeker satırını ayırabildi.
+        foreach (var mode in PageSegmentationModes)
+        {
+            var text = await labelOcr.ReadAsync(image, mode, cancellationToken);
+            if (text is null || TurkishLabelTextParser.Parse(text) is not { } label)
+                continue;
+
+            var nutritionJson = NutritionParser.BuildNutritionJson(label.Rows);
+            return new ProductDetails(
+                Description: description,
+                NutritionJson: nutritionJson,
+                ProteinPerServingGrams: NutritionParser.ExtractProteinGrams(nutritionJson),
+                ServingSizeGrams: label.ServingGrams);
+        }
+
+        return new ProductDetails(description, null, null);
+    }
+
+    private static readonly int[] PageSegmentationModes = [6, 3];
+
+    private static string? PlainText(string? html)
+    {
+        if (string.IsNullOrWhiteSpace(html))
+            return null;
+
+        var text = WhitespaceRegex().Replace(WebUtility.HtmlDecode(TagRegex().Replace(html, " ")), " ").Trim();
+        return text.Length == 0 ? null : text;
+    }
+
     [GeneratedRegex(@"\b(?<value>\d+)\s*Servis\b", RegexOptions.IgnoreCase)]
     private static partial Regex ServingCountRegex();
+
+    [GeneratedRegex(@"<img[^>]+src=""([^""]+)""", RegexOptions.IgnoreCase)]
+    private static partial Regex ImageSourceRegex();
+
+    [GeneratedRegex(@"<[^>]+>")]
+    private static partial Regex TagRegex();
+
+    [GeneratedRegex(@"\s+")]
+    private static partial Regex WhitespaceRegex();
 }
 
 internal sealed class NoisGraphQlResponse

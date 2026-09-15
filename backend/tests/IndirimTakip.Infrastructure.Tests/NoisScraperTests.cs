@@ -6,7 +6,7 @@ namespace IndirimTakip.Infrastructure.Tests;
 // ürün/kategori/fiyat alanlarından alınmıştır.
 public class NoisScraperTests
 {
-    private readonly NoisScraper scraper = new(new HttpClient());
+    private readonly NoisScraper scraper = new(new HttpClient(), new SabitOcr(null));
 
     [Fact]
     public void VitrindekiIndirimliFiyatiVeListeFiyatiniAyirir()

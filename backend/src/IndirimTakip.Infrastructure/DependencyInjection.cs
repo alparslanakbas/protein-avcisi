@@ -22,6 +22,7 @@ using IndirimTakip.Infrastructure.Scraping.Kiperin;
 using IndirimTakip.Infrastructure.Scraping.MlaProtein;
 using IndirimTakip.Infrastructure.Scraping.MusclePump;
 using IndirimTakip.Infrastructure.Scraping.Nois;
+using IndirimTakip.Infrastructure.Scraping.NutritionLabels;
 using IndirimTakip.Infrastructure.Scraping.PrimeNutrition;
 using IndirimTakip.Infrastructure.Scraping.Protein34;
 using IndirimTakip.Infrastructure.Scraping.Protein7;
@@ -310,7 +311,9 @@ public static class DependencyInjection
         });
         services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<ProteinOceanScraper>());
 
-        // Nois Nutrition — İkas public storefront GraphQL kataloğu.
+        // Nois Nutrition — İkas public storefront GraphQL kataloğu. Besin
+        // değeri etiket görselinden OCR ile (bkz. NoisScraper.FetchDetailsAsync).
+        services.AddSingleton<INutritionLabelOcr, TesseractLabelOcr>();
         services.AddHttpClient<NoisScraper>(client =>
         {
             client.BaseAddress = new Uri("https://api.myikas.com/");

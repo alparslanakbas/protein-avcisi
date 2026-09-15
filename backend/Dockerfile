@@ -11,6 +11,14 @@ RUN dotnet publish IndirimTakip.Api/IndirimTakip.Api.csproj -c Release -o /app/p
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
+
+# Besin etiketi görsellerini okumak için Tesseract (Nois). Türkçe dil paketi
+# şart: İngilizce modelle Türkçe etiket harf harf bozuluyor. COPY'den ÖNCE,
+# böylece bu katman her deploy'da yeniden kurulmuyor, önbellekten geliyor.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-tur tesseract-ocr-eng \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY --from=build /app/publish .
 
 # Render (ve benzeri platformlar) PORT ortam değişkenini kendisi atıyor —
