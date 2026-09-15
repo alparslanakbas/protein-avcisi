@@ -182,18 +182,102 @@ public partial class ProteinOceanScraper(HttpClient httpClient) : IBrandScraper,
             return new ProductDetails(null, null, null);
 
         var html = await response.Content.ReadAsStringAsync(cancellationToken);
+        var (nutritionJson, servingSizeGrams) = ExtractNutrition(html);
 
-        // Besin değeri BİLİNÇLİ OLARAK çekilmiyor — gerçek bir ürün sayfası
-        // incelendi: "BESİN İÇERİĞİ (İÇİNDEKİLER)" adlı HTML attribute'u
-        // aslında içindekiler/alerjen listesi (aroma başına ham madde), gram
-        // cinsinden makro değer içermiyor. Gerçek `type: "TABLE"` attribute'u
-        // ise ({colId, rowId, value} formatında) opak GUID anahtarlı bir
-        // grid — etiket/sütun eşlemesi bu veride hiç yok, çözmeye çalışmak
-        // yanlış eşleştirme riski taşırdı. "Yanlış veri göstermektense hiç
-        // gösterme" kararına göre atlandı (mağaza indirimi alanında
-        // ProteinOcean için daha önce verilen aynı karar, bkz. CLAUDE.md).
-        return new ProductDetails(ExtractDescription(html), null, null);
+        return new ProductDetails(
+            Description: ExtractDescription(html),
+            NutritionJson: nutritionJson,
+            ProteinPerServingGrams: NutritionParser.ExtractProteinGrams(nutritionJson),
+            ServingSizeGrams: servingSizeGrams,
+            ServingsPerPackage: null);
     }
+
+    /// <summary>
+    /// Porsiyon başına besin tablosu — ikas TABLE alanlarından, şablonla çözülerek.
+    /// </summary>
+    /// <remarks>
+    /// <b>ESKİ KARAR DÜZELTİLDİ (15 Eylül).</b> Burada "TABLE alanı opak GUID
+    /// grid, etiket eşlemesi veride yok" yazıyordu ve besin hiç çekilmiyordu.
+    /// Eşleme vardı: satır/sütun adları <c>productAttribute.tableTemplate</c>
+    /// içinde (bkz. <see cref="IkasProductAttributes.Table"/>). "BESİN İÇERİĞİ
+    /// (İÇİNDEKİLER)" HTML alanı hakkındaki tespit ise doğruydu, o hâlâ
+    /// içindekiler listesi.
+    ///
+    /// <b>ÖLÇÜM (158 ürün):</b> "BESİN DEĞERLERİ" 24 üründe; sütunu 15'inde
+    /// yalnızca "100 g", 8'inde porsiyon ("25 g servis için", "3,5 g"...),
+    /// 2'sinde ML. "ENERJİ VE BESİN ÖĞELERİ" 2 üründe (Protein Meal:
+    /// "100g | 60g (1 servis)"). "BİLEŞEN ADI" 28 üründe, porsiyon/kapsül
+    /// başına etken madde ("Tauroursodeoksikolik Asit | 250 mg").
+    ///
+    /// <b>Yalnızca PORSİYON sütunu okunuyor.</b> Sitede tablo "porsiyon
+    /// başına" diye sunuluyor; "100 g" sütunu kaydedilseydi Pea Protein'in
+    /// "Protein 81 g" değeri porsiyon başı protein olarak görünürdü. Porsiyon
+    /// sütunu olmayan (yalnızca 100 g / ML) tablo boş kalıyor.
+    ///
+    /// <b>Sıra:</b> önce makro tablo, yoksa etken madde tablosu (GNC ve
+    /// Kiperin ile aynı karar: vitamin/kapsülde besin değerinin karşılığı).
+    /// Etken madde tablosunda porsiyon gramı başlıktan UYDURULMUYOR.
+    /// </remarks>
+    internal static (string? NutritionJson, decimal? ServingSizeGrams) ExtractNutrition(string html)
+    {
+        foreach (var tabloAdi in MacroTableNames)
+        {
+            var hucreler = IkasProductAttributes.Table(html, tabloAdi);
+            if (PortionColumn(hucreler) is not { } sutun)
+                continue;
+
+            var json = NutritionParser.BuildNutritionJson(
+                hucreler.Where(h => h.Column == sutun).Select(h => (h.Row, h.Value)));
+            if (json is not null)
+                return (json, NutritionServingParser.Grams(sutun));
+        }
+
+        var bilesenler = IkasProductAttributes.Table(html, "bileşen adı");
+        if (IngredientColumn(bilesenler) is not { } bilesenSutunu)
+            return (null, null);
+
+        return (NutritionParser.BuildNutritionJson(
+            bilesenler.Where(h => h.Column == bilesenSutunu).Select(h => (h.Row, h.Value))), null);
+    }
+
+    private static readonly string[] MacroTableNames = ["besin değerleri", "enerji ve besin"];
+
+    // Makro tabloda porsiyon sütunu: 100 dışında bir GRAM miktarı taşıyan
+    // sütun ("25 g servis için", "60g (1 servis)", "3,5 g"). "100 g" 100
+    // gram başına; "60 ML"/"100 ML" gram vermiyor, porsiyon olduğu da
+    // anlaşılmıyor. Birden fazla aday kalırsa "servis/porsiyon" diyen seçiliyor,
+    // yine de tek değilse tablo okunmuyor — sütun tahmin edilmiyor.
+    private static string? PortionColumn(IReadOnlyList<IkasProductAttributes.TableCell> hucreler)
+    {
+        var adaylar = hucreler.Select(h => h.Column).Distinct()
+            .Where(s => NutritionServingParser.Grams(s) is { } gram && gram != 100m)
+            .ToList();
+        return TekSutun(adaylar);
+    }
+
+    // Etken madde tablosunda boş hücreler zaten atılmış oluyor; şablon bütün
+    // ürünlerde ortak olduğu için geriye yalnızca bu ürünün doldurduğu sütun
+    // kalıyor ("1 kapsülde", "1 serviste (2 tablet)", "6 g").
+    private static string? IngredientColumn(IReadOnlyList<IkasProductAttributes.TableCell> hucreler)
+    {
+        var adaylar = hucreler.Select(h => h.Column).Distinct()
+            .Where(s => NutritionServingParser.Grams(s) != 100m)
+            .ToList();
+        return TekSutun(adaylar);
+    }
+
+    private static string? TekSutun(List<string> adaylar)
+    {
+        if (adaylar.Count == 1)
+            return adaylar[0];
+
+        var porsiyon = adaylar.Where(s => Katla(s).Contains("servis", StringComparison.Ordinal)
+            || Katla(s).Contains("porsiyon", StringComparison.Ordinal)).ToList();
+        return porsiyon.Count == 1 ? porsiyon[0] : null;
+    }
+
+    private static string Katla(string text) =>
+        text.Replace('İ', 'i').Replace('I', 'ı').ToLowerInvariant();
 
     // __NEXT_DATA__ içindeki props.pageProps.pageSpecificData.attributes dizisi
     // — her eleman productAttribute.type ile HTML/TABLE tipini belirtiyor.

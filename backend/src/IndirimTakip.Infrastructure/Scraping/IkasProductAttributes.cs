@@ -109,6 +109,112 @@ internal static partial class IkasProductAttributes
         }
     }
 
+    internal readonly record struct TableCell(string Row, string Column, string Value);
+
+    /// <summary>
+    /// GEÇERLİ ÜRÜNÜN adı verilen parçayı içeren TABLE tipi alanı, hücre hücre.
+    /// </summary>
+    /// <remarks>
+    /// <b>Değer tek başına OKUNAMAZ, şablonla birlikte okunur.</b> ikas TABLE
+    /// değerini <c>{colId, rowId, value}</c> listesi olarak (üstelik JSON
+    /// DİZESİ içinde) veriyor; satır ve sütun ADLARI aynı alanın
+    /// <c>productAttribute.tableTemplate</c> düğümünde duruyor
+    /// (ProteinOcean, 15 Eylül'de ölçüldü: "Protein" satırı, "25 g servis
+    /// için" sütunu). Bu depoda bir süre "etiket eşlemesi veride yok" diye
+    /// yazılıydı; eşleme vardı, yalnızca şablona bakılmamıştı.
+    ///
+    /// Şablonda karşılığı olmayan kimlik taşıyan hücre ATLANIYOR — adını
+    /// tahmin etmek, değeri yanlış satıra yazmak demek.
+    /// </remarks>
+    public static IReadOnlyList<TableCell> Table(string html, string namePart)
+    {
+        var match = NextDataRegex().Match(html);
+        if (!match.Success)
+            return [];
+
+        try
+        {
+            using var doc = JsonDocument.Parse(match.Groups[1].Value);
+            if (!doc.RootElement.TryGetProperty("props", out var props)
+                || !props.TryGetProperty("pageProps", out var pageProps)
+                || !pageProps.TryGetProperty("pageSpecificData", out var pageData)
+                || !pageData.TryGetProperty("attributes", out var attributes)
+                || attributes.ValueKind != JsonValueKind.Array)
+            {
+                return [];
+            }
+
+            var aranan = Katla(namePart);
+            foreach (var item in attributes.EnumerateArray())
+            {
+                if (!item.TryGetProperty("productAttribute", out var meta)
+                    || !meta.TryGetProperty("type", out var typeEl) || typeEl.GetString() != "TABLE"
+                    || !meta.TryGetProperty("name", out var nameEl) || nameEl.ValueKind != JsonValueKind.String
+                    || !Katla(nameEl.GetString()!).Contains(aranan, StringComparison.Ordinal)
+                    || !meta.TryGetProperty("tableTemplate", out var template)
+                    || !item.TryGetProperty("value", out var valueEl))
+                {
+                    continue;
+                }
+
+                var satirlar = Adlar(template, "rows");
+                var sutunlar = Adlar(template, "columns");
+
+                using var cellsDoc = valueEl.ValueKind == JsonValueKind.String
+                    ? JsonDocument.Parse(valueEl.GetString()!)
+                    : JsonDocument.Parse(valueEl.GetRawText());
+                if (cellsDoc.RootElement.ValueKind != JsonValueKind.Array)
+                    return [];
+
+                var sonuc = new List<TableCell>();
+                foreach (var cell in cellsDoc.RootElement.EnumerateArray())
+                {
+                    var rowId = Metin(cell, "rowId");
+                    var colId = Metin(cell, "colId");
+                    var value = Metin(cell, "value")?.Trim();
+                    if (rowId is null || colId is null || string.IsNullOrEmpty(value)
+                        || !satirlar.TryGetValue(rowId, out var satir)
+                        || !sutunlar.TryGetValue(colId, out var sutun))
+                    {
+                        continue;
+                    }
+
+                    sonuc.Add(new TableCell(satir, sutun, value));
+                }
+
+                return sonuc;
+            }
+
+            return [];
+        }
+        catch (JsonException)
+        {
+            return [];
+        }
+    }
+
+    private static Dictionary<string, string> Adlar(JsonElement template, string property)
+    {
+        var adlar = new Dictionary<string, string>(StringComparer.Ordinal);
+        if (!template.TryGetProperty(property, out var list) || list.ValueKind != JsonValueKind.Array)
+            return adlar;
+
+        foreach (var entry in list.EnumerateArray())
+        {
+            if (Metin(entry, "id") is { } id && Metin(entry, "name") is { } name)
+                adlar.TryAdd(id, name.Trim());
+        }
+
+        return adlar;
+    }
+
+    private static string? Metin(JsonElement element, string property) =>
+        element.ValueKind == JsonValueKind.Object
+        && element.TryGetProperty(property, out var value)
+        && value.ValueKind == JsonValueKind.String
+            ? value.GetString()
+            : null;
+
     /// <summary>
     /// Adı verilen parçayı içeren ilk alanın değeri.
     /// </summary>
