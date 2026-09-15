@@ -9,12 +9,12 @@
     class="max-h-[94vh] w-full max-w-[940px] overflow-y-auto rounded-[18px] border border-[var(--noc-divider)] bg-[var(--noc-card)] text-[var(--noc-text)] shadow-[var(--noc-shadow-lg)]"
     (click)="$event.stopPropagation()"
   >
-    <div class="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-[var(--noc-divider)] bg-[color-mix(in_srgb,var(--noc-card)_94%,transparent)] p-5 backdrop-blur">
-      <div class="flex items-center gap-3">
+    <div class="sticky top-0 z-10 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 border-b border-[var(--noc-divider)] bg-[color-mix(in_srgb,var(--noc-card)_94%,transparent)] p-4 backdrop-blur sm:p-5">
+      <div class="flex min-w-0 items-center gap-3">
         @if (deal().imageUrl) {
-          <img [src]="deal().imageUrl" [alt]="displayName(deal().productName)" class="h-16 w-16 rounded-[10px] bg-[var(--noc-neutral-100)] object-contain p-1.5" />
+          <img [src]="deal().imageUrl" [alt]="displayName(deal().productName)" class="h-16 w-16 shrink-0 rounded-[10px] bg-[var(--noc-neutral-100)] object-contain p-1.5" />
         }
-        <div>
+        <div class="min-w-0 break-words">
           <a
             [routerLink]="['/marka', brandSlug(deal().brandName), 'indirim-kodu']"
             class="text-[10px] font-medium uppercase tracking-[0.08em] text-[var(--noc-accent)] hover:underline"
@@ -36,6 +36,15 @@
           <i class="ph ph-x text-lg" aria-hidden="true"></i>
         </button>
       </div>
+      <a
+        [href]="goToStoreUrl()" (click)="magazaTiklamasi()"
+        target="_blank"
+        rel="noopener nofollow sponsored"
+        class="pa-primary-button col-span-2 flex min-h-11 w-full items-center justify-center gap-2 px-4 py-2.5 text-sm"
+      >
+        Mağazaya git
+        <i class="ph ph-arrow-square-out text-lg" aria-hidden="true"></i>
+      </a>
     </div>
 
     <div class="p-5">
