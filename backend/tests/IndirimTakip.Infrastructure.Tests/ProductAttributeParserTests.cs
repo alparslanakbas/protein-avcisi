@@ -174,9 +174,37 @@ public class ProductAttributeParserTests
     // gramaj (5g) alınmalı, cümlenin başındaki "1 porsiyon"daki 1 değil.
     [InlineData("1 porsiyon (1 ölçek, 5g), bir bardak su ile karıştırılır.", 5)]
     [InlineData("Günde 1 ölçek (25 g) tüketilebilir.", 25)]
-    [InlineData("Servis başına 23 g protein sağlar.", 23)]
     [InlineData("Porsiyon büyüklüğü 12,5 gram", 12.5)]
+    // Besin miktarı atlanıp aynı metindeki GERÇEK porsiyon ifadesi bulunmalı.
+    [InlineData("Her porsiyonda 22 g protein içerir. 1 porsiyon (60 g) ürünü su ile karıştırınız.", 60)]
     public void ExtractServingSizeGrams_gercek_aciklama_kaliplarini_cozuyor(string description, double expected)
+    {
+        var result = ProductAttributeParser.ExtractServingSizeGrams(description);
+
+        Assert.Equal((decimal)expected, result);
+    }
+
+    // BESİN MİKTARI PORSİYON DEĞİL. Bu durum eskiden testte "23" bekliyordu,
+    // yani hata beklenen davranış olarak korunuyordu. Cümleler canlı
+    // açıklamalardan birebir (Nois ProMeal, Nois V-rex, BigJoy BIGMASS,
+    // BigJoy Beef & Whey, Hardline Progainer, SSN Whey Refuel, HIQ Creatine).
+    [Theory]
+    [InlineData("Servis başına 23 g protein sağlar.")]
+    [InlineData("Her porsiyonda 22 g protein ve 213,5 kcal içeren formülü sayesinde")]
+    [InlineData("Her serviste 24,9 g protein sunarak kas gelişimini destekler.")]
+    [InlineData("Her servisinde 76,4 gram karbonhidrat bulunur.")]
+    [InlineData("Her serviste 24 gram yüksek protein sağlar.")]
+    [InlineData("Her porsiyonda 154 g karbonhidrat ve 38 g protein.")]
+    [InlineData("Her servisinde 21g protein içerir.")]
+    [InlineData("Her porsiyonda 5 g kreatin monohidrat bulunur.")]
+    public void ExtractServingSizeGrams_besin_miktarini_porsiyon_sanmiyor(string description)
+    {
+        Assert.Null(ProductAttributeParser.ExtractServingSizeGrams(description));
+    }
+
+    [Theory]
+    [InlineData("Porsiyon büyüklüğü 30 g olarak ayarlanmıştır.", 30)]
+    public void ExtractServingSizeGrams_basit_porsiyon_ifadesi(string description, double expected)
     {
         var result = ProductAttributeParser.ExtractServingSizeGrams(description);
 

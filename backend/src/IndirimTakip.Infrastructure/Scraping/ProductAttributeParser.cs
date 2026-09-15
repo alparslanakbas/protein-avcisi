@@ -445,16 +445,28 @@ public static partial class ProductAttributeParser
         ServingServisRegex,
     ];
 
-    [GeneratedRegex(@"porsiyon[^0-9]{0,25}(?<value>\d+(?:[.,]\d+)?)\s*(?:gr|gram|g)\b", RegexOptions.IgnoreCase)]
+    // BESİN MİKTARI PORSİYON DEĞİLDİR (15 Eylül'de düzeltildi). "Her
+    // porsiyonda 22 g protein" cümlesi bu kalıplara uyuyordu ve porsiyon
+    // 22 g yazılıyordu; canlıda 33 üründe ölçüldü: SSN 16 (porsiyon =
+    // protein), Hardline Progainer 154 g (karbonhidrat; proteinle birlikte
+    // porsiyon en az 192 g), BigJoy "serviste 24 gram yüksek protein", Nois 6.
+    // Sayıdan hemen sonra bir besin adı geliyorsa eşleşme reddediliyor; regex
+    // metnin devamındaki gerçek porsiyon ifadesini ("1 porsiyon (60 g)")
+    // aramayı sürdürüyor. Kreatin de dahil: "porsiyonda 5 g kreatin" saf
+    // kreatinde porsiyona eşit olsa da söylediği şey kreatin miktarı.
+    private const string NotANutrientAmount =
+        @"(?!\s*(?:protein|karbonhidrat|ya[gğ]|lif|[şs]eker|bcaa|eaa|kreatin|creatine|y[üu]ksek))";
+
+    [GeneratedRegex(@"porsiyon[^0-9]{0,25}(?<value>\d+(?:[.,]\d+)?)\s*(?:gr|gram|g)\b" + NotANutrientAmount, RegexOptions.IgnoreCase)]
     private static partial Regex ServingPortionRegex();
 
-    [GeneratedRegex(@"ölçek[^0-9]{0,15}(?<value>\d+(?:[.,]\d+)?)\s*(?:gr|gram|g)\b", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"ölçek[^0-9]{0,15}(?<value>\d+(?:[.,]\d+)?)\s*(?:gr|gram|g)\b" + NotANutrientAmount, RegexOptions.IgnoreCase)]
     private static partial Regex ServingScoopParenRegex();
 
     [GeneratedRegex(@"(?<value>\d+(?:[.,]\d+)?)\s*(?:gr|gram|g)\b[^a-zçğışöü]{0,10}ölçek", RegexOptions.IgnoreCase)]
     private static partial Regex ServingScoopReversedRegex();
 
-    [GeneratedRegex(@"servis[^0-9]{0,20}(?<value>\d+(?:[.,]\d+)?)\s*(?:gr|gram|g)\b", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"servis[^0-9]{0,20}(?<value>\d+(?:[.,]\d+)?)\s*(?:gr|gram|g)\b" + NotANutrientAmount, RegexOptions.IgnoreCase)]
     private static partial Regex ServingServisRegex();
 
     [GeneratedRegex(@"(?<value>\d+(?:[.,]\d+)?)\s*(?<unit>gr|g|kg|mg|ml|lt|l|adet|tablet|kaps[uü]l|kaps|caps|softjel|[şs]ase)\b", RegexOptions.IgnoreCase)]
