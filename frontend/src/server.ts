@@ -9,11 +9,20 @@ import { join } from 'node:path';
 
 import { brandSlug } from './app/core/brand-slug';
 import { API_BASE_URL } from './app/core/api.config';
+import { INTERNAL_API_HEADERS, toInternalApiUrl } from './app/core/internal-api';
 import { slugify } from './app/core/slugify';
 import { BODY_CALCULATORS } from './app/core/body-calculators';
 import { SUPPLEMENT_DOSAGES } from './app/core/supplement-dosages';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
+
+// Sitemap ve /go da API'ye iç ağdan gidiyor (bkz. core/internal-api.ts).
+const INTERNAL_API_BASE = process.env['API_INTERNAL_URL'] || null;
+const apiFetch = (path: string, init: RequestInit = {}) =>
+  fetch(toInternalApiUrl(`${API_BASE_URL}${path}`, INTERNAL_API_BASE), {
+    ...init,
+    headers: { ...(INTERNAL_API_BASE ? INTERNAL_API_HEADERS : {}), ...(init.headers as Record<string, string> | undefined) },
+  });
 
 // Site iki host'ta erişilebilir: gerçek domain (canonical) + eski
 // protein-avcisi.onrender.com (geriye dönük uyumluluk için bilinçli açık
@@ -98,10 +107,10 @@ app.get('/sitemap.xml', async (req, res) => {
 
   try {
     const [productsResponse, filtersResponse, articlesResponse, pairsResponse] = await Promise.all([
-      fetch(`${API_BASE_URL}/api/products/sitemap`),
-      fetch(`${API_BASE_URL}/api/filters`),
-      fetch(`${API_BASE_URL}/api/articles`),
-      fetch(`${API_BASE_URL}/api/brand-category-pairs`),
+      apiFetch('/api/products/sitemap'),
+      apiFetch('/api/filters'),
+      apiFetch('/api/articles'),
+      apiFetch('/api/brand-category-pairs'),
     ]);
     const products = (await productsResponse.json()) as SitemapEntry[];
     const filters = (await filtersResponse.json()) as FilterOptions;
@@ -265,7 +274,7 @@ app.get('/go/:id', async (req, res) => {
   const isBot = BOT_USER_AGENT.test(req.get('user-agent') ?? '');
 
   try {
-    const response = await fetch(`${API_BASE_URL}/go/${req.params.id}`, {
+    const response = await apiFetch(`/go/${req.params.id}`, {
       redirect: 'manual',
       // Bot isteklerinde tıklama sayacı artmasın: bu sayaç markalarla
       // paylaşılan tıklama raporunu besliyor, bot trafiğiyle şişmesi veriyi

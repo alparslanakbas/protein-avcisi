@@ -137,6 +137,9 @@ services:
     environment:
       - PORT=4000
       - NG_ALLOWED_HOSTS=proteinavcisi.com.tr,www.proteinavcisi.com.tr
+      # SSR API'ye Cloudflare'den dolaşmadan Docker ağından gidiyor
+      # (frontend/src/app/core/internal-api.ts).
+      - API_INTERNAL_URL=http://backend:8080
     expose:
       - "4000"
     depends_on:

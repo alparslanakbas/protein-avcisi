@@ -1,10 +1,11 @@
 import { ApplicationConfig, LOCALE_ID, provideBrowserGlobalErrorListeners, isDevMode } from '@angular/core';
 import { PreloadAllModules, RouteReuseStrategy, provideRouter, withPreloading } from '@angular/router';
-import { provideHttpClient, withFetch } from '@angular/common/http';
+import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import { provideClientHydration, withIncrementalHydration } from '@angular/platform-browser';
 
 import { routes } from './app.routes';
 import { DealsRouteReuseStrategy } from './core/deals-route-reuse.strategy';
+import { internalApiInterceptor } from './core/internal-api';
 import { provideServiceWorker } from '@angular/service-worker';
 
 export const appConfig: ApplicationConfig = {
@@ -15,7 +16,9 @@ export const appConfig: ApplicationConfig = {
     // (idle) arka planda hepsi önceden çekiliyor — kullanıcı bir linke
     // tıkladığında ekstra ağ gecikmesi yaşanmıyor, sadece ilk yük küçülüyor.
     provideRouter(routes, withPreloading(PreloadAllModules)),
-    provideHttpClient(withFetch()),
+    // Interceptor tarayıcıda hiçbir şey yapmıyor; iç adres yalnızca sunucu
+    // yapılandırmasında veriliyor (bkz. core/internal-api.ts).
+    provideHttpClient(withFetch(), withInterceptors([internalApiInterceptor])),
     // Artımlı hydration: @defer (hydrate on ...) ile işaretlenen bloklar
     // sunucuda yine render ediliyor (arama motorları HTML'de görüyor) ama
     // tarayıcıda tetikleyici gelene kadar canlandırılmıyor. Ana sayfa ilk
