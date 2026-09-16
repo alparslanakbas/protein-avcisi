@@ -1,0 +1,27 @@
+# ProteinAvcısı konteynerlerinin (db, backend, frontend) ortak kaynak tavanı.
+#
+# NEDEN SLICE, NEDEN KONTEYNER BAŞINA SINIR DEĞİL (16 Eylül):
+# Aynı VM'de (2 çekirdek, 12 GB) iki site çalışıyor. Konteyner başına
+# `cpus` sınırları toplamda yine iki çekirdeği aşıyor, yani bir siteye gelen
+# saldırı (SSR + backend + Postgres birlikte) makinenin tamamını yiyip ÖBÜR
+# siteyi de düşürebilir. Slice sitenin TOPLAMINI sınırlıyor; site içinde
+# konteynerler boş kapasiteyi serbestçe paylaşıyor.
+#
+# 150% = 1,5 çekirdek: her zaman en az yarım çekirdek Caddy'ye (iki sitenin
+# tek girişi, slice dışında) ve sisteme kalıyor. Normal yükte site toplamı
+# %2-3 (ölçüldü), yani günlük işi hiç etkilemiyor.
+# MemoryMax: bir sızıntı ya da taşma yalnızca bu sitenin konteynerlerini
+# OOM'a götürür, VM'i değil (normalde ~0,7 GB).
+#
+# Kurulum (VM'de, bir kez; dosya değişince tekrar):
+#   sudo cp scripts/proteinavcisi.slice /etc/systemd/system/
+#   sudo systemctl daemon-reload
+# docker-compose.yml'deki `cgroup_parent: proteinavcisi.slice` buna bağlanıyor.
+# Dosya kurulu değilse systemd slice'ı sınırsız olarak kendisi yaratır:
+# konteynerler yine başlar, yalnızca tavan olmaz.
+#
+# Ölçüm: aynı yöntemle %50 tavanlı test slice'ında 3 CPU yakan konteyner
+# %49,8'de kaldı (cpu.stat nr_throttled 91).
+[Slice]
+CPUQuota=150%
+MemoryMax=4G

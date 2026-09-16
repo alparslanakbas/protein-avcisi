@@ -19,6 +19,8 @@ services:
     # C.UTF-8 mevcut.
     image: postgres:18
     restart: unless-stopped
+    # Site toplamı 1,5 çekirdek / 4 GB (scripts/proteinavcisi.slice).
+    cgroup_parent: proteinavcisi.slice
     environment:
       - POSTGRES_DB=indirim_takip
       - POSTGRES_USER=protein
@@ -57,6 +59,8 @@ services:
   backend:
     build: ./backend
     restart: unless-stopped
+    # Site toplamı 1,5 çekirdek / 4 GB (scripts/proteinavcisi.slice).
+    cgroup_parent: proteinavcisi.slice
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - PORT=8080
@@ -134,6 +138,8 @@ services:
   frontend:
     build: ./frontend
     restart: unless-stopped
+    # Site toplamı 1,5 çekirdek / 4 GB (scripts/proteinavcisi.slice).
+    cgroup_parent: proteinavcisi.slice
     environment:
       - PORT=4000
       - NG_ALLOWED_HOSTS=proteinavcisi.com.tr,www.proteinavcisi.com.tr
