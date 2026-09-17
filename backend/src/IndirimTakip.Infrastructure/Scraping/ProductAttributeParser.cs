@@ -105,6 +105,14 @@ public static partial class ProductAttributeParser
     ];
 
     /// <summary>
+    /// Sitenin kategori kodları. Yönetim panelinin açılır listesi ve elle kategori
+    /// ucunun doğrulaması buna dayanıyor: listede olmayan bir kod, hiçbir kategori
+    /// sayfasında görünmeyen bir ürün demek.
+    /// </summary>
+    public static readonly IReadOnlySet<string> CategorySlugs =
+        CategoryKeywords.Select(c => c.Category).ToHashSet(StringComparer.Ordinal);
+
+    /// <summary>
     /// Paket büyüklüğü. "mg" bir PAKET birimi değil, ETKEN MADDE DOZUdur —
     /// bu yüzden isimde başka bir birim varsa mg'li eşleşme atlanıyor.
     ///

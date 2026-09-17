@@ -96,6 +96,17 @@ public class Product
     // aynı ürünleri sonsuza kadar tekrar denerdi.
     public DateTimeOffset? NutritionCheckedAt { get; set; }
 
+    // Kategoriyi yönetim panelinden bir KİŞİ seçti. Tarama her 6 saatte bir
+    // kategoriyi yeniden hesaplayıp yazıyor; bu bayrak olmadan elle yapılan
+    // düzeltme bir sonraki turda sessizce geri alınırdı. "Otomatik" seçilince
+    // bayrak kalkıyor.
+    public bool CategoryIsManual { get; set; }
+
+    // Besin tablosunu (ve porsiyonu) panelden bir KİŞİ girdi; tipik olarak hiçbir
+    // çekicinin ya da OCR'ın okuyamadığı bir etiketten. Tarama bu ürünün besin
+    // değerine ve porsiyonuna artık dokunmuyor.
+    public bool NutritionIsManual { get; set; }
+
     // Sayfanın İÇERİĞİNİN en son ne zaman gerçekten değiştiği — sitemap'teki
     // <lastmod> bunu kullanıyor.
     //

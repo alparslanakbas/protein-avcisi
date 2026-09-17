@@ -284,10 +284,14 @@ public class ScrapeIngestionService(
                 var meaningfulChange =
                     previousPrice != scraped.Price
                     || product.Name != scraped.Name
-                    || product.Category != category
+                    // Elle girilen alanlar karşılaştırmaya girmiyor: kategorisi elle
+                    // düzeltilmiş ürün, çıkarılan kategoriyle HER taramada farklı
+                    // görünür ve sitemap'te her 6 saatte bir "değişti" diye
+                    // işaretlenirdi, yani tam da yukarıda anlatılan hata geri gelirdi.
+                    || (!product.CategoryIsManual && product.Category != category)
                     || product.Size != size
                     || (scraped.Description is not null && product.Description != scraped.Description)
-                    || (scraped.NutritionJson is not null && product.NutritionJson != scraped.NutritionJson)
+                    || (!product.NutritionIsManual && scraped.NutritionJson is not null && product.NutritionJson != scraped.NutritionJson)
                     // Stok durumu değişimi de gerçek bir içerik değişimi:
                     // sayfada "Tükendi" rozeti belirip kayboluyor. Bu, her
                     // taramada tüm katalogu "değişti" işaretleyen eski
@@ -318,7 +322,10 @@ public class ScrapeIngestionService(
                     product.LocalImagePath = null;
 
                 product.ImageUrl = scraped.ImageUrl;
-                product.Category = category;
+                // Elle seçilen kategori korunuyor (bkz. Product.CategoryIsManual):
+                // bu satır her 6 saatte bir çalışıyor ve düzeltmeyi geri alırdı.
+                if (!product.CategoryIsManual)
+                    product.Category = category;
                 product.Size = size;
                 product.Flavor = flavor;
                 product.InStock = scraped.InStock;
@@ -332,8 +339,13 @@ public class ScrapeIngestionService(
                 // Porsiyon, Description atamasından SONRA hesaplanıyor — güncel
                 // açıklamayı kullanabilmek için. Scraper yapısal bir değer
                 // veriyorsa (HIQ) o kazanır, yoksa açıklamadan çıkarılır.
-                product.ServingSizeGrams = scraped.ServingSizeGrams
-                    ?? ProductAttributeParser.ExtractServingSizeGrams(product.Description);
+                // Elle girilen besin tablosunun porsiyonu da elle girildi; açıklamadan
+                // yeniden çıkarım onu ezmesin (bkz. Product.NutritionIsManual).
+                if (!product.NutritionIsManual)
+                {
+                    product.ServingSizeGrams = scraped.ServingSizeGrams
+                        ?? ProductAttributeParser.ExtractServingSizeGrams(product.Description);
+                }
 
                 // Sadece marka bu bilgiyi veriyorsa güncelle — vermeyen
                 // markalarda (SSN/Hardline/HIQ) mevcut değer sıfırlanmasın.
@@ -343,7 +355,7 @@ public class ScrapeIngestionService(
                 // Besin değeri normal taramada sadece HIQ'dan geliyor; diğer
                 // 3 marka için ayrı bir backfill servisi var (Description ile
                 // aynı desen — göndermeyen markada mevcut değer korunuyor).
-                if (scraped.NutritionJson is not null)
+                if (scraped.NutritionJson is not null && !product.NutritionIsManual)
                 {
                     product.NutritionJson = scraped.NutritionJson;
                     product.ProteinPerServingGrams = scraped.ProteinPerServingGrams;

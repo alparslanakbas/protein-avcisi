@@ -2,6 +2,7 @@ using IndirimTakip.Core.Caching;
 using IndirimTakip.Core.Scraping;
 using IndirimTakip.Infrastructure;
 using IndirimTakip.Infrastructure.Articles;
+using IndirimTakip.Infrastructure.Catalog;
 using IndirimTakip.Infrastructure.Coupons;
 using IndirimTakip.Infrastructure.Deals;
 using IndirimTakip.Infrastructure.Scraping;
@@ -16,6 +17,20 @@ namespace IndirimTakip.Api.Endpoints;
 // kupon ekleyebiliyordu.
 internal static class AdminEndpoints
 {
+    // Bilinmeyen ürün 404; reddedilen değer sebebiyle 400 (panel olduğu gibi
+    // gösteriyor); aksi hâlde liste önbelleği tazeleniyor, yoksa değişiklik çıktı
+    // önbelleğinin bir saati boyunca sitede görünmezdi.
+    private static async Task<IResult> ElleDuzenlemeYaniti(ElleDuzenlemeSonucu sonuc, int id, IPublicCacheRefresher cache, CancellationToken ct)
+    {
+        if (!sonuc.Bulundu)
+            return Results.NotFound($"{id} numaralı ürün bulunamadı.");
+        if (!sonuc.Kabul)
+            return Results.BadRequest(new { message = sonuc.Sebep });
+
+        await cache.RefreshAsync(ct);
+        return Results.Ok(new { guncellenenSatir = sonuc.GuncellenenSatir });
+    }
+
     public static void MapAdminEndpoints(this WebApplication app, string? adminApiKey)
     {
         // Taramayı elle tetiklemek için. İş ARKA PLANDA çalışıyor, uç hemen 202
@@ -358,6 +373,22 @@ internal static class AdminEndpoints
             return Results.Ok(urunler);
         }).RequireAdminKey(adminApiKey);
 
+        // --- Elle girilen kategori ve besin değeri (bkz. ManualProductDataService) ---
+        app.MapPut("/api/dev/urunler/{id:int}/kategori", async (
+            int id, KategoriIstegi istek, ManualProductDataService veri, IPublicCacheRefresher cache, CancellationToken ct) =>
+            await ElleDuzenlemeYaniti(await veri.KategoriAyarlaAsync(id, istek.Kategori, ct), id, cache, ct))
+            .RequireAdminKey(adminApiKey);
+
+        app.MapPut("/api/dev/urunler/{id:int}/besin", async (
+            int id, ElleBesinIstegi istek, ManualProductDataService veri, IPublicCacheRefresher cache, CancellationToken ct) =>
+            await ElleDuzenlemeYaniti(await veri.BesinAyarlaAsync(id, istek, ct), id, cache, ct))
+            .RequireAdminKey(adminApiKey);
+
+        app.MapDelete("/api/dev/urunler/{id:int}/besin", async (
+            int id, ManualProductDataService veri, IPublicCacheRefresher cache, CancellationToken ct) =>
+            await ElleDuzenlemeYaniti(await veri.BesinTemizleAsync(id, ct), id, cache, ct))
+            .RequireAdminKey(adminApiKey);
+
         app.MapPut("/api/dev/urunler/{id:int}", async (
             int id, GorunurlukIstegi istek, AppDbContext db, IPublicCacheRefresher cache, CancellationToken ct) =>
         {
@@ -672,3 +703,6 @@ internal static class AdminEndpoints
 }
 
 internal record GorunurlukIstegi(bool IsActive);
+
+/// <summary>Kategori kodu; null ya da boş = otomatik kategoriye dön.</summary>
+internal record KategoriIstegi(string? Kategori);

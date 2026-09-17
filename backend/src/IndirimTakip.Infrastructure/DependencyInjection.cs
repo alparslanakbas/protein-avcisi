@@ -454,6 +454,7 @@ public static class DependencyInjection
         services.AddScoped<DealsQueryService>();
         services.AddScoped<PriceHistoryQueryService>();
         services.AddScoped<CouponService>();
+        services.AddScoped<IndirimTakip.Infrastructure.Catalog.ManualProductDataService>();
         services.AddScoped<ArticleService>();
         services.AddHostedService<ScrapingBackgroundService>();
         // Günde bir kez, 00:00 Türkiye saatinde çalışan kaynaklar (bkz. IBrandScraper.DailyOnly).
