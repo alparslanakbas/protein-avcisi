@@ -1,20 +1,20 @@
-<div class="yonetim">
+<div class="admin">
   @if (yukleniyor()) {
-    <main class="durum-ekrani" aria-live="polite">
+    <main class="loading-screen" aria-live="polite">
       <i class="ph ph-circle-notch" aria-hidden="true"></i>
       <p>Yönetim paneli yükleniyor…</p>
     </main>
   } @else if (!girisYapildi()) {
-    <main class="giris-kabugu">
-      <section class="giris" aria-labelledby="giris-basligi">
-        <div class="giris-markasi"><span>PA</span> Yönetim</div>
-        <p class="giris-ust-etiket">Güvenli yönetim alanı</p>
+    <main class="login-shell">
+      <section class="login" aria-labelledby="giris-basligi">
+        <div class="login-brand"><span>PA</span> Yönetim</div>
+        <p class="login-eyebrow">Güvenli yönetim alanı</p>
         <h1 id="giris-basligi">Tekrar hoş geldin</h1>
-        <p class="giris-aciklama">Devam etmek için yönetim anahtarını doğrula.</p>
+        <p class="login-lead">Devam etmek için yönetim anahtarını doğrula.</p>
 
         <form (ngSubmit)="girisYap()">
           <label for="anahtar">Yönetim anahtarı</label>
-          <div class="giris-input">
+          <div class="login-input">
             <i class="ph ph-shield-check" aria-hidden="true"></i>
             <input
               id="anahtar"
@@ -31,224 +31,258 @@
         </form>
 
         @if (girisHatasi()) {
-          <p class="hata" role="alert">{{ girisHatasi() }}</p>
+          <p class="error" role="alert">{{ girisHatasi() }}</p>
         }
-        <p class="not">
+        <p class="note">
           Anahtar tarayıcıda saklanmaz. Oturum güvenli çerezle sürer ve 12 saat sonra kapanır.
         </p>
       </section>
     </main>
   } @else {
-    <header class="yonetim-ust">
-      <div class="yonetim-markasi" aria-label="ProteinAvcısı Yönetim">
-        <span class="yonetim-markasi-amblem">PA</span>
+    <header class="admin-top" [attr.inert]="duzenlenenVeri() ? '' : null">
+      <div class="admin-brand" aria-label="ProteinAvcısı Yönetim">
+        <span class="admin-brand-mark">PA</span>
         <strong>Yönetim</strong>
+        <small>ProteinAvcısı</small>
       </div>
 
-      <nav class="sekmeler" aria-label="Yönetim bölümleri">
-        <button type="button" [class.aktif]="sekme() === 'durum'" (click)="sekmeSec('durum')">
-          Durum
-        </button>
-        <button type="button" [class.aktif]="sekme() === 'olaylar'" (click)="sekmeSec('olaylar')">
-          Olaylar
-        </button>
-        <button type="button" [class.aktif]="sekme() === 'kuponlar'" (click)="sekmeSec('kuponlar')">
-          Kuponlar
+      <nav class="tabs" aria-label="Yönetim bölümleri">
+        <button
+          type="button"
+          [class.active]="sekme() === 'durum'"
+          [attr.aria-current]="sekme() === 'durum' ? 'page' : null"
+          (click)="sekmeSec('durum')"
+        >
+          <i class="ph ph-squares-four" aria-hidden="true"></i>Durum
         </button>
         <button
           type="button"
-          [class.aktif]="sekme() === 'gorunurluk'"
+          [class.active]="sekme() === 'olaylar'"
+          [attr.aria-current]="sekme() === 'olaylar' ? 'page' : null"
+          (click)="sekmeSec('olaylar')"
+        >
+          <i class="ph ph-calendar-blank" aria-hidden="true"></i>Olaylar
+        </button>
+        <button
+          type="button"
+          [class.active]="sekme() === 'kuponlar'"
+          [attr.aria-current]="sekme() === 'kuponlar' ? 'page' : null"
+          (click)="sekmeSec('kuponlar')"
+        >
+          <i class="ph ph-tag" aria-hidden="true"></i>Kuponlar
+        </button>
+        <button
+          type="button"
+          [class.active]="sekme() === 'gorunurluk'"
+          [attr.aria-current]="sekme() === 'gorunurluk' ? 'page' : null"
           (click)="sekmeSec('gorunurluk')"
         >
-          Görünürlük
+          <i class="ph ph-eye" aria-hidden="true"></i>Görünürlük
         </button>
-        <button type="button" [class.aktif]="sekme() === 'aboneler'" (click)="sekmeSec('aboneler')">
-          Aboneler
+        <button
+          type="button"
+          [class.active]="sekme() === 'aboneler'"
+          [attr.aria-current]="sekme() === 'aboneler' ? 'page' : null"
+          (click)="sekmeSec('aboneler')"
+        >
+          <i class="ph ph-users" aria-hidden="true"></i>Aboneler
         </button>
       </nav>
 
-      <div class="yonetim-oturum">
-        <span class="sistem-durumu" [class.uyari]="hata()">
+      <div class="admin-session">
+        <span class="system-status" [class.warning]="hata()">
           <span aria-hidden="true"></span>
-          {{ hata() ? 'Kontrol gerekiyor' : 'Sistem sağlıklı' }}
+          {{ hata() ? 'Kontrol gerekiyor' : 'Yönetim bağlı' }}
         </span>
-        <button type="button" class="cikis" (click)="cikisYap()">
+        <button type="button" class="sign-out" (click)="cikisYap()">
           <i class="ph ph-sign-out" aria-hidden="true"></i>
           Çıkış
         </button>
       </div>
     </header>
 
-    <main class="yonetim-icerik">
+    <main class="admin-content" [attr.inert]="duzenlenenVeri() ? '' : null">
       @if (hata()) {
-        <p class="hata genel-hata" role="alert">{{ hata() }}</p>
+        <p class="error global-error" role="alert">{{ hata() }}</p>
       }
 
       @if (sekme() === 'durum') {
-        <section class="sayfa-basligi">
+        <section class="page-head">
           <div>
-            <p class="sayfa-etiketi">Genel bakış</p>
+            <p class="eyebrow">Genel bakış</p>
             <h1>Sistem durumu</h1>
             <p>Ürün kataloğunun, taramaların ve kullanıcı hareketlerinin güncel özeti.</p>
           </div>
-          <span class="tarih"
+          <span class="date"
             ><i class="ph ph-calendar-blank" aria-hidden="true"></i>{{ bugunEtiketi() }}</span
           >
         </section>
 
         @if (durum(); as d) {
-          <section class="kartlar" aria-label="Temel göstergeler">
-            <article class="kart">
-              <span class="kart-ikonu"><i class="ph ph-package" aria-hidden="true"></i></span>
-              <span class="etiket">Ürün</span>
+          <section class="cards" aria-label="Temel göstergeler">
+            <article class="card">
+              <span class="card-icon"><i class="ph ph-package" aria-hidden="true"></i></span>
+              <span class="label">Ürün</span>
               <strong>{{ d.urun.toplam }}</strong>
-              <span class="alt">{{ d.urun.markaSayisi }} marka</span>
+              <span class="sub">{{ d.urun.markaSayisi }} marka</span>
             </article>
-            <article class="kart">
-              <span class="kart-ikonu"><i class="ph ph-scales" aria-hidden="true"></i></span>
-              <span class="etiket">Besin değeri</span>
+            <article class="card">
+              <span class="card-icon"><i class="ph ph-scales" aria-hidden="true"></i></span>
+              <span class="label">Besin değeri</span>
               <strong>%{{ besinYuzde() }}</strong>
-              <span class="alt">{{ d.urun.besinli }} ürün</span>
+              <span class="sub">{{ d.urun.besinli }} ürün</span>
             </article>
-            <article class="kart">
-              <span class="kart-ikonu"
+            <article class="card">
+              <span class="card-icon"
                 ><i class="ph ph-arrow-square-out" aria-hidden="true"></i
               ></span>
-              <span class="etiket">Mağazaya gidiş</span>
+              <span class="label">Mağazaya gidiş</span>
               <strong>{{ d.tiklamaToplam }}</strong>
-              <span class="alt">toplam</span>
+              <span class="sub">toplam</span>
             </article>
-            <article class="kart">
-              <span class="kart-ikonu"><i class="ph ph-bell-ringing" aria-hidden="true"></i></span>
-              <span class="etiket">Abone</span>
+            <article class="card">
+              <span class="card-icon"><i class="ph ph-bell-ringing" aria-hidden="true"></i></span>
+              <span class="label">Abone</span>
               <strong>{{ d.abone.onayli }}</strong>
-              <span class="alt">{{ d.abone.bekleyen }} onay bekliyor</span>
+              <span class="sub">{{ d.abone.bekleyen }} onay bekliyor</span>
             </article>
           </section>
 
-          <section class="durum-izgara">
-            <article class="blok besin-blok">
-              <div class="blok-baslik">
-                <div>
-                  <p class="sayfa-etiketi">Otomatik görev</p>
-                  <h2>Besin değeri tamamlama</h2>
+          <div class="status-overview">
+            <section class="status-grid">
+              <article class="panel nutrition-panel">
+                <div class="panel-head">
+                  <div>
+                    <p class="eyebrow">Otomatik görev</p>
+                    <h2>Besin değeri tamamlama</h2>
+                  </div>
+                  <span class="status-badge"><span></span>Planlı</span>
                 </div>
-                <span class="durum-rozeti"><span></span>Planlı</span>
-              </div>
-              <dl class="zaman-listesi">
-                <div>
-                  <dt>Son tur</dt>
-                  <dd>{{ tarih(d.besin.sonTur) }} · {{ saatFarki(d.besin.sonTur) }}</dd>
-                </div>
-                <div>
-                  <dt>Sıradaki tur</dt>
-                  <dd>{{ tarih(d.besin.siradakiTur) }}</dd>
-                </div>
-              </dl>
-              <p class="not">
-                Tamamlama iki günde bir çalışır; ara günlerde sayıların değişmemesi normaldir.
-              </p>
-            </article>
+                <dl class="time-list">
+                  <div>
+                    <dt>Son tur</dt>
+                    <dd>{{ tarih(d.besin.sonTur) }} · {{ saatFarki(d.besin.sonTur) }}</dd>
+                  </div>
+                  <div>
+                    <dt>Sıradaki tur</dt>
+                    <dd>{{ tarih(d.besin.siradakiTur) }}</dd>
+                  </div>
+                </dl>
+                <p class="note">
+                  Tamamlama düzenli aralıklarla çalışır; ara günlerde sayıların değişmemesi normaldir.
+                </p>
+              </article>
 
-            <article class="blok olay-ozeti">
-              <div class="blok-baslik">
-                <div>
-                  <p class="sayfa-etiketi">Güvenlik</p>
-                  <h2>Son 24 saatteki olaylar</h2>
+              <article class="panel event-summary">
+                <div class="panel-head">
+                  <div>
+                    <p class="eyebrow">Güvenlik</p>
+                    <h2>Son 24 saatteki olaylar</h2>
+                  </div>
+                  <button type="button" class="link-button" (click)="sekmeSec('olaylar')">
+                    Tümünü gör
+                  </button>
                 </div>
-                <button type="button" class="baglanti" (click)="sekmeSec('olaylar')">
-                  Tümünü gör
-                </button>
-              </div>
-              @if (d.sonGunOlaylari.length === 0) {
-                <p class="bos-durum">Kayda değer bir olay yok.</p>
-              } @else {
-                <ul class="ozet">
-                  @for (o of d.sonGunOlaylari; track o.kind) {
-                    <li>
-                      <span>{{ turEtiketi(o.kind) }}</span
-                      ><b>{{ o.count }}</b>
-                    </li>
-                  }
-                </ul>
-              }
-            </article>
-          </section>
+                @if (d.sonGunOlaylari.length === 0) {
+                  <p class="empty-state">Kayda değer bir olay yok.</p>
+                } @else {
+                  <ul class="summary">
+                    @for (o of d.sonGunOlaylari; track o.kind) {
+                      <li>
+                        <span>{{ turEtiketi(o.kind) }}</span
+                        ><b>{{ o.count }}</b>
+                      </li>
+                    }
+                  </ul>
+                }
+              </article>
+            </section>
 
-          <section class="blok kaynaklar-blok">
-            <div class="blok-baslik">
-              <div>
-                <p class="sayfa-etiketi">Tarama sağlığı</p>
-                <h2>En eski taranan kaynaklar</h2>
+            <section class="panel sources-panel">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Tarama sağlığı</p>
+                  <h2>En eski taranan kaynaklar</h2>
+                </div>
+                <p class="note">
+                  Alarmlar sağlık ucundan UptimeRobot'a gider; bu liste hızlı bakış içindir.
+                </p>
               </div>
-              <p class="not">
-                Alarmlar sağlık ucundan UptimeRobot'a gider; bu liste hızlı bakış içindir.
-              </p>
-            </div>
-            <div class="tablo-kabugu">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Kaynak</th>
-                    <th>Son tarama</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (k of d.kaynaklar; track k.kaynak) {
+              <div class="table-shell">
+                <table>
+                  <thead>
                     <tr>
-                      <td>{{ k.kaynak }}</td>
-                      <td>{{ saatFarki(k.sonTarama) }}</td>
+                      <th>Kaynak</th>
+                      <th>Son tarama</th>
                     </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-          </section>
+                  </thead>
+                  <tbody>
+                    @for (k of d.kaynaklar; track k.kaynak) {
+                      <tr>
+                        <td>{{ k.kaynak }}</td>
+                        <td>{{ saatFarki(k.sonTarama) }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </div>
         }
       }
 
       @if (sekme() === 'olaylar') {
-        <section class="sayfa-basligi">
+        <section class="page-head">
           <div>
-            <p class="sayfa-etiketi">Güvenlik</p>
+            <p class="eyebrow">Güvenlik</p>
             <h1>Olaylar</h1>
-            <p>
-              Kendi yönetim işlemlerinin başarısızlık sebeplerini, yetkisiz istekleri, hız
-              sınırı kayıtlarını ve sunucu hatalarını incele.
-            </p>
+            <p>Başarısız yönetim işlemlerinin sebeplerini ve güvenlik hareketlerini incele.</p>
           </div>
-          <span class="tarih"
+          <span class="date"
             ><i class="ph ph-calendar-blank" aria-hidden="true"></i>{{ bugunEtiketi() }}</span
           >
         </section>
 
+        <div class="filters event-range" aria-label="Olay tarih aralığı">
+          <div>
+            @for (g of [1, 7, 30, 90]; track g) {
+              <button
+                type="button"
+                [class.active]="olayGun() === g"
+                [attr.aria-pressed]="olayGun() === g"
+                (click)="olayGunSec(g)"
+              >
+                {{ g }} gün
+              </button>
+            }
+          </div>
+          <p class="note">
+            Tarih aralığı iki listeye de uygulanır. Tür süzgeci yalnızca güvenlik olaylarını etkiler.
+          </p>
+        </div>
         <!-- Panelden yapılan bir işlem başarısız olduğunda ekranda yalnızca
              kısa bir uyarı kalıyordu; gerçek sebep konteynerin stdout'unda
              duruyor ve oraya bakmak SSH gerektiriyordu. Bu blok o sebebi
              panele taşıyor. Güvenlik olaylarıyla AYNI SEKMEDE ama AYRI
              TABLODA: ikisini birleştirmek, suç duyurusuna dayanak olan
              listeyi kendi hatalarımızla kirletirdi. -->
-        <section class="blok">
-          <div class="blok-baslik">
+        <section class="panel">
+          <div class="panel-head">
             <div>
-              <p class="sayfa-etiketi">Yönetim</p>
+              <p class="eyebrow">Yönetim</p>
               <h2>Başarısız işlemler</h2>
             </div>
-            <p class="not">
-              Son {{ olayGun() }} gün. Aralığı aşağıdaki süzgeç belirliyor; tür süzgeci bu
-              listeyi etkilemez.
-            </p>
+            <p class="note">Son {{ olayGun() }} gün.</p>
           </div>
 
           @if (yonetimHatalari().length === 0) {
-            <p class="bos-durum">Bu aralıkta başarısız bir yönetim işlemi yok.</p>
+            <p class="empty-state">Bu aralıkta başarısız bir yönetim işlemi yok.</p>
           } @else {
-            <div class="tablo-kabugu">
+            <div class="table-shell">
               <table>
                 <thead>
                   <tr>
                     <th>Zaman</th>
-                    <th>İşlem</th>
                     <th>Kod</th>
                     <th>Sebep</th>
                   </tr>
@@ -257,9 +291,14 @@
                   @for (h of yonetimHatalari(); track h.id) {
                     <tr>
                       <td>{{ tarih(h.occurredAt) }}</td>
-                      <td class="tek-aralik">{{ h.method }} {{ h.path }}</td>
                       <td>{{ h.statusCode }}</td>
-                      <td>{{ h.reason || '—' }}</td>
+                      <td class="failure-reason">
+                        <span>{{ h.reason | yonetimHataSebebi }}</span>
+                        <details>
+                          <summary>Teknik ayrıntı</summary>
+                          <code>{{ h.method }} {{ h.path }}</code>
+                        </details>
+                      </td>
                     </tr>
                   }
                 </tbody>
@@ -268,21 +307,18 @@
           }
         </section>
 
-        <section class="blok">
-          <div class="suzgec" aria-label="Olay filtreleri">
+        <section class="panel">
+          <div class="filters" aria-label="Olay filtreleri">
             <div>
-              @for (g of [1, 7, 30, 90]; track g) {
-                <button type="button" [class.aktif]="olayGun() === g" (click)="olayGunSec(g)">
-                  {{ g }} gün
-                </button>
-              }
-            </div>
-            <div>
-              <button type="button" [class.aktif]="olayTur() === null" (click)="olayTuruSec(null)">
+              <button
+                type="button"
+                [class.active]="olayTur() === null"
+                (click)="olayTuruSec(null)"
+              >
                 Hepsi
               </button>
               @for (t of ['unauthorized', 'rate-limited', 'probe', 'server-error']; track t) {
-                <button type="button" [class.aktif]="olayTur() === t" (click)="olayTuruSec(t)">
+                <button type="button" [class.active]="olayTur() === t" (click)="olayTuruSec(t)">
                   {{ turEtiketi(t) }}
                 </button>
               }
@@ -290,9 +326,9 @@
           </div>
 
           @if (suzulenAdres(); as ip) {
-            <p class="bilgi">
+            <p class="info">
               <b>{{ ip }}</b> adresinin 90 günlük geçmişi gösteriliyor.
-              <button type="button" class="baglanti" (click)="olaylariYukle()">
+              <button type="button" class="link-button" (click)="olaylariYukle()">
                 Filtreyi kaldır
               </button>
             </p>
@@ -301,7 +337,7 @@
           @if (olaylar(); as o) {
             @if (o.topIps.length > 0 && !suzulenAdres()) {
               <h2>En çok olay üreten adresler</h2>
-              <div class="tablo-kabugu">
+              <div class="table-shell">
                 <table>
                   <thead>
                     <tr>
@@ -315,12 +351,16 @@
                   <tbody>
                     @for (a of o.topIps; track a.ip) {
                       <tr>
-                        <td class="tek-aralik">{{ a.ip }}</td>
+                        <td class="mono">{{ a.ip }}</td>
                         <td>{{ a.count }}</td>
                         <td>{{ tarih(a.firstSeen) }}</td>
                         <td>{{ tarih(a.lastSeen) }}</td>
                         <td>
-                          <button type="button" class="baglanti" (click)="adreseGoreFiltrele(a.ip)">
+                          <button
+                            type="button"
+                            class="link-button"
+                            (click)="adreseGoreFiltrele(a.ip)"
+                          >
                             Geçmişi
                           </button>
                         </td>
@@ -332,12 +372,12 @@
             }
 
             <h2>
-              Olaylar <span class="baslik-sayisi">{{ o.events.length }}</span>
+              Olaylar <span class="heading-count">{{ o.events.length }}</span>
             </h2>
             @if (o.events.length === 0) {
-              <p class="bos-durum">Bu aralıkta kayıt yok.</p>
+              <p class="empty-state">Bu aralıkta kayıt yok.</p>
             } @else {
-              <div class="tablo-kabugu">
+              <div class="table-shell">
                 <table>
                   <thead>
                     <tr>
@@ -354,9 +394,9 @@
                       <tr>
                         <td>{{ tarih(e.occurredAt) }}</td>
                         <td>{{ turEtiketi(e.kind) }}</td>
-                        <td class="tek-aralik">{{ e.ip }}</td>
+                        <td class="mono">{{ e.ip }}</td>
                         <td>{{ e.country || '—' }}</td>
-                        <td class="tek-aralik">{{ e.method }} {{ e.path }}</td>
+                        <td class="mono">{{ e.method }} {{ e.path }}</td>
                         <td>{{ e.statusCode }}</td>
                       </tr>
                     }
@@ -369,222 +409,242 @@
       }
 
       @if (sekme() === 'kuponlar') {
-        <section class="sayfa-basligi">
+        <section class="page-head">
           <div>
-            <p class="sayfa-etiketi">Kampanya yönetimi</p>
+            <p class="eyebrow">Kampanya yönetimi</p>
             <h1>Kuponlar</h1>
             <p>Marka ve satıcı kuponlarını ekle, geçerliliklerini ve yayın durumlarını yönet.</p>
           </div>
-          <span class="tarih"
+          <span class="date"
             ><i class="ph ph-calendar-blank" aria-hidden="true"></i>{{ bugunEtiketi() }}</span
           >
         </section>
 
-        <section class="blok">
-          <div class="blok-baslik">
-            <div>
-              <p class="sayfa-etiketi">Yeni kayıt</p>
-              <h2>Kupon ekle</h2>
+        <div class="coupon-workspace" [class.has-coupons]="kuponlar().length > 0">
+          <section class="panel coupon-create">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Yeni kayıt</p>
+                <h2>Kupon ekle</h2>
+              </div>
             </div>
-          </div>
-          <form class="kupon-form" (ngSubmit)="kuponEkle()">
-            <label
-              >Hedef
-              <select
-                name="hedefTip"
-                [ngModel]="yeniKupon().hedefTip"
-                (ngModelChange)="yeniKupon.set({ ...yeniKupon(), hedefTip: $event })"
-              >
-                <option value="marka">Marka</option>
-                <option value="satici">Satıcı</option>
-              </select>
-            </label>
-            <label
-              >{{ yeniKupon().hedefTip === 'marka' ? 'Marka adı' : 'Satıcı adresi' }}
-              @if (yeniKupon().hedefTip === 'marka') {
-                <small>Listeden seç</small>
-              }
-              <input
-                name="hedef"
-                [ngModel]="yeniKupon().hedef"
-                (ngModelChange)="yeniKupon.set({ ...yeniKupon(), hedef: $event })"
-                [attr.list]="yeniKupon().hedefTip === 'marka' ? 'marka-onerileri' : null"
-                [attr.placeholder]="
-                  yeniKupon().hedefTip === 'marka' ? 'ör. Dr Supplement' : 'ör. protein7.com'
-                "
-                autocomplete="off"
-              />
-              <!-- Katalogdaki GERÇEK yazımlar. Marka adı elle yazıldığı için
-                   "DrSupplement" gibi bir yakın-yazım 404 üretiyordu; öneri
-                   kutusu doğru yazımı tek tıkla veriyor. Backend ayrıca
-                   harf/boşluk farkını affediyor, yani bu kutu tek savunma
-                   değil — yalnızca hatayı en baştan önlüyor. -->
-              <datalist id="marka-onerileri">
-                @for (m of markalar(); track m.id) {
-                  <option [value]="m.name"></option>
+            <form class="coupon-form" (ngSubmit)="kuponEkle()">
+              <label
+                >Hedef
+                <select
+                  name="hedefTip"
+                  [ngModel]="yeniKupon().hedefTip"
+                  (ngModelChange)="yeniKupon.set({ ...yeniKupon(), hedefTip: $event })"
+                >
+                  <option value="marka">Marka</option>
+                  <option value="satici">Satıcı</option>
+                </select>
+              </label>
+              <label
+                >{{ yeniKupon().hedefTip === 'marka' ? 'Marka adı' : 'Satıcı adresi' }}
+                @if (yeniKupon().hedefTip === 'marka') {
+                  <small>Listeden seç</small>
                 }
-              </datalist>
-            </label>
-            <label
-              >Kod <small>Kodu yoksa boş bırak</small>
-              <input
-                name="code"
-                [ngModel]="yeniKupon().code"
-                (ngModelChange)="yeniKupon.set({ ...yeniKupon(), code: $event })"
-              />
-            </label>
-            <label
-              >Açıklama
-              <input
-                name="description"
-                [ngModel]="yeniKupon().description"
-                (ngModelChange)="yeniKupon.set({ ...yeniKupon(), description: $event })"
-              />
-            </label>
-            <label
-              >Geçerlilik <small>Boş = süresiz</small>
-              <input
-                type="date"
-                name="validUntil"
-                [ngModel]="yeniKupon().validUntil"
-                (ngModelChange)="yeniKupon.set({ ...yeniKupon(), validUntil: $event })"
-              />
-            </label>
-            <button type="submit">Kuponu ekle</button>
-          </form>
-          @if (kuponMesaji()) {
-            <p class="bilgi" role="status">{{ kuponMesaji() }}</p>
-          }
-        </section>
-
-        <section class="blok">
-          <div class="blok-baslik">
-            <div>
-              <p class="sayfa-etiketi">Mevcut kayıtlar</p>
-              <h2>
-                Kuponlar <span class="baslik-sayisi">{{ kuponlar().length }}</span>
-              </h2>
-            </div>
-          </div>
-          <div class="tablo-kabugu">
-            <table>
-              <thead>
-                <tr>
-                  <th>Durum</th>
-                  <th>Hedef</th>
-                  <th>Kod</th>
-                  <th>Açıklama</th>
-                  <th>Bitiş</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (k of kuponlar(); track k.id) {
-                  @if (duzenlenenKupon()?.id === k.id) {
-                    <!-- Satır içi düzenleme. Hedef (marka/satıcı) DEĞİŞTİRİLEMİYOR
-                         ve bu bilinçli: backend de onu güncellemiyor, düzenlenebilir
-                         göstermek kaydedilmeyen bir alan olurdu. -->
-                    <tr class="duzenleniyor">
-                      <td>
-                        <span class="satir-durumu" [class.gizli]="!k.isActive"
-                          ><span></span>{{ k.isActive ? 'Aktif' : 'Pasif' }}</span
-                        >
-                      </td>
-                      <td>{{ k.brandName || k.seller }}</td>
-                      <td>
-                        <input
-                          class="satir-girdi tek-aralik"
-                          [ngModel]="duzenlenenKupon()!.code"
-                          (ngModelChange)="kuponAlanGuncelle('code', $event)"
-                          [ngModelOptions]="{ standalone: true }"
-                          placeholder="kod yok"
-                          aria-label="Kupon kodu"
-                        />
-                      </td>
-                      <td>
-                        <input
-                          class="satir-girdi"
-                          [ngModel]="duzenlenenKupon()!.description"
-                          (ngModelChange)="kuponAlanGuncelle('description', $event)"
-                          [ngModelOptions]="{ standalone: true }"
-                          aria-label="Açıklama"
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="date"
-                          class="satir-girdi"
-                          [ngModel]="duzenlenenKupon()!.validUntil"
-                          (ngModelChange)="kuponAlanGuncelle('validUntil', $event)"
-                          [ngModelOptions]="{ standalone: true }"
-                          aria-label="Bitiş tarihi"
-                        />
-                      </td>
-                      <td>
-                        <div class="satir-eylemleri">
-                          <button
-                            type="button"
-                            class="satir-eylem birincil"
-                            [disabled]="kuponKaydediliyor()"
-                            (click)="kuponDuzenlemeKaydet()"
-                          >
-                            {{ kuponKaydediliyor() ? 'Kaydediliyor…' : 'Kaydet' }}
-                          </button>
-                          <button
-                            type="button"
-                            class="satir-eylem"
-                            [disabled]="kuponKaydediliyor()"
-                            (click)="kuponDuzenlemeIptal()"
-                          >
-                            Vazgeç
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  } @else {
-                    <tr [class.pasif]="!k.isActive">
-                      <td>
-                        <span class="satir-durumu" [class.gizli]="!k.isActive"
-                          ><span></span>{{ k.isActive ? 'Aktif' : 'Pasif' }}</span
-                        >
-                      </td>
-                      <td>{{ k.brandName || k.seller }}</td>
-                      <td class="tek-aralik">{{ k.code || 'kod yok' }}</td>
-                      <td>{{ k.description }}</td>
-                      <td>{{ k.validUntil ? tarih(k.validUntil) : 'süresiz' }}</td>
-                      <td>
-                        <div class="satir-eylemleri">
-                          <button type="button" class="satir-eylem" (click)="kuponDuzenlemeBaslat(k)">
-                            Düzenle
-                          </button>
-                          <button type="button" class="satir-eylem" (click)="kuponDurumDegistir(k)">
-                            {{ k.isActive ? 'Pasife al' : 'Aktife al' }}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
+                <input
+                  name="hedef"
+                  [ngModel]="yeniKupon().hedef"
+                  (ngModelChange)="yeniKupon.set({ ...yeniKupon(), hedef: $event })"
+                  [attr.list]="yeniKupon().hedefTip === 'marka' ? 'marka-onerileri' : null"
+                  [attr.placeholder]="
+                    yeniKupon().hedefTip === 'marka' ? 'ör. Dr Supplement' : 'ör. protein7.com'
+                  "
+                  autocomplete="off"
+                />
+                <!-- Katalogdaki GERÇEK yazımlar. Marka adı elle yazıldığı için
+                     "DrSupplement" gibi bir yakın-yazım 404 üretiyordu; öneri
+                     kutusu doğru yazımı tek tıkla veriyor. Backend ayrıca
+                     harf/boşluk farkını affediyor, yani bu kutu tek savunma
+                     değil — yalnızca hatayı en baştan önlüyor. -->
+                <datalist id="marka-onerileri">
+                  @for (m of markalar(); track m.id) {
+                    <option [value]="m.name"></option>
                   }
-                }
-              </tbody>
-            </table>
-          </div>
-        </section>
+                </datalist>
+              </label>
+              <label
+                >Kod (isteğe bağlı) <small>Kodu yoksa boş bırak</small>
+                <input
+                  name="code"
+                  [ngModel]="yeniKupon().code"
+                  (ngModelChange)="yeniKupon.set({ ...yeniKupon(), code: $event })"
+                />
+              </label>
+              <label
+                >Açıklama
+                <textarea
+                  name="description"
+                  [ngModel]="yeniKupon().description"
+                  (ngModelChange)="yeniKupon.set({ ...yeniKupon(), description: $event })"
+                  rows="3"
+                  placeholder="Kampanyayı ve varsa koşullarını yaz"
+                ></textarea>
+              </label>
+              <label
+                >Geçerlilik (isteğe bağlı) <small>Boş = süresiz</small>
+                <input
+                  type="date"
+                  name="validUntil"
+                  [ngModel]="yeniKupon().validUntil"
+                  (ngModelChange)="yeniKupon.set({ ...yeniKupon(), validUntil: $event })"
+                />
+              </label>
+              <button type="submit">Kuponu ekle</button>
+            </form>
+            @if (kuponMesaji()) {
+              <p class="info" role="status">{{ kuponMesaji() }}</p>
+            }
+          </section>
+
+          <section class="panel coupon-records">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Mevcut kayıtlar</p>
+                <h2>
+                  Kuponlar <span class="heading-count">{{ kuponlar().length }}</span>
+                </h2>
+              </div>
+            </div>
+            @if (kuponlar().length === 0) {
+              <div class="coupon-empty">
+                <i class="ph ph-ticket" aria-hidden="true"></i>
+                <h3>Henüz kupon yok</h3>
+                <p>Eklediğin kuponlar burada görünür.</p>
+              </div>
+            } @else {
+              <div class="table-shell">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Durum</th>
+                      <th>Hedef</th>
+                      <th>Kod</th>
+                      <th>Açıklama</th>
+                      <th>Bitiş</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (k of kuponlar(); track k.id) {
+                      @if (duzenlenenKupon()?.id === k.id) {
+                        <!-- Satır içi düzenleme. Hedef (marka/satıcı) DEĞİŞTİRİLEMİYOR
+                             ve bu bilinçli: backend de onu güncellemiyor, düzenlenebilir
+                             göstermek kaydedilmeyen bir alan olurdu. -->
+                        <tr class="editing">
+                          <td>
+                            <span class="row-status" [class.is-hidden]="!k.isActive"
+                              ><span></span>{{ k.isActive ? 'Aktif' : 'Pasif' }}</span
+                            >
+                          </td>
+                          <td>{{ k.brandName || k.seller }}</td>
+                          <td>
+                            <input
+                              class="row-input mono"
+                              [ngModel]="duzenlenenKupon()!.code"
+                              (ngModelChange)="kuponAlanGuncelle('code', $event)"
+                              [ngModelOptions]="{ standalone: true }"
+                              placeholder="kod yok"
+                              aria-label="Kupon kodu"
+                            />
+                          </td>
+                          <td>
+                            <input
+                              class="row-input"
+                              [ngModel]="duzenlenenKupon()!.description"
+                              (ngModelChange)="kuponAlanGuncelle('description', $event)"
+                              [ngModelOptions]="{ standalone: true }"
+                              aria-label="Açıklama"
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="date"
+                              class="row-input"
+                              [ngModel]="duzenlenenKupon()!.validUntil"
+                              (ngModelChange)="kuponAlanGuncelle('validUntil', $event)"
+                              [ngModelOptions]="{ standalone: true }"
+                              aria-label="Bitiş tarihi"
+                            />
+                          </td>
+                          <td>
+                            <div class="row-actions">
+                              <button
+                                type="button"
+                                class="row-action primary"
+                                [disabled]="kuponKaydediliyor()"
+                                (click)="kuponDuzenlemeKaydet()"
+                              >
+                                {{ kuponKaydediliyor() ? 'Kaydediliyor…' : 'Kaydet' }}
+                              </button>
+                              <button
+                                type="button"
+                                class="row-action"
+                                [disabled]="kuponKaydediliyor()"
+                                (click)="kuponDuzenlemeIptal()"
+                              >
+                                Vazgeç
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      } @else {
+                        <tr [class.inactive]="!k.isActive">
+                          <td>
+                            <span class="row-status" [class.is-hidden]="!k.isActive"
+                              ><span></span>{{ k.isActive ? 'Aktif' : 'Pasif' }}</span
+                            >
+                          </td>
+                          <td>{{ k.brandName || k.seller }}</td>
+                          <td class="mono">{{ k.code || 'kod yok' }}</td>
+                          <td>{{ k.description }}</td>
+                          <td>{{ k.validUntil ? tarih(k.validUntil) : 'süresiz' }}</td>
+                          <td>
+                            <div class="row-actions">
+                              <button
+                                type="button"
+                                class="row-action"
+                                (click)="kuponDuzenlemeBaslat(k)"
+                              >
+                                Düzenle
+                              </button>
+                              <button
+                                type="button"
+                                class="row-action"
+                                (click)="kuponDurumDegistir(k)"
+                              >
+                                {{ k.isActive ? 'Pasife al' : 'Aktife al' }}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      }
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </section>
+        </div>
       }
 
       @if (sekme() === 'gorunurluk') {
-        <section class="sayfa-basligi">
+        <section class="page-head">
           <div>
-            <p class="sayfa-etiketi">Katalog yönetimi</p>
-            <h1>Görünürlük yönetimi</h1>
-            <p>Marka ve ürünlerin sitede yayınlanma durumunu güvenle yönet.</p>
+            <p class="eyebrow">Katalog yönetimi</p>
+            <h1>Görünürlük</h1>
+            <p>Marka ve ürünlerin sitede yayınlanma durumunu ve katalog verisini yönet.</p>
           </div>
-          <span class="tarih"
+          <span class="date"
             ><i class="ph ph-calendar-blank" aria-hidden="true"></i>{{ bugunEtiketi() }}</span
           >
         </section>
 
         @if (gorunurlukKilitli()) {
-          <div class="kilit-bandi" role="status">
+          <div class="lock-banner" role="status">
             <i class="ph ph-shield-check" aria-hidden="true"></i>
             <strong>Ölçüm korunuyor</strong>
             <span>19 Eylül'e kadar hiçbir marka veya ürün gizlenemez.</span>
@@ -592,17 +652,20 @@
         }
 
         @if (gorunurlukMesaji()) {
-          <p class="bilgi gorunurluk-mesaji" role="status">{{ gorunurlukMesaji() }}</p>
+          <p class="info visibility-message" role="status">{{ gorunurlukMesaji() }}</p>
         }
 
-        <div class="gorunurluk-yerlesimi">
-          <section class="gorunurluk-paneli" aria-label="Görünürlük kayıtları">
-            <div class="gorunurluk-sekmeleri" role="tablist" aria-label="Görünürlük türü">
+        <div
+          class="visibility-layout"
+          [class.products-view]="gorunurlukGorunumu() === 'urunler'"
+        >
+          <section class="visibility-panel" aria-label="Görünürlük kayıtları">
+            <div class="visibility-tabs" role="tablist" aria-label="Görünürlük türü">
               <button
                 type="button"
                 role="tab"
                 [attr.aria-selected]="gorunurlukGorunumu() === 'markalar'"
-                [class.aktif]="gorunurlukGorunumu() === 'markalar'"
+                [class.active]="gorunurlukGorunumu() === 'markalar'"
                 (click)="gorunurlukGorunumuSec('markalar')"
               >
                 Markalar <span>{{ markalar().length }}</span>
@@ -611,7 +674,7 @@
                 type="button"
                 role="tab"
                 [attr.aria-selected]="gorunurlukGorunumu() === 'urunler'"
-                [class.aktif]="gorunurlukGorunumu() === 'urunler'"
+                [class.active]="gorunurlukGorunumu() === 'urunler'"
                 (click)="gorunurlukGorunumuSec('urunler')"
               >
                 Ürünler <span>{{ gorunurlukToplamUrun() }}</span>
@@ -619,8 +682,8 @@
             </div>
 
             @if (gorunurlukGorunumu() === 'markalar') {
-              <div class="gorunurluk-araclari">
-                <label class="arama-alani">
+              <div class="visibility-tools">
+                <label class="search-field">
                   <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
                   <span class="sr-only">Marka ara</span>
                   <input
@@ -630,24 +693,24 @@
                     (ngModelChange)="markaAramaDegisti($event)"
                   />
                 </label>
-                <div class="durum-filtreleri" aria-label="Marka durumu">
+                <div class="status-filters" aria-label="Marka durumu">
                   <button
                     type="button"
-                    [class.aktif]="markaFiltresi() === 'tumu'"
+                    [class.active]="markaFiltresi() === 'tumu'"
                     (click)="markaFiltresiSec('tumu')"
                   >
                     Tümü
                   </button>
                   <button
                     type="button"
-                    [class.aktif]="markaFiltresi() === 'gorunur'"
+                    [class.active]="markaFiltresi() === 'gorunur'"
                     (click)="markaFiltresiSec('gorunur')"
                   >
                     Görünür
                   </button>
                   <button
                     type="button"
-                    [class.aktif]="markaFiltresi() === 'gizli'"
+                    [class.active]="markaFiltresi() === 'gizli'"
                     (click)="markaFiltresiSec('gizli')"
                   >
                     Gizli
@@ -656,41 +719,41 @@
               </div>
 
               @if (markalarYukleniyor()) {
-                <div class="bos-durum buyuk">
+                <div class="empty-state large">
                   <i class="ph ph-circle-notch" aria-hidden="true"></i>
                   <p>Markalar yükleniyor…</p>
                 </div>
               } @else {
-                <div class="tablo-kabugu gorunurluk-tablosu">
+                <div class="table-shell visibility-table">
                   <table>
                     <thead>
                       <tr>
                         <th>Marka</th>
-                        <th>Toplam ürün</th>
+                        <th>Ürün</th>
                         <th>Gizli</th>
-                        <th>Yayın durumu</th>
+                        <th>Durum</th>
                         <th>İşlem</th>
                       </tr>
                     </thead>
                     <tbody>
                       @for (marka of sayfadakiMarkalar(); track marka.id) {
-                        <tr [class.pasif]="!marka.isActive">
-                          <td class="marka-hucresi">
+                        <tr [class.inactive]="!marka.isActive">
+                          <td class="brand-cell">
                             <span><i class="ph ph-storefront" aria-hidden="true"></i></span
                             ><strong>{{ marka.name }}</strong>
                           </td>
                           <td>{{ marka.urunSayisi }}</td>
                           <td>{{ marka.gizliUrun }}</td>
                           <td>
-                            <span class="satir-durumu" [class.gizli]="!marka.isActive"
+                            <span class="row-status" [class.is-hidden]="!marka.isActive"
                               ><span></span>{{ marka.isActive ? 'Yayında' : 'Gizli' }}</span
                             >
                           </td>
                           <td>
                             <button
                               type="button"
-                              class="satir-islemi"
-                              [class.yayina-al]="!marka.isActive"
+                              class="row-toggle"
+                              [class.publish]="!marka.isActive"
                               [disabled]="
                                 degisiklikYapiliyor() || (gorunurlukKilitli() && marka.isActive)
                               "
@@ -712,7 +775,9 @@
                         </tr>
                       } @empty {
                         <tr>
-                          <td colspan="5"><p class="bos-durum">Aramayla eşleşen marka yok.</p></td>
+                          <td colspan="5">
+                            <p class="empty-state">Aramayla eşleşen marka yok.</p>
+                          </td>
                         </tr>
                       }
                     </tbody>
@@ -720,14 +785,10 @@
                 </div>
 
                 @if (suzulenMarkalar().length > 0) {
-                  <div class="sayfalama">
+                  <div class="pagination">
                     <span
-                      >{{ (markaSayfa() - 1) * 5 + 1 }}–{{
-                        markaSayfa() * 5 < suzulenMarkalar().length
-                          ? markaSayfa() * 5
-                          : suzulenMarkalar().length
-                      }}
-                      / {{ suzulenMarkalar().length }} marka</span
+                      >{{ markaAraligiBaslangic() }}–{{ markaAraligiBitis() }} /
+                      {{ suzulenMarkalar().length }} marka</span
                     >
                     <div>
                       <button
@@ -741,7 +802,7 @@
                       @for (sayfa of gorunenMarkaSayfalari(); track sayfa) {
                         <button
                           type="button"
-                          [class.aktif]="sayfa === markaSayfa()"
+                          [class.active]="sayfa === markaSayfa()"
                           [attr.aria-current]="sayfa === markaSayfa() ? 'page' : null"
                           (click)="markaSayfasinaGit(sayfa)"
                         >
@@ -760,14 +821,14 @@
                   </div>
                 }
 
-                <p class="etki-notu">
+                <p class="impact-note">
                   <i class="ph ph-info" aria-hidden="true"></i>Bir markayı gizlemek, markaya ait tüm
                   ürünleri siteden kaldırır.
                 </p>
               }
             } @else {
-              <form class="urun-arama-formu" (ngSubmit)="urunAra()">
-                <label class="arama-alani">
+              <form class="product-search-form" (ngSubmit)="urunAra()">
+                <label class="search-field">
                   <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
                   <span class="sr-only">Ürün ara</span>
                   <input
@@ -778,7 +839,7 @@
                     (ngModelChange)="urunArama.set($event)"
                   />
                 </label>
-                <label class="onay-kutusu"
+                <label class="checkbox"
                   ><input
                     type="checkbox"
                     name="yalnizGizli"
@@ -786,159 +847,294 @@
                     (ngModelChange)="yalnizGizliDegisti($event)"
                   />Yalnızca gizliler</label
                 >
+                <label class="checkbox"
+                  ><input
+                    type="checkbox"
+                    name="eksikBesin"
+                    [ngModel]="eksikBesinUrunler()"
+                    (ngModelChange)="veriFiltresiDegisti('eksikBesin', $event)"
+                  />Besin değeri eksik</label
+                >
+                <label class="checkbox"
+                  ><input
+                    type="checkbox"
+                    name="kategorisiz"
+                    [ngModel]="kategorisizUrunler()"
+                    (ngModelChange)="veriFiltresiDegisti('kategorisiz', $event)"
+                  />Kategorisiz</label
+                >
+                <label
+                  class="checkbox"
+                  title="Besin değeri yok ve hiçbir otomatik kaynak artık dolduramaz: normal tarama doldurmadı, detay tamamlama da bu satıra gelmeyecek ya da bakıp bulamadı. Bunları yalnızca bir kişi doldurabilir."
+                  ><input
+                    type="checkbox"
+                    name="elleGirilmeli"
+                    [ngModel]="elleGirilmeliUrunler()"
+                    (ngModelChange)="veriFiltresiDegisti('elleGirilmeli', $event)"
+                  />Elle girilmeli</label
+                >
                 <button type="submit">Ara</button>
               </form>
 
               @if (urunlerYukleniyor()) {
-                <div class="bos-durum buyuk">
+                <div class="empty-state large">
                   <i class="ph ph-circle-notch" aria-hidden="true"></i>
                   <p>Ürünler aranıyor…</p>
                 </div>
               } @else if (!urunAramaYapildi()) {
-                <div class="bos-durum buyuk">
+                <div class="empty-state large">
                   <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
                   <h2>Ürünleri görmek için arama yap</h2>
                   <p>
-                    Katalog büyüklüğü nedeniyle ürünler yalnızca aramayla veya gizli filtresiyle
-                    listelenir.
+                    Katalog büyüklüğü nedeniyle ürünler yalnızca aramayla ya da bir filtreyle
+                    listelenir. "Besin değeri eksik", "Kategorisiz" ve "Elle girilmeli" elle veri
+                    girilecek ürünleri listeler.
                   </p>
                 </div>
               } @else if (urunler().length === 0) {
-                <div class="bos-durum buyuk">
+                <div class="empty-state large">
                   <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
                   <h2>Ürün bulunamadı</h2>
-                  <p>Arama ifadesini veya gizli ürün filtresini değiştir.</p>
+                  <p>Arama ifadesini ya da filtreleri değiştir.</p>
                 </div>
               } @else {
-                <div class="tablo-kabugu gorunurluk-tablosu">
+                <div class="pagination product-pagination-top" aria-label="Ürün sayfalama">
+                  <span
+                    >{{ urunAraligiBaslangic() }}–{{ urunAraligiBitis() }} /
+                    {{ urunToplam() }} satır</span
+                  >
+                  @if (urunToplamSayfa() > 1) {
+                    <div>
+                      <button
+                        type="button"
+                        [disabled]="urunSayfa() === 1 || urunlerYukleniyor()"
+                        (click)="urunSayfasinaGit(urunSayfa() - 1)"
+                        aria-label="Önceki sayfa"
+                      >
+                        <i class="ph ph-caret-left" aria-hidden="true"></i>
+                      </button>
+                      @for (sayfa of gorunenUrunSayfalari(); track sayfa) {
+                        <button
+                          type="button"
+                          [class.active]="sayfa === urunSayfa()"
+                          [attr.aria-current]="sayfa === urunSayfa() ? 'page' : null"
+                          [disabled]="urunlerYukleniyor()"
+                          (click)="urunSayfasinaGit(sayfa)"
+                        >
+                          {{ sayfa }}
+                        </button>
+                      }
+                      <button
+                        type="button"
+                        [disabled]="urunSayfa() === urunToplamSayfa() || urunlerYukleniyor()"
+                        (click)="urunSayfasinaGit(urunSayfa() + 1)"
+                        aria-label="Sonraki sayfa"
+                      >
+                        <i class="ph ph-caret-right" aria-hidden="true"></i>
+                      </button>
+                    </div>
+                  }
+                </div>
+                <div class="table-shell visibility-table product-table">
                   <table>
                     <thead>
                       <tr>
                         <th>Ürün</th>
-                        <th>Marka</th>
-                        <th>Fiyat</th>
-                        <th>Satıcı</th>
+                        <th>Kategori</th>
+                        <th>Besin değeri</th>
                         <th>Durum</th>
                         <th>İşlem</th>
                       </tr>
                     </thead>
                     <tbody>
                       @for (urun of urunler(); track urun.id) {
-                        <tr [class.pasif]="!urun.isActive">
-                          <td class="urun-adi">
+                        <tr [class.inactive]="!urun.isActive">
+                          <td class="product-name">
                             <strong>{{ urun.name }}</strong>
+                            <span class="product-meta"
+                              >{{ urun.marka }} · {{ urun.seller || 'Markanın sitesi' }} ·
+                              {{ para(urun.latestPrice) }}</span
+                            >
                           </td>
-                          <td>{{ urun.marka }}</td>
-                          <td>{{ para(urun.latestPrice) }}</td>
-                          <td>{{ urun.seller || 'Markanın sitesi' }}</td>
-                          <td>
-                            <span class="satir-durumu" [class.gizli]="!urun.isActive"
+                          <td data-label="Kategori">
+                            {{ kategoriEtiketi(urun.category) }}
+                            @if (urun.categoryIsManual) {
+                              <span class="manual-tag">elle</span>
+                            }
+                          </td>
+                          <td data-label="Besin değeri">
+                            <span class="row-status" [class.is-hidden]="!urun.nutritionJson"
+                              ><span></span
+                              >{{
+                                urun.nutritionJson
+                                  ? urun.nutritionIsManual
+                                    ? 'Elle'
+                                    : 'Var'
+                                  : 'Eksik'
+                              }}</span
+                            >
+                          </td>
+                          <td data-label="Durum">
+                            <span class="row-status" [class.is-hidden]="!urun.isActive"
                               ><span></span>{{ urun.isActive ? 'Yayında' : 'Gizli' }}</span
                             >
                           </td>
-                          <td>
-                            <button
-                              type="button"
-                              class="satir-islemi"
-                              [class.yayina-al]="!urun.isActive"
-                              [disabled]="
-                                degisiklikYapiliyor() || (gorunurlukKilitli() && urun.isActive)
-                              "
-                              (click)="
-                                gorunurlukDegisikligiIste('urun', urun.id, urun.name, urun.isActive)
-                              "
-                            >
-                              @if (gorunurlukKilitli() && urun.isActive) {
-                                <i class="ph ph-shield-check" aria-hidden="true"></i>
-                              }
-                              {{ urun.isActive ? 'Gizle' : 'Yayına al' }}
-                            </button>
+                          <td class="product-actions">
+                            <div class="row-actions">
+                              <button
+                                type="button"
+                                class="row-action"
+                                (click)="veriDuzenleyiciAc(urun)"
+                              >
+                                Veriyi düzenle
+                              </button>
+                              <button
+                                type="button"
+                                class="row-toggle"
+                                [class.publish]="!urun.isActive"
+                                [disabled]="
+                                  degisiklikYapiliyor() || (gorunurlukKilitli() && urun.isActive)
+                                "
+                                (click)="
+                                  gorunurlukDegisikligiIste(
+                                    'urun',
+                                    urun.id,
+                                    urun.name,
+                                    urun.isActive
+                                  )
+                                "
+                              >
+                                @if (gorunurlukKilitli() && urun.isActive) {
+                                  <i class="ph ph-shield-check" aria-hidden="true"></i>
+                                }
+                                {{ urun.isActive ? 'Gizle' : 'Yayına al' }}
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       }
                     </tbody>
                   </table>
                 </div>
-                <p class="etki-notu">
-                  <i class="ph ph-info" aria-hidden="true"></i>En fazla 200 sonuç gösterilir.
-                  Gizleme işlemi onay gerektirir.
+                <div class="pagination">
+                  <span
+                    >{{ urunAraligiBaslangic() }}–{{ urunAraligiBitis() }} /
+                    {{ urunToplam() }} satır</span
+                  >
+                  @if (urunToplamSayfa() > 1) {
+                    <div>
+                      <button
+                        type="button"
+                        [disabled]="urunSayfa() === 1 || urunlerYukleniyor()"
+                        (click)="urunSayfasinaGit(urunSayfa() - 1)"
+                        aria-label="Önceki sayfa"
+                      >
+                        <i class="ph ph-caret-left" aria-hidden="true"></i>
+                      </button>
+                      @for (sayfa of gorunenUrunSayfalari(); track sayfa) {
+                        <button
+                          type="button"
+                          [class.active]="sayfa === urunSayfa()"
+                          [attr.aria-current]="sayfa === urunSayfa() ? 'page' : null"
+                          [disabled]="urunlerYukleniyor()"
+                          (click)="urunSayfasinaGit(sayfa)"
+                        >
+                          {{ sayfa }}
+                        </button>
+                      }
+                      <button
+                        type="button"
+                        [disabled]="urunSayfa() === urunToplamSayfa() || urunlerYukleniyor()"
+                        (click)="urunSayfasinaGit(urunSayfa() + 1)"
+                        aria-label="Sonraki sayfa"
+                      >
+                        <i class="ph ph-caret-right" aria-hidden="true"></i>
+                      </button>
+                    </div>
+                  }
+                </div>
+                <p class="impact-note">
+                  <i class="ph ph-info" aria-hidden="true"></i>Her boyut ayrı bir satır. Gizleme
+                  işlemi onay gerektirir.
                 </p>
               }
             }
           </section>
 
-          <aside class="hizli-gorunum" aria-label="Görünürlük özeti">
-            <h2>Hızlı görünüm</h2>
-            <dl>
-              <div>
-                <dt>
-                  <span class="hizli-ikon yayinda"
-                    ><i class="ph ph-check-circle" aria-hidden="true"></i></span
-                  >Yayında
-                </dt>
-                <dd>{{ aktifMarkaSayisi() }}<small>marka</small></dd>
-              </div>
-              <div>
-                <dt>
-                  <span class="hizli-ikon gizli"
-                    ><i class="ph ph-eye-slash" aria-hidden="true"></i></span
-                  >Gizli
-                </dt>
-                <dd>{{ gizliMarkaSayisi() }}<small>marka</small></dd>
-              </div>
-              <div>
-                <dt>
-                  <span class="hizli-ikon"
-                    ><i class="ph ph-clock-counter-clockwise" aria-hidden="true"></i></span
-                  >Son güncelleme
-                </dt>
-                <dd class="kucuk-deger">{{ saatFarki(gorunurlukSonGuncelleme()) }}</dd>
-              </div>
-            </dl>
-          </aside>
+          @if (gorunurlukGorunumu() === 'markalar') {
+            <aside class="quick-view" aria-label="Görünürlük özeti">
+              <h2>Hızlı görünüm</h2>
+              <dl>
+                <div>
+                  <dt>
+                    <span class="quick-icon live"
+                      ><i class="ph ph-check-circle" aria-hidden="true"></i></span
+                    >Yayında
+                  </dt>
+                  <dd>{{ aktifMarkaSayisi() }}<small>marka</small></dd>
+                </div>
+                <div>
+                  <dt>
+                    <span class="quick-icon is-hidden"
+                      ><i class="ph ph-eye-slash" aria-hidden="true"></i></span
+                    >Gizli
+                  </dt>
+                  <dd>{{ gizliMarkaSayisi() }}<small>marka</small></dd>
+                </div>
+                <div>
+                  <dt>
+                    <span class="quick-icon"
+                      ><i class="ph ph-clock-counter-clockwise" aria-hidden="true"></i></span
+                    >Son güncelleme
+                  </dt>
+                  <dd class="small-value">{{ saatFarki(gorunurlukSonGuncelleme()) }}</dd>
+                </div>
+              </dl>
+            </aside>
+          }
         </div>
       }
 
       @if (sekme() === 'aboneler') {
-        <section class="sayfa-basligi">
+        <section class="page-head">
           <div>
-            <p class="sayfa-etiketi">Bülten</p>
+            <p class="eyebrow">Bülten</p>
             <h1>Aboneler</h1>
             <p>Bültene ya da fiyat alarmına kayıt olan herkes, en yeniden eskiye.</p>
           </div>
-          <span class="tarih"
+          <span class="date"
             ><i class="ph ph-calendar-blank" aria-hidden="true"></i>{{ bugunEtiketi() }}</span
           >
         </section>
 
         @if (aboneVerisi(); as veri) {
-          <section class="kartlar" aria-label="Abone göstergeleri">
-            <article class="kart">
-              <span class="kart-ikonu"><i class="ph ph-check-circle" aria-hidden="true"></i></span>
-              <span class="etiket">Aktif</span>
+          <section class="cards subscriber-cards" aria-label="Abone göstergeleri">
+            <article class="card">
+              <span class="card-icon"><i class="ph ph-check-circle" aria-hidden="true"></i></span>
+              <span class="label">Aktif</span>
               <strong>{{ veri.ozet.aktif }}</strong>
-              <span class="alt">e-posta alıyor</span>
+              <span class="sub">e-posta alıyor</span>
             </article>
-            <article class="kart">
-              <span class="kart-ikonu"
+            <article class="card">
+              <span class="card-icon"
                 ><i class="ph ph-envelope-simple" aria-hidden="true"></i
               ></span>
-              <span class="etiket">Onay bekliyor</span>
+              <span class="label">Onay bekliyor</span>
               <strong>{{ veri.ozet.bekleyen }}</strong>
-              <span class="alt">onaylayana kadar e-posta yok</span>
+              <span class="sub">onaylayana kadar e-posta yok</span>
             </article>
-            <article class="kart">
-              <span class="kart-ikonu"><i class="ph ph-minus-circle" aria-hidden="true"></i></span>
-              <span class="etiket">Ayrılan</span>
+            <article class="card">
+              <span class="card-icon"><i class="ph ph-minus-circle" aria-hidden="true"></i></span>
+              <span class="label">Ayrılan</span>
               <strong>{{ veri.ozet.ayrilan }}</strong>
-              <span class="alt">toplam {{ veri.ozet.toplam }}</span>
+              <span class="sub">toplam {{ veri.ozet.toplam }}</span>
             </article>
           </section>
         }
 
-        <section class="blok">
-          <div class="gorunurluk-araclari">
-            <label class="arama-alani">
+        <section class="panel">
+          <div class="subscriber-tools">
+            <label class="search-field">
               <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
               <span class="sr-only">E-posta ara</span>
               <input
@@ -948,11 +1144,11 @@
                 (ngModelChange)="aboneArama.set($event)"
               />
             </label>
-            <div class="durum-filtreleri" aria-label="Abone durumu">
+            <div class="status-filters" aria-label="Abone durumu">
               @for (f of ['tumu', 'aktif', 'bekliyor', 'ayrildi']; track f) {
                 <button
                   type="button"
-                  [class.aktif]="aboneFiltresi() === f"
+                  [class.active]="aboneFiltresi() === f"
                   (click)="aboneFiltresiSec($any(f))"
                 >
                   {{ aboneDurumEtiketi($any(f)) }}
@@ -962,20 +1158,19 @@
           </div>
 
           @if (aboneMesaji()) {
-            <p class="bilgi" role="status">{{ aboneMesaji() }}</p>
+            <p class="info" role="status">{{ aboneMesaji() }}</p>
           }
 
           @if (abonelerYukleniyor() && !aboneVerisi()) {
-            <p class="bos-durum">Aboneler yükleniyor…</p>
+            <p class="empty-state">Aboneler yükleniyor…</p>
           } @else {
-            <div class="tablo-kabugu">
+            <div class="table-shell subscriber-table">
               <table>
                 <thead>
                   <tr>
                     <th>E-posta</th>
                     <th>Durum</th>
-                    <th>Kayıt</th>
-                    <th>Onay</th>
+                    <th>Kayıt / Onay</th>
                     <th>Son bülten</th>
                     <th>Alarm</th>
                     <th></th>
@@ -983,29 +1178,33 @@
                 </thead>
                 <tbody>
                   @for (a of suzulenAboneler(); track a.id) {
-                    <tr [class.pasif]="a.durum !== 'aktif'">
-                      <td class="tek-aralik">{{ a.email }}</td>
-                      <td>
-                        <span class="satir-durumu" [class.gizli]="a.durum !== 'aktif'"
+                    <tr [class.inactive]="a.durum !== 'aktif'">
+                      <td class="subscriber-email">{{ a.email }}</td>
+                      <td data-label="Durum">
+                        <span class="row-status" [class.is-hidden]="a.durum !== 'aktif'"
                           ><span></span>{{ aboneDurumEtiketi(a.durum) }}</span
                         >
                       </td>
-                      <td>{{ tarih(a.subscribedAt) }}</td>
-                      <td>
-                        {{
+                      <td data-label="Kayıt / Onay">
+                        {{ tarih(a.subscribedAt)
+                        }}<small class="cell-detail">{{
                           a.durum === 'ayrildi'
-                            ? 'ayrıldı ' + tarih(a.unsubscribedAt)
-                            : tarih(a.confirmedAt)
-                        }}
+                            ? 'Ayrıldı ' + tarih(a.unsubscribedAt)
+                            : a.confirmedAt
+                              ? 'Onaylandı ' + tarih(a.confirmedAt)
+                              : 'Onay bekliyor'
+                        }}</small>
                       </td>
-                      <td>{{ tarih(a.lastDigestSentAt) }}</td>
-                      <td>{{ a.takipSayisi }}</td>
-                      <td>
-                        <div class="satir-eylemleri">
+                      <td data-label="Son bülten">
+                        {{ a.lastDigestSentAt ? tarih(a.lastDigestSentAt) : 'Gönderilmedi' }}
+                      </td>
+                      <td data-label="Alarm">{{ a.takipSayisi }}</td>
+                      <td class="subscriber-actions">
+                        <div class="row-actions">
                           @if (a.durum === 'aktif') {
                             <button
                               type="button"
-                              class="satir-eylem"
+                              class="row-action"
                               [disabled]="aboneIslemdeId() === a.id"
                               (click)="pasifeAlmaIste(a)"
                             >
@@ -1014,7 +1213,7 @@
                           } @else {
                             <button
                               type="button"
-                              class="satir-eylem birincil"
+                              class="row-action primary"
                               [disabled]="aboneIslemdeId() === a.id"
                               (click)="onayGonder(a)"
                             >
@@ -1026,13 +1225,13 @@
                     </tr>
                   } @empty {
                     <tr>
-                      <td colspan="7"><p class="bos-durum">Eşleşen abone yok.</p></td>
+                      <td colspan="6"><p class="empty-state">Eşleşen abone yok.</p></td>
                     </tr>
                   }
                 </tbody>
               </table>
             </div>
-            <p class="etki-notu">
+            <p class="impact-note">
               <i class="ph ph-info" aria-hidden="true"></i>Abonelik yalnızca kişi kendi gelen
               kutusundan onaylayınca açılır; bu yüzden burada "aktife al" yok. "Onay gönder" onay
               düğmesini tekrar e-postalar.
@@ -1042,55 +1241,207 @@
       }
     </main>
 
-    @if (bekleyenDegisiklik(); as degisiklik) {
-      <div class="onay-arkaplani" (click)="degisikligiIptal()">
+    @if (duzenlenenVeri(); as form) {
+      <div class="confirm-backdrop data-backdrop" (click)="veriDuzenleyiciKapat()">
         <section
-          class="onay-penceresi"
-          role="alertdialog"
+          class="confirm-dialog data-dialog"
+          yonetimDuzenleyiciOdagi
+          role="dialog"
           aria-modal="true"
-          aria-labelledby="onay-basligi"
+          aria-labelledby="veri-basligi"
           (click)="$event.stopPropagation()"
+          (keydown.escape)="veriDuzenleyiciKapat(); $event.stopPropagation()"
         >
-          <span class="onay-ikonu"><i class="ph ph-warning-circle" aria-hidden="true"></i></span>
-          <p class="sayfa-etiketi">Görünürlük değişikliği</p>
-          <h2 id="onay-basligi">{{ degisiklik.name }} gizlensin mi?</h2>
-          <p>
-            {{ degisiklik.tip === 'marka' ? 'Marka ve markaya ait tüm ürünler' : 'Bu ürün' }}
-            ziyaretçi sayfalarından kaldırılacak. Daha sonra yeniden yayına alabilirsin.
-          </p>
-          <div class="onay-islemleri">
+          <header class="data-header">
             <button
               type="button"
-              class="vazgec"
-              [disabled]="degisiklikYapiliyor()"
-              (click)="degisikligiIptal()"
+              class="data-close"
+              aria-label="Ürün düzenleyicisini kapat"
+              [disabled]="veriKaydediliyor()"
+              (click)="veriDuzenleyiciKapat()"
             >
-              Vazgeç
+              <i class="ph ph-x" aria-hidden="true"></i>
             </button>
-            <button
-              type="button"
-              class="gizlemeyi-onayla"
-              [disabled]="degisiklikYapiliyor()"
-              (click)="degisikligiOnayla()"
-            >
-              {{ degisiklikYapiliyor() ? 'Kaydediliyor…' : 'Gizlemeyi onayla' }}
-            </button>
+            <p class="eyebrow">Katalog verisi · {{ form.urun.marka }}</p>
+            <h2 id="veri-basligi">{{ form.urun.name }}</h2>
+            <p class="data-note">
+              Bu ürün sayfasının bütün boyutlarına kaydedilir. Buradan girilen değerleri tarama ve
+              etiket okuyucu bir daha ezmez.
+            </p>
+          </header>
+
+          <div class="data-body">
+            <section class="data-section" aria-labelledby="kategori-basligi">
+              <h3 id="kategori-basligi">Kategori</h3>
+              <div class="data-row">
+                <select
+                  aria-label="Kategori"
+                  [ngModel]="form.kategori"
+                  (ngModelChange)="veriAlaniGuncelle('kategori', $event)"
+                  [ngModelOptions]="{ standalone: true }"
+                >
+                  <option value="">
+                    Otomatik{{
+                      form.urun.categoryIsManual
+                        ? ''
+                        : ' (şu an: ' + kategoriEtiketi(form.urun.category) + ')'
+                    }}
+                  </option>
+                  @for (k of kategoriSecenekleri; track k.slug) {
+                    <option [value]="k.slug">{{ k.etiket }}</option>
+                  }
+                </select>
+                <button
+                  type="button"
+                  class="row-action primary"
+                  [disabled]="veriKaydediliyor()"
+                  (click)="kategoriKaydet()"
+                >
+                  Kategoriyi kaydet
+                </button>
+              </div>
+            </section>
+
+            <section class="data-section" aria-labelledby="besin-basligi">
+              <h3 id="besin-basligi">
+                Besin değeri <small>porsiyon başına, markanın etiketinden</small>
+              </h3>
+              <div class="data-grid">
+                @for (b of besinAlanlari; track b.alan) {
+                  <label
+                    >{{ b.etiket }}
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      inputmode="decimal"
+                      [ngModel]="form[b.alan]"
+                      (ngModelChange)="veriAlaniGuncelle(b.alan, $event)"
+                      [ngModelOptions]="{ standalone: true }"
+                    />
+                  </label>
+                }
+              </div>
+              <p class="data-note">
+                Besin tablosu: enerji, protein, karbonhidrat ve yağı birlikte gir; enerji makrolarla
+                tutmalı (gram başına 4/4/9 kcal, lif 2 kcal). Kreatin, amino asit, vitamin gibi
+                etken madde tabloları: bu alanları boş bırakıp aşağıdaki satırları kullan.
+              </p>
+            </section>
+
+            <section class="data-section" aria-labelledby="diger-satirlar-basligi">
+              <h3 id="diger-satirlar-basligi">
+                Diğer satırlar <small>etken madde · porsiyon başına, etikette yazdığı gibi</small>
+              </h3>
+              @for (satir of form.digerSatirlar; track $index; let i = $index) {
+                <div class="data-other-row">
+                  <input
+                    type="text"
+                    aria-label="Satır adı"
+                    placeholder="ör. Kafein"
+                    list="besin-satir-adlari"
+                    maxlength="60"
+                    [ngModel]="satir.ad"
+                    (ngModelChange)="digerSatirGuncelle(i, 'ad', $event)"
+                    [ngModelOptions]="{ standalone: true }"
+                  />
+                  <input
+                    type="number"
+                    aria-label="Miktar"
+                    placeholder="Miktar"
+                    min="0"
+                    step="any"
+                    inputmode="decimal"
+                    [ngModel]="satir.miktar"
+                    (ngModelChange)="digerSatirGuncelle(i, 'miktar', $event)"
+                    [ngModelOptions]="{ standalone: true }"
+                  />
+                  <select
+                    aria-label="Birim"
+                    [ngModel]="satir.birim"
+                    (ngModelChange)="digerSatirGuncelle(i, 'birim', $event)"
+                    [ngModelOptions]="{ standalone: true }"
+                  >
+                    @for (b of besinBirimleri; track b) {
+                      <option [value]="b">{{ b }}</option>
+                    }
+                  </select>
+                  <button
+                    type="button"
+                    class="data-row-remove"
+                    aria-label="Satırı sil"
+                    (click)="digerSatirSil(i)"
+                  >
+                    ×
+                  </button>
+                </div>
+              }
+              <datalist id="besin-satir-adlari">
+                @for (ad of satirAdiOnerileri; track ad) {
+                  <option [value]="ad"></option>
+                }
+              </datalist>
+              <div class="data-row-actions">
+                <button type="button" class="cancel" (click)="digerSatirEkle()">+ Satır ekle</button>
+                @if (sablonKategoriEtiketi(form); as etiket) {
+                  <button type="button" class="cancel" (click)="sablonSatirlariEkle()">
+                    + {{ etiket }} satırlarını ekle
+                  </button>
+                }
+              </div>
+              <p class="data-note">Miktarı boş bırakılan satırlar kaydedilmez.</p>
+            </section>
           </div>
+
+          <footer class="data-footer">
+            @if (veriMesaji()) {
+              <p class="info" role="status">{{ veriMesaji() }}</p>
+            }
+
+            <div class="confirm-actions">
+              @if (form.urun.nutritionJson) {
+                <button
+                  type="button"
+                  class="cancel"
+                  [disabled]="veriKaydediliyor()"
+                  (click)="besinTemizle()"
+                >
+                  Besin değerini sil
+                </button>
+              }
+              <button
+                type="button"
+                class="cancel"
+                [disabled]="veriKaydediliyor()"
+                (click)="veriDuzenleyiciKapat()"
+              >
+                Kapat
+              </button>
+              <button
+                type="button"
+                class="row-action primary"
+                [disabled]="veriKaydediliyor()"
+                (click)="besinKaydet()"
+              >
+                {{ veriKaydediliyor() ? 'Kaydediliyor…' : 'Besin değerini kaydet' }}
+              </button>
+            </div>
+          </footer>
         </section>
       </div>
     }
 
     @if (bekleyenPasifeAlma(); as abone) {
-      <div class="onay-arkaplani" (click)="pasifeAlmaIptal()">
+      <div class="confirm-backdrop" (click)="pasifeAlmaIptal()">
         <section
-          class="onay-penceresi"
+          class="confirm-dialog"
           role="alertdialog"
           aria-modal="true"
           aria-labelledby="abone-onay-basligi"
           (click)="$event.stopPropagation()"
         >
-          <span class="onay-ikonu"><i class="ph ph-warning-circle" aria-hidden="true"></i></span>
-          <p class="sayfa-etiketi">Abonelik</p>
+          <span class="confirm-icon"><i class="ph ph-warning-circle" aria-hidden="true"></i></span>
+          <p class="eyebrow">Abonelik</p>
           <h2 id="abone-onay-basligi">{{ abone.email }} pasife alınsın mı?</h2>
           <p>
             Bülten ve fiyat alarmı e-postaları duracak
@@ -1098,10 +1449,10 @@
               ({{ abone.takipSayisi }} ürün alarmı dahil)
             }. Tekrar açmak için kişinin aboneliğini yeniden onaylaması gerekir.
           </p>
-          <div class="onay-islemleri">
+          <div class="confirm-actions">
             <button
               type="button"
-              class="vazgec"
+              class="cancel"
               [disabled]="aboneIslemdeId() !== null"
               (click)="pasifeAlmaIptal()"
             >
@@ -1109,11 +1460,49 @@
             </button>
             <button
               type="button"
-              class="gizlemeyi-onayla"
+              class="confirm-hide"
               [disabled]="aboneIslemdeId() !== null"
               (click)="pasifeAlmaOnayla()"
             >
               {{ aboneIslemdeId() !== null ? 'Kaydediliyor…' : 'Pasife al' }}
+            </button>
+          </div>
+        </section>
+      </div>
+    }
+
+    @if (bekleyenDegisiklik(); as degisiklik) {
+      <div class="confirm-backdrop" (click)="degisikligiIptal()">
+        <section
+          class="confirm-dialog"
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="onay-basligi"
+          (click)="$event.stopPropagation()"
+        >
+          <span class="confirm-icon"><i class="ph ph-warning-circle" aria-hidden="true"></i></span>
+          <p class="eyebrow">Görünürlük değişikliği</p>
+          <h2 id="onay-basligi">{{ degisiklik.name }} gizlensin mi?</h2>
+          <p>
+            {{ degisiklik.tip === 'marka' ? 'Marka ve markaya ait tüm ürünler' : 'Bu ürün' }}
+            ziyaretçi sayfalarından kaldırılacak. Daha sonra yeniden yayına alabilirsin.
+          </p>
+          <div class="confirm-actions">
+            <button
+              type="button"
+              class="cancel"
+              [disabled]="degisiklikYapiliyor()"
+              (click)="degisikligiIptal()"
+            >
+              Vazgeç
+            </button>
+            <button
+              type="button"
+              class="confirm-hide"
+              [disabled]="degisiklikYapiliyor()"
+              (click)="degisikligiOnayla()"
+            >
+              {{ degisiklikYapiliyor() ? 'Kaydediliyor…' : 'Gizlemeyi onayla' }}
             </button>
           </div>
         </section>

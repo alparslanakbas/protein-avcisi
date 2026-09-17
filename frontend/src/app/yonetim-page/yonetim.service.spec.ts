@@ -29,7 +29,28 @@ describe('YonetimService görünürlük uçları', () => {
     servis.urunler('whey protein', true).subscribe();
     const istek = http.expectOne('/yonetim/api/urunler?ara=whey+protein&yalnizGizli=true');
     expect(istek.request.method).toBe('GET');
-    istek.flush([]);
+    istek.flush({ urunler: [], toplam: 0, sayfa: 1, sayfaBoyutu: 50 });
+  });
+
+  it('veri filtrelerini ve sayfayı backend parametre adlarıyla gönderir', () => {
+    servis.urunler('', false, true, true, true, 3).subscribe();
+    const istek = http.expectOne(
+      '/yonetim/api/urunler?eksikBesin=true&kategorisiz=true&elleGirilmeli=true&sayfa=3',
+    );
+    istek.flush({ urunler: [], toplam: 0, sayfa: 3, sayfaBoyutu: 50 });
+  });
+
+  it('kategori ve besin değerini ürünün alt yollarına yazar', () => {
+    servis.kategoriAyarla(21, null).subscribe();
+    const kategori = http.expectOne('/yonetim/api/urunler/21/kategori');
+    expect(kategori.request.method).toBe('PUT');
+    expect(kategori.request.body).toEqual({ kategori: null });
+    kategori.flush({ guncellenenSatir: 1 });
+
+    servis.besinTemizle(21).subscribe();
+    const temizle = http.expectOne('/yonetim/api/urunler/21/besin');
+    expect(temizle.request.method).toBe('DELETE');
+    temizle.flush({ guncellenenSatir: 1 });
   });
 
   it('marka ve ürün durumunu yalnız isActive gövdesiyle günceller', () => {

@@ -325,14 +325,41 @@ internal static class AdminEndpoints
             return Results.Ok(new { marka.Id, marka.Name, marka.IsActive });
         }).RequireAdminKey(adminApiKey);
 
-        // Katalogda 4.900+ urun var; listeleme ARAMAYA bagli.
+        // Katalogda 5.000+ urun var; listeleme ARAMAYA ya da bir filtreye bagli.
+        // Filtreler elle veri girisinin is listeleri: besin degeri eksik, kategorisiz,
+        // ve yalnizca bir kisinin doldurabilecegi urunler.
+        //
+        // SAYFALI, TOPLAMLI. Eskiden ilk 200 satiri donup duruyordu: bir filtre
+        // binlerce satira uyunca 200'den sonrasina (markaya gore sirali) hic
+        // ulasilamiyordu ve listenin kesildigini soyleyen bir sey yoktu. Son siralama
+        // anahtari Id: ayni marka ve adli satirlar sayfalar arasinda tekrarlanmiyor ya
+        // da kaybolmuyor.
         app.MapGet("/api/dev/urunler", async (
-            AppDbContext db, string? ara, bool? yalnizGizli, CancellationToken ct) =>
+            AppDbContext db, IEnumerable<IBrandScraper> kaziyicilar, string? ara, bool? yalnizGizli,
+            bool? eksikBesin, bool? kategorisiz, bool? elleGirilmeli, int? sayfa, int? sayfaBoyutu, CancellationToken ct) =>
         {
             var sorgu = db.Products.IgnoreQueryFilters().AsNoTracking();
 
             if (yalnizGizli == true)
                 sorgu = sorgu.Where(p => !p.IsActive);
+            if (eksikBesin == true)
+                sorgu = sorgu.Where(p => p.NutritionJson == null);
+            if (kategorisiz == true)
+                sorgu = sorgu.Where(p => p.Category == null);
+
+            // OTOMATIK KAYNAK KALMAMIS: yalnizca bir kisinin doldurabilecegi satirlar.
+            // Birkac saat icinde detay tamamlamanin dolduracagi bir urunu elle yazmak bosa
+            // emek; o yuzden hala dolabilecek satir listeye girmiyor: detay cekicisi olan
+            // bir markanin KENDI sitesindeki (Seller == null) henuz bakilmamis urunu. Normal
+            // tarama her satir icin zaten calisti; doldurmadigini sonra da doldurmaz.
+            if (elleGirilmeli == true)
+            {
+                var detayMarkalari = kaziyicilar.OfType<IProductDetailFetcher>()
+                    .Select(k => ((IBrandScraper)k).BrandName)
+                    .ToArray();
+                sorgu = sorgu.Where(p => p.NutritionJson == null
+                    && !(p.Seller == null && p.NutritionCheckedAt == null && detayMarkalari.Contains(p.Brand!.Name)));
+            }
 
             if (!string.IsNullOrWhiteSpace(ara))
             {
@@ -349,16 +376,22 @@ internal static class AdminEndpoints
                     || EF.Functions.ILike(p.Name, "%" + kucuk + "%")
                     || EF.Functions.ILike(p.Brand!.Name, "%" + ham + "%"));
             }
-            else if (yalnizGizli != true)
+            else if (yalnizGizli != true && eksikBesin != true && kategorisiz != true && elleGirilmeli != true)
             {
-                // Arama da yoksa liste anlamsiz derecede buyuk olurdu.
-                return Results.Ok(Array.Empty<object>());
+                // Arama da filtre de yoksa liste anlamsiz derecede buyuk olurdu.
+                return Results.Ok(new { urunler = Array.Empty<object>(), toplam = 0, sayfa = 1, sayfaBoyutu = 0 });
             }
+
+            var boyut = Math.Clamp(sayfaBoyutu ?? 50, 10, 100);
+            var gecerliSayfa = Math.Max(1, sayfa ?? 1);
+            var toplam = await sorgu.CountAsync(ct);
 
             var urunler = await sorgu
                 .OrderBy(p => p.Brand!.Name)
                 .ThenBy(p => p.Name)
-                .Take(200)
+                .ThenBy(p => p.Id)
+                .Skip((gecerliSayfa - 1) * boyut)
+                .Take(boyut)
                 .Select(p => new
                 {
                     p.Id,
@@ -367,10 +400,15 @@ internal static class AdminEndpoints
                     p.Seller,
                     p.IsActive,
                     p.LatestPrice,
+                    p.Category,
+                    p.CategoryIsManual,
+                    p.NutritionJson,
+                    p.NutritionIsManual,
+                    p.ServingSizeGrams,
                 })
                 .ToListAsync(ct);
 
-            return Results.Ok(urunler);
+            return Results.Ok(new { urunler, toplam, sayfa = gecerliSayfa, sayfaBoyutu = boyut });
         }).RequireAdminKey(adminApiKey);
 
         // --- Elle girilen kategori ve besin değeri (bkz. ManualProductDataService) ---

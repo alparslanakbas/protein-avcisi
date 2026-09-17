@@ -66,16 +66,42 @@ export class YonetimService {
     return this.http.put<YonetimDurumGuncelleme>(`${this.base}/markalar/${id}`, { isActive });
   }
 
-  urunler(ara: string, yalnizGizli: boolean): Observable<YonetimUrun[]> {
+  /** Bir sayfa ürün; `toplam` yalnızca bu sayfayı değil bütün eşleşmeleri sayıyor. */
+  urunler(
+    ara: string,
+    yalnizGizli: boolean,
+    eksikBesin = false,
+    kategorisiz = false,
+    elleGirilmeli = false,
+    sayfa = 1,
+  ): Observable<YonetimUrunSayfasi> {
     const params = new URLSearchParams();
     if (ara.trim()) params.set('ara', ara.trim());
     if (yalnizGizli) params.set('yalnizGizli', 'true');
+    if (eksikBesin) params.set('eksikBesin', 'true');
+    if (kategorisiz) params.set('kategorisiz', 'true');
+    if (elleGirilmeli) params.set('elleGirilmeli', 'true');
+    if (sayfa > 1) params.set('sayfa', String(sayfa));
     const sorgu = params.toString();
-    return this.http.get<YonetimUrun[]>(`${this.base}/urunler${sorgu ? `?${sorgu}` : ''}`);
+    return this.http.get<YonetimUrunSayfasi>(`${this.base}/urunler${sorgu ? `?${sorgu}` : ''}`);
   }
 
   urunDurumuGuncelle(id: number, isActive: boolean): Observable<YonetimDurumGuncelleme> {
     return this.http.put<YonetimDurumGuncelleme>(`${this.base}/urunler/${id}`, { isActive });
+  }
+
+  /** Kategori kodu ya da otomatik kategoriye dönmek için null. Sayfanın bütün boyutlarına uygulanıyor. */
+  kategoriAyarla(id: number, kategori: string | null): Observable<ElleDuzenlemeYaniti> {
+    return this.http.put<ElleDuzenlemeYaniti>(`${this.base}/urunler/${id}/kategori`, { kategori });
+  }
+
+  /** Markanın etiketinden besin değeri; kalori makrolarla tutmazsa sebebiyle reddediliyor. */
+  besinAyarla(id: number, besin: ElleBesin): Observable<ElleDuzenlemeYaniti> {
+    return this.http.put<ElleDuzenlemeYaniti>(`${this.base}/urunler/${id}/besin`, besin);
+  }
+
+  besinTemizle(id: number): Observable<ElleDuzenlemeYaniti> {
+    return this.http.delete<ElleDuzenlemeYaniti>(`${this.base}/urunler/${id}/besin`);
   }
 
   aboneler(): Observable<AbonelerYaniti> {
@@ -209,6 +235,34 @@ export interface YonetimUrun {
   seller: string | null;
   isActive: boolean;
   latestPrice: number | null;
+  category: string | null;
+  categoryIsManual: boolean;
+  /** Tablo, ör. {"Enerji":"119 kcal","Protein":"24.1 g"}; yoksa null. */
+  nutritionJson: string | null;
+  nutritionIsManual: boolean;
+  servingSizeGrams: number | null;
+}
+
+export interface YonetimUrunSayfasi {
+  urunler: YonetimUrun[];
+  toplam: number;
+  sayfa: number;
+  sayfaBoyutu: number;
+}
+
+export interface ElleBesin {
+  porsiyonGram: number | null;
+  kalori: number | null;
+  proteinGram: number | null;
+  karbonhidratGram: number | null;
+  yagGram: number | null;
+  lifGram: number | null;
+  /** Makroların dışındaki satırlar, etikette yazdığı gibi ("Kafein", 200, "mg"). */
+  digerSatirlar: { ad: string; miktar: number | null; birim: string }[];
+}
+
+export interface ElleDuzenlemeYaniti {
+  guncellenenSatir: number;
 }
 
 export interface YonetimDurumGuncelleme {

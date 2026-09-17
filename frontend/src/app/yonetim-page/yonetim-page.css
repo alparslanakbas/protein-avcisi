@@ -13,12 +13,12 @@ button:disabled {
   cursor: not-allowed;
 }
 
-.yonetim {
+.admin {
   min-height: 100vh;
   background: var(--noc-bg);
   color: var(--noc-text);
 }
-.yonetim-ust {
+.admin-top {
   position: sticky;
   top: 0;
   z-index: 40;
@@ -32,31 +32,31 @@ button:disabled {
   background: color-mix(in srgb, var(--noc-bg) 94%, transparent);
   backdrop-filter: blur(16px);
 }
-.yonetim-markasi,
-.giris-markasi {
+.admin-brand,
+.login-brand {
   display: inline-flex;
   align-items: center;
   gap: 10px;
 }
-.yonetim-markasi-amblem,
-.giris-markasi span {
+.admin-brand-mark,
+.login-brand span {
   color: var(--noc-accent);
   font-size: 25px;
   font-weight: 800;
   letter-spacing: -0.06em;
 }
-.yonetim-markasi strong,
-.giris-markasi {
+.admin-brand strong,
+.login-brand {
   font-size: 18px;
   font-weight: 680;
 }
-.sekmeler {
+.tabs {
   display: flex;
   align-self: stretch;
   align-items: center;
   gap: 34px;
 }
-.sekmeler button {
+.tabs button {
   position: relative;
   align-self: stretch;
   border: 0;
@@ -65,7 +65,7 @@ button:disabled {
   font-size: 14px;
   font-weight: 550;
 }
-.sekmeler button::after {
+.tabs button::after {
   position: absolute;
   right: 0;
   bottom: 0;
@@ -75,25 +75,25 @@ button:disabled {
   background: transparent;
   content: '';
 }
-.sekmeler button:hover,
-.sekmeler button.aktif {
+.tabs button:hover,
+.tabs button.active {
   color: var(--noc-text);
 }
-.sekmeler button.aktif {
+.tabs button.active {
   color: var(--noc-accent);
 }
-.sekmeler button.aktif::after {
+.tabs button.active::after {
   background: var(--noc-accent);
 }
-.yonetim-oturum {
+.admin-session {
   display: flex;
   justify-content: flex-end;
   align-items: center;
   gap: 22px;
 }
-.sistem-durumu,
-.durum-rozeti,
-.satir-durumu {
+.system-status,
+.status-badge,
+.row-status {
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -102,9 +102,9 @@ button:disabled {
   font-weight: 600;
   white-space: nowrap;
 }
-.sistem-durumu > span,
-.durum-rozeti > span,
-.satir-durumu > span {
+.system-status > span,
+.status-badge > span,
+.row-status > span {
   width: 7px;
   height: 7px;
   flex: 0 0 auto;
@@ -112,11 +112,11 @@ button:disabled {
   background: currentColor;
   box-shadow: 0 0 0 4px color-mix(in srgb, currentColor 12%, transparent);
 }
-.sistem-durumu.uyari,
-.satir-durumu.gizli {
+.system-status.warning,
+.row-status.is-hidden {
   color: var(--pa-negative);
 }
-.cikis {
+.sign-out {
   display: inline-flex;
   min-height: 40px;
   align-items: center;
@@ -128,37 +128,37 @@ button:disabled {
   color: var(--noc-text);
   font-size: 13px;
 }
-.cikis:hover {
+.sign-out:hover {
   border-color: color-mix(in srgb, var(--noc-accent) 60%, var(--noc-divider));
 }
 
-.yonetim-icerik {
+.admin-content {
   width: min(calc(100% - 64px), 1340px);
   margin-inline: auto;
   padding-block: 38px 72px;
 }
-.sayfa-basligi {
+.page-head {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   gap: 24px;
   margin-bottom: 26px;
 }
-.sayfa-basligi h1 {
+.page-head h1 {
   margin: 2px 0 0;
   font-size: clamp(28px, 2.5vw, 38px);
   font-weight: 680;
   letter-spacing: -0.04em;
   line-height: 1.08;
 }
-.sayfa-basligi > div > p:last-child {
+.page-head > div > p:last-child {
   max-width: 720px;
   margin: 8px 0 0;
   color: var(--noc-neutral-300);
   font-size: 14px;
   line-height: 1.55;
 }
-.sayfa-etiketi {
+.eyebrow {
   margin: 0;
   color: var(--noc-accent);
   font-size: 10px;
@@ -166,7 +166,7 @@ button:disabled {
   letter-spacing: 0.09em;
   text-transform: uppercase;
 }
-.tarih {
+.date {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -175,26 +175,26 @@ button:disabled {
   font-size: 12px;
   white-space: nowrap;
 }
-.hata {
+.error {
   color: var(--pa-negative);
   font-size: 11px;
   line-height: 1.55;
 }
-.genel-hata,
-.gorunurluk-mesaji {
+.global-error,
+.visibility-message {
   margin: 0 0 18px;
   padding: 10px 13px;
   border: 1px solid color-mix(in srgb, var(--pa-negative) 35%, var(--noc-divider));
   border-radius: 9px;
   background: color-mix(in srgb, var(--pa-negative) 8%, transparent);
 }
-.gorunurluk-mesaji {
+.visibility-message {
   border-color: color-mix(in srgb, var(--noc-accent) 35%, var(--noc-divider));
   background: color-mix(in srgb, var(--noc-accent) 8%, transparent);
   color: var(--noc-neutral-300);
 }
 
-.kilit-bandi {
+.lock-banner {
   display: flex;
   min-height: 62px;
   align-items: center;
@@ -206,7 +206,7 @@ button:disabled {
   background: color-mix(in srgb, var(--pa-warning, #d89a37) 10%, var(--noc-card));
   font-size: 13px;
 }
-.kilit-bandi > i {
+.lock-banner > i {
   display: inline-flex;
   width: 36px;
   height: 36px;
@@ -218,34 +218,34 @@ button:disabled {
   color: var(--pa-warning, #d89a37);
   font-size: 18px;
 }
-.kilit-bandi strong,
-.kilit-bandi span::before {
+.lock-banner strong,
+.lock-banner span::before {
   color: var(--pa-warning, #d89a37);
 }
-.kilit-bandi span::before {
+.lock-banner span::before {
   margin-right: 10px;
   content: '·';
 }
-.gorunurluk-yerlesimi {
+.visibility-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 220px;
   align-items: stretch;
   gap: 22px;
 }
-.gorunurluk-paneli,
-.hizli-gorunum,
-.blok,
-.kart {
+.visibility-panel,
+.quick-view,
+.panel,
+.card {
   border: 1px solid var(--noc-divider);
   background: var(--noc-card);
   box-shadow: var(--noc-shadow-sm);
 }
-.gorunurluk-paneli {
+.visibility-panel {
   min-width: 0;
   overflow: hidden;
   border-radius: 15px;
 }
-.gorunurluk-sekmeleri {
+.visibility-tabs {
   display: inline-flex;
   margin: 24px 26px 0;
   padding: 3px;
@@ -253,7 +253,7 @@ button:disabled {
   border-radius: 10px;
   background: var(--noc-bg);
 }
-.gorunurluk-sekmeleri button {
+.visibility-tabs button {
   display: inline-flex;
   min-width: 176px;
   min-height: 46px;
@@ -267,25 +267,25 @@ button:disabled {
   font-size: 13px;
   font-weight: 650;
 }
-.gorunurluk-sekmeleri button span {
+.visibility-tabs button span {
   padding: 2px 7px;
   border-radius: 6px;
   background: var(--noc-surface);
   font-size: 11px;
 }
-.gorunurluk-sekmeleri button.aktif {
+.visibility-tabs button.active {
   background: color-mix(in srgb, var(--noc-accent) 14%, var(--noc-card));
   color: var(--noc-accent);
   box-shadow: inset 0 -2px 0 var(--noc-accent);
 }
-.gorunurluk-araclari,
-.urun-arama-formu {
+.visibility-tools,
+.product-search-form {
   display: flex;
   align-items: center;
   gap: 14px;
   margin: 22px 26px 0;
 }
-.arama-alani {
+.search-field {
   display: flex;
   min-height: 48px;
   flex: 1 1 auto;
@@ -297,11 +297,11 @@ button:disabled {
   background: var(--noc-bg);
   color: var(--noc-neutral-500);
 }
-.arama-alani:focus-within {
+.search-field:focus-within {
   border-color: var(--noc-accent);
   box-shadow: 0 0 0 4px var(--pa-focus);
 }
-.arama-alani input {
+.search-field input {
   width: 100%;
   min-width: 0;
   border: 0;
@@ -310,10 +310,10 @@ button:disabled {
   color: var(--noc-text);
   font-size: 13px;
 }
-.arama-alani input::placeholder {
+.search-field input::placeholder {
   color: var(--noc-neutral-500);
 }
-.durum-filtreleri {
+.status-filters {
   display: inline-flex;
   flex: 0 0 auto;
   padding: 3px;
@@ -321,8 +321,8 @@ button:disabled {
   border-radius: 9px;
   background: var(--noc-bg);
 }
-.durum-filtreleri button,
-.suzgec button {
+.status-filters button,
+.filters button {
   min-height: 38px;
   padding-inline: 17px;
   border: 0;
@@ -331,18 +331,18 @@ button:disabled {
   color: var(--noc-neutral-300);
   font-size: 12px;
 }
-.durum-filtreleri button:hover,
-.durum-filtreleri button.aktif,
-.suzgec button:hover,
-.suzgec button.aktif {
+.status-filters button:hover,
+.status-filters button.active,
+.filters button:hover,
+.filters button.active {
   background: color-mix(in srgb, var(--noc-accent) 14%, transparent);
   color: var(--noc-accent);
 }
-.tablo-kabugu {
+.table-shell {
   max-width: 100%;
   overflow-x: auto;
 }
-.gorunurluk-tablosu {
+.visibility-table {
   margin: 18px 26px 0;
   border-top: 1px solid var(--noc-divider);
 }
@@ -373,15 +373,15 @@ tbody tr {
 tbody tr:hover {
   background: color-mix(in srgb, var(--noc-accent) 4%, transparent);
 }
-tr.pasif {
+tr.inactive {
   opacity: 0.64;
 }
-.marka-hucresi {
+.brand-cell {
   display: flex;
   align-items: center;
   gap: 11px;
 }
-.marka-hucresi > span {
+.brand-cell > span {
   display: inline-flex;
   width: 34px;
   height: 34px;
@@ -393,8 +393,8 @@ tr.pasif {
   color: var(--noc-accent);
   font-size: 16px;
 }
-.marka-hucresi strong,
-.urun-adi strong {
+.brand-cell strong,
+.product-name strong {
   display: block;
   max-width: 330px;
   overflow: hidden;
@@ -402,7 +402,7 @@ tr.pasif {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.satir-islemi {
+.row-toggle {
   display: inline-flex;
   min-height: 36px;
   align-items: center;
@@ -416,18 +416,18 @@ tr.pasif {
   font-size: 11px;
   font-weight: 650;
 }
-.satir-islemi.yayina-al {
+.row-toggle.publish {
   border-color: color-mix(in srgb, var(--pa-positive) 38%, var(--noc-divider));
   background: color-mix(in srgb, var(--pa-positive) 8%, transparent);
   color: var(--pa-positive);
 }
-.satir-islemi:disabled {
+.row-toggle:disabled {
   border-color: transparent;
   background: var(--noc-surface);
   color: var(--noc-neutral-500);
   opacity: 0.7;
 }
-.sayfalama {
+.pagination {
   display: flex;
   min-height: 72px;
   align-items: center;
@@ -437,11 +437,11 @@ tr.pasif {
   color: var(--noc-neutral-500);
   font-size: 11px;
 }
-.sayfalama > div {
+.pagination > div {
   display: flex;
   gap: 5px;
 }
-.sayfalama button {
+.pagination button {
   display: inline-flex;
   width: 32px;
   height: 32px;
@@ -453,16 +453,16 @@ tr.pasif {
   color: var(--noc-neutral-300);
   font-size: 11px;
 }
-.sayfalama button:hover:not(:disabled),
-.sayfalama button.aktif {
+.pagination button:hover:not(:disabled),
+.pagination button.active {
   border-color: var(--noc-accent);
   background: var(--noc-accent);
   color: var(--noc-on-accent);
 }
-.sayfalama button:disabled {
+.pagination button:disabled {
   opacity: 0.35;
 }
-.etki-notu {
+.impact-note {
   display: flex;
   min-height: 58px;
   align-items: center;
@@ -473,42 +473,42 @@ tr.pasif {
   color: var(--noc-neutral-500);
   font-size: 11px;
 }
-.etki-notu i {
+.impact-note i {
   color: var(--noc-accent);
   font-size: 16px;
 }
-.hizli-gorunum {
+.quick-view {
   padding: 24px 22px;
   border-radius: 15px;
 }
-.hizli-gorunum h2 {
+.quick-view h2 {
   margin: 0;
   font-size: 15px;
 }
-.hizli-gorunum dl {
+.quick-view dl {
   margin: 22px 0 0;
 }
-.hizli-gorunum dl > div {
+.quick-view dl > div {
   padding-block: 20px;
   border-bottom: 1px solid var(--noc-divider);
 }
-.hizli-gorunum dl > div:last-child {
+.quick-view dl > div:last-child {
   border-bottom: 0;
 }
-.hizli-gorunum dt {
+.quick-view dt {
   display: flex;
   align-items: center;
   gap: 10px;
   color: var(--noc-neutral-500);
   font-size: 11px;
 }
-.hizli-gorunum dd {
+.quick-view dd {
   margin: 10px 0 0 50px;
   font-size: 28px;
   font-weight: 680;
   letter-spacing: -0.035em;
 }
-.hizli-gorunum dd small {
+.quick-view dd small {
   display: block;
   margin-top: 2px;
   color: var(--noc-neutral-500);
@@ -516,12 +516,12 @@ tr.pasif {
   font-weight: 500;
   letter-spacing: 0;
 }
-.hizli-gorunum dd.kucuk-deger {
+.quick-view dd.small-value {
   color: var(--noc-neutral-300);
   font-size: 13px;
   letter-spacing: 0;
 }
-.hizli-ikon {
+.quick-icon {
   display: inline-flex;
   width: 40px;
   height: 40px;
@@ -533,14 +533,14 @@ tr.pasif {
   color: var(--noc-neutral-300);
   font-size: 18px;
 }
-.hizli-ikon.yayinda {
+.quick-icon.live {
   color: var(--pa-positive);
 }
-.hizli-ikon.gizli {
+.quick-icon.is-hidden {
   color: var(--noc-accent);
 }
-.urun-arama-formu > button,
-.kupon-form button[type='submit'] {
+.product-search-form > button,
+.coupon-form button[type='submit'] {
   min-height: 46px;
   padding-inline: 20px;
   border: 0;
@@ -550,7 +550,7 @@ tr.pasif {
   font-size: 12px;
   font-weight: 700;
 }
-.onay-kutusu {
+.checkbox {
   display: inline-flex;
   min-height: 46px;
   align-items: center;
@@ -559,7 +559,7 @@ tr.pasif {
   font-size: 12px;
   white-space: nowrap;
 }
-.onay-kutusu input {
+.checkbox input {
   width: 17px;
   height: 17px;
   accent-color: var(--noc-accent);

@@ -1,14 +1,29 @@
 import { isPlatformBrowser } from '@angular/common';
 import { Component, OnInit, PLATFORM_ID, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Observable } from 'rxjs';
 
+import { CATEGORY_LABELS } from '../core/category-labels';
 import { PageMetaService } from '../core/page-meta.service';
 import { SITE_NAME } from '../core/site-identity';
+import {
+  BESIN_BIRIMLERI,
+  BesinSatiriFormu,
+  MakroAlani,
+  SATIR_ADI_ONERILERI,
+  SATIR_SABLONLARI,
+  eklenecekSablonSatirlari,
+  kayitliDigerSatirlar,
+  makroDegeri,
+} from './besin-satirlari';
+import { YonetimDuzenleyiciOdagi } from './duzenleyici-odagi';
+import { YonetimHataSebebi } from './hata-sebebi';
 import {
   Abone,
   AboneDurumu,
   AbonelerYaniti,
   Durum,
+  ElleDuzenlemeYaniti,
   Kupon,
   OlayYaniti,
   YonetimHatasi,
@@ -21,6 +36,16 @@ type Sekme = 'durum' | 'olaylar' | 'kuponlar' | 'gorunurluk' | 'aboneler';
 type AboneFiltresi = 'tumu' | AboneDurumu;
 type GorunurlukGorunumu = 'markalar' | 'urunler';
 type MarkaFiltresi = 'tumu' | 'gorunur' | 'gizli';
+type VeriFiltresi = 'eksikBesin' | 'kategorisiz' | 'elleGirilmeli';
+
+/** Düzenleyicinin çalışma kopyası; girdiler kaydedilene kadar metin olarak tutuluyor. */
+interface UrunVeriFormu extends Record<MakroAlani, string> {
+  urun: YonetimUrun;
+  /** '' = otomatik. */
+  kategori: string;
+  /** Makroların dışındaki etiket satırları (kreatin, vitamin, kafein…). */
+  digerSatirlar: BesinSatiriFormu[];
+}
 
 interface BekleyenGorunurlukDegisikligi {
   tip: 'marka' | 'urun';
@@ -40,9 +65,14 @@ const GORUNURLUK_KILIT_BITISI = Date.parse('2026-09-19T00:00:00+03:00');
  */
 @Component({
   selector: 'app-yonetim-page',
-  imports: [FormsModule],
+  imports: [FormsModule, YonetimDuzenleyiciOdagi, YonetimHataSebebi],
   templateUrl: './yonetim-page.html',
-  styleUrls: ['./yonetim-page.css', './yonetim-page-support.css'],
+  styleUrls: [
+    './yonetim-page.css',
+    './yonetim-page-support.css',
+    './yonetim-page-workspace.css',
+    './yonetim-page-data.css',
+  ],
 })
 export class YonetimPage implements OnInit {
   private readonly api = inject(YonetimService);
@@ -96,6 +126,47 @@ export class YonetimPage implements OnInit {
   readonly urunlerYukleniyor = signal(false);
   readonly urunArama = signal('');
   readonly yalnizGizliUrunler = signal(false);
+  readonly eksikBesinUrunler = signal(false);
+  readonly kategorisizUrunler = signal(false);
+  /** Hiçbir otomatik kaynağın artık dolduramayacağı satırlar: elle yazmaya değenler. */
+  readonly elleGirilmeliUrunler = signal(false);
+  /** Sayfalama sunucuda: filtreler binlerce satıra uyuyor. */
+  readonly urunSayfa = signal(1);
+  readonly urunToplam = signal(0);
+  readonly urunSayfaBoyutu = signal(50);
+  readonly urunToplamSayfa = computed(() =>
+    Math.max(1, Math.ceil(this.urunToplam() / Math.max(1, this.urunSayfaBoyutu()))),
+  );
+  readonly gorunenUrunSayfalari = computed(() => {
+    const toplam = this.urunToplamSayfa();
+    const baslangic = Math.min(Math.max(1, this.urunSayfa() - 2), Math.max(1, toplam - 4));
+    return Array.from({ length: Math.min(5, toplam) }, (_, index) => baslangic + index);
+  });
+  readonly urunAraligiBaslangic = computed(
+    () => (this.urunSayfa() - 1) * this.urunSayfaBoyutu() + 1,
+  );
+  readonly urunAraligiBitis = computed(() =>
+    Math.min(this.urunAraligiBaslangic() + this.urunler().length - 1, this.urunToplam()),
+  );
+
+  readonly kategoriSecenekleri = Object.entries(CATEGORY_LABELS).map(([slug, etiket]) => ({
+    slug,
+    etiket,
+  }));
+  readonly besinAlanlari: { alan: MakroAlani; etiket: string }[] = [
+    { alan: 'porsiyon', etiket: 'Porsiyon (g)' },
+    { alan: 'enerji', etiket: 'Enerji (kcal)' },
+    { alan: 'protein', etiket: 'Protein (g)' },
+    { alan: 'karbonhidrat', etiket: 'Karbonhidrat (g)' },
+    { alan: 'yag', etiket: 'Yağ (g)' },
+    { alan: 'lif', etiket: 'Lif (g)' },
+  ];
+  readonly besinBirimleri = BESIN_BIRIMLERI;
+  readonly satirAdiOnerileri = SATIR_ADI_ONERILERI;
+  /** Kategorisi ve besin değeri düzenlenen ürün; kapalıyken null. */
+  readonly duzenlenenVeri = signal<UrunVeriFormu | null>(null);
+  readonly veriKaydediliyor = signal(false);
+  readonly veriMesaji = signal<string | null>(null);
   readonly urunAramaYapildi = signal(false);
   readonly gorunurlukMesaji = signal<string | null>(null);
   readonly gorunurlukSonGuncelleme = signal<Date | null>(null);
@@ -146,6 +217,13 @@ export class YonetimPage implements OnInit {
     const baslangic = Math.min(Math.max(1, mevcut - 2), Math.max(1, toplam - 4));
     return Array.from({ length: Math.min(5, toplam) }, (_, index) => baslangic + index);
   });
+
+  readonly markaAraligiBaslangic = computed(
+    () => (this.markaSayfa() - 1) * MARKA_SAYFA_BOYUTU + 1,
+  );
+  readonly markaAraligiBitis = computed(() =>
+    Math.min(this.markaSayfa() * MARKA_SAYFA_BOYUTU, this.suzulenMarkalar().length),
+  );
 
   readonly aktifMarkaSayisi = computed(
     () => this.markalar().filter((marka) => marka.isActive).length,
@@ -570,10 +648,18 @@ export class YonetimPage implements OnInit {
     this.markaSayfa.set(Math.min(Math.max(1, sayfa), this.markaToplamSayfa()));
   }
 
-  urunAra(): void {
+  /** Yeni arama ya da filtre 1. sayfadan başlar; düzenleme sonrası tazeleme mevcut sayfayı verir. */
+  urunAra(sayfa = 1): void {
     const query = this.urunArama().trim();
-    if (!query && !this.yalnizGizliUrunler()) {
+    const filtreVar =
+      this.yalnizGizliUrunler() ||
+      this.eksikBesinUrunler() ||
+      this.kategorisizUrunler() ||
+      this.elleGirilmeliUrunler();
+    if (!query && !filtreVar) {
       this.urunler.set([]);
+      this.urunToplam.set(0);
+      this.urunSayfa.set(1);
       this.urunAramaYapildi.set(false);
       return;
     }
@@ -581,22 +667,223 @@ export class YonetimPage implements OnInit {
     this.urunlerYukleniyor.set(true);
     this.urunAramaYapildi.set(true);
     this.gorunurlukMesaji.set(null);
-    this.api.urunler(query, this.yalnizGizliUrunler()).subscribe({
-      next: (urunler) => {
-        this.urunler.set(urunler);
-        this.urunlerYukleniyor.set(false);
-        this.gorunurlukSonGuncelleme.set(new Date());
-      },
-      error: () => {
-        this.urunlerYukleniyor.set(false);
-        this.gorunurlukMesaji.set('Ürünler aranamadı.');
-      },
-    });
+    this.api
+      .urunler(
+        query,
+        this.yalnizGizliUrunler(),
+        this.eksikBesinUrunler(),
+        this.kategorisizUrunler(),
+        this.elleGirilmeliUrunler(),
+        sayfa,
+      )
+      .subscribe({
+        next: (sonuc) => {
+          const sonSayfa = Math.max(1, Math.ceil(sonuc.toplam / Math.max(1, sonuc.sayfaBoyutu)));
+          // "Besin değeri eksik" altında besin kaydetmek satırları listeden çıkarıyor;
+          // bakılan sayfa son sayfanın ötesinde kalabilir.
+          if (sonuc.urunler.length === 0 && sonuc.toplam > 0 && sayfa > sonSayfa) {
+            this.urunAra(sonSayfa);
+            return;
+          }
+          this.urunler.set(sonuc.urunler);
+          this.urunToplam.set(sonuc.toplam);
+          this.urunSayfa.set(sonuc.sayfa);
+          this.urunSayfaBoyutu.set(sonuc.sayfaBoyutu);
+          this.urunlerYukleniyor.set(false);
+          this.gorunurlukSonGuncelleme.set(new Date());
+        },
+        error: () => {
+          this.urunlerYukleniyor.set(false);
+          this.gorunurlukMesaji.set('Ürünler aranamadı.');
+        },
+      });
+  }
+
+  urunSayfasinaGit(sayfa: number): void {
+    this.urunAra(Math.min(Math.max(1, sayfa), this.urunToplamSayfa()));
   }
 
   yalnizGizliDegisti(value: boolean): void {
     this.yalnizGizliUrunler.set(value);
     this.urunAra();
+  }
+
+  veriFiltresiDegisti(filtre: VeriFiltresi, deger: boolean): void {
+    const sinyaller = {
+      eksikBesin: this.eksikBesinUrunler,
+      kategorisiz: this.kategorisizUrunler,
+      elleGirilmeli: this.elleGirilmeliUrunler,
+    };
+    sinyaller[filtre].set(deger);
+    this.urunAra();
+  }
+
+  kategoriEtiketi(slug: string | null): string {
+    return slug ? (CATEGORY_LABELS[slug] ?? slug) : '—';
+  }
+
+  veriDuzenleyiciAc(urun: YonetimUrun): void {
+    const tablo = this.besinTablosu(urun.nutritionJson);
+    const diger = kayitliDigerSatirlar(tablo);
+    // Otomatik bir okuma bu düzenleyicinin yazamayacağı satırlar taşıyabilir ("%10").
+    // Kaydetmek tablonun tamamını değiştiriyor; hangilerinin gideceği söyleniyor.
+    this.veriMesaji.set(
+      diger.atlananlar.length > 0
+        ? `Buradan kaydedersen düzenlenemeyen şu satırlar silinir: ${diger.atlananlar.join(', ')}.`
+        : null,
+    );
+    this.duzenlenenVeri.set({
+      urun,
+      kategori: urun.categoryIsManual ? (urun.category ?? '') : '',
+      porsiyon: urun.servingSizeGrams?.toString() ?? makroDegeri(tablo, 'porsiyon'),
+      enerji: makroDegeri(tablo, 'enerji'),
+      protein: makroDegeri(tablo, 'protein'),
+      karbonhidrat: makroDegeri(tablo, 'karbonhidrat'),
+      yag: makroDegeri(tablo, 'yag'),
+      lif: makroDegeri(tablo, 'lif'),
+      digerSatirlar: diger.satirlar,
+    });
+  }
+
+  /** Şablon satırları hâlâ eklenebilen kategorinin adı, yoksa null. */
+  sablonKategoriEtiketi(form: UrunVeriFormu): string | null {
+    const kategori = form.kategori || form.urun.category;
+    if (!kategori || !SATIR_SABLONLARI[kategori]) return null;
+    return eklenecekSablonSatirlari(kategori, form.digerSatirlar).length > 0
+      ? this.kategoriEtiketi(kategori)
+      : null;
+  }
+
+  sablonSatirlariEkle(): void {
+    const form = this.duzenlenenVeri();
+    if (!form) return;
+    const satirlar = eklenecekSablonSatirlari(
+      form.kategori || form.urun.category,
+      form.digerSatirlar,
+    );
+    this.duzenlenenVeri.set({ ...form, digerSatirlar: [...form.digerSatirlar, ...satirlar] });
+  }
+
+  digerSatirEkle(): void {
+    const form = this.duzenlenenVeri();
+    if (!form) return;
+    this.duzenlenenVeri.set({
+      ...form,
+      digerSatirlar: [...form.digerSatirlar, { ad: '', miktar: '', birim: 'mg' }],
+    });
+  }
+
+  digerSatirSil(sira: number): void {
+    const form = this.duzenlenenVeri();
+    if (!form) return;
+    this.duzenlenenVeri.set({
+      ...form,
+      digerSatirlar: form.digerSatirlar.filter((_, i) => i !== sira),
+    });
+  }
+
+  digerSatirGuncelle(sira: number, alan: keyof BesinSatiriFormu, deger: unknown): void {
+    const form = this.duzenlenenVeri();
+    if (!form) return;
+    const metin = deger == null ? '' : String(deger);
+    this.duzenlenenVeri.set({
+      ...form,
+      digerSatirlar: form.digerSatirlar.map((satir, i) =>
+        i === sira ? { ...satir, [alan]: metin } : satir,
+      ),
+    });
+  }
+
+  veriDuzenleyiciKapat(): void {
+    if (this.veriKaydediliyor()) return;
+    this.duzenlenenVeri.set(null);
+  }
+
+  veriAlaniGuncelle(alan: MakroAlani | 'kategori', deger: unknown): void {
+    const form = this.duzenlenenVeri();
+    if (!form) return;
+    this.duzenlenenVeri.set({ ...form, [alan]: deger == null ? '' : String(deger) });
+  }
+
+  kategoriKaydet(): void {
+    const form = this.duzenlenenVeri();
+    if (!form) return;
+    this.veriDuzenlemesiCalistir(
+      this.api.kategoriAyarla(form.urun.id, form.kategori || null),
+      'Kategori kaydedildi',
+    );
+  }
+
+  besinKaydet(): void {
+    const form = this.duzenlenenVeri();
+    if (!form) return;
+
+    // Boş alan 0 değil null kalıyor: boş lif "girilmedi" demek; dört temel değerin
+    // birlikte girilmesini backend kendisi istiyor.
+    const sayi = (metin: string) => (metin.trim() === '' ? null : Number(metin));
+    const govde = {
+      porsiyonGram: sayi(form.porsiyon),
+      kalori: sayi(form.enerji),
+      proteinGram: sayi(form.protein),
+      karbonhidratGram: sayi(form.karbonhidrat),
+      yagGram: sayi(form.yag),
+      lifGram: sayi(form.lif),
+    };
+    // Miktarı boş bırakılan şablon satırı etikette yok demek: hata olarak
+    // gönderilmiyor, atlanıyor. Adı ve miktarı olan satır backend kontrolüne gidiyor.
+    const digerSatirlar = form.digerSatirlar
+      .filter((s) => s.miktar.trim() !== '')
+      .map((s) => ({ ad: s.ad, miktar: sayi(s.miktar), birim: s.birim }));
+    if (
+      Object.values(govde).some((v) => v !== null && Number.isNaN(v)) ||
+      digerSatirlar.some((s) => s.miktar !== null && Number.isNaN(s.miktar))
+    ) {
+      this.veriMesaji.set('Yalnızca sayı gir.');
+      return;
+    }
+
+    this.veriDuzenlemesiCalistir(
+      this.api.besinAyarla(form.urun.id, { ...govde, digerSatirlar }),
+      'Besin değeri kaydedildi',
+    );
+  }
+
+  besinTemizle(): void {
+    const form = this.duzenlenenVeri();
+    if (!form) return;
+    this.veriDuzenlemesiCalistir(this.api.besinTemizle(form.urun.id), 'Besin değeri silindi');
+  }
+
+  private veriDuzenlemesiCalistir(istek: Observable<ElleDuzenlemeYaniti>, yapildi: string): void {
+    this.veriKaydediliyor.set(true);
+    this.veriMesaji.set(null);
+    istek.subscribe({
+      next: (y) => {
+        this.veriKaydediliyor.set(false);
+        this.veriMesaji.set(
+          `${yapildi}: ${y.guncellenenSatir} satır (bu ürün sayfasının bütün boyutları).`,
+        );
+        this.urunAra(this.urunSayfa());
+      },
+      error: (e) => {
+        this.veriKaydediliyor.set(false);
+        // Reddedilen değer sebebiyle dönüyor ("kalori makrolarla tutmuyor"); genel
+        // bir "kaydedilemedi" neyin düzeltileceğini gizlerdi.
+        const govde = (e as { error?: unknown } | null)?.error;
+        const mesaj =
+          typeof govde === 'string' ? govde : (govde as { message?: string } | null)?.message;
+        this.veriMesaji.set(mesaj?.trim() || this.hataMetni(e, 'Kaydedilemedi.'));
+      },
+    });
+  }
+
+  private besinTablosu(json: string | null): Record<string, string> {
+    if (!json) return {};
+    try {
+      return JSON.parse(json) as Record<string, string>;
+    } catch {
+      return {};
+    }
   }
 
   gorunurlukDegisikligiIste(
@@ -696,7 +983,7 @@ export class YonetimPage implements OnInit {
           `${degisiklik.name} ${isActive ? 'yeniden yayına alındı.' : 'gizlendi.'}`,
         );
         this.markalariYukle(false);
-        if (degisiklik.tip === 'urun') this.urunAra();
+        if (degisiklik.tip === 'urun') this.urunAra(this.urunSayfa());
       },
       error: () => {
         this.degisiklikYapiliyor.set(false);

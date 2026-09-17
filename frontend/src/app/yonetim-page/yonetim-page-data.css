@@ -1,0 +1,328 @@
+/* Katalog veri düzenleyicisi: elle girilen kategori ve besin değeri. Ayrı bir
+   stil dosyası, çünkü bileşen stil bütçesi dosya başına uygulanıyor ve destek
+   dosyası 10 kB uyarı sınırındaydı. Destek dosyasından sonra yükleniyor, yani bu
+   kurallar .confirm-dialog'un varsayılanlarını eziyor. */
+.data-dialog {
+  width: min(560px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  text-align: left;
+}
+.data-dialog h3 {
+  margin: 18px 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.data-dialog h3 small {
+  margin-left: 4px;
+  color: var(--noc-neutral-500);
+  font-weight: 400;
+}
+.data-note {
+  margin: 6px 0 0;
+  color: var(--noc-neutral-500);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.data-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.data-row select {
+  flex: 1 1 220px;
+}
+.data-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+@media (max-width: 480px) {
+  .data-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.data-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+}
+.data-grid input,
+.data-row select {
+  min-height: 34px;
+  padding-inline: 9px;
+  border: 1px solid var(--noc-divider);
+  border-radius: 7px;
+  background: var(--noc-bg);
+  color: var(--noc-text);
+  font-size: 13px;
+}
+.manual-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--noc-accent) 18%, transparent);
+  font-size: 10px;
+}
+/* Diğer etiket satırları: ad, miktar, birim, sil. Telefonda ad okunabilsin diye
+   kendi satırına geçiyor. */
+.data-other-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 88px 118px 34px;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+@media (max-width: 480px) {
+  .data-other-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 34px;
+  }
+  .data-other-row input[type='text'] {
+    grid-column: 1 / -1;
+  }
+}
+.data-other-row input,
+.data-other-row select {
+  min-width: 0;
+  min-height: 34px;
+  padding-inline: 9px;
+  border: 1px solid var(--noc-divider);
+  border-radius: 7px;
+  background: var(--noc-bg);
+  color: var(--noc-text);
+  font-size: 13px;
+}
+.data-row-remove {
+  min-height: 34px;
+  border: 1px solid var(--noc-divider);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--noc-neutral-500);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.data-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.data-row-actions button {
+  min-height: 34px;
+  padding-inline: 12px;
+  border-radius: 7px;
+  color: var(--noc-text);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Sınırlı düzenleyici: yalnızca orta kısım kayıyor; başlık ve kaydetme sonucu hiç kaymıyor. */
+.data-backdrop {
+  justify-content: flex-end;
+  padding: 0;
+  backdrop-filter: blur(2px);
+}
+.data-dialog {
+  display: flex;
+  flex-direction: column;
+  width: min(640px, 100vw);
+  height: 100dvh;
+  max-height: 100dvh;
+  min-height: 0;
+  padding: 0;
+  border-radius: 0;
+  border-width: 0 0 0 1px;
+  overflow: hidden;
+}
+.data-header {
+  position: relative;
+  flex: 0 0 auto;
+  padding: 26px 28px 22px;
+  border-bottom: 1px solid var(--noc-divider);
+}
+.data-header .eyebrow,
+.data-header h2 {
+  padding-right: 40px;
+}
+.data-header h2 {
+  margin-block: 10px;
+  font-size: 26px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  max-height: 3.75em;
+  overflow-y: auto;
+}
+.data-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--noc-neutral-300);
+  font-size: 22px;
+}
+.data-close:hover {
+  background: var(--noc-surface);
+}
+.data-body {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding: 0 28px;
+}
+.data-section {
+  padding: 24px 0;
+  border-bottom: 1px solid var(--noc-divider);
+}
+.data-section:last-child {
+  border-bottom: 0;
+}
+.data-dialog h3 {
+  margin: 0 0 16px;
+  font-size: 18px;
+  line-height: 1.35;
+}
+.data-dialog h3 small {
+  display: block;
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.data-note {
+  font-size: 12px;
+  line-height: 1.6;
+}
+.data-grid {
+  gap: 16px 12px;
+}
+.data-grid label {
+  font-size: 12px;
+  gap: 8px;
+}
+.data-grid input,
+.data-row select,
+.data-other-row input,
+.data-other-row select {
+  min-height: 44px;
+  font-size: 14px;
+}
+.data-row select {
+  min-width: 0;
+}
+.data-other-row {
+  grid-template-columns: minmax(0, 1fr) 84px 104px 36px;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.data-row-remove {
+  min-height: 44px;
+}
+.data-row-actions {
+  margin-top: 16px;
+}
+.data-row-actions button {
+  min-height: 44px;
+  font-size: 13px;
+  border: 1px solid var(--noc-divider);
+  background: transparent;
+}
+.data-footer {
+  flex: 0 0 auto;
+  padding: 18px 28px max(18px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--noc-divider);
+  background: var(--noc-card);
+}
+.data-footer .info {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--noc-accent);
+  background: var(--noc-surface);
+  color: var(--noc-text);
+  font-size: 13px;
+  max-height: 20dvh;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+}
+.data-footer .confirm-actions {
+  flex-direction: row;
+  flex-wrap: wrap;
+  margin: 0;
+}
+.data-footer .confirm-actions button {
+  min-height: 44px;
+  width: auto;
+  font-size: 13px;
+}
+.data-footer .confirm-actions .primary {
+  color: var(--noc-on-accent);
+}
+.data-dialog :is(button, input, select):focus-visible {
+  outline: 2px solid var(--noc-accent);
+  outline-offset: 2px;
+}
+@media (max-width: 480px) {
+  .data-header {
+    padding: 18px 16px 16px;
+  }
+  .data-header h2 {
+    font-size: 21px;
+    max-height: 2.5em;
+  }
+  .data-header .data-note {
+    font-size: 11px;
+  }
+  .data-close {
+    top: 10px;
+    right: 8px;
+  }
+  .data-body {
+    padding-inline: 16px;
+  }
+  .data-section {
+    padding-block: 20px;
+  }
+  .data-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .data-other-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 36px;
+  }
+  .data-other-row input[type='text'] {
+    grid-column: 1 / -1;
+  }
+  .data-footer {
+    padding: 12px 16px max(12px, env(safe-area-inset-bottom));
+  }
+  .data-footer .confirm-actions {
+    gap: 8px;
+  }
+  .data-footer .confirm-actions button {
+    flex: 1 1 auto;
+    padding-inline: 10px;
+    font-size: 12px;
+  }
+}
+@media (max-height: 520px) {
+  .data-header {
+    padding-block: 10px;
+  }
+  .data-header .data-note {
+    display: none;
+  }
+  .data-header h2 {
+    font-size: 18px;
+    max-height: 1.25em;
+    margin-block: 4px;
+  }
+  .data-footer {
+    padding-block: 10px;
+  }
+}
