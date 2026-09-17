@@ -191,9 +191,18 @@ public partial class MusclePumpScraper(
         if (urunDugumu is null)
             return null;
 
+        // SAĞ SÜTUNUN SINIF ADI DEĞİŞTİ (17 Eylül'de canlıda yakalandı).
+        //
+        // Sınıf `detailRightBlock` iken `detailRight` oldu; tek kelimelik bu
+        // değişiklik 3 Eylül'dekiyle AYNI sessiz arızayı üretti: tarama hatasız
+        // görünüyor ama "141 adres tarandı, 0 ürün alındı, 138 geçersiz ürün"
+        // diyor, çünkü zorunlu tutulan kutu bulunamayınca her sayfa null dönüyor.
+        // Kaynağın kendisi sağlıklıydı (200, JSON-LD ve fiyat kutusu yerinde).
+        // İki yazım da kabul ediliyor: eskisi yarın geri gelirse yeniden kırılmasın.
         var detailRegion = document.DocumentNode.SelectSingleNode("//detail-region");
         var detailRight = detailRegion?.SelectSingleNode(
-            ".//div[contains(concat(' ', normalize-space(@class), ' '), ' detailRightBlock ')]");
+            ".//div[contains(concat(' ', normalize-space(@class), ' '), ' detailRight ')"
+            + " or contains(concat(' ', normalize-space(@class), ' '), ' detailRightBlock ')]");
         if (detailRegion is null || detailRight is null)
             return null;
 

@@ -208,6 +208,25 @@ public class MusclePumpScraperTests
         Assert.Null(MusclePumpScraper.ParseProduct(html, "https://musclepump.com.tr/prd-x"));
     }
 
+    // 17 Eylül: kaynak sağ sütunun sınıfını `detailRightBlock` -> `detailRight`
+    // yaptı ve tarama sessizce 141 adresin 138'ine "geçersiz" dedi. İki yazım da
+    // ürün üretmeli; tek bir sınıf adına bağlı kalmak bu arızayı tekrar doğurur.
+    [Theory]
+    [InlineData("detailRight")]
+    [InlineData("detailRightBlock")]
+    public void SagSutunIkiSinifAdiylaDaOkunur(string sinif)
+    {
+        var html = ProductHtml(
+            "Muscle Pump CLA 90 Kapsül", "Muscle Pump", "749.90", null,
+            "/l-karnitin-ve-cla/cla/prd-muscle-pump-cla-90-kapsul-3224", inStock: true,
+            rightColumnClass: sinif);
+
+        var product = MusclePumpScraper.ParseProduct(html, "https://musclepump.com.tr/prd-x");
+
+        Assert.NotNull(product);
+        Assert.Equal(749.90m, product!.Price);
+    }
+
     private static string ProductHtml(
         string name,
         string brand,
@@ -215,7 +234,8 @@ public class MusclePumpScraperTests
         string? oldPrice,
         string canonicalPath,
         bool inStock,
-        string servingText = "")
+        string servingText = "",
+        string rightColumnClass = "detailRightBlock")
     {
         var oldPriceHtml = oldPrice is null ? string.Empty : $"<strike>{oldPrice}</strike>";
         var button = inStock
@@ -239,7 +259,7 @@ public class MusclePumpScraperTests
               </script>
             </head><body>
               <detail-region>
-                <div class="detailRightBlock basket4selector">
+                <div class="{{{rightColumnClass}}} basket4selector">
                   <div class="detailPriceBlock">
                     {{{oldPriceHtml}}}
                   </div>
