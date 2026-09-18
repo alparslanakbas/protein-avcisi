@@ -78,11 +78,11 @@
 
       @if (showFullHomepageContent() && heroDeal(); as hero) {
         <article class="pa-featured-deal pa-hero-card grid gap-5 p-4 sm:grid-cols-[110px_minmax(190px,1.2fr)_minmax(140px,.72fr)_minmax(190px,.9fr)_180px] sm:items-center">
-          <a [routerLink]="productPath(hero)" queryParamsHandling="preserve" tabindex="-1" aria-hidden="true" class="pa-hero-product flex h-[112px] items-center justify-center rounded-[10px] bg-white/[0.06]">
+          <a [href]="productPath(hero)" (click)="onProductClick($event, hero)" tabindex="-1" aria-hidden="true" class="pa-hero-product flex h-[112px] items-center justify-center rounded-[10px] bg-white/[0.06]">
             @if (hero.imageUrl) { <img [src]="hero.imageUrl" [alt]="displayName(hero.productName)" class="h-full w-full object-contain p-2" /> }
           </a>
 
-          <a [routerLink]="productPath(hero)" queryParamsHandling="preserve" class="pa-hero-info block text-left">
+          <a [href]="productPath(hero)" (click)="onProductClick($event, hero)" class="pa-hero-info block text-left">
             <span class="inline-flex rounded-full bg-[#6556e8]/20 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#b9b0ff]">Günün öne çıkan fırsatı</span>
             <h2 class="mt-2 line-clamp-2 text-[16px] font-semibold leading-tight text-white">{{ displayName(hero.productName) }}</h2>
             <p class="mt-1 text-xs text-[#9ea4c0]">{{ hero.brandName }}{{ hero.size ? ' · ' + hero.size : '' }}{{ hero.flavor ? ' · ' + hero.flavor : '' }}</p>
@@ -112,7 +112,7 @@
 
           <div class="pa-hero-actions flex flex-col gap-2 border-white/10 sm:border-l sm:pl-5">
             <a [href]="goToStoreUrl(hero)" (click)="magazaTiklamasi(hero.productId)" target="_blank" rel="nofollow sponsored noopener" class="pa-primary-button h-11 w-full whitespace-nowrap px-4 text-sm">Mağazaya git<i class="ph ph-arrow-square-out ml-2 shrink-0 text-base" aria-hidden="true"></i></a>
-            <a [routerLink]="productPath(hero)" queryParamsHandling="preserve" class="flex h-10 w-full items-center justify-center whitespace-nowrap rounded-[9px] border border-white/15 px-3 text-xs font-semibold text-[#e2e4ef] hover:border-[#8f80ff]/70">Fiyat geçmişini aç</a>
+            <a [href]="productPath(hero)" (click)="onProductClick($event, hero)" class="flex h-10 w-full items-center justify-center whitespace-nowrap rounded-[9px] border border-white/15 px-3 text-xs font-semibold text-[#e2e4ef] hover:border-[#8f80ff]/70">Fiyat geçmişini aç</a>
           </div>
         </article>
       }
@@ -235,7 +235,7 @@
         <section aria-label="Ürün fırsatları" class="pa-product-list">
           @for (deal of deals(); track deal.productId) {
             <article class="pa-product-row">
-              <a [routerLink]="productPath(deal)" queryParamsHandling="preserve" tabindex="-1" aria-hidden="true" class="pa-product-image-well relative block w-full">
+              <a [href]="productPath(deal)" (click)="onProductClick($event, deal)" tabindex="-1" aria-hidden="true" class="pa-product-image-well relative block w-full">
                 @if (deal.imageUrl) { <img [src]="deal.imageUrl" [alt]="displayName(deal.productName)" loading="lazy" class="h-full w-full object-contain p-2" /> }
                 <span class="absolute right-1.5 top-1.5 rounded-full bg-[var(--noc-card)] px-1.5 py-0.5 text-[9px] font-semibold text-[var(--noc-neutral-600)]">{{ deal.brandName }}</span>
               </a>
@@ -249,7 +249,7 @@
                 @if (deal.inStock === false) {
                   <span class="pa-outofstock-badge">Tükendi</span>
                 }
-                <a [routerLink]="productPath(deal)" queryParamsHandling="preserve" class="mt-2 block w-full text-left">
+                <a [href]="productPath(deal)" (click)="onProductClick($event, deal)" class="mt-2 block w-full text-left">
                   <h2 [title]="displayName(deal.productName)" class="line-clamp-2 text-[16px] font-semibold leading-tight tracking-[-0.012em]">{{ displayName(deal.productName) }}</h2>
                   <p class="mt-1 text-xs text-[var(--noc-neutral-500)]">{{ deal.brandName }}{{ deal.size ? ' · ' + deal.size : '' }}{{ deal.flavor ? ' · ' + deal.flavor : '' }}{{ deal.seller ? ' · satıcı: ' + deal.seller : '' }}</p>
                 </a>
@@ -276,7 +276,7 @@
 
               <div class="pa-product-chart">
                 <app-product-card-sparkline [points]="sparklineFor(deal.productId)" />
-                <a [routerLink]="productPath(deal)" queryParamsHandling="preserve" class="mt-1 inline-block text-xs font-semibold text-[var(--noc-accent)]">Fiyat geçmişini incele <i class="ph ph-arrow-right ml-1" aria-hidden="true"></i></a>
+                <a [href]="productPath(deal)" (click)="onProductClick($event, deal)" class="mt-1 inline-block text-xs font-semibold text-[var(--noc-accent)]">Fiyat geçmişini incele <i class="ph ph-arrow-right ml-1" aria-hidden="true"></i></a>
               </div>
 
               <div class="pa-product-store flex flex-col items-stretch gap-2 border-[var(--noc-divider)] sm:border-l sm:pl-5">

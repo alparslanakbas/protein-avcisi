@@ -36,8 +36,8 @@
     <div #rail class="pa-preferred-rail" tabindex="0" aria-label="Tercih edilen ürünler, yatay kaydırılabilir">
       @for (product of visibleProducts(); track product.productId; let index = $index) {
         <a
-          [routerLink]="productPath(product)"
-          queryParamsHandling="preserve"
+          [href]="productPath(product)"
+          (click)="onProductClick($event, product)"
           class="pa-preferred-card"
           role="group"
           [attr.aria-label]="(index + 1) + '. ürün: ' + displayName(product.productName)"

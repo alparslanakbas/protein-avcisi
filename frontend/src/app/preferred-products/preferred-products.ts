@@ -11,11 +11,11 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 
 import { Deal } from '../core/deal.model';
 import { displayName } from '../core/display-name';
-import { productPath } from '../core/product-link';
+import { productPath, shouldHandleInApp } from '../core/product-link';
 
 type PreferenceGroup = 'all' | 'performance' | 'nutrition' | 'weight';
 
@@ -34,7 +34,7 @@ const PREFERENCE_TABS: readonly PreferenceTab[] = [
 
 @Component({
   selector: 'app-preferred-products',
-  imports: [DecimalPipe, RouterLink],
+  imports: [DecimalPipe],
   templateUrl: './preferred-products.html',
 })
 export class PreferredProducts {
@@ -42,11 +42,24 @@ export class PreferredProducts {
 
   protected readonly displayName = displayName;
   protected readonly productPath = productPath;
+
+  // href TEMİZ kanonik adres; listenin adres durumu (page, arama, filtreler)
+  // yalnızca tıklamada ekleniyor (18 Eylül). RouterLink + "preserve" o durumu
+  // her bağlantıya kopyalıyordu ve Google taramasının %18'i bu ?page=N'li ürün
+  // kopyalarına gidiyordu — bkz. deals-list.ts onProductClick.
+  protected onProductClick(event: MouseEvent, product: Deal): void {
+    if (!shouldHandleInApp(event)) return;
+    event.preventDefault();
+    this.router.navigateByUrl(
+      this.router.createUrlTree([productPath(product)], { queryParamsHandling: 'preserve' }),
+    );
+  }
   protected readonly tabs = PREFERENCE_TABS;
   protected readonly selectedGroup = signal<PreferenceGroup>('all');
   protected readonly rail = viewChild<ElementRef<HTMLElement>>('rail');
 
   private readonly destroyRef = inject(DestroyRef);
+  private readonly router = inject(Router);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
   private autoSlideHandle: ReturnType<typeof setInterval> | null = null;
   private paused = false;

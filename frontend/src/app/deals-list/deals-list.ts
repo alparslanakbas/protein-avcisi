@@ -28,7 +28,7 @@ import { PriceHistoryService } from '../core/price-history.service';
 import { PwaInstallService } from '../core/pwa-install.service';
 import { formatRelativeTime } from '../core/relative-time';
 import { slugify } from '../core/slugify';
-import { productPath } from '../core/product-link';
+import { productPath, shouldHandleInApp } from '../core/product-link';
 import { buildPageTitle, buildProductDescription, formatPriceText } from '../core/meta-description';
 import { buildAreaPath, buildLinePath, toCoordinates } from '../core/spark-chart';
 import { SubscribeService } from '../core/subscribe.service';
@@ -1006,12 +1006,27 @@ export class DealsList implements OnInit {
     this.categoriesOpen.set(false);
   }
 
-  // Kartlardaki bağlantılar RouterLink ile kuruluyor (bkz. core/product-link.ts):
-  // gerçek bir <a href> üretiyor — arama motorları takip edebiliyor, orta tık ve
-  // "yeni sekmede aç" çalışıyor — ama tıklandığında yine SPA gezinmesi yapıyor,
-  // yani aşağıdaki openDeal ile birebir aynı sonucu veriyor.
+  // Kartlardaki bağlantılar gerçek <a href> (bkz. core/product-link.ts): arama
+  // motorları takip edebiliyor, orta tık ve "yeni sekmede aç" çalışıyor.
+  //
+  // href TEMİZ kanonik adres, liste durumu tıklamada ekleniyor (18 Eylül). Eskiden
+  // RouterLink + queryParamsHandling="preserve" kullanılıyordu ve bu, listenin
+  // bütün adres durumunu (page, arama, filtreler) HER ürün bağlantısına
+  // kopyalıyordu: /?page=5 sayfasındaki 87 bağlantının 87'si /urun/...?page=5
+  // idi. Canonical bu kopyaların dizine girmesini önlüyordu ama TARANMASINI
+  // önlemiyordu — GSC tarama örneğinde HTML isteklerinin %18'i bu kopyalara
+  // gidiyordu, henüz bir kez bile taranmamış ürün sayfaları beklerken.
+  // Kategori ve marka sayfaları baştan beri bu deseni kullanıyor.
   protected productPath(deal: Deal): string {
     return productPath(deal);
+  }
+
+  protected onProductClick(event: MouseEvent, deal: Deal): void {
+    // Kartın kendi tıklama işleyicisi de varsa iki kez tetiklenmesin.
+    event.stopPropagation();
+    if (!shouldHandleInApp(event)) return;
+    event.preventDefault();
+    this.openDeal(deal);
   }
 
   protected openDeal(deal: Deal): void {

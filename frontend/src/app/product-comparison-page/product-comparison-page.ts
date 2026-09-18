@@ -311,6 +311,15 @@ export class ProductComparisonPage implements OnInit {
       title,
       description: `${a.brandName} ${nameA} ile ${b.brandName} ${nameB} ürünlerini güncel fiyat, servis başı maliyet ve 30 günlük fiyat geçmişiyle yan yana karşılaştır.`,
       canonicalPath: `/karsilastir-urun/${ComparisonService.pairSlug(a.productId, b.productId)}`,
+      // DİZİNE KAPALI, bağlantıları takip ediliyor (18 Eylül, GSC ölçümüyle).
+      // Ürün çiftleri kombinasyonla çoğalıyor: ~2.200 sayfa dizindeydi ve Google'ın
+      // HTML taramasının %16'sı bunlara gidiyordu, ama 28 günde 213 sayfa toplam
+      // 879 gösterim ve YALNIZCA 2 TIK getirdi (%0,2). Aynı ölçümde MARKA
+      // karşılaştırması sitenin en yüksek tıklama oranlı türü (%4,6) — o yüzden
+      // yalnızca ÜRÜN karşılaştırması kapatıldı. Sayfa kullanıcı için duruyor.
+      // Disallow DEĞİL: Disallow adresin dizine girmesini engellemiyor, sadece
+      // içeriği okutmuyor (bkz. server.ts /go/:id notu).
+      noIndex: true,
     });
   }
 }
