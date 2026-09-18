@@ -1,4 +1,5 @@
 using IndirimTakip.Infrastructure.Images;
+using Microsoft.Extensions.Logging.Abstractions;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.Processing;
 
@@ -117,4 +118,51 @@ public class ProductImageStoreTests
         return akis;
     }
 
+    /// <summary>
+    /// Zaman aşımı "bu görsel indirilemedi" demek, "uygulama kapanıyor" değil.
+    /// HttpClient onu TaskCanceledException olarak atıyor; filtre türüne bakarken
+    /// istisna dışarı kaçıyor ve arka plan servisi döngüden çıkıyordu (18 Eylül).
+    /// </summary>
+    [Fact]
+    public async Task Zaman_asimi_null_doner_servisi_durdurmaz()
+    {
+        var dizin = Path.Combine(Path.GetTempPath(), "gorsel-test-" + Guid.NewGuid().ToString("N"));
+        var store = new ProductImageStore(
+            new ZamanAsimiFabrikasi(),
+            new ProductImageOptions { Dizin = dizin },
+            NullLogger<ProductImageStore>.Instance);
+
+        var sonuc = await store.IndirAsync("https://ornek.com/yavas.jpg", CancellationToken.None);
+
+        Assert.Null(sonuc);
+    }
+
+    /// <summary>Gerçek iptal (jeton tetiklenmiş) yine yukarı çıkmalı.</summary>
+    [Fact]
+    public async Task Gercek_iptal_yukari_cikar()
+    {
+        var store = new ProductImageStore(
+            new ZamanAsimiFabrikasi(),
+            new ProductImageOptions { Dizin = Path.GetTempPath() },
+            NullLogger<ProductImageStore>.Instance);
+        using var iptal = new CancellationTokenSource();
+        iptal.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => store.IndirAsync("https://ornek.com/iptal.jpg", iptal.Token));
+    }
+
+    private sealed class ZamanAsimiFabrikasi : IHttpClientFactory
+    {
+        public HttpClient CreateClient(string name) => new(new ZamanAsimiHandler());
+    }
+
+    private sealed class ZamanAsimiHandler : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        {
+            ct.ThrowIfCancellationRequested();
+            throw new TaskCanceledException("The request was canceled due to the configured HttpClient.Timeout.");
+        }
+    }
 }

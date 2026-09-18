@@ -97,11 +97,19 @@ public sealed class ProductImageStore(
             File.Move(gecici, hedef, overwrite: true);
             return dosyaAdi;
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
         {
             // Tek bir görselin başarısızlığı turu düşürmemeli: kaynak adresi
             // ölmüş ya da biçim bozuk olabilir. O ürün yerel kopyasız kalıyor
             // ve KAYNAK adresiyle gösterilmeye devam ediyor.
+            //
+            // Filtre istisna TÜRÜNE değil jetona bakıyor (18 Eylül). HttpClient
+            // zaman aşımı TaskCanceledException, yani OperationCanceledException
+            // olarak fırlıyor; eski filtre onu dışarı bırakıyordu ve arka plan
+            // servisi o türü "uygulama kapanıyor" sayıp DÖNGÜDEN ÇIKIYOR. Tek
+            // yavaş görsel sunucusu, görsel indirmeyi bir sonraki deploy'a kadar
+            // sessizce durdururdu (hata logu da yazılmadan). Proteinim
+            // taramasında aynı filtre canlıda bir turu düşürünce fark edildi.
             logger.LogDebug(ex, "Ürün görseli indirilemedi: {Adres}", kaynakAdres);
             return null;
         }

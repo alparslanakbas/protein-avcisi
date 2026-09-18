@@ -1,5 +1,8 @@
+using System.Net;
+using System.Text;
 using System.Text.Json;
 using IndirimTakip.Infrastructure.Scraping.Proteinim;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace IndirimTakip.Infrastructure.Tests;
 
@@ -156,4 +159,49 @@ public class ProteinimScraperTests
         Assert.Null(ProteinimScraper.IlkVaryasyonId(doc.RootElement));
     }
 
+    // 18 Eylül canlıda: görsel tamamlama isteği 30 sn'de yanıt vermedi,
+    // HttpClient zaman aşımını TaskCanceledException olarak fırlattı ve catch
+    // filtresi o türü dışarıda bıraktığı için turun TAMAMI düştü. Fiyatlar zaten
+    // toplanmıştı; tek bir yavaş görsel onları çöpe atmamalı.
+    [Fact]
+    public async Task GorselIstegiZamanAsiminaUgrarsaTurDusmez()
+    {
+        const string katalog = """
+            [{
+              "name": "Olimp Whey Protein Complex 100% / 1800 Gr.",
+              "permalink": "https://proteinim.com/urun/olimp-whey/",
+              "is_in_stock": true,
+              "prices": { "price": "180000", "regular_price": "180000", "currency_code": "TRY", "currency_minor_unit": 2 },
+              "brands": [{ "id": 12, "name": "Olimp", "slug": "olimp" }],
+              "images": [],
+              "variations": [{ "id": 218 }]
+            }]
+            """;
+        var scraper = new ProteinimScraper(
+            new HttpClient(new ZamanAsimiHandler(katalog)) { BaseAddress = new Uri("https://proteinim.com/") },
+            NullLogger<ProteinimScraper>.Instance);
+
+        var urunler = await scraper.ScrapeAsync();
+
+        var urun = Assert.Single(urunler);
+        Assert.Equal(1800.00m, urun.Price);
+        Assert.Null(urun.ImageUrl);
+    }
+
+    // Katalog sayfası yanıt veriyor; varyasyon ucu HttpClient'ın zaman aşımıyla
+    // aynı istisnayı atıyor. Jeton İPTAL EDİLMEDİ, yani bu gerçek bir kapanış değil.
+    private sealed class ZamanAsimiHandler(string katalog) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        {
+            if (request.RequestUri!.AbsolutePath.EndsWith("/products/218"))
+                throw new TaskCanceledException("The request was canceled due to the configured HttpClient.Timeout.");
+
+            var sayfa = request.RequestUri.Query.Contains("page=1") ? katalog : "[]";
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(sayfa, Encoding.UTF8, "application/json"),
+            });
+        }
+    }
 }

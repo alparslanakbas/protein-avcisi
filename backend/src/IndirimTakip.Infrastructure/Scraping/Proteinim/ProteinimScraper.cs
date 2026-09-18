@@ -212,11 +212,18 @@ public sealed class ProteinimScraper(HttpClient httpClient, ILogger<ProteinimScr
                     tamamlanan++;
                 }
             }
-            catch (Exception ex) when (ex is not OperationCanceledException)
+            catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
             {
                 // Görsel tamamlama TURU DÜŞÜRMEMELİ: fiyat verisi zaten
                 // toplanmış durumda ve asıl değerli olan o. Görselsiz ürün
                 // sitede yer tutucuyla görünüyor, kaybolmuyor.
+                //
+                // Filtre İSTİSNA TÜRÜNE değil jetona bakıyor (18 Eylül). Önceki
+                // hali `ex is not OperationCanceledException` idi ve HttpClient'ın
+                // ZAMAN AŞIMI da o türden (TaskCanceledException) fırlıyor: tek bir
+                // görsel isteği 30 sn'de yanıt vermeyince turun tamamı düştü, 50
+                // ürünün fiyatı o tur kaydedilmedi. Gerçek iptal (uygulama
+                // kapanıyor) hâlâ yukarı çıkıyor, çünkü o durumda jeton tetiklenmiş.
                 logger.LogWarning(ex,
                     "proteinim: {VaryasyonId} varyasyonunun görseli alınamadı.", varyasyonId);
             }
