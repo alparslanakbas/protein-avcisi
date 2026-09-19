@@ -1,4 +1,5 @@
 using IndirimTakip.Core.Caching;
+using IndirimTakip.Core.Entities;
 using IndirimTakip.Infrastructure.Deals;
 using IndirimTakip.Core.Scraping;
 using Microsoft.Extensions.Configuration;
@@ -24,25 +25,23 @@ public class ScrapingBackgroundService(
             return;
         }
 
+        // Zamanlama bu süreçte değil veritabanında: deploy konteyneri yeniden
+        // başlatıyor ve bellekteki sayaçla her deploy bütün kaynakların tam
+        // taramasını başlatıyordu (bkz. PersistedSchedule).
         var intervalHours = configuration.GetValue("Scraping:IntervalHours", 6);
-        using var timer = new PeriodicTimer(TimeSpan.FromHours(intervalHours));
-
-        do
-        {
-            await RunScrapeCycleAsync(stoppingToken);
-        }
-        while (await timer.WaitForNextTickAsync(stoppingToken));
+        await PersistedSchedule.RunAsync(
+            scopeFactory, BackgroundJobNames.TaramaTuru, TimeSpan.FromHours(intervalHours), logger,
+            RunScrapeCycleAsync, stoppingToken);
     }
 
-    private async Task RunScrapeCycleAsync(CancellationToken cancellationToken)
+    private async Task RunScrapeCycleAsync(IServiceProvider services, CancellationToken cancellationToken)
     {
-        using var scope = scopeFactory.CreateScope();
         // DailyOnly işaretliler bu turun DIŞINDA: onları
         // DailyScrapingBackgroundService günde bir kez çalıştırıyor.
-        var scrapers = scope.ServiceProvider.GetServices<IBrandScraper>()
+        var scrapers = services.GetServices<IBrandScraper>()
             .Where(s => !s.DailyOnly)
             .ToList();
-        var ingestion = scope.ServiceProvider.GetRequiredService<ScrapeIngestionService>();
+        var ingestion = services.GetRequiredService<ScrapeIngestionService>();
 
         logger.LogInformation("Tarama döngüsü başladı ({Count} marka).", scrapers.Count);
 
@@ -67,10 +66,10 @@ public class ScrapingBackgroundService(
         // sayfa soğukta 6,0 sn, sıcakta 0,26 sn).
         // Fiyat özeti ÖNCE: önbellek ısıtması bu alanları okuyor, ters
         // sırada ısıtma eski özeti önbelleğe alırdı.
-        await scope.ServiceProvider.GetRequiredService<PriceSummaryRefresher>()
+        await services.GetRequiredService<PriceSummaryRefresher>()
             .RefreshAsync(cancellationToken);
 
-        await scope.ServiceProvider.GetRequiredService<IPublicCacheRefresher>()
+        await services.GetRequiredService<IPublicCacheRefresher>()
             .RefreshAsync(cancellationToken);
 
         logger.LogInformation("Tarama döngüsü bitti.");

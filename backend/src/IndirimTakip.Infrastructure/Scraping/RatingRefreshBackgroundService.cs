@@ -1,3 +1,4 @@
+using IndirimTakip.Core.Entities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -13,7 +14,9 @@ namespace IndirimTakip.Infrastructure.Scraping;
 // tazeleniyor, yani iş hiç "bitmiyor". Sıra RatingCheckedAt damgasından
 // geldiği için zamanlama süreç belleğinde DEĞİL veritabanında — deploy'lar
 // sırayı sıfırlamıyor (bültende tam olarak bu hata yaşanmıştı, bkz.
-// DigestBackgroundService).
+// DigestBackgroundService). ZAMANLAMA da artık öyle: eskiden her açılışta
+// çalışıyordu, yani her deploy bütün kaynakların ürün sayfalarına bir tur istek
+// gönderiyordu (bkz. PersistedSchedule).
 public class RatingRefreshBackgroundService(
     IServiceScopeFactory scopeFactory,
     IConfiguration configuration,
@@ -28,22 +31,23 @@ public class RatingRefreshBackgroundService(
         }
 
         var intervalHours = configuration.GetValue("RatingRefresh:IntervalHours", 6);
-        using var timer = new PeriodicTimer(TimeSpan.FromHours(intervalHours));
-
-        do
-        {
-            using var scope = scopeFactory.CreateScope();
-            var service = scope.ServiceProvider.GetRequiredService<ProductRatingRefreshService>();
-
-            try
+        await PersistedSchedule.RunAsync(
+            scopeFactory, BackgroundJobNames.PuanTazeleme, TimeSpan.FromHours(intervalHours), logger,
+            async (services, cancellationToken) =>
             {
-                await service.RefreshAsync(cancellationToken: stoppingToken);
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Puan tazeleme sırasında hata oluştu.");
-            }
-        }
-        while (await timer.WaitForNextTickAsync(stoppingToken));
+                try
+                {
+                    await services.GetRequiredService<ProductRatingRefreshService>()
+                        .RefreshAsync(cancellationToken: cancellationToken);
+                }
+                catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
+                {
+                    // Başarısız tur da tur sayılıyor: hemen yeniden denemek aynı
+                    // kaynaklara yine gitmek olurdu. Kapanış ise yukarı çıkıyor,
+                    // böylece yarıda kalan tur eski damgayı koruyor.
+                    logger.LogError(ex, "Puan tazeleme sırasında hata oluştu.");
+                }
+            },
+            stoppingToken);
     }
 }

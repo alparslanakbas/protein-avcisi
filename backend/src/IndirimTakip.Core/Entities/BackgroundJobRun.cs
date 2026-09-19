@@ -39,4 +39,9 @@ public class BackgroundJobRun
 public static class BackgroundJobNames
 {
     public const string DetayTamamlama = "detay-tamamlama";
+
+    // PersistedSchedule (Infrastructure) ile zamanlanıyor: bunları artık deploy
+    // DEĞİL, yalnızca dolan aralık başlatıyor.
+    public const string TaramaTuru = "tarama-turu";
+    public const string PuanTazeleme = "puan-tazeleme";
 }
