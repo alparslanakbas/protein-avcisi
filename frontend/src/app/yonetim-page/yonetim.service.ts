@@ -267,6 +267,12 @@ export interface ElleBesin {
   lifGram: number | null;
   /** Makroların dışındaki satırlar, etikette yazdığı gibi ("Kafein", 200, "mg"). */
   digerSatirlar: { ad: string; miktar: number | null; birim: string }[];
+  /**
+   * Etiketin kendisi kalori kontrolüyle çelişiyorsa (BCAA'larda sık: 10 g protein,
+   * 0 kcal) değerleri olduğu gibi kabul ettiriyor. Kutu yalnızca o ret geldiğinde
+   * görünüyor; imkansız değerler bununla da geçmiyor.
+   */
+  etiketBoyleYaziyor?: boolean;
 }
 
 export interface ElleDuzenlemeYaniti {

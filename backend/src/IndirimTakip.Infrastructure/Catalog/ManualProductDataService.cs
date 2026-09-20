@@ -18,18 +18,19 @@ public sealed record ElleBesinIstegi(
     decimal? KarbonhidratGram,
     decimal? YagGram,
     decimal? LifGram,
-    IReadOnlyList<ElleBesinSatiri>? DigerSatirlar = null);
+    IReadOnlyList<ElleBesinSatiri>? DigerSatirlar = null,
+    bool EtiketBoyleYaziyor = false);
 
 /// <summary>Etiketteki bir satır: ad, porsiyon başına miktar ve birimi.</summary>
 public sealed record ElleBesinSatiri(string? Ad, decimal? Miktar, string? Birim);
 
-public sealed record ElleDuzenlemeSonucu(bool Bulundu, bool Kabul, string? Sebep = null, int GuncellenenSatir = 0)
+public sealed record ElleDuzenlemeSonucu(bool Bulundu, bool Kabul, string? Sebep = null, int GuncellenenSatir = 0, string? Kod = null)
 {
     public static readonly ElleDuzenlemeSonucu Yok = new(false, false);
 }
 
 /// <summary>Kontrolün sonucu: yayınlanacak tablo satırları ya da ret sebebi.</summary>
-internal sealed record ElleBesinKontrolu(IReadOnlyList<(string Ad, string Deger)> Satirlar, string? RetSebebi)
+internal sealed record ElleBesinKontrolu(IReadOnlyList<(string Ad, string Deger)> Satirlar, string? RetSebebi, string? RetKodu = null)
 {
     public bool Kabul => RetSebebi is null;
 }
@@ -91,7 +92,7 @@ public sealed class ManualProductDataService(AppDbContext db)
 
         var kontrol = Kontrol(istek);
         if (!kontrol.Kabul)
-            return new ElleDuzenlemeSonucu(true, false, kontrol.RetSebebi);
+            return new ElleDuzenlemeSonucu(true, false, kontrol.RetSebebi, Kod: kontrol.RetKodu);
 
         var tablo = new Dictionary<string, string>();
         foreach (var (ad, deger) in kontrol.Satirlar)
@@ -211,9 +212,19 @@ public sealed class ManualProductDataService(AppDbContext db)
             if (makrolar.Any(v => v is null))
                 return Ret("enerji, protein, karbonhidrat ve yağ birlikte girilir: dördünü de girin ya da takviye tablosu için hiçbirini girmeyin");
 
-            var makroHatasi = KaloriKontrolu(istek.Kalori!.Value, istek.ProteinGram!.Value, istek.KarbonhidratGram!.Value, istek.YagGram!.Value, istek.LifGram, istek.PorsiyonGram);
-            if (makroHatasi is not null)
-                return Ret(makroHatasi);
+            var imkansiz = ImkansizDegerler(istek.ProteinGram!.Value, istek.KarbonhidratGram!.Value, istek.YagGram!.Value, istek.LifGram, istek.PorsiyonGram);
+            if (imkansiz is not null)
+                return Ret(imkansiz);
+
+            // Enerji uyuşmazlığı YAZIM HATASI koruması, imkansızlık değil: bazı
+            // etiketler (özellikle BCAA/EAA) 10 g protein yazıp enerjiyi 0 kcal
+            // beyan ediyor. Kural kapalı kalsaydı tek çıkış ya uydurma bir kalori
+            // yazmak ya da protein satırını hiç yayınlamamak olurdu; ikisi de
+            // etiketten uzaklaşmak demek. O yüzden atlanabiliyor, ama kendiliğinden
+            // değil: kişinin "etiket böyle yazıyor" demesi gerekiyor.
+            var enerjiHatasi = KaloriKontrolu(istek.Kalori!.Value, istek.ProteinGram!.Value, istek.KarbonhidratGram!.Value, istek.YagGram!.Value, istek.LifGram);
+            if (enerjiHatasi is not null && !istek.EtiketBoyleYaziyor)
+                return Ret(enerjiHatasi + "; etiket gerçekten böyle yazıyorsa 'etiket böyle yazıyor' kutusunu işaretle", "enerji-tutmuyor");
 
             satirlar.Add(("Enerji", Yaz(istek.Kalori.Value, "kcal")));
             satirlar.Add(("Yağ", Yaz(istek.YagGram.Value, "g")));
@@ -238,15 +249,21 @@ public sealed class ManualProductDataService(AppDbContext db)
     // (özellikle ithal ürünler) ABD usulü lifi karbonhidratın içinde yazıyor; iki
     // okumanın arasındaki her değer kabul. Tolerans: kalori 5-10'a, makrolar grama
     // yuvarlanıyor; toplamda ±15 kcal ya da %10.
-    private static string? KaloriKontrolu(decimal kalori, decimal protein, decimal karbonhidrat, decimal yag, decimal? lif, decimal? porsiyon)
+    // Etiketin yazamayacağı değerler: hangi kutu işaretlenirse işaretlensin geçmiyor,
+    // çünkü bunlar etiketin tuhaflığı değil yazım hatasının kendisi.
+    private static string? ImkansizDegerler(decimal protein, decimal karbonhidrat, decimal yag, decimal? lif, decimal? porsiyon)
     {
         if (protein > 100)
             return $"protein {protein} g makul değil";
 
         var makroToplam = protein + karbonhidrat + yag + (lif ?? 0);
-        if (porsiyon is > 0 && makroToplam > porsiyon * 1.05m + 1)
-            return $"makrolar ({makroToplam} g) porsiyonu ({porsiyon} g) aşıyor";
+        return porsiyon is > 0 && makroToplam > porsiyon * 1.05m + 1
+            ? $"makrolar ({makroToplam} g) porsiyonu ({porsiyon} g) aşıyor"
+            : null;
+    }
 
+    private static string? KaloriKontrolu(decimal kalori, decimal protein, decimal karbonhidrat, decimal yag, decimal? lif)
+    {
         var temel = 4 * protein + 4 * karbonhidrat + 9 * yag;
         var ust = temel + 2 * (lif ?? 0);
         var alt = temel - 4 * Math.Min(karbonhidrat, lif ?? 0) + 2 * Math.Min(karbonhidrat, lif ?? 0);
@@ -308,7 +325,7 @@ public sealed class ManualProductDataService(AppDbContext db)
     private static string Yaz(decimal miktar, string birim) =>
         miktar.ToString("0.###", CultureInfo.InvariantCulture) + " " + birim;
 
-    private static ElleBesinKontrolu Ret(string sebep) => new([], sebep);
+    private static ElleBesinKontrolu Ret(string sebep, string? kod = null) => new([], sebep, kod);
 
     private async Task<(int MarkaId, string? Satici, string Adres)?> BulAsync(int id, CancellationToken ct)
     {

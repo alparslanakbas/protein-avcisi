@@ -167,6 +167,11 @@ export class YonetimPage implements OnInit {
   readonly duzenlenenVeri = signal<UrunVeriFormu | null>(null);
   readonly veriKaydediliyor = signal(false);
   readonly veriMesaji = signal<string | null>(null);
+  // Backend'in ret kodu: 'enerji-tutmuyor' gelince "etiket böyle yazıyor" kutusu
+  // çıkıyor. Kutuyu sürekli göstermek, birkaç yüz ürün girerken alışkanlıkla
+  // işaretlenip kalori kontrolünü tamamen etkisiz hale getirirdi.
+  readonly sonRetKodu = signal<string | null>(null);
+  readonly etiketBoyleYaziyor = signal(false);
   readonly urunAramaYapildi = signal(false);
   readonly gorunurlukMesaji = signal<string | null>(null);
   readonly gorunurlukSonGuncelleme = signal<Date | null>(null);
@@ -828,6 +833,7 @@ export class YonetimPage implements OnInit {
       karbonhidratGram: sayi(form.karbonhidrat),
       yagGram: sayi(form.yag),
       lifGram: sayi(form.lif),
+      etiketBoyleYaziyor: this.etiketBoyleYaziyor(),
     };
     // Miktarı boş bırakılan şablon satırı etikette yok demek: hata olarak
     // gönderilmiyor, atlanıyor. Adı ve miktarı olan satır backend kontrolüne gidiyor.
@@ -866,6 +872,8 @@ export class YonetimPage implements OnInit {
     istek.subscribe({
       next: (y) => {
         this.veriKaydediliyor.set(false);
+        this.sonRetKodu.set(null);
+        this.etiketBoyleYaziyor.set(false);
         this.veriMesaji.set(
           `${yapildi}: ${y.guncellenenSatir} satır (bu ürün sayfasının bütün boyutları).`,
         );
@@ -878,6 +886,7 @@ export class YonetimPage implements OnInit {
         const govde = (e as { error?: unknown } | null)?.error;
         const mesaj =
           typeof govde === 'string' ? govde : (govde as { message?: string } | null)?.message;
+        this.sonRetKodu.set((govde as { kod?: string } | null)?.kod ?? null);
         this.veriMesaji.set(mesaj?.trim() || this.hataMetni(e, 'Kaydedilemedi.'));
       },
     });

@@ -20,6 +20,41 @@ public class ElleUrunVerisiTests
             kontrol.Satirlar);
     }
 
+    // 7 Nutrition BCAA Master (10 g porsiyon): etiket 10 g protein yazıp enerjiyi
+    // 0,0 kcal beyan ediyor. Kalori kontrolü 40 kcal bekliyor, yani etiketin kendisi
+    // kuralla çelişiyor.
+    private static readonly ElleBesinIstegi Bcaa = new(10, 0, 10, 0, 0, null);
+
+    [Fact]
+    public void Etiketiyle_celisen_enerji_once_reddediliyor_ve_sebebi_cikisi_soyluyor()
+    {
+        var kontrol = ManualProductDataService.Kontrol(Bcaa);
+
+        Assert.False(kontrol.Kabul);
+        Assert.Equal("enerji-tutmuyor", kontrol.RetKodu);
+    }
+
+    [Fact]
+    public void Etiket_boyle_yaziyor_denince_oldugu_gibi_kaydediliyor()
+    {
+        var kontrol = ManualProductDataService.Kontrol(Bcaa with { EtiketBoyleYaziyor = true });
+
+        Assert.True(kontrol.Kabul, kontrol.RetSebebi);
+        Assert.Contains(("Enerji", "0 kcal"), kontrol.Satirlar);
+        Assert.Contains(("Protein", "10 g"), kontrol.Satirlar);
+    }
+
+    // Kutu kalori kontrolünü atlıyor, YAZIM HATASINI değil: 10 g porsiyona 241 g
+    // protein sığmaz ve bu etiketin tuhaflığı olamaz.
+    [Fact]
+    public void Etiket_boyle_yaziyor_imkansiz_degeri_gecirmiyor()
+    {
+        var kontrol = ManualProductDataService.Kontrol(Bcaa with { ProteinGram = 241, EtiketBoyleYaziyor = true });
+
+        Assert.False(kontrol.Kabul);
+        Assert.Null(kontrol.RetKodu);
+    }
+
     // 24,1 yerine 241 yazmak.
     [Fact]
     public void Kalori_toplamini_bozan_yazim_hatasi_sebebiyle_reddedilir()

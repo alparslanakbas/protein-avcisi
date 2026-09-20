@@ -1327,6 +1327,21 @@
                 tutmalı (gram başına 4/4/9 kcal, lif 2 kcal). Kreatin, amino asit, vitamin gibi
                 etken madde tabloları: bu alanları boş bırakıp aşağıdaki satırları kullan.
               </p>
+              <!-- Yalnızca enerji uyuşmazlığı reddinden sonra çıkıyor: sürekli duran bir
+                   kutu, birkaç yüz ürün girerken alışkanlıkla işaretlenir ve kalori
+                   kontrolü fiilen kalkardı. -->
+              @if (sonRetKodu() === 'enerji-tutmuyor') {
+                <label class="data-note">
+                  <input
+                    type="checkbox"
+                    [ngModel]="etiketBoyleYaziyor()"
+                    (ngModelChange)="etiketBoyleYaziyor.set($event)"
+                    [ngModelOptions]="{ standalone: true }"
+                  />
+                  Etiket böyle yazıyor: değerleri olduğu gibi kaydet (bazı BCAA/EAA etiketleri
+                  protein yazıp enerjiyi 0 kcal beyan ediyor).
+                </label>
+              }
             </section>
 
             <section class="data-section" aria-labelledby="diger-satirlar-basligi">

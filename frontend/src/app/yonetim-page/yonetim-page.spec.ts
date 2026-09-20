@@ -142,6 +142,7 @@ describe('YonetimPage görünürlük güvenliği', () => {
       karbonhidratGram: 1.4,
       yagGram: 1.9,
       lifGram: null,
+      etiketBoyleYaziyor: false,
       digerSatirlar: [{ ad: 'Tuz / Salt', miktar: 0.21, birim: 'g' }],
     });
   });
@@ -175,6 +176,7 @@ describe('YonetimPage görünürlük güvenliği', () => {
       karbonhidratGram: null,
       yagGram: null,
       lifGram: null,
+      etiketBoyleYaziyor: false,
       digerSatirlar: [
         { ad: 'Kreatin Monohidrat', miktar: 5, birim: 'g' },
         { ad: 'Kafein', miktar: 200, birim: 'mg' },

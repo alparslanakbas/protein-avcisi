@@ -25,7 +25,7 @@ internal static class AdminEndpoints
         if (!sonuc.Bulundu)
             return Results.NotFound($"{id} numaralı ürün bulunamadı.");
         if (!sonuc.Kabul)
-            return Results.BadRequest(new { message = sonuc.Sebep });
+            return Results.BadRequest(new { message = sonuc.Sebep, kod = sonuc.Kod });
 
         await cache.RefreshAsync(ct);
         return Results.Ok(new { guncellenenSatir = sonuc.GuncellenenSatir });
