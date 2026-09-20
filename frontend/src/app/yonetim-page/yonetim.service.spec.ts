@@ -33,9 +33,9 @@ describe('YonetimService görünürlük uçları', () => {
   });
 
   it('veri filtrelerini ve sayfayı backend parametre adlarıyla gönderir', () => {
-    servis.urunler('', false, true, true, true, 3).subscribe();
+    servis.urunler('', false, true, true, true, true, 3).subscribe();
     const istek = http.expectOne(
-      '/yonetim/api/urunler?eksikBesin=true&kategorisiz=true&elleGirilmeli=true&sayfa=3',
+      '/yonetim/api/urunler?eksikBesin=true&kategorisiz=true&elleGirilmeli=true&elleGirilmis=true&sayfa=3',
     );
     istek.flush({ urunler: [], toplam: 0, sayfa: 3, sayfaBoyutu: 50 });
   });

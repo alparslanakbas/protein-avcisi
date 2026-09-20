@@ -248,41 +248,41 @@ describe('YonetimPage görünürlük güvenliği', () => {
       of({
         urunler: [urun] as unknown[],
         toplam: 1234,
-        sayfa: (args[5] as number) ?? 1,
+        sayfa: (args[6] as number) ?? 1,
         sayfaBoyutu: 50,
       }),
     );
 
     sayfa.veriFiltresiDegisti('eksikBesin', true);
-    expect(api.urunler).toHaveBeenLastCalledWith('', false, true, false, false, 1);
+    expect(api.urunler).toHaveBeenLastCalledWith('', false, true, false, false, false, 1);
     expect(sayfa.urunToplamSayfa()).toBe(25);
 
     sayfa.urunSayfasinaGit(3);
-    expect(api.urunler).toHaveBeenLastCalledWith('', false, true, false, false, 3);
+    expect(api.urunler).toHaveBeenLastCalledWith('', false, true, false, false, false, 3);
     expect(sayfa.urunAraligiBaslangic()).toBe(101);
 
     sayfa.urunSayfasinaGit(99);
-    expect(api.urunler).toHaveBeenLastCalledWith('', false, true, false, false, 25);
+    expect(api.urunler).toHaveBeenLastCalledWith('', false, true, false, false, false, 25);
 
     sayfa.urunSayfasinaGit(3);
     sayfa.veriDuzenleyiciAc(urun);
     sayfa.kategoriKaydet();
-    expect(api.urunler).toHaveBeenLastCalledWith('', false, true, false, false, 3);
+    expect(api.urunler).toHaveBeenLastCalledWith('', false, true, false, false, false, 3);
 
     sayfa.veriFiltresiDegisti('kategorisiz', true);
-    expect(api.urunler).toHaveBeenLastCalledWith('', false, true, true, false, 1);
+    expect(api.urunler).toHaveBeenLastCalledWith('', false, true, true, false, false, 1);
   });
 
   it('elle girilmeli listesini aramasız ister', () => {
     sayfa.veriFiltresiDegisti('elleGirilmeli', true);
 
-    expect(api.urunler).toHaveBeenLastCalledWith('', false, false, false, true, 1);
+    expect(api.urunler).toHaveBeenLastCalledWith('', false, false, false, true, false, 1);
     expect(sayfa.urunAramaYapildi()).toBe(true);
   });
 
   it('bakılan sayfa boşaldıysa son sayfaya döner', () => {
     api.urunler.mockImplementation((...args: unknown[]) => {
-      const istenen = (args[5] as number) ?? 1;
+      const istenen = (args[6] as number) ?? 1;
       return of({
         urunler: (istenen > 2 ? [] : [urun]) as unknown[],
         toplam: 60,
@@ -294,7 +294,7 @@ describe('YonetimPage görünürlük güvenliği', () => {
     sayfa.veriFiltresiDegisti('eksikBesin', true);
     sayfa.urunAra(3);
 
-    expect(api.urunler).toHaveBeenLastCalledWith('', false, true, false, false, 2);
+    expect(api.urunler).toHaveBeenLastCalledWith('', false, true, false, false, false, 2);
     expect(sayfa.urunSayfa()).toBe(2);
   });
 });

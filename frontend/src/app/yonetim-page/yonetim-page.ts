@@ -36,7 +36,7 @@ type Sekme = 'durum' | 'olaylar' | 'kuponlar' | 'gorunurluk' | 'aboneler';
 type AboneFiltresi = 'tumu' | AboneDurumu;
 type GorunurlukGorunumu = 'markalar' | 'urunler';
 type MarkaFiltresi = 'tumu' | 'gorunur' | 'gizli';
-type VeriFiltresi = 'eksikBesin' | 'kategorisiz' | 'elleGirilmeli';
+type VeriFiltresi = 'eksikBesin' | 'kategorisiz' | 'elleGirilmeli' | 'elleGirilmis';
 
 /** Düzenleyicinin çalışma kopyası; girdiler kaydedilene kadar metin olarak tutuluyor. */
 interface UrunVeriFormu extends Record<MakroAlani, string> {
@@ -130,6 +130,7 @@ export class YonetimPage implements OnInit {
   readonly kategorisizUrunler = signal(false);
   /** Hiçbir otomatik kaynağın artık dolduramayacağı satırlar: elle yazmaya değenler. */
   readonly elleGirilmeliUrunler = signal(false);
+  readonly elleGirilmisUrunler = signal(false);
   /** Sayfalama sunucuda: filtreler binlerce satıra uyuyor. */
   readonly urunSayfa = signal(1);
   readonly urunToplam = signal(0);
@@ -660,7 +661,8 @@ export class YonetimPage implements OnInit {
       this.yalnizGizliUrunler() ||
       this.eksikBesinUrunler() ||
       this.kategorisizUrunler() ||
-      this.elleGirilmeliUrunler();
+      this.elleGirilmeliUrunler() ||
+      this.elleGirilmisUrunler();
     if (!query && !filtreVar) {
       this.urunler.set([]);
       this.urunToplam.set(0);
@@ -679,6 +681,7 @@ export class YonetimPage implements OnInit {
         this.eksikBesinUrunler(),
         this.kategorisizUrunler(),
         this.elleGirilmeliUrunler(),
+        this.elleGirilmisUrunler(),
         sayfa,
       )
       .subscribe({
@@ -718,6 +721,7 @@ export class YonetimPage implements OnInit {
       eksikBesin: this.eksikBesinUrunler,
       kategorisiz: this.kategorisizUrunler,
       elleGirilmeli: this.elleGirilmeliUrunler,
+      elleGirilmis: this.elleGirilmisUrunler,
     };
     sinyaller[filtre].set(deger);
     this.urunAra();

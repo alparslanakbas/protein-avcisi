@@ -873,6 +873,16 @@
                     (ngModelChange)="veriFiltresiDegisti('elleGirilmeli', $event)"
                   />Elle girilmeli</label
                 >
+                <label
+                  class="checkbox"
+                  title="Kategorisi ya da besin değeri buradan girilmiş ürünler; 'bu üründe tablo yok' denenler de burada."
+                  ><input
+                    type="checkbox"
+                    name="elleGirilmis"
+                    [ngModel]="elleGirilmisUrunler()"
+                    (ngModelChange)="veriFiltresiDegisti('elleGirilmis', $event)"
+                  />Elle girilmiş</label
+                >
                 <button type="submit">Ara</button>
               </form>
 

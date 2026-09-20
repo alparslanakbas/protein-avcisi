@@ -73,6 +73,7 @@ export class YonetimService {
     eksikBesin = false,
     kategorisiz = false,
     elleGirilmeli = false,
+    elleGirilmis = false,
     sayfa = 1,
   ): Observable<YonetimUrunSayfasi> {
     const params = new URLSearchParams();
@@ -81,6 +82,7 @@ export class YonetimService {
     if (eksikBesin) params.set('eksikBesin', 'true');
     if (kategorisiz) params.set('kategorisiz', 'true');
     if (elleGirilmeli) params.set('elleGirilmeli', 'true');
+    if (elleGirilmis) params.set('elleGirilmis', 'true');
     if (sayfa > 1) params.set('sayfa', String(sayfa));
     const sorgu = params.toString();
     return this.http.get<YonetimUrunSayfasi>(`${this.base}/urunler${sorgu ? `?${sorgu}` : ''}`);

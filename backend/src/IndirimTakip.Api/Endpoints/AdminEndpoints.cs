@@ -336,7 +336,8 @@ internal static class AdminEndpoints
         // da kaybolmuyor.
         app.MapGet("/api/dev/urunler", async (
             AppDbContext db, IEnumerable<IBrandScraper> kaziyicilar, string? ara, bool? yalnizGizli,
-            bool? eksikBesin, bool? kategorisiz, bool? elleGirilmeli, int? sayfa, int? sayfaBoyutu, CancellationToken ct) =>
+            bool? eksikBesin, bool? kategorisiz, bool? elleGirilmeli, bool? elleGirilmis,
+            int? sayfa, int? sayfaBoyutu, CancellationToken ct) =>
         {
             var sorgu = db.Products.IgnoreQueryFilters().AsNoTracking();
 
@@ -349,6 +350,12 @@ internal static class AdminEndpoints
                 sorgu = sorgu.Where(p => p.NutritionJson == null && !p.NutritionIsManual);
             if (kategorisiz == true)
                 sorgu = sorgu.Where(p => p.Category == null);
+
+            // ELLE GIRILEN: kisinin kendi isini geri bulmasi icin. Besin ve kategori
+            // bayraklarinin ikisi de sayiliyor, cunku ikisi de o kisinin karari;
+            // "tablosu yok" diye kapatilan urun de burada, tablosu bos olsa bile.
+            if (elleGirilmis == true)
+                sorgu = sorgu.Where(p => p.NutritionIsManual || p.CategoryIsManual);
 
             // OTOMATIK KAYNAK KALMAMIS: yalnizca bir kisinin doldurabilecegi satirlar.
             // Birkac saat icinde detay tamamlamanin dolduracagi bir urunu elle yazmak bosa
