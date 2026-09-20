@@ -16,7 +16,7 @@ public class ElleUrunVerisiTests
 
         Assert.True(kontrol.Kabul, kontrol.RetSebebi);
         Assert.Equal(
-            new[] { ("Porsiyon", "30 g"), ("Enerji", "119 kcal"), ("Yağ", "1.9 g"), ("Karbonhidrat", "1.4 g"), ("Protein", "24.1 g") },
+            new[] { ("Porsiyon", "30 g"), ("Enerji", "119 kcal"), ("Yağ", "1,9 g"), ("Karbonhidrat", "1,4 g"), ("Protein", "24,1 g") },
             kontrol.Satirlar);
     }
 

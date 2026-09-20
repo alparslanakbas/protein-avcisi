@@ -335,9 +335,14 @@ public sealed class ManualProductDataService(AppDbContext db)
         return (sonuc, null);
     }
 
-    // Sitedeki mevcut tablolarla aynı yazım: "24.1 g", "120 kcal".
+    // Türkçe yazım: "24,1 g", "120 kcal". Site Türkçe ve otomatik okunan tablolar
+    // kaynağın yazımını koruduğu için zaten virgüllü ("1,50 gr"); nokta kullanmak
+    // aynı sayfada iki ayrı ondalık işareti demekti. Geri okuma iki biçimi de
+    // tanıyor (bkz. besin-satirlari.ts), yani düzenleme bozulmuyor.
+    private static readonly CultureInfo TurkceYazim = CultureInfo.GetCultureInfo("tr-TR");
+
     private static string Yaz(decimal miktar, string birim) =>
-        miktar.ToString("0.###", CultureInfo.InvariantCulture) + " " + birim;
+        miktar.ToString("0.###", TurkceYazim) + " " + birim;
 
     private static ElleBesinKontrolu Ret(string sebep, string? kod = null) => new([], sebep, kod);
 
