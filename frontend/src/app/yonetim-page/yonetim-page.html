@@ -981,6 +981,18 @@
                           </td>
                           <td class="product-actions">
                             <div class="row-actions">
+                              <!-- Adreste slug YOK: /urun/{id} kanonik slug'a 301
+                                   dönüyor, yani ürün adı değişse de bağlantı çalışır
+                                   ve panelin sorgusu slug taşımak zorunda kalmıyor.
+                                   Yeni sekme: panelde yapılan iş yarıda kalmasın. -->
+                              <a
+                                class="row-action row-action-link"
+                                [href]="'/urun/' + urun.id"
+                                target="_blank"
+                                rel="noopener"
+                              >
+                                Ürüne git
+                              </a>
                               <button
                                 type="button"
                                 class="row-action"
