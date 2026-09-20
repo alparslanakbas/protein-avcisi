@@ -210,14 +210,16 @@ public sealed class ManualProductDataService(AppDbContext db)
         if (satirHatasi is not null)
             return Ret(satirHatasi);
 
-        decimal?[] makrolar = [istek.Kalori, istek.ProteinGram, istek.KarbonhidratGram, istek.YagGram];
-        var makroVar = makrolar.Any(v => v is not null);
+        // Kontrol edilecek bir kalori hesabı ancak protein/karbonhidrat/yağ varsa
+        // kurulabiliyor; enerjinin kendisi tek başına yazılabilir.
+        decimal?[] besinler = [istek.ProteinGram, istek.KarbonhidratGram, istek.YagGram];
+        var besinVar = besinler.Any(v => v is not null);
 
         var satirlar = new List<(string, string)>();
         if (istek.PorsiyonGram is { } porsiyon)
             satirlar.Add(("Porsiyon", Yaz(porsiyon, "g")));
 
-        if (makroVar)
+        if (besinVar)
         {
             // Eksik olanı ADIYLA söylüyor. Önceki metin yalnızca kuralı
             // tekrarlıyordu ("dördünü de girin") ve hangi kutunun boş kaldığını
@@ -256,6 +258,17 @@ public sealed class ManualProductDataService(AppDbContext db)
             if (istek.LifGram is { } lif)
                 satirlar.Add(("Lif", Yaz(lif, "g")));
             satirlar.Add(("Protein", Yaz(istek.ProteinGram.Value, "g")));
+        }
+        else if (istek.Kalori is { } yalnizEnerji)
+        {
+            // YALNIZ ENERJİ. Bazı etiketler (ör. içilebilir amino ürünleri) enerjiyi
+            // yazıp protein/karbonhidrat/yağ satırı basmıyor. Dördünü birlikte
+            // şart koşmak burada gerçek bir değeri yayınlanamaz yapıyordu; tek
+            // çıkış ya enerjiyi atmak ya da olmayan üç satırı uydurmaktı.
+            // Kalori kontrolü YOK, çünkü karşılaştırılacak makro da yok.
+            satirlar.Add(("Enerji", Yaz(yalnizEnerji, "kcal")));
+            if (istek.LifGram is { } lif)
+                satirlar.Add(("Lif", Yaz(lif, "g")));
         }
         else
         {
@@ -326,8 +339,12 @@ public sealed class ManualProductDataService(AppDbContext db)
 
             if (satir.Miktar is not { } miktar)
                 return ([], $"'{ad}' için miktar yok");
-            if (miktar <= 0)
-                return ([], $"'{ad}' sıfırdan büyük olmalı");
+            // SIFIR KABUL: etiket "Şeker 0 g" yazıyorsa bu bir değerdir, eksiklik
+            // değil. Boş satır bu kontrole hiç gelmiyor (miktarsız satır arayüzde
+            // düşüyor, gelirse üstteki kontrol yakalıyor), yani 0'ı reddetmenin tek
+            // yaptığı şey etiketin yazdığını yasaklamaktı.
+            if (miktar < 0)
+                return ([], $"'{ad}' negatif olamaz");
             if (miktar > EnBuyukMiktar)
                 return ([], $"'{ad}' {miktar} yazım hatası gibi görünüyor");
 

@@ -98,6 +98,53 @@ public class ElleUrunVerisiTests
         Assert.False(ManualProductDataService.ZatenOnaylanmis("{bozuk", elle: true, kalori: 0));
     }
 
+    // AEGİS BCAA 250 ml: etiket enerjiyi ve şekeri yazıyor, protein/karbonhidrat/yağ
+    // satırı basmıyor. Dördünü birlikte şart koşmak gerçek bir değeri yayınlanamaz
+    // yapıyordu.
+    [Fact]
+    public void Yalniz_enerji_girilebiliyor()
+    {
+        var kontrol = ManualProductDataService.Kontrol(new ElleBesinIstegi(
+            250, 120, null, null, null, null,
+            [new ElleBesinSatiri("Şeker", 1, "g")]));
+
+        Assert.True(kontrol.Kabul, kontrol.RetSebebi);
+        Assert.Contains(("Enerji", "120 kcal"), kontrol.Satirlar);
+        Assert.Contains(("Şeker", "1 g"), kontrol.Satirlar);
+    }
+
+    // Protein yazılmışsa hesap kurulabiliyor demektir; orada dördü de isteniyor.
+    [Fact]
+    public void Besin_girilmisse_enerji_yine_zorunlu()
+    {
+        var kontrol = ManualProductDataService.Kontrol(new ElleBesinIstegi(250, null, 5, null, null, null));
+
+        Assert.False(kontrol.Kabul);
+        Assert.Equal("makro-eksik", kontrol.RetKodu);
+    }
+
+    // Etiket "Şeker 0 g" yazıyorsa bu bir değer; boş satır zaten arayüzde düşüyor.
+    [Fact]
+    public void Satir_miktari_sifir_olabiliyor()
+    {
+        var kontrol = ManualProductDataService.Kontrol(new ElleBesinIstegi(
+            250, 120, null, null, null, null,
+            [new ElleBesinSatiri("Şeker", 0, "g")]));
+
+        Assert.True(kontrol.Kabul, kontrol.RetSebebi);
+        Assert.Contains(("Şeker", "0 g"), kontrol.Satirlar);
+    }
+
+    [Fact]
+    public void Negatif_satir_reddediliyor()
+    {
+        var kontrol = ManualProductDataService.Kontrol(new ElleBesinIstegi(
+            250, 120, null, null, null, null,
+            [new ElleBesinSatiri("Şeker", -1, "g")]));
+
+        Assert.False(kontrol.Kabul);
+    }
+
     // 24,1 yerine 241 yazmak.
     [Fact]
     public void Kalori_toplamini_bozan_yazim_hatasi_sebebiyle_reddedilir()
@@ -169,8 +216,7 @@ public class ElleUrunVerisiTests
     [Theory]
     [InlineData("", 5.0, "g")]                      // ad yok
     [InlineData("Kafein", null, "mg")]              // miktar yok
-    [InlineData("Kafein", 0.0, "mg")]               // sıfır
-    [InlineData("Kafein", -200.0, "mg")]            // negatif
+    [InlineData("Kafein", -200.0, "mg")]            // negatif (0 ARTIK KABUL: bkz. Satir_miktari_sifir_olabiliyor)
     [InlineData("Kafein", 200.0, "gr")]             // listede olmayan birim
     [InlineData("Kafein", 200.0, null)]             // birim yok
     [InlineData("Kafein", 2000000.0, "mcg")]        // fazladan sıfır
