@@ -34,6 +34,18 @@ public class ElleUrunVerisiTests
         Assert.Equal("enerji-tutmuyor", kontrol.RetKodu);
     }
 
+    // Etiketi 0 kcal yazan üründe panelde iki kez aynı duvara çarpıldı: eksik olan
+    // tek şey enerjiydi ama mesaj yalnızca kuralı tekrarlıyordu.
+    [Fact]
+    public void Eksik_makro_adiyla_soyleniyor()
+    {
+        var kontrol = ManualProductDataService.Kontrol(Bcaa with { Kalori = null });
+
+        Assert.False(kontrol.Kabul);
+        Assert.Contains("enerji", kontrol.RetSebebi);
+        Assert.DoesNotContain("protein", kontrol.RetSebebi);
+    }
+
     [Fact]
     public void Etiket_boyle_yaziyor_denince_oldugu_gibi_kaydediliyor()
     {

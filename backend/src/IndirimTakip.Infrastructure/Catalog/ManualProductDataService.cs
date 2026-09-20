@@ -209,8 +209,22 @@ public sealed class ManualProductDataService(AppDbContext db)
 
         if (makroVar)
         {
-            if (makrolar.Any(v => v is null))
-                return Ret("enerji, protein, karbonhidrat ve yağ birlikte girilir: dördünü de girin ya da takviye tablosu için hiçbirini girmeyin");
+            // Eksik olanı ADIYLA söylüyor. Önceki metin yalnızca kuralı
+            // tekrarlıyordu ("dördünü de girin") ve hangi kutunun boş kaldığını
+            // söylemediği için etiketi 0 kcal yazan üründe iki kez aynı duvara
+            // çarpıldı: eksik olan tek şey 0 yazılmamış enerjiydi.
+            var eksikler = new[]
+            {
+                istek.Kalori is null ? "enerji" : null,
+                istek.ProteinGram is null ? "protein" : null,
+                istek.KarbonhidratGram is null ? "karbonhidrat" : null,
+                istek.YagGram is null ? "yağ" : null,
+            }.Where(a => a is not null).ToArray();
+            if (eksikler.Length > 0)
+                return Ret(
+                    $"boş kalan: {string.Join(", ", eksikler)}. Bu dördü birlikte girilir; etikette 0 yazıyorsa 0 gir. " +
+                    "Takviye tablosu (kreatin, amino asit, vitamin) için dördünü de boş bırak.",
+                    "makro-eksik");
 
             var imkansiz = ImkansizDegerler(istek.ProteinGram!.Value, istek.KarbonhidratGram!.Value, istek.YagGram!.Value, istek.LifGram, istek.PorsiyonGram);
             if (imkansiz is not null)
