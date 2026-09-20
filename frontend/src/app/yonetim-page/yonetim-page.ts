@@ -854,6 +854,12 @@ export class YonetimPage implements OnInit {
     this.veriDuzenlemesiCalistir(this.api.besinTemizle(form.urun.id), 'Besin değeri silindi');
   }
 
+  besinYok(): void {
+    const form = this.duzenlenenVeri();
+    if (!form) return;
+    this.veriDuzenlemesiCalistir(this.api.besinYok(form.urun.id), 'Tablosu yok olarak işaretlendi');
+  }
+
   private veriDuzenlemesiCalistir(istek: Observable<ElleDuzenlemeYaniti>, yapildi: string): void {
     this.veriKaydediliyor.set(true);
     this.veriMesaji.set(null);

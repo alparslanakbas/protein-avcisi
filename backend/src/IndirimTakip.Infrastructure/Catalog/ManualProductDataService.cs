@@ -131,6 +131,34 @@ public sealed class ManualProductDataService(AppDbContext db)
         return new ElleDuzenlemeSonucu(true, true, GuncellenenSatir: guncellenen);
     }
 
+    /// <summary>
+    /// "Bu üründe besin tablosu yok" — tabloyu siler ve ürünü otomatik kaynaklara
+    /// GERİ BIRAKMAZ.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="BesinTemizleAsync"/> ile farkı burada: o, yanlış okunmuş bir tabloyu
+    /// atıp kaynağa yeniden baktırmak için; bu ise kaynağın yayınlayacak bir şeyi
+    /// olmadığına karar verildiğinde. Fark elle bakılmış olmak, o yüzden tablo boş
+    /// olsa da <c>NutritionIsManual</c> işaretleniyor: yutma servisi ve detay
+    /// tamamlama o bayrağa bakıp dokunmuyor, yoksa "kalıcı" sözü tutulmazdı.
+    /// </remarks>
+    public async Task<ElleDuzenlemeSonucu> BesinYokIsaretleAsync(int id, CancellationToken ct)
+    {
+        var urun = await BulAsync(id, ct);
+        if (urun is null)
+            return ElleDuzenlemeSonucu.Yok;
+
+        var simdi = DateTimeOffset.UtcNow;
+        var guncellenen = await KardesSatirlar(urun.Value).ExecuteUpdateAsync(s => s
+            .SetProperty(p => p.NutritionJson, (string?)null)
+            .SetProperty(p => p.ProteinPerServingGrams, (decimal?)null)
+            .SetProperty(p => p.NutritionIsManual, true)
+            .SetProperty(p => p.NutritionCheckedAt, simdi)
+            .SetProperty(p => p.ContentUpdatedAt, simdi), ct);
+
+        return new ElleDuzenlemeSonucu(true, true, GuncellenenSatir: guncellenen);
+    }
+
     // Satırlarda izin verilen birimler. Kapalı liste: "5 gr" ya da "200 mgs" sitede
     // başka hiçbir yerde olmayan bir yazımla yayınlanmak yerine listeyle reddediliyor.
     private static readonly string[] Birimler = ["g", "mg", "mcg", "IU", "milyar CFU"];

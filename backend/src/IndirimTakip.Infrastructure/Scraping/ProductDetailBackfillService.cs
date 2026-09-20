@@ -128,8 +128,16 @@ public class ProductDetailBackfillService(
 
                     // ??= bilinçli: var olan (daha güvenilir) değeri ezmiyor.
                     product.Description ??= details.Description;
-                    product.NutritionJson ??= details.NutritionJson;
-                    product.ProteinPerServingGrams ??= details.ProteinPerServingGrams;
+
+                    // Besin tarafına elle karar verilmişse hiç dokunulmuyor. ??= tek
+                    // başına yetmiyordu: "bu üründe tablo yok" denen ürünün alanı
+                    // NULL kalıyor ve ??= onu ilk turda yeniden dolduruyordu, yani
+                    // kalıcı olması gereken karar sessizce geri alınıyordu.
+                    if (!product.NutritionIsManual)
+                    {
+                        product.NutritionJson ??= details.NutritionJson;
+                        product.ProteinPerServingGrams ??= details.ProteinPerServingGrams;
+                    }
 
                     // Kaynağın DOĞRUDAN beyan ettiği porsiyon bilgisi önce
                     // geliyor; metinden çıkarım yalnızca o yoksa devreye

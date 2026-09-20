@@ -342,8 +342,11 @@ internal static class AdminEndpoints
 
             if (yalnizGizli == true)
                 sorgu = sorgu.Where(p => !p.IsActive);
+            // "Tablosu yok" diye elle kapatilan urun bu IS LISTESINE girmiyor:
+            // karari verilmis bir satiri her acilista yeniden gormek, listeyi
+            // bakilmayan bir alarma cevirir.
             if (eksikBesin == true)
-                sorgu = sorgu.Where(p => p.NutritionJson == null);
+                sorgu = sorgu.Where(p => p.NutritionJson == null && !p.NutritionIsManual);
             if (kategorisiz == true)
                 sorgu = sorgu.Where(p => p.Category == null);
 
@@ -425,6 +428,15 @@ internal static class AdminEndpoints
         app.MapDelete("/api/dev/urunler/{id:int}/besin", async (
             int id, ManualProductDataService veri, IPublicCacheRefresher cache, CancellationToken ct) =>
             await ElleDuzenlemeYaniti(await veri.BesinTemizleAsync(id, ct), id, cache, ct))
+            .RequireAdminKey(adminApiKey);
+
+        // Silmekten ayri bir uc: bu "kaynakta tablo YOK" karari, "tabloyu at ve
+        // yeniden bak" degil. Ikisi ayni ucta bayrakla birlesseydi, yanlis okunmus
+        // bir tabloyu temizlemek isteyen biri urunu kazara otomatik kaynaklara
+        // kapatabilirdi.
+        app.MapPost("/api/dev/urunler/{id:int}/besin-yok", async (
+            int id, ManualProductDataService veri, IPublicCacheRefresher cache, CancellationToken ct) =>
+            await ElleDuzenlemeYaniti(await veri.BesinYokIsaretleAsync(id, ct), id, cache, ct))
             .RequireAdminKey(adminApiKey);
 
         app.MapPut("/api/dev/urunler/{id:int}", async (

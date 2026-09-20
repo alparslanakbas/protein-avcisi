@@ -1409,6 +1409,19 @@
                   Besin değerini sil
                 </button>
               }
+              <!-- Silmekten ayrı düğme: bu "kaynak yayınlamıyor" kararı, tabloyu
+                   atıp yeniden baktırmak değil. Tek düğmede birleşseydi yanlış
+                   okunmuş bir tabloyu temizleyen biri ürünü kazara otomatik
+                   kaynaklara kapatırdı. -->
+              <button
+                type="button"
+                class="cancel"
+                [disabled]="veriKaydediliyor()"
+                (click)="besinYok()"
+                title="Tabloyu siler ve tarama/etiket okuyucu bir daha doldurmaz"
+              >
+                Bu üründe tablo yok
+              </button>
               <button
                 type="button"
                 class="cancel"

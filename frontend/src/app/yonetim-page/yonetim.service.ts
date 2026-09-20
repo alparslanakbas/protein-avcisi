@@ -104,6 +104,14 @@ export class YonetimService {
     return this.http.delete<ElleDuzenlemeYaniti>(`${this.base}/urunler/${id}/besin`);
   }
 
+  /**
+   * "Kaynakta tablo yok" kararı: tabloyu siler ve ürünü otomatik kaynaklara
+   * KAPATIR. Silmeden farkı bu; silmek ürünü yeniden bakılsın diye geri bırakıyor.
+   */
+  besinYok(id: number): Observable<ElleDuzenlemeYaniti> {
+    return this.http.post<ElleDuzenlemeYaniti>(`${this.base}/urunler/${id}/besin-yok`, {});
+  }
+
   aboneler(): Observable<AbonelerYaniti> {
     return this.http.get<AbonelerYaniti>(`${this.base}/aboneler`);
   }
