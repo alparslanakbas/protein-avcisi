@@ -179,6 +179,15 @@
               }
             </tbody>
           </table>
+          <!-- Eksik satır alan alan sayılamıyor: tablodaki adlar kaynağın yazdığı
+               gibi duruyor (katalogda 1.194 farklı ad: "Yağ", "Yağ/Fat",
+               "Enerji/Calorie"...), yani "yağ girilmemiş" demek için güvenilir bir
+               alanımız yok. Onun yerine tablonun tamamı için doğru olan tek cümle. -->
+          <p class="border-t border-[var(--noc-divider)] px-4 py-3 text-xs text-[var(--noc-neutral-500)]">
+            Bu tablo {{ d.brandName }} markasının kendi etiketinden alınmıştır. Etikette yazmayan bir değeri
+            tahmin etmiyoruz: burada göremediğin bir satır, bizim atladığımız değil markanın paylaşmadığı bir
+            değerdir.
+          </p>
         } @else {
           <p class="p-4 text-sm text-[var(--noc-neutral-500)]">
             {{ d.brandName }}, bu ürün için besin değeri tablosu paylaşmıyor. Tahmini bir rakam uydurmak yerine bu
