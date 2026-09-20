@@ -26,14 +26,22 @@ describe('YonetimService görünürlük uçları', () => {
   });
 
   it('ürün aramasını ve gizli filtresini URL üzerinde doğru kodlar', () => {
-    servis.urunler('whey protein', true).subscribe();
+    servis.urunler({ ara: 'whey protein', yalnizGizli: true }).subscribe();
     const istek = http.expectOne('/yonetim/api/urunler?ara=whey+protein&yalnizGizli=true');
     expect(istek.request.method).toBe('GET');
     istek.flush({ urunler: [], toplam: 0, sayfa: 1, sayfaBoyutu: 50 });
   });
 
   it('veri filtrelerini ve sayfayı backend parametre adlarıyla gönderir', () => {
-    servis.urunler('', false, true, true, true, true, 3).subscribe();
+    servis
+      .urunler({
+        eksikBesin: true,
+        kategorisiz: true,
+        elleGirilmeli: true,
+        elleGirilmis: true,
+        sayfa: 3,
+      })
+      .subscribe();
     const istek = http.expectOne(
       '/yonetim/api/urunler?eksikBesin=true&kategorisiz=true&elleGirilmeli=true&elleGirilmis=true&sayfa=3',
     );

@@ -66,23 +66,22 @@ export class YonetimService {
     return this.http.put<YonetimDurumGuncelleme>(`${this.base}/markalar/${id}`, { isActive });
   }
 
-  /** Bir sayfa ürün; `toplam` yalnızca bu sayfayı değil bütün eşleşmeleri sayıyor. */
-  urunler(
-    ara: string,
-    yalnizGizli: boolean,
-    eksikBesin = false,
-    kategorisiz = false,
-    elleGirilmeli = false,
-    elleGirilmis = false,
-    sayfa = 1,
-  ): Observable<YonetimUrunSayfasi> {
+  /**
+   * Bir sayfa ürün; `toplam` yalnızca bu sayfayı değil bütün eşleşmeleri sayıyor.
+   *
+   * Parametreler TEK NESNEDE: filtreler konumsal argümandı ve araya eklenen her yeni
+   * filtre hem çağrıları hem testlerin sayfa okumasını bir sıra kaydırıyordu ("elle
+   * girilmiş" eklenirken üç testi birden kırdı). Adıyla gelen alan mevcut çağrıların
+   * hiçbirine dokunmuyor. Filtre adları backend parametre adlarıyla birebir aynı, bu
+   * yüzden liste üzerinden dönülüyor: yeni bir filtre tek satır.
+   */
+  urunler(secenekler: UrunAramaSecenekleri = {}): Observable<YonetimUrunSayfasi> {
+    const { ara = '', sayfa = 1 } = secenekler;
     const params = new URLSearchParams();
     if (ara.trim()) params.set('ara', ara.trim());
-    if (yalnizGizli) params.set('yalnizGizli', 'true');
-    if (eksikBesin) params.set('eksikBesin', 'true');
-    if (kategorisiz) params.set('kategorisiz', 'true');
-    if (elleGirilmeli) params.set('elleGirilmeli', 'true');
-    if (elleGirilmis) params.set('elleGirilmis', 'true');
+    for (const filtre of URUN_FILTRELERI) {
+      if (secenekler[filtre]) params.set(filtre, 'true');
+    }
     if (sayfa > 1) params.set('sayfa', String(sayfa));
     const sorgu = params.toString();
     return this.http.get<YonetimUrunSayfasi>(`${this.base}/urunler${sorgu ? `?${sorgu}` : ''}`);
@@ -259,6 +258,22 @@ export interface YonetimUrunSayfasi {
   sayfa: number;
   sayfaBoyutu: number;
 }
+
+/** Ürün listesinin boolean filtreleri; adlar backend parametre adlarıyla aynı. */
+export const URUN_FILTRELERI = [
+  'yalnizGizli',
+  'eksikBesin',
+  'kategorisiz',
+  'elleGirilmeli',
+  'elleGirilmis',
+] as const;
+
+export type UrunFiltresi = (typeof URUN_FILTRELERI)[number];
+
+export type UrunAramaSecenekleri = Partial<Record<UrunFiltresi, boolean>> & {
+  ara?: string;
+  sayfa?: number;
+};
 
 export interface ElleBesin {
   porsiyonGram: number | null;

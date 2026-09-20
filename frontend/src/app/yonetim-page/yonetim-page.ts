@@ -675,15 +675,15 @@ export class YonetimPage implements OnInit {
     this.urunAramaYapildi.set(true);
     this.gorunurlukMesaji.set(null);
     this.api
-      .urunler(
-        query,
-        this.yalnizGizliUrunler(),
-        this.eksikBesinUrunler(),
-        this.kategorisizUrunler(),
-        this.elleGirilmeliUrunler(),
-        this.elleGirilmisUrunler(),
+      .urunler({
+        ara: query,
+        yalnizGizli: this.yalnizGizliUrunler(),
+        eksikBesin: this.eksikBesinUrunler(),
+        kategorisiz: this.kategorisizUrunler(),
+        elleGirilmeli: this.elleGirilmeliUrunler(),
+        elleGirilmis: this.elleGirilmisUrunler(),
         sayfa,
-      )
+      })
       .subscribe({
         next: (sonuc) => {
           const sonSayfa = Math.max(1, Math.ceil(sonuc.toplam / Math.max(1, sonuc.sayfaBoyutu)));
