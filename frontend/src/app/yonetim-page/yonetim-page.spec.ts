@@ -39,6 +39,7 @@ describe('YonetimPage görünürlük güvenliği', () => {
       '{"Enerji/ Energy":"498 kj / 119 kcal","Yağ / Fat":"1,9 g","Karbonhidrat / Carbohydrate":"1,4 g","Protein":"24,1 g","Tuz / Salt":"0,21 gr"}',
     nutritionIsManual: false,
     servingSizeGrams: 30,
+    servingsPerPackage: null,
   };
 
   const abone = {
@@ -143,6 +144,7 @@ describe('YonetimPage görünürlük güvenliği', () => {
       yagGram: 1.9,
       lifGram: null,
       etiketBoyleYaziyor: false,
+      paketPorsiyonSayisi: null,
       digerSatirlar: [{ ad: 'Tuz / Salt', miktar: 0.21, birim: 'g' }],
     });
   });
@@ -154,6 +156,7 @@ describe('YonetimPage görünürlük güvenliği', () => {
       ...urun,
       category: 'kreatin',
       servingSizeGrams: 5,
+    servingsPerPackage: null,
       nutritionJson: '{"Porsiyon":"5 g","Kreatin Monohidrat":"5 g","Vitamin D3":"25 mcg","Demir":"%10"}',
     });
 
@@ -177,6 +180,7 @@ describe('YonetimPage görünürlük güvenliği', () => {
       yagGram: null,
       lifGram: null,
       etiketBoyleYaziyor: false,
+      paketPorsiyonSayisi: null,
       digerSatirlar: [
         { ad: 'Kreatin Monohidrat', miktar: 5, birim: 'g' },
         { ad: 'Kafein', miktar: 200, birim: 'mg' },

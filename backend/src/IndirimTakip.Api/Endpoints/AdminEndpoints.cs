@@ -418,6 +418,7 @@ internal static class AdminEndpoints
                     p.NutritionJson,
                     p.NutritionIsManual,
                     p.ServingSizeGrams,
+                    p.ServingsPerPackage,
                 })
                 .ToListAsync(ct);
 

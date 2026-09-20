@@ -19,7 +19,8 @@ public sealed record ElleBesinIstegi(
     decimal? YagGram,
     decimal? LifGram,
     IReadOnlyList<ElleBesinSatiri>? DigerSatirlar = null,
-    bool EtiketBoyleYaziyor = false);
+    bool EtiketBoyleYaziyor = false,
+    int? PaketPorsiyonSayisi = null);
 
 /// <summary>Etiketteki bir satır: ad, porsiyon başına miktar ve birimi.</summary>
 public sealed record ElleBesinSatiri(string? Ad, decimal? Miktar, string? Birim);
@@ -110,6 +111,14 @@ public sealed class ManualProductDataService(AppDbContext db)
         var json = JsonSerializer.Serialize(tablo);
         var simdi = DateTimeOffset.UtcNow;
 
+        // PAKET PORSİYONU KARDEŞ SATIRLARA YAZILMIYOR, tablo ve porsiyon yazılıyor.
+        // Fark şu: aynı sayfanın 500 g ve 1 kg'lık boyları AYNI etiketi ve aynı
+        // ölçeği taşır ama paketten çıkan porsiyon sayıları farklıdır; kardeşlere
+        // kopyalamak 1 kg'lık kutuya 500 g'ın porsiyon sayısını yazardı.
+        if (istek.PaketPorsiyonSayisi is { } paket)
+            await db.Products.IgnoreQueryFilters().Where(p => p.Id == id)
+                .ExecuteUpdateAsync(s => s.SetProperty(p => p.ServingsPerPackage, paket), ct);
+
         var guncellenen = await KardesSatirlar(urun.Value).ExecuteUpdateAsync(s => s
             .SetProperty(p => p.NutritionJson, json)
             .SetProperty(p => p.ProteinPerServingGrams, istek.ProteinGram)
@@ -172,6 +181,9 @@ public sealed class ManualProductDataService(AppDbContext db)
 
     // Satırlarda izin verilen birimler. Kapalı liste: "5 gr" ya da "200 mgs" sitede
     // başka hiçbir yerde olmayan bir yazımla yayınlanmak yerine listeyle reddediliyor.
+    // 24'lü kutu, 60 kapsül, 120 servislik kova: üstü yazım hatası.
+    private const int EnFazlaPaketPorsiyonu = 500;
+
     private static readonly string[] Birimler = ["g", "mg", "mcg", "IU", "milyar CFU"];
 
     // Makroların kendi alanları var ve orada kalori kontrolünden geçiyorlar; serbest
@@ -205,6 +217,9 @@ public sealed class ManualProductDataService(AppDbContext db)
         decimal?[] degerler = [istek.PorsiyonGram, istek.Kalori, istek.ProteinGram, istek.KarbonhidratGram, istek.YagGram, istek.LifGram];
         if (degerler.Any(v => v < 0))
             return Ret("değerler negatif olamaz");
+
+        if (istek.PaketPorsiyonSayisi is { } paketPorsiyon && (paketPorsiyon < 1 || paketPorsiyon > EnFazlaPaketPorsiyonu))
+            return Ret($"pakette porsiyon 1 ile {EnFazlaPaketPorsiyonu} arasında olmalı");
 
         var (digerSatirlar, satirHatasi) = SatirlariKontrolEt(istek.DigerSatirlar ?? [], istek.PorsiyonGram);
         if (satirHatasi is not null)

@@ -145,6 +145,31 @@ public class ElleUrunVerisiTests
         Assert.False(kontrol.Kabul);
     }
 
+    // 24'lü kutu: kaynak paket boyutuna tek şişeyi yazdığı için site "1 porsiyon"
+    // hesaplıyor ve servis başı fiyatı 24 kat yanlış gösteriyordu.
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-3)]
+    [InlineData(501)]
+    public void Paket_porsiyonu_makul_araligin_disindaysa_reddediliyor(int adet)
+    {
+        var kontrol = ManualProductDataService.Kontrol(
+            new ElleBesinIstegi(250, 120, null, null, null, null, null, false, adet));
+
+        Assert.False(kontrol.Kabul);
+    }
+
+    [Fact]
+    public void Paket_porsiyonu_tabloya_satir_olarak_girmiyor()
+    {
+        var kontrol = ManualProductDataService.Kontrol(
+            new ElleBesinIstegi(250, 120, null, null, null, null, null, false, 24));
+
+        Assert.True(kontrol.Kabul, kontrol.RetSebebi);
+        Assert.DoesNotContain(kontrol.Satirlar, r => r.Ad.Contains("24"));
+        Assert.Contains(("Enerji", "120 kcal"), kontrol.Satirlar);
+    }
+
     // 24,1 yerine 241 yazmak.
     [Fact]
     public void Kalori_toplamini_bozan_yazim_hatasi_sebebiyle_reddedilir()

@@ -250,6 +250,7 @@ export interface YonetimUrun {
   nutritionJson: string | null;
   nutritionIsManual: boolean;
   servingSizeGrams: number | null;
+  servingsPerPackage: number | null;
 }
 
 export interface YonetimUrunSayfasi {
@@ -290,6 +291,13 @@ export interface ElleBesin {
    * görünüyor; imkansız değerler bununla da geçmiyor.
    */
   etiketBoyleYaziyor?: boolean;
+  /**
+   * Paketten kaç porsiyon çıktığı. Site normalde paket boyutu ÷ porsiyon ile
+   * hesaplıyor; çoklu paketlerde (24'lü kutu) kaynak paket boyutuna tek şişeyi
+   * yazdığı için o hesap "1 porsiyon" çıkarıyor ve servis başı fiyatı 24 kat
+   * yanlış gösteriyor. Beyan edilen sayı hesabın önüne geçiyor.
+   */
+  paketPorsiyonSayisi?: number | null;
 }
 
 export interface ElleDuzenlemeYaniti {

@@ -1343,7 +1343,25 @@
                     />
                   </label>
                 }
+                <label
+                  >Pakette porsiyon
+                  <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    inputmode="numeric"
+                    placeholder="ör. 24"
+                    [ngModel]="form.paketPorsiyon"
+                    (ngModelChange)="veriPaketPorsiyonGuncelle($event)"
+                    [ngModelOptions]="{ standalone: true }"
+                  />
+                </label>
               </div>
+              <p class="data-note">
+                Pakette porsiyon: yalnızca çoklu pakette gerekli (24'lü kutu gibi). Boşsa site
+                paket boyutunu porsiyona bölüyor; kaynak 24'lü kutuya tek şişenin boyunu yazdığı
+                için o hesap orada yanlış çıkıyor.
+              </p>
               <p class="data-note">
                 Besin tablosu: enerji, protein, karbonhidrat ve yağı birlikte gir; enerji makrolarla
                 tutmalı (gram başına 4/4/9 kcal, lif 2 kcal). Kreatin, amino asit, vitamin gibi

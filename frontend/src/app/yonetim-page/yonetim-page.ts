@@ -43,6 +43,8 @@ interface UrunVeriFormu extends Record<MakroAlani, string> {
   urun: YonetimUrun;
   /** '' = otomatik. */
   kategori: string;
+  /** Paketten çıkan porsiyon sayısı; boşsa site paket boyutundan hesaplıyor. */
+  paketPorsiyon: string;
   /** Makroların dışındaki etiket satırları (kreatin, vitamin, kafein…). */
   digerSatirlar: BesinSatiriFormu[];
 }
@@ -745,6 +747,7 @@ export class YonetimPage implements OnInit {
       urun,
       kategori: urun.categoryIsManual ? (urun.category ?? '') : '',
       porsiyon: urun.servingSizeGrams?.toString() ?? makroDegeri(tablo, 'porsiyon'),
+      paketPorsiyon: urun.servingsPerPackage?.toString() ?? '',
       enerji: makroDegeri(tablo, 'enerji'),
       protein: makroDegeri(tablo, 'protein'),
       karbonhidrat: makroDegeri(tablo, 'karbonhidrat'),
@@ -814,6 +817,12 @@ export class YonetimPage implements OnInit {
     this.duzenlenenVeri.set({ ...form, [alan]: deger == null ? '' : String(deger) });
   }
 
+  veriPaketPorsiyonGuncelle(deger: unknown): void {
+    const form = this.duzenlenenVeri();
+    if (!form) return;
+    this.duzenlenenVeri.set({ ...form, paketPorsiyon: deger == null ? '' : String(deger) });
+  }
+
   kategoriKaydet(): void {
     const form = this.duzenlenenVeri();
     if (!form) return;
@@ -838,6 +847,7 @@ export class YonetimPage implements OnInit {
       yagGram: sayi(form.yag),
       lifGram: sayi(form.lif),
       etiketBoyleYaziyor: this.etiketBoyleYaziyor(),
+      paketPorsiyonSayisi: sayi(form.paketPorsiyon),
     };
     // Miktarı boş bırakılan şablon satırı etikette yok demek: hata olarak
     // gönderilmiyor, atlanıyor. Adı ve miktarı olan satır backend kontrolüne gidiyor.
