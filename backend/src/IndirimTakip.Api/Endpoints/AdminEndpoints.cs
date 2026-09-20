@@ -386,7 +386,10 @@ internal static class AdminEndpoints
                     || EF.Functions.ILike(p.Name, "%" + kucuk + "%")
                     || EF.Functions.ILike(p.Brand!.Name, "%" + ham + "%"));
             }
-            else if (yalnizGizli != true && eksikBesin != true && kategorisiz != true && elleGirilmeli != true)
+            // YENI FILTRE EKLEYEN BURAYI DA GUNCELLEMELI: bu kosulda sayilmayan
+            // bir filtre sessizce bos liste dondurur, sorgu hic calismaz.
+            else if (yalnizGizli != true && eksikBesin != true && kategorisiz != true
+                && elleGirilmeli != true && elleGirilmis != true)
             {
                 // Arama da filtre de yoksa liste anlamsiz derecede buyuk olurdu.
                 return Results.Ok(new { urunler = Array.Empty<object>(), toplam = 0, sayfa = 1, sayfaBoyutu = 0 });
