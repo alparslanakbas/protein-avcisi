@@ -91,6 +91,16 @@ public sealed class ManualProductDataService(AppDbContext db)
             return ElleDuzenlemeSonucu.Yok;
 
         var kontrol = Kontrol(istek);
+
+        // AYNI ÜRÜNDE AYNI ENERJİ DEĞERİ İKİNCİ KEZ SORULMUYOR. Kutu her başarılı
+        // kayıttan sonra sıfırlandığı için, etiketi çelişkili bir ürünü yeniden
+        // düzenlemek onu yeniden reddettiriyordu; panelde tam bu yüzden bir kayıt
+        // sessizce düştü (lif satırını silme kaydı). Karar zaten veride duruyor:
+        // kayıtlı tablo elle girilmiş ve aynı enerjiyi taşıyor.
+        if (!kontrol.Kabul && kontrol.RetKodu == "enerji-tutmuyor"
+            && ZatenOnaylanmis(urun.Value.Tablo, urun.Value.Elle, istek.Kalori))
+            kontrol = Kontrol(istek with { EtiketBoyleYaziyor = true });
+
         if (!kontrol.Kabul)
             return new ElleDuzenlemeSonucu(true, false, kontrol.RetSebebi, Kod: kontrol.RetKodu);
 
@@ -344,19 +354,45 @@ public sealed class ManualProductDataService(AppDbContext db)
     private static string Yaz(decimal miktar, string birim) =>
         miktar.ToString("0.###", TurkceYazim) + " " + birim;
 
+    /// <summary>
+    /// Bu ürünün çelişkili enerjisi daha önce elle onaylanmış mı. Yalnızca ELLE
+    /// girilmiş tabloya bakıyor: otomatik okunmuş bir tablodaki 0 kcal kimsenin
+    /// kararı değil, onu onay saymak kontrolü kendiliğinden kapatırdı. Enerji
+    /// değişirse yeniden soruluyor.
+    /// </summary>
+    internal static bool ZatenOnaylanmis(string? mevcutJson, bool elle, decimal? kalori)
+    {
+        if (!elle || mevcutJson is null || kalori is null)
+            return false;
+
+        Dictionary<string, string>? tablo;
+        try
+        {
+            tablo = JsonSerializer.Deserialize<Dictionary<string, string>>(mevcutJson);
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+
+        return tablo is not null
+            && tablo.TryGetValue("Enerji", out var mevcut)
+            && mevcut == Yaz(kalori.Value, "kcal");
+    }
+
     private static ElleBesinKontrolu Ret(string sebep, string? kod = null) => new([], sebep, kod);
 
-    private async Task<(int MarkaId, string? Satici, string Adres)?> BulAsync(int id, CancellationToken ct)
+    private async Task<(int MarkaId, string? Satici, string Adres, string? Tablo, bool Elle)?> BulAsync(int id, CancellationToken ct)
     {
         var satir = await db.Products.IgnoreQueryFilters().AsNoTracking()
             .Where(p => p.Id == id)
-            .Select(p => new { p.BrandId, p.Seller, p.Url })
+            .Select(p => new { p.BrandId, p.Seller, p.Url, p.NutritionJson, p.NutritionIsManual })
             .FirstOrDefaultAsync(ct);
-        return satir is null ? null : (satir.BrandId, satir.Seller, satir.Url);
+        return satir is null ? null : (satir.BrandId, satir.Seller, satir.Url, satir.NutritionJson, satir.NutritionIsManual);
     }
 
     // Aynı ürün sayfasının bütün satırları: aynı marka ve satıcı, "?" sonrası hariç aynı adres.
-    private IQueryable<Product> KardesSatirlar((int MarkaId, string? Satici, string Adres) urun)
+    private IQueryable<Product> KardesSatirlar((int MarkaId, string? Satici, string Adres, string? Tablo, bool Elle) urun)
     {
         var sayfa = urun.Adres.Split('?', 2)[0];
         var onek = sayfa + "?";

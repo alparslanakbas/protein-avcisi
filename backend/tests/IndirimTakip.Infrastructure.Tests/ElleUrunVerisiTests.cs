@@ -67,6 +67,37 @@ public class ElleUrunVerisiTests
         Assert.Null(kontrol.RetKodu);
     }
 
+    // Kutu her başarılı kayıttan sonra sıfırlanıyor; onu yeniden sormamak için
+    // karar ürünün KENDİ kayıtlı tablosundan okunuyor.
+    private const string KayitliBcaa =
+        """{"Porsiyon":"10 g","Enerji":"0 kcal","Protein":"10 g"}""";
+
+    [Fact]
+    public void Ayni_urunde_ayni_enerji_ikinci_kez_sorulmuyor()
+    {
+        Assert.True(ManualProductDataService.ZatenOnaylanmis(KayitliBcaa, elle: true, kalori: 0));
+    }
+
+    [Fact]
+    public void Enerji_degisirse_yeniden_soruluyor()
+    {
+        Assert.False(ManualProductDataService.ZatenOnaylanmis(KayitliBcaa, elle: true, kalori: 5));
+    }
+
+    // Otomatik okunmuş tablodaki 0 kcal kimsenin kararı değil; onay sayılsaydı
+    // kontrol kendiliğinden kapanırdı.
+    [Fact]
+    public void Otomatik_okunmus_tablo_onay_sayilmiyor()
+    {
+        Assert.False(ManualProductDataService.ZatenOnaylanmis(KayitliBcaa, elle: false, kalori: 0));
+    }
+
+    [Fact]
+    public void Bozuk_kayitli_tablo_onay_sayilmiyor()
+    {
+        Assert.False(ManualProductDataService.ZatenOnaylanmis("{bozuk", elle: true, kalori: 0));
+    }
+
     // 24,1 yerine 241 yazmak.
     [Fact]
     public void Kalori_toplamini_bozan_yazim_hatasi_sebebiyle_reddedilir()
