@@ -20,7 +20,8 @@ public sealed record ElleBesinIstegi(
     decimal? LifGram,
     IReadOnlyList<ElleBesinSatiri>? DigerSatirlar = null,
     bool EtiketBoyleYaziyor = false,
-    int? PaketPorsiyonSayisi = null);
+    int? PaketPorsiyonSayisi = null,
+    bool PorsiyonBeyanYok = false);
 
 /// <summary>Etiketteki bir satır: ad, porsiyon başına miktar ve birimi.</summary>
 public sealed record ElleBesinSatiri(string? Ad, decimal? Miktar, string? Birim);
@@ -121,8 +122,11 @@ public sealed class ManualProductDataService(AppDbContext db)
 
         var guncellenen = await KardesSatirlar(urun.Value).ExecuteUpdateAsync(s => s
             .SetProperty(p => p.NutritionJson, json)
-            .SetProperty(p => p.ProteinPerServingGrams, istek.ProteinGram)
-            .SetProperty(p => p.ServingSizeGrams, p => istek.PorsiyonGram ?? p.ServingSizeGrams)
+            // Taban tablosunda porsiyon yok: servis başı hesaplar da porsiyon başı
+            // protein de oluşmasın. Önceden kalmış bir porsiyon da siliniyor, yoksa
+            // eski değerden servis hesabı sürerdi.
+            .SetProperty(p => p.ProteinPerServingGrams, istek.PorsiyonBeyanYok ? null : istek.ProteinGram)
+            .SetProperty(p => p.ServingSizeGrams, p => istek.PorsiyonBeyanYok ? null : istek.PorsiyonGram ?? p.ServingSizeGrams)
             .SetProperty(p => p.NutritionIsManual, true)
             .SetProperty(p => p.NutritionCheckedAt, simdi)
             .SetProperty(p => p.ContentUpdatedAt, simdi), ct);
@@ -188,9 +192,12 @@ public sealed class ManualProductDataService(AppDbContext db)
 
     // Makroların kendi alanları var ve orada kalori kontrolünden geçiyorlar; serbest
     // satır olarak yazılsalar o kontrolü atlarlardı. Yaygın yazımlarıyla birlikte.
+    /// <summary>Porsiyon beyanı olmayan tablonun taban satırının adı ("Değerler: 100 g başına").</summary>
+    internal const string TabanSatiri = "Değerler";
+
     private static readonly HashSet<string> MakroAdlari = new[]
     {
-        "porsiyon", "enerji", "kalori", "yağ", "toplam yağ", "karbonhidrat", "toplam karbonhidrat",
+        "porsiyon", "değerler", "enerji", "kalori", "yağ", "toplam yağ", "karbonhidrat", "toplam karbonhidrat",
         "lif", "diyet lifi", "protein",
     }.Select(Katla).ToHashSet(StringComparer.Ordinal);
 
@@ -231,8 +238,16 @@ public sealed class ManualProductDataService(AppDbContext db)
         var besinVar = besinler.Any(v => v is not null);
 
         var satirlar = new List<(string, string)>();
+        // PORSİYON BEYANI YOKSA gram değeri porsiyon değil TABLONUN TABANI ("100 g
+        // başına", "50 g başına"): markalar farklı tabanlar kullanıyor. Porsiyon diye
+        // yazılsaydı site ondan servis sayısı ve servis başı maliyet hesaplardı, yani
+        // markanın hiç beyan etmediği bir porsiyon uydurmuş olurduk.
+        if (istek.PorsiyonBeyanYok && istek.PorsiyonGram is null)
+            return Ret("değerler kaç gram başına yazıyorsa porsiyon kutusuna o sayıyı gir (ör. 100 ya da 50)");
         if (istek.PorsiyonGram is { } porsiyon)
-            satirlar.Add(("Porsiyon", Yaz(porsiyon, "g")));
+            satirlar.Add(istek.PorsiyonBeyanYok
+                ? (TabanSatiri, Yaz(porsiyon, "g") + " başına")
+                : ("Porsiyon", Yaz(porsiyon, "g")));
 
         if (besinVar)
         {

@@ -192,6 +192,31 @@ public class ElleUrunVerisiTests
         Assert.False(kontrol.Kabul);
     }
 
+    // Markanın porsiyon beyanı yok, tablo 100 g (ya da 50 g) başına: sayı porsiyon
+    // değil taban olarak yazılıyor ki site ondan servis hesaplamasın.
+    [Theory]
+    [InlineData(100, "100 g başına")]
+    [InlineData(50, "50 g başına")]
+    public void Porsiyonu_olmayan_tablo_tabaniyla_yaziliyor(int taban, string beklenen)
+    {
+        var kontrol = ManualProductDataService.Kontrol(
+            new ElleBesinIstegi(taban, 448.9m * taban / 100, 30.11m * taban / 100, 31.06m * taban / 100,
+                33.42m * taban / 100, 21.92m * taban / 100, PorsiyonBeyanYok: true));
+
+        Assert.True(kontrol.Kabul, kontrol.RetSebebi);
+        Assert.Equal((ManualProductDataService.TabanSatiri, beklenen), kontrol.Satirlar[0]);
+        Assert.DoesNotContain(kontrol.Satirlar, r => r.Ad == "Porsiyon");
+    }
+
+    [Fact]
+    public void Tabani_girilmemis_porsiyonsuz_tablo_reddediliyor()
+    {
+        var kontrol = ManualProductDataService.Kontrol(
+            new ElleBesinIstegi(null, 449m, 30m, 31m, 33m, 22m, PorsiyonBeyanYok: true));
+
+        Assert.False(kontrol.Kabul);
+    }
+
     // 24,1 yerine 241 yazmak.
     [Fact]
     public void Kalori_toplamini_bozan_yazim_hatasi_sebebiyle_reddedilir()

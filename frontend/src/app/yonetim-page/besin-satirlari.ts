@@ -33,6 +33,9 @@ function anaAd(ad: string): string {
 // reddediyor; o yüzden hiçbir zaman serbest satır diye sunulmuyor ya da okunmuyor.
 const MAKRO_ADLARI: Record<string, MakroAlani> = {
   porsiyon: 'porsiyon',
+  // Porsiyon beyanı olmayan tablonun tabanı ("Değerler: 50 g başına"): aynı kutuya
+  // döner, kutunun porsiyon mu taban mı olduğunu tabloTabaniMi() söyler.
+  'değerler': 'porsiyon',
   enerji: 'enerji',
   kalori: 'enerji',
   yag: 'yag',
@@ -173,4 +176,9 @@ export function eklenecekSablonSatirlari(
   return (SATIR_SABLONLARI[kategori ?? ''] ?? [])
     .filter((s) => !adlar.has(sablonAnahtari(s.ad)))
     .map((s) => ({ ad: s.ad, miktar: '', birim: s.birim }));
+}
+
+/** Kayıtlı tablo porsiyon değil gram tabanı mı taşıyor ("Değerler: 100 g başına"). */
+export function tabloTabaniMi(tablo: Record<string, string>): boolean {
+  return Object.keys(tablo).some((ad) => anaAd(ad) === 'değerler');
 }

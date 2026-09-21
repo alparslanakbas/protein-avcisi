@@ -298,6 +298,11 @@ export interface ElleBesin {
    * yanlış gösteriyor. Beyan edilen sayı hesabın önüne geçiyor.
    */
   paketPorsiyonSayisi?: number | null;
+  /**
+   * Markanın porsiyon beyanı yok; porsiyon kutusundaki sayı tablonun tabanı
+   * ("100 g başına", "50 g başına"). Site o sayıdan servis hesaplamıyor.
+   */
+  porsiyonBeyanYok?: boolean;
 }
 
 export interface ElleDuzenlemeYaniti {

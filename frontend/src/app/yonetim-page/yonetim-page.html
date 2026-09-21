@@ -1357,6 +1357,16 @@
                   />
                 </label>
               </div>
+              <label class="data-note">
+                <input
+                  type="checkbox"
+                  [ngModel]="form.porsiyonBeyanYok"
+                  (ngModelChange)="veriPorsiyonBeyanYokGuncelle($event)"
+                  [ngModelOptions]="{ standalone: true }"
+                />
+                Markanın porsiyonu yok: değerler "Porsiyon" kutusundaki gram başına (ör. 100 g
+                ya da 50 g başına). Site bu sayıdan servis hesaplamaz.
+              </label>
               <p class="data-note">
                 Pakette porsiyon: yalnızca çoklu pakette gerekli (24'lü kutu gibi). Boşsa site
                 paket boyutunu porsiyona bölüyor; kaynak 24'lü kutuya tek şişenin boyunu yazdığı

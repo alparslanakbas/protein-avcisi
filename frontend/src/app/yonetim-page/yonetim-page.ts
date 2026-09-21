@@ -15,6 +15,7 @@ import {
   eklenecekSablonSatirlari,
   kayitliDigerSatirlar,
   makroDegeri,
+  tabloTabaniMi,
 } from './besin-satirlari';
 import { YonetimDuzenleyiciOdagi } from './duzenleyici-odagi';
 import { YonetimHataSebebi } from './hata-sebebi';
@@ -45,6 +46,8 @@ interface UrunVeriFormu extends Record<MakroAlani, string> {
   kategori: string;
   /** Paketten çıkan porsiyon sayısı; boşsa site paket boyutundan hesaplıyor. */
   paketPorsiyon: string;
+  /** Porsiyon kutusu porsiyon değil tablonun gram tabanı ("100 g başına"). */
+  porsiyonBeyanYok: boolean;
   /** Makroların dışındaki etiket satırları (kreatin, vitamin, kafein…). */
   digerSatirlar: BesinSatiriFormu[];
 }
@@ -748,6 +751,7 @@ export class YonetimPage implements OnInit {
       kategori: urun.categoryIsManual ? (urun.category ?? '') : '',
       porsiyon: urun.servingSizeGrams?.toString() ?? makroDegeri(tablo, 'porsiyon'),
       paketPorsiyon: urun.servingsPerPackage?.toString() ?? '',
+      porsiyonBeyanYok: tabloTabaniMi(tablo),
       enerji: makroDegeri(tablo, 'enerji'),
       protein: makroDegeri(tablo, 'protein'),
       karbonhidrat: makroDegeri(tablo, 'karbonhidrat'),
@@ -817,6 +821,12 @@ export class YonetimPage implements OnInit {
     this.duzenlenenVeri.set({ ...form, [alan]: deger == null ? '' : String(deger) });
   }
 
+  veriPorsiyonBeyanYokGuncelle(deger: boolean): void {
+    const form = this.duzenlenenVeri();
+    if (!form) return;
+    this.duzenlenenVeri.set({ ...form, porsiyonBeyanYok: deger });
+  }
+
   veriPaketPorsiyonGuncelle(deger: unknown): void {
     const form = this.duzenlenenVeri();
     if (!form) return;
@@ -848,6 +858,7 @@ export class YonetimPage implements OnInit {
       lifGram: sayi(form.lif),
       etiketBoyleYaziyor: this.etiketBoyleYaziyor(),
       paketPorsiyonSayisi: sayi(form.paketPorsiyon),
+      porsiyonBeyanYok: form.porsiyonBeyanYok,
     };
     // Miktarı boş bırakılan şablon satırı etikette yok demek: hata olarak
     // gönderilmiyor, atlanıyor. Adı ve miktarı olan satır backend kontrolüne gidiyor.

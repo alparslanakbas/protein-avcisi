@@ -145,8 +145,31 @@ describe('YonetimPage görünürlük güvenliği', () => {
       lifGram: null,
       etiketBoyleYaziyor: false,
       paketPorsiyonSayisi: null,
+      porsiyonBeyanYok: false,
       digerSatirlar: [{ ad: 'Tuz / Salt', miktar: 0.21, birim: 'g' }],
     });
+  });
+
+  // Porsiyon beyanı olmayan etiket ("50 g başına"): yeniden açınca taban ve kutu
+  // geri gelmeli, yoksa ikinci kayıt tabanı sessizce porsiyona çevirirdi.
+  it('gram tabanlı tabloyu tabanı ve kutusuyla geri okur, aynen gönderir', () => {
+    sayfa.veriDuzenleyiciAc({
+      ...urun,
+      servingSizeGrams: null,
+      nutritionJson:
+        '{"Değerler":"50 g başına","Enerji":"224,5 kcal","Yağ":"16,7 g","Karbonhidrat":"15,5 g","Protein":"15,1 g"}',
+    });
+    const form = sayfa.duzenlenenVeri()!;
+    expect(form.porsiyon).toBe('50');
+    expect(form.porsiyonBeyanYok).toBe(true);
+    expect(form.digerSatirlar).toEqual([]);
+
+    sayfa.besinKaydet();
+
+    expect(api.besinAyarla).toHaveBeenCalledWith(
+      21,
+      expect.objectContaining({ porsiyonGram: 50, porsiyonBeyanYok: true, kalori: 224.5 }),
+    );
   });
 
   // Kreatin etiketi: makro yok, adlı satırlar. Düzenlenemeyen biçim sessizce
@@ -181,6 +204,7 @@ describe('YonetimPage görünürlük güvenliği', () => {
       lifGram: null,
       etiketBoyleYaziyor: false,
       paketPorsiyonSayisi: null,
+      porsiyonBeyanYok: false,
       digerSatirlar: [
         { ad: 'Kreatin Monohidrat', miktar: 5, birim: 'g' },
         { ad: 'Kafein', miktar: 200, birim: 'mg' },
