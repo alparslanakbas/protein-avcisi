@@ -170,6 +170,28 @@ public class ElleUrunVerisiTests
         Assert.Contains(("Enerji", "120 kcal"), kontrol.Satirlar);
     }
 
+    // Animal Joy Whey Nut, markanın kendi sitesindeki tablo (100 g başına). Lif
+    // karbonhidratın içinde yazılmış: ayrı sayılınca 116,5 g ediyordu ve reddediliyordu.
+    [Fact]
+    public void Lifi_karbonhidratin_icinde_yazan_etiket_kabul_ediliyor()
+    {
+        var kontrol = ManualProductDataService.Kontrol(
+            new ElleBesinIstegi(100, 448.9m, 30.11m, 31.06m, 33.42m, 21.92m));
+
+        Assert.True(kontrol.Kabul, kontrol.RetSebebi);
+    }
+
+    // Lif karbonhidrattan büyükse içinde olamaz; o zaman ayrı sayılır ve sığmayan
+    // toplam yine reddedilir.
+    [Fact]
+    public void Karbonhidrattan_buyuk_lif_ayri_sayiliyor()
+    {
+        var kontrol = ManualProductDataService.Kontrol(
+            new ElleBesinIstegi(100, 700m, 40m, 5m, 45m, 20m));
+
+        Assert.False(kontrol.Kabul);
+    }
+
     // 24,1 yerine 241 yazmak.
     [Fact]
     public void Kalori_toplamini_bozan_yazim_hatasi_sebebiyle_reddedilir()

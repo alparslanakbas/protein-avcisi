@@ -308,7 +308,14 @@ public sealed class ManualProductDataService(AppDbContext db)
         if (protein > 100)
             return $"protein {protein} g makul değil";
 
-        var makroToplam = protein + karbonhidrat + yag + (lif ?? 0);
+        // Lif karbonhidratın İÇİNDE yazılmış olabilir (ABD usulü, bazı ithal ve
+        // yerli etiketler): o zaman bir kez sayılır. Lif karbonhidrattan büyükse
+        // içinde olamaz, ayrı sayılır. Kalori kontrolü iki usulü de baştan beri
+        // kabul ediyordu; bu kural yalnızca Avrupa usulünü bildiği için
+        // Animal Joy Whey Nut'ın gerçek etiketini (100 g: P 30,11, K 31,06, Y 33,42,
+        // Lif 21,92) "116 g" diye reddediyordu — lif iki kez sayılıyordu.
+        var ayriLif = lif is { } l && l > karbonhidrat ? l : 0m;
+        var makroToplam = protein + karbonhidrat + yag + ayriLif;
         return porsiyon is > 0 && makroToplam > porsiyon * 1.05m + 1
             ? $"makrolar ({makroToplam} g) porsiyonu ({porsiyon} g) aşıyor"
             : null;
@@ -318,7 +325,9 @@ public sealed class ManualProductDataService(AppDbContext db)
     {
         var temel = 4 * protein + 4 * karbonhidrat + 9 * yag;
         var ust = temel + 2 * (lif ?? 0);
-        var alt = temel - 4 * Math.Min(karbonhidrat, lif ?? 0) + 2 * Math.Min(karbonhidrat, lif ?? 0);
+        // ABD usulünde lif karbonhidratın içinde ve kalorisi 0-2 kcal/g (çözünmeyen
+        // lif 0). Alt sınır 0 ile: Whey Nut'ın 448,9 kcal'i ancak böyle tutuyor.
+        var alt = temel - 4 * Math.Min(karbonhidrat, lif ?? 0);
         var tolerans = Math.Max(15m, kalori * 0.1m);
 
         return kalori < alt - tolerans || kalori > ust + tolerans
