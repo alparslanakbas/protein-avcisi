@@ -76,6 +76,12 @@ public class BigJoyNutritionTests
             </div>
           </div>
         </div>
+        <div class="bg-white p-1" style="display:none;">
+          <div class="prose prose-sm max-w-none text-gray-700 urun-aciklamasi">
+            <p>BIGJOY&reg; BEEF &amp; WHEY; sığır eti proteini ve peynir altı suyu proteini içerir.</p>
+            <p>Günlük beslenme düzenine protein eklemek isteyenler için hazırlanmıştır.</p>
+          </div>
+        </div>
         </body></html>
         """;
 
@@ -161,14 +167,27 @@ public class BigJoyNutritionTests
         Assert.Null(details.ProteinPerServingGrams);
     }
 
-    // Açıklama BİLİNÇLİ olarak çekilmiyor: BigJoy'un açıklaması zaten normal
-    // taramada (kategori ucundan) geliyor. Burada da okunsaydı aynı veri iki
-    // farklı biçimde üretilir ve hangisinin kazandığı taramanın sırasına
-    // bağlı kalırdı.
+    // Açıklama 22 EYLÜL'DEN BERİ BURADAN geliyor: eski listeleme ucu veriyordu,
+    // yeni uçta o alan yok. Paragraf sonları korunuyor; korunmasaydı bütün metin
+    // tek bir bloğa yapışırdı.
     [Fact]
-    public async Task AciklamaCekilmiyor()
+    public async Task AciklamaSayfadanOkunuyor()
     {
         var details = await Scraper(GercekSayfaParcasi).FetchDetailsAsync("https://www.bigjoy.com.tr/x");
+
+        Assert.NotNull(details.Description);
+        Assert.StartsWith("BIGJOY® BEEF & WHEY", details.Description);
+        Assert.Contains("\n\n", details.Description);
+        Assert.DoesNotContain("<p>", details.Description);
+    }
+
+    // Açıklama bölümü olmayan sayfada UYDURMA metin üretilmemeli.
+    [Fact]
+    public async Task AciklamaYoksaNullDonuyor()
+    {
+        const string aciklamasiz = "<html><body><div class='urun'><p>Shaker</p></div></body></html>";
+
+        var details = await Scraper(aciklamasiz).FetchDetailsAsync("https://www.bigjoy.com.tr/shaker");
 
         Assert.Null(details.Description);
     }

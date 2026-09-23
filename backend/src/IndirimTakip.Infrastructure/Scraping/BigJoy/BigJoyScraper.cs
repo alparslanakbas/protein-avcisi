@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using System.Text.RegularExpressions;
 using System.Web;
 using HtmlAgilityPack;
 using IndirimTakip.Core.Scraping;
@@ -239,12 +240,13 @@ public partial class BigJoyScraper(HttpClient httpClient) : IBrandScraper, IProd
     /// sayfasında var, listeleme ucunda yok.
     /// </summary>
     /// <remarks>
-    /// <b>Açıklama HÂLÂ null ve bu artık bir EKSİK.</b> Eski listeleme ucu
-    /// açıklamayı veriyordu, bu yüzden burada bilerek boş dönülüyordu; yeni
-    /// uçta o alan yok. Var olan açıklamalar duruyor (detay tamamlama
-    /// <c>??=</c> kullanıyor) ama yeni ürünler açıklamasız kalıyor. Sayfadan
-    /// okumak ayrı bir iş; buraya eklenirse aynı verinin iki biçimde
-    /// üretilmediğinden emin olunmalı.
+    /// <b>Açıklama artık BURADAN geliyor.</b> Eski listeleme ucu veriyordu ve
+    /// bu metot bilerek boş dönüyordu; yeni uçta o alan olmadığı için ürün
+    /// sayfasından okunuyor. Aynı verinin iki biçimde üretilmesi riski de
+    /// ortadan kalktı: tek kaynak bu.
+    /// Çapa <c>div.urun-aciklamasi</c>, çünkü yanındaki Tailwind sınıfları
+    /// ("prose prose-sm max-w-none") üretim çıktısı ve her derlemede
+    /// değişebilir.
     ///
     /// <b>Seçiciler 22 Eylül'de değişti.</b> Eski <c>div.bdegersatir</c> ve
     /// <c>div.nutrition-title</c> artık sayfada YOK (ölçüldü: sıfır eşleşme);
@@ -268,12 +270,39 @@ public partial class BigJoyScraper(HttpClient httpClient) : IBrandScraper, IProd
                     + "//div[contains(@class,'justify-between')][span][not(h3)]"));
 
         return new ProductDetails(
-            Description: null,
+            Description: ReadDescription(doc),
             NutritionJson: nutritionJson,
             ProteinPerServingGrams: NutritionParser.ExtractProteinGrams(nutritionJson),
             ServingSizeGrams: NutritionServingParser.Grams(ReadLabelled(doc, "Porsiyon Büyüklüğü")),
             ServingsPerPackage: NutritionServingParser.Count(ReadLabelled(doc, "Porsiyon Sayısı")));
     }
+
+    /// <summary>Ürün açıklaması; paragraflar korunarak düz metne çevriliyor.</summary>
+    private static string? ReadDescription(HtmlDocument doc)
+    {
+        var node = doc.DocumentNode.SelectSingleNode("//div[contains(@class,'urun-aciklamasi')]");
+        if (node is null)
+            return null;
+
+        // Paragraf sonları önce ayırıcıya çevriliyor: doğrudan InnerText alınsa
+        // bütün metin tek bir bloğa yapışırdı.
+        var text = ParagraphEndRegex().Replace(node.InnerHtml, "\n\n");
+        text = HttpUtility.HtmlDecode(TagRegex().Replace(text, " "));
+
+        var lines = text
+            .Split('\n', StringSplitOptions.TrimEntries)
+            .Select(line => string.Join(' ', line.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)))
+            .Where(line => line.Length > 0);
+
+        var temiz = string.Join("\n\n", lines).Trim();
+        return temiz.Length == 0 ? null : temiz;
+    }
+
+    [GeneratedRegex("</p>", RegexOptions.IgnoreCase)]
+    private static partial Regex ParagraphEndRegex();
+
+    [GeneratedRegex("<[^>]+>")]
+    private static partial Regex TagRegex();
 
     /// <summary>
     /// "Porsiyon Büyüklüğü:" etiketinin yanındaki değeri okur.
