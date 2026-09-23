@@ -1,5 +1,4 @@
 using System.Net.Http.Json;
-using System.Text.RegularExpressions;
 using System.Web;
 using HtmlAgilityPack;
 using IndirimTakip.Core.Scraping;
@@ -7,33 +6,45 @@ using IndirimTakip.Core.Scraping;
 namespace IndirimTakip.Infrastructure.Scraping.BigJoy;
 
 /// <summary>
-/// BigJoy — Nuxt tabanlı bir SPA, sayfa kaynağında fiyat yok. Sitenin kendi
-/// arka uç ucu kullanılıyor: <c>POST /api/product-category</c>, form-encoded
-/// gövde ile. Uç, tarayıcı gezilirken ağ trafiği izlenerek bulundu
-/// (ProteinOcean'da işe yarayan aynı yöntem); tahminle bulunamıyordu çünkü
-/// bilinen tüm yollar SPA kabuğunu döndürüyor.
-///
-/// Yanıt zengin: fiyat, indirimli fiyat, gramaj, aroma, üretici, açıklama ve
-/// görsel tek istekte geliyor — ürün detay sayfasına ayrıca gitmeye gerek yok.
+/// BigJoy — Nuxt tabanlı bir SPA, sayfa kaynağında fiyat yok; sitenin kendi
+/// arka uç ucu kullanılıyor.
 /// </summary>
+/// <remarks>
+/// <b>22 Eylül'de site yeniden yazıldı ve ESKİ UÇ KAYBOLDU.</b> Kullanılan
+/// <c>POST /api/product-category</c> artık JSON değil SPA kabuğunu döndürüyor,
+/// yani tarama dört turda da <c>'&lt;' is an invalid start of a value</c> ile
+/// düştü ve 149 ürün 26 saat bayat kaldı (sağlık ucu yakaladı). Yeni uç
+/// <c>GET /api/products?limit=..&amp;page=..</c>: katalogun tamamı tek istekte,
+/// kategori kimlikleri ürünün İÇİNDE, yani artık kategori kategori gezmeye
+/// gerek yok.
+///
+/// <b>Satır başına VARYANT.</b> Liste ürün GRUPLARI döndürüyor ama her aroma
+/// ve gramajın kendi sayfası var (174 grup, 241 varyant sayfası; ölçüldü) ve
+/// eski katalogumuzdaki 149 adresin 147'si bu kümede. Grup başına satır
+/// üretmek o adresleri yetim bırakırdı.
+///
+/// <b>Fiyatlar KDV'siz geliyor.</b> Varyantta yalnızca <c>price</c>/<c>special</c>
+/// var; sitede görünen fiyat ürünün <c>tax_rate</c> alanıyla hesaplanıyor.
+/// Doğrulandı: hesap üç üründe de sayfadaki fiyatı birebir verdi (540, 2.250,
+/// 1.200 TL) ve ürün düzeyindeki <c>price_with_tax</c> ile aynı çıktı.
+/// </remarks>
 public partial class BigJoyScraper(HttpClient httpClient) : IBrandScraper, IProductDetailFetcher
 {
     public string BrandName => "BigJoy";
     public string BaseUrl => "https://www.bigjoy.com.tr";
 
     /// <summary>
-    /// Kategori kimliği ve bizim slug'ımıza eşlemesi. Kimlikler sitenin
-    /// <c>/api/category-menu</c> ucundan alındı. Anlamı belirsiz olanlar
-    /// (Performans ve Güç, Endurance, Avantajlı Paketler) bilinçli olarak
-    /// null: yanlış kategori, kategorisiz kalmaktan kötü — isimden çıkarıma
-    /// bırakılıyor.
+    /// Kategori kimliği ve bizim slug'ımıza eşlemesi. Kimlikler ürünün kendi
+    /// <c>category_ids</c> alanında geliyor. Anlamı belirsiz olanlar (Performans
+    /// ve Güç, Endurance, Avantajlı Paketler) bilinçli olarak null: yanlış
+    /// kategori, kategorisiz kalmaktan kötü — isimden çıkarıma bırakılıyor.
     /// </summary>
     private static readonly (int Id, string? Category)[] Categories =
     [
-        // Sıra önemli: bir ürün birden fazla kategoride görünebiliyor ve ilk
-        // eşleşen kazanıyor. Mağaza gainer'ları hem "Kilo ve Hacim" hem
-        // "Protein Tozu" altında listeliyor; dar kategoriler önce geliyor ki
-        // Mass Attack gibi ürünler protein tozu sayılmasın.
+        // Sıra önemli: bir ürün birden fazla kategoride ve ilk eşleşen kazanıyor.
+        // Mağaza gainer'ları hem "Kilo ve Hacim" hem "Protein Tozu" altında
+        // listeliyor; dar kategoriler önce geliyor ki Mass Attack gibi ürünler
+        // protein tozu sayılmasın.
         (1001, "kreatin"),
         (729, "l-carnitine-cla"),
         (734, "amino-asitler"),
@@ -53,145 +64,172 @@ public partial class BigJoyScraper(HttpClient httpClient) : IBrandScraper, IProd
     /// </summary>
     private static readonly string[] OwnManufacturers = ["Bigjoy", "Bigjoy Vitamins"];
 
-    /// <summary>Tek istekte tüm kategoriyi almak için; en kalabalık kategori 44 ürün.</summary>
     private const int PageSize = 200;
+
+    /// <summary>Katalog 174 ürün; sayfa döngüsü sonsuza gitmesin diye tavan.</summary>
+    private const int MaxPages = 10;
 
     private static readonly TimeSpan DelayBetweenRequests = TimeSpan.FromMilliseconds(500);
 
     public async Task<IReadOnlyList<ScrapedProduct>> ScrapeAsync(CancellationToken cancellationToken = default)
     {
-        // Bir ürün birden fazla kategoride görünebiliyor; adrese göre tekil.
-        var products = new Dictionary<string, ScrapedProduct>();
+        // Aynı varyant birden çok grupta görünebiliyor; adrese göre tekil.
+        var products = new Dictionary<string, ScrapedProduct>(StringComparer.OrdinalIgnoreCase);
 
-        foreach (var (categoryId, category) in Categories)
+        for (var page = 1; page <= MaxPages; page++)
         {
-            List<BigJoyProduct> results;
+            BigJoyCategoryResponse? payload;
             try
             {
-                results = await FetchCategoryAsync(categoryId, cancellationToken);
+                payload = await FetchPageAsync(page, cancellationToken);
             }
             catch (HttpRequestException)
             {
-                // Tek bir kategori tüm taramayı düşürmemeli.
-                continue;
+                // Tek bir sayfa tüm taramayı düşürmemeli; elde olan kaydedilir.
+                break;
             }
+
+            if (payload is null || payload.Products.Count == 0)
+                break;
+
+            foreach (var item in payload.Products)
+                AddVariants(item, products);
+
+            if (!payload.HasMore)
+                break;
 
             await Task.Delay(DelayBetweenRequests, cancellationToken);
-
-            foreach (var item in results)
-            {
-                if (string.IsNullOrWhiteSpace(item.Href) || string.IsNullOrWhiteSpace(item.Name))
-                    continue;
-
-                if (!OwnManufacturers.Contains(item.Manufacturer, StringComparer.OrdinalIgnoreCase))
-                    continue;
-
-                var name = HttpUtility.HtmlDecode(item.Name).Trim();
-                if (NonSupplementProductFilter.IsAccessoryOrApparel(name))
-                    continue;
-
-                var url = BaseUrl + item.Href;
-                if (products.ContainsKey(url))
-                    continue;
-
-                // "price" liste fiyatı; indirim varsa gerçek satış fiyatı
-                // "special_price" alanında geliyor ve liste fiyatı mağazanın
-                // beyan ettiği eski fiyat oluyor.
-                decimal? current = ParsePrice(item.SpecialPrice) ?? ParsePrice(item.Price);
-                if (current is null or <= 0)
-                    continue;
-
-                decimal? storeOld = ParsePrice(item.SpecialPrice) is not null ? ParsePrice(item.Price) : null;
-                if (storeOld is not null && storeOld <= current)
-                    storeOld = null;
-
-                products[url] = new ScrapedProduct(
-                    Name: name,
-                    Url: url,
-                    ImageUrl: string.IsNullOrWhiteSpace(item.Thumb) ? null : item.Thumb,
-                    Category: category,
-                    Price: current.Value,
-                    StoreOldPrice: storeOld,
-                    Description: CleanDescription(item.Description),
-                    ServingsPerPackage: ParseServings(item.Gramaj));
-            }
         }
 
         return products.Values.ToList();
     }
 
-    private async Task<List<BigJoyProduct>> FetchCategoryAsync(int categoryId, CancellationToken cancellationToken)
+    private void AddVariants(BigJoyProduct item, Dictionary<string, ScrapedProduct> products)
     {
-        var form = new FormUrlEncodedContent(new Dictionary<string, string>
+        if (string.IsNullOrWhiteSpace(item.Name))
+            return;
+
+        if (!OwnManufacturers.Contains(item.ManufacturerName, StringComparer.OrdinalIgnoreCase))
+            return;
+
+        var groupName = HttpUtility.HtmlDecode(item.Name).Trim();
+        var category = CategoryFor(item.CategoryIds);
+        var taxRate = item.TaxRate ?? 0m;
+
+        foreach (var variant in VariantsOf(item))
         {
-            ["page"] = "1",
-            ["limit"] = PageSize.ToString(),
-            ["category_id"] = categoryId.ToString(),
-            ["manufacturer_id"] = "",
-            ["type"] = "0",
-            ["search"] = "",
-            ["sort"] = "",
-        });
+            if (string.IsNullOrWhiteSpace(variant.SeoKeyword))
+                continue;
 
-        using var response = await httpClient.PostAsync("api/product-category", form, cancellationToken);
-        response.EnsureSuccessStatusCode();
+            var url = $"{BaseUrl}/{variant.SeoKeyword.Trim('/')}";
+            if (products.ContainsKey(url))
+                continue;
 
-        var payload = await response.Content.ReadFromJsonAsync<BigJoyCategoryResponse>(cancellationToken: cancellationToken);
-        return payload?.Products ?? [];
-    }
+            // Ad: grup adı + gramaj ("Bigjoy Creatine Monohydrate" + "255g").
+            // Aroma BİLEREK eklenmiyor: eski katalogda da yoktu (149 satır, 145
+            // ad) ve ad değişse sitedeki ürün adresleri de değişirdi.
+            var name = ComposeName(groupName, variant.SubgroupValue);
+            if (NonSupplementProductFilter.IsAccessoryOrApparel(name))
+                continue;
 
-    /// <summary>"4.480,00 TL" → 4480.00. Alan indirim yokken false geldiği için nesne olarak okunuyor.</summary>
-    private static decimal? ParsePrice(object? value)
-    {
-        var text = value?.ToString();
-        if (string.IsNullOrWhiteSpace(text) || text.Equals("false", StringComparison.OrdinalIgnoreCase))
-            return null;
+            var listPrice = WithTax(variant.Price, taxRate);
+            var specialPrice = WithTax(variant.Special, taxRate);
 
-        try
-        {
-            return TurkishPriceParser.Parse(text);
-        }
-        catch (FormatException)
-        {
-            return null;
+            var current = specialPrice ?? listPrice;
+            if (current is null or <= 0)
+                continue;
+
+            var storeOld = specialPrice is not null ? listPrice : null;
+            if (storeOld is not null && storeOld <= current)
+                storeOld = null;
+
+            products[url] = new ScrapedProduct(
+                Name: name,
+                Url: url,
+                ImageUrl: ImageUrlOf(variant.Image ?? item.Thumb),
+                Category: category,
+                Price: current.Value,
+                StoreOldPrice: storeOld,
+                InStock: variant.IsInStock);
         }
     }
 
     /// <summary>
-    /// Gramaj alanı çoğunlukla ağırlık ("253g") ama bazen doğrudan servis
-    /// sayısı ("21 Servis") — markanın kendi beyanı, türetilmiş değil.
-    /// Ağırlık biçimindeyken null dönüyor; paket gramajı zaten ürün adından
-    /// çıkarılıyor.
+    /// Varyant listesi boşsa ürünün kendisi tek varyant sayılıyor: küçük bir
+    /// azınlık ama onları düşürmek kataloğu eksiltirdi.
     /// </summary>
-    private static int? ParseServings(string? gramaj)
-    {
-        if (string.IsNullOrWhiteSpace(gramaj))
-            return null;
+    private static IEnumerable<BigJoyVariant> VariantsOf(BigJoyProduct item) =>
+        item.VariantAttributes.Count > 0
+            ? item.VariantAttributes
+            : [new BigJoyVariant
+            {
+                SeoKeyword = item.SeoKeyword,
+                SubgroupValue = item.SubgroupValue,
+                Price = item.Price,
+                Special = item.Special,
+                IsInStock = item.IsInStock,
+            }];
 
-        var match = ServingsRegex().Match(gramaj);
-        return match.Success && int.TryParse(match.Groups[1].Value, out var count) && count > 0
-            ? count
-            : null;
+    private static string ComposeName(string groupName, string? subgroup)
+    {
+        var gramaj = subgroup?.Trim();
+        if (string.IsNullOrEmpty(gramaj) || groupName.Contains(gramaj, StringComparison.OrdinalIgnoreCase))
+            return groupName;
+
+        return $"{groupName} {gramaj}";
     }
 
+    private static string? CategoryFor(List<int> categoryIds)
+    {
+        foreach (var (id, category) in Categories)
+        {
+            if (categoryIds.Contains(id))
+                return category;
+        }
+
+        return null;
+    }
+
+    /// <summary>KDV'siz fiyattan sitede görünen fiyata.</summary>
+    private static decimal? WithTax(decimal? price, decimal taxRatePercent) =>
+        price is null or <= 0 ? null : Math.Round(price.Value * (1 + taxRatePercent / 100m), 2);
+
+    private string? ImageUrlOf(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            return null;
+
+        return path.StartsWith("http", StringComparison.OrdinalIgnoreCase)
+            ? path
+            : $"{BaseUrl}/{path.TrimStart('/')}";
+    }
+
+    private async Task<BigJoyCategoryResponse?> FetchPageAsync(int page, CancellationToken cancellationToken)
+    {
+        using var response = await httpClient.GetAsync(
+            $"api/products?limit={PageSize}&page={page}", cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<BigJoyCategoryResponse>(cancellationToken: cancellationToken);
+    }
 
     /// <summary>
     /// Besin değeri tablosu ve porsiyon bilgisi — yalnızca ürün DETAY
-    /// sayfasında var, kategori ucunda yok.
+    /// sayfasında var, listeleme ucunda yok.
     /// </summary>
     /// <remarks>
-    /// <b>Neden sonradan eklendi.</b> 5 Eylül'de ölçüldü: inceleme sayfası
-    /// olan 663 üründen 335'inde açıklama vardı ama besin değeri yoktu ve
-    /// bunların 105'i BigJoy'du. Kaynakta veri EKSİK DEĞİL — sayfa Enerji,
-    /// Yağ, Karbonhidrat, Protein satırlarını ve "Porsiyon Büyüklüğü / Sayısı"
-    /// bilgisini eksiksiz yayınlıyor; sadece <c>&lt;table&gt;</c> yerine
-    /// <c>div.bdegersatir</c> satırları kullanıyor.
+    /// <b>Açıklama HÂLÂ null ve bu artık bir EKSİK.</b> Eski listeleme ucu
+    /// açıklamayı veriyordu, bu yüzden burada bilerek boş dönülüyordu; yeni
+    /// uçta o alan yok. Var olan açıklamalar duruyor (detay tamamlama
+    /// <c>??=</c> kullanıyor) ama yeni ürünler açıklamasız kalıyor. Sayfadan
+    /// okumak ayrı bir iş; buraya eklenirse aynı verinin iki biçimde
+    /// üretilmediğinden emin olunmalı.
     ///
-    /// <b>Açıklama BİLİNÇLİ olarak null dönüyor.</b> BigJoy'un açıklaması
-    /// zaten normal taramada (kategori ucunda) geliyor ve daha temiz; burada
-    /// tekrar okumak aynı veriyi ikinci bir biçimde üretme riski taşırdı.
-    /// Detay tamamlama servisi <c>??=</c> kullandığı için null hiçbir şeyi
-    /// silmiyor.
+    /// <b>Seçiciler 22 Eylül'de değişti.</b> Eski <c>div.bdegersatir</c> ve
+    /// <c>div.nutrition-title</c> artık sayfada YOK (ölçüldü: sıfır eşleşme);
+    /// satırlar "Besin Değerleri" başlığının altında iki <c>span</c> olarak
+    /// duruyor. Sınıf adları Tailwind üretimi ve kırılgan olduğu için çapa
+    /// olarak BAŞLIK METNİ kullanılıyor.
     /// </remarks>
     public async Task<ProductDetails> FetchDetailsAsync(string productUrl, CancellationToken cancellationToken = default)
     {
@@ -202,80 +240,45 @@ public partial class BigJoyScraper(HttpClient httpClient) : IBrandScraper, IProd
         var nutritionJson = NutritionParser.BuildNutritionJson(
             HtmlNutritionExtractor.FromRowElements(
                 doc.DocumentNode,
-                "//div[contains(@class,'bdegersatir')]"));
+                // ancestor::div[2]: h3'ün EBEVEYNİ yalnızca başlık satırı, tablo
+                // onun KARDEŞİNDE. [not(h3)] başlık satırını eliyor, yoksa
+                // "Besin Değerleri | Her Porsiyon / 3.04g" diye bir satır girerdi.
+                "//h3[contains(text(),'Besin Değerleri')]/ancestor::div[2]"
+                    + "//div[contains(@class,'justify-between')][span][not(h3)]"));
 
         return new ProductDetails(
             Description: null,
             NutritionJson: nutritionJson,
             ProteinPerServingGrams: NutritionParser.ExtractProteinGrams(nutritionJson),
-            ServingSizeGrams: ReadServingSizeGrams(doc),
-            ServingsPerPackage: ReadServingsPerPackage(doc));
-    }
-
-    /// <summary>"Porsiyon Büyüklüğü: 32g" satırından gramajı okur.</summary>
-    private static decimal? ReadServingSizeGrams(HtmlDocument doc)
-    {
-        var text = ReadNutritionTitle(doc, "Porsiyon Büyüklüğü");
-        if (text is null)
-            return null;
-
-        return NutritionServingParser.Grams(text);
-    }
-
-    /// <summary>"Porsiyon Sayısı: 68" satırından servis adedini okur.</summary>
-    private static int? ReadServingsPerPackage(HtmlDocument doc)
-    {
-        var text = ReadNutritionTitle(doc, "Porsiyon Sayısı");
-        if (text is null)
-            return null;
-
-        return NutritionServingParser.Count(text);
+            ServingSizeGrams: NutritionServingParser.Grams(ReadLabelled(doc, "Porsiyon Büyüklüğü")),
+            ServingsPerPackage: NutritionServingParser.Count(ReadLabelled(doc, "Porsiyon Sayısı")));
     }
 
     /// <summary>
-    /// Porsiyon bilgisi <c>div.nutrition-title</c> içinde "etiket: değer"
-    /// olarak duruyor. Etiket Türkçe karakterli olduğu için karşılaştırma
-    /// KÜLTÜRE BIRAKILMIYOR: aranan metin sayfada birebir geçtiği gibi
+    /// "Porsiyon Büyüklüğü:" etiketinin yanındaki değeri okur.
+    /// </summary>
+    /// <remarks>
+    /// Karşılaştırma KÜLTÜRE BIRAKILMIYOR: aranan metin sayfada geçtiği gibi
     /// yazılıyor ve ordinal karşılaştırılıyor — <c>IgnoreCase</c> Türkçe
     /// noktalı İ'yi katlamıyor, "PORSİYON" ile "Porsiyon" eşleşmezdi.
-    /// </summary>
-    private static string? ReadNutritionTitle(HtmlDocument doc, string label)
+    /// </remarks>
+    private static string? ReadLabelled(HtmlDocument doc, string label)
     {
-        var nodes = doc.DocumentNode.SelectNodes("//div[contains(@class,'nutrition-title')]");
-        if (nodes is null)
+        var spans = doc.DocumentNode.SelectNodes("//span");
+        if (spans is null)
             return null;
 
-        foreach (var node in nodes)
+        foreach (var span in spans)
         {
-            var text = HtmlEntity.DeEntitize(node.InnerText) ?? string.Empty;
-            if (text.Contains(label, StringComparison.Ordinal))
-                return text;
+            var text = HtmlEntity.DeEntitize(span.InnerText)?.Trim() ?? string.Empty;
+            if (!text.StartsWith(label, StringComparison.Ordinal))
+                continue;
+
+            var value = span.SelectSingleNode("following-sibling::span[1]");
+            if (value is not null)
+                return HtmlEntity.DeEntitize(value.InnerText)?.Trim();
         }
 
         return null;
     }
-
-    private static string? CleanDescription(string? html)
-    {
-        if (string.IsNullOrWhiteSpace(html))
-            return null;
-
-        var text = HttpUtility.HtmlDecode(html);
-        text = TagRegex().Replace(text, " ");
-        // Yanıtın sonunda OpenCart'ın kırpma işareti olarak ".." bırakıyor.
-        text = text.TrimEnd().TrimEnd('.').Trim();
-        text = string.Join(
-            "\n\n",
-            text.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                .Where(line => line.Length > 0));
-
-        return text.Length == 0 ? null : text;
-    }
-
-    [GeneratedRegex(@"(\d+)\s*servis", RegexOptions.IgnoreCase)]
-    private static partial Regex ServingsRegex();
-
-    [GeneratedRegex("<[^>]+>")]
-    private static partial Regex TagRegex();
-
 }

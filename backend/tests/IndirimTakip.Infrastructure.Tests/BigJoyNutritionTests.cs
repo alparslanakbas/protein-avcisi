@@ -6,53 +6,73 @@ namespace IndirimTakip.Infrastructure.Tests;
 
 // Bu testlerin varlık sebebi bir ÖLÇÜM (5 Eylül): katalogda besin değeri
 // olan ürün 4.918'de 328'di (%6,7) ve eksiklerin bir kısmı "kaynakta veri
-// yok" değil, "kaynak <table> kullanmıyor" yüzündendi. BigJoy'un ürün
-// sayfası besin değerlerini eksiksiz yayınlıyor ama hepsi div satırlarında —
-// tablo arayan çıkarıcı hiçbirini göremiyordu.
+// yok" değil, "kaynak okunabilir bir tablo kullanmıyor" yüzündendi.
 //
-// Aşağıdaki HTML, bigjoy.com.tr'deki gerçek bir ürün sayfasından
-// (beef-and-whey-cikolata-2176g, 2026-09-05) alınmış parçadır. Snapshot
-// olmasının sebebi: yapı değişirse test kırılsın, canlıda sessizce boş
-// kalmasın.
+// 22 EYLÜL'DE SİTE YENİDEN YAZILDI ve bu testler kırıldı — işlerini yaptılar.
+// Eski kalıp (div.bdegersatir, div.nutrition-title) sayfada artık SIFIR kez
+// geçiyor; aşağıdaki HTML yeni yapının gerçek bir ürün sayfasından
+// (creatine-255g, 2026-09-22) alınmış parçasıdır. Snapshot olmasının sebebi
+// aynı: yapı yine değişirse test kırılsın, canlıda sessizce boş kalmasın.
+//
+// PORSİYON BLOĞU BESİN TABLOSUNUN DIŞINDA ve bu ölçülerek böyle kuruldu:
+// canlı sayfada başlığın kapsayıcısı yalnızca besin satırlarını içeriyor
+// (9 satır), porsiyon satırları ayrı bir kutuda. Kalıp bunu taklit etmezse
+// test, kodun ayırt etmediği bir hatayı yakalayamaz.
 public class BigJoyNutritionTests
 {
     private const string GercekSayfaParcasi = """
         <html><body>
-        <div class="ntin-dropdown2">
-          <div class="nutrition-table row">
-            <div class="nutrition-ustsatir col-lg-6">
-              <div class="nutrition-title pt-1"> Son Kullanma Tarihi: <span>01/04/2029</span></div>
-              <div class="nutrition-title"> Porsiyon Büyüklüğü: <span>32g</span></div>
-              <div class="nutrition-title"> Porsiyon Sayısı: <span>68</span></div>
+        <div class="py-6">
+          <div class="border border-[#f0eee5] rounded-xl p-4 md:p-5">
+            <div class="flex items-end justify-between mb-2">
+              <h3 class="text-[18px] font-semibold">Besin Değerleri</h3>
+              <span class="text-[14px] font-semibold text-gray-500">Her Porsiyon / 32g</span>
             </div>
-            <div class="col-lg-6 scroll-bdeger">
-              <div class="nutrition-secondary-title">Her Porsiyon İçin Miktar</div>
-              <div>
-                <div class="row bdegersatir m-0 dark-row">
-                  <div class="col-8 satirsol">Enerji/Energy</div>
-                  <div class="col-4 satirsag text-end">534kJ/126kcal</div>
-                </div>
-                <div class="row bdegersatir m-0 light-row">
-                  <div class="col-8 satirsol">Yağ/Fat</div>
-                  <div class="col-4 satirsag text-end">2,4g</div>
-                </div>
-                <div class="row bdegersatir m-0 dark-row">
-                  <div class="col-8 satirsol">-Doymuş Yağ/Saturated Fat</div>
-                  <div class="col-4 satirsag text-end">0,9g</div>
-                </div>
-                <div class="row bdegersatir m-0 light-row">
-                  <div class="col-8 satirsol">Karbonhidrat/Carbohydrate</div>
-                  <div class="col-4 satirsag text-end">2,2g</div>
-                </div>
-                <div class="row bdegersatir m-0 dark-row">
-                  <div class="col-8 satirsol">-Şekerler/Sugars</div>
-                  <div class="col-4 satirsag text-end">1,2g</div>
-                </div>
-                <div class="row bdegersatir m-0 light-row">
-                  <div class="col-8 satirsol">Protein</div>
-                  <div class="col-4 satirsag text-end">24g</div>
+            <div class="h-[2px] bg-gray-900 mb-2"></div>
+            <div class="max-h-[360px] overflow-y-auto pr-1">
+              <div class="py-2.5 border-b text-[13px]">
+                <div class="flex justify-between items-start gap-3">
+                  <span class="text-gray-600">Enerji/Energy</span><span class="font-semibold">534kJ/126kcal</span>
                 </div>
               </div>
+              <div class="py-2.5 border-b text-[13px]">
+                <div class="flex justify-between items-start gap-3">
+                  <span class="text-gray-600">Yağ/Fat</span><span class="font-semibold">2,4g</span>
+                </div>
+              </div>
+              <div class="py-2.5 border-b text-[13px]">
+                <div class="flex justify-between items-start gap-3">
+                  <span class="text-gray-600">-Doymuş Yağ/Saturated Fat</span><span class="font-semibold">0,9g</span>
+                </div>
+              </div>
+              <div class="py-2.5 border-b text-[13px]">
+                <div class="flex justify-between items-start gap-3">
+                  <span class="text-gray-600">Karbonhidrat/Carbohydrate</span><span class="font-semibold">2,2g</span>
+                </div>
+              </div>
+              <div class="py-2.5 border-b text-[13px]">
+                <div class="flex justify-between items-start gap-3">
+                  <span class="text-gray-600">-Şekerler/Sugars</span><span class="font-semibold">1,2g</span>
+                </div>
+              </div>
+              <div class="py-2.5 text-[13px]">
+                <div class="flex justify-between items-start gap-3">
+                  <span class="text-gray-600">Protein</span><span class="font-semibold">24g</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="display:none;">
+          <div class="text-[14px] bg-white border border-gray-200 rounded-xl p-4">
+            <div class="flex justify-between items-baseline py-2 border-b border-gray-100">
+              <span class="text-gray-500">Son Kullanma Tarihi:</span><span class="font-bold">01/04/2029</span>
+            </div>
+            <div class="flex justify-between items-baseline py-2 border-b border-gray-100">
+              <span class="text-gray-500">Porsiyon Büyüklüğü:</span><span class="font-bold">32g</span>
+            </div>
+            <div class="flex justify-between items-baseline py-2">
+              <span class="text-gray-500">Porsiyon Sayısı:</span><span class="font-bold">68</span>
             </div>
           </div>
         </div>
@@ -115,7 +135,9 @@ public class BigJoyNutritionTests
     {
         const string sadeceTarih = """
             <html><body>
-            <div class="nutrition-title"> Son Kullanma Tarihi: <span>01/04/2029</span></div>
+            <div class="flex justify-between items-baseline py-2">
+              <span class="text-gray-500">Son Kullanma Tarihi:</span><span class="font-bold">01/04/2029</span>
+            </div>
             </body></html>
             """;
 
