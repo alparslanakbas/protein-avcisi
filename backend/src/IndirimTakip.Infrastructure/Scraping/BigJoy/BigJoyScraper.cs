@@ -114,7 +114,7 @@ public partial class BigJoyScraper(HttpClient httpClient) : IBrandScraper, IProd
 
         var groupName = HttpUtility.HtmlDecode(item.Name).Trim();
         var category = CategoryFor(item.CategoryIds);
-        var taxRate = item.TaxRate ?? 0m;
+        var katsayi = VergiKatsayisi(item);
 
         foreach (var variant in VariantsOf(item))
         {
@@ -132,8 +132,15 @@ public partial class BigJoyScraper(HttpClient httpClient) : IBrandScraper, IProd
             if (NonSupplementProductFilter.IsAccessoryOrApparel(name))
                 continue;
 
-            var listPrice = WithTax(variant.Price, taxRate);
-            var specialPrice = WithTax(variant.Special, taxRate);
+            // Ürünün KENDİ sayfası olan varyantta sitenin verdiği KDV'li fiyat
+            // doğrudan kullanılıyor; ötekilerde aynı katsayı uygulanıyor.
+            var kendiSayfasi = string.Equals(variant.SeoKeyword, item.SeoKeyword, StringComparison.OrdinalIgnoreCase);
+            var listPrice = kendiSayfasi && item.PriceWithTax is > 0
+                ? item.PriceWithTax
+                : WithTax(variant.Price, katsayi);
+            var specialPrice = kendiSayfasi && item.PriceWithTax is > 0
+                ? item.SpecialWithTax
+                : WithTax(variant.Special, katsayi);
 
             var current = specialPrice ?? listPrice;
             if (current is null or <= 0)
@@ -190,9 +197,23 @@ public partial class BigJoyScraper(HttpClient httpClient) : IBrandScraper, IProd
         return null;
     }
 
-    /// <summary>KDV'siz fiyattan sitede görünen fiyata.</summary>
-    private static decimal? WithTax(decimal? price, decimal taxRatePercent) =>
-        price is null or <= 0 ? null : Math.Round(price.Value * (1 + taxRatePercent / 100m), 2);
+    /// <summary>
+    /// KDV'siz fiyatı sitede görünen fiyata çeviren katsayı, ÜRÜNÜN KENDİ
+    /// verisinden ölçülerek.
+    /// </summary>
+    /// <remarks>
+    /// <c>tax_rate</c> alanına güvenilmiyor: karışık KDV'li paketlerde 0
+    /// yazıyor ama gerçek oran 1,013-1,047 arasında (174 üründen 41'inde,
+    /// ölçüldü). Yalnızca alana bakan ilk sürüm o paketleri %4,7'ye varan
+    /// oranda UCUZ gösterdi — sayfada 1.634 TL yazarken 1.561 TL.
+    /// </remarks>
+    private static decimal VergiKatsayisi(BigJoyProduct item) =>
+        item.Price is > 0 && item.PriceWithTax is > 0
+            ? item.PriceWithTax.Value / item.Price.Value
+            : 1 + (item.TaxRate ?? 0m) / 100m;
+
+    private static decimal? WithTax(decimal? price, decimal katsayi) =>
+        price is null or <= 0 ? null : Math.Round(price.Value * katsayi, 2);
 
     private string? ImageUrlOf(string? path)
     {

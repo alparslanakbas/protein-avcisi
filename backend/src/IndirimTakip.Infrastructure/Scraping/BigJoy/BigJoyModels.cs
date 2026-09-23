@@ -50,6 +50,13 @@ internal sealed class BigJoyProduct
     [JsonPropertyName("special")]
     public decimal? Special { get; set; }
 
+    /// <summary>Sitede görünen fiyat. Ürün düzeyinde var, varyantta yok.</summary>
+    [JsonPropertyName("price_with_tax")]
+    public decimal? PriceWithTax { get; set; }
+
+    [JsonPropertyName("special_with_tax")]
+    public decimal? SpecialWithTax { get; set; }
+
     [JsonPropertyName("is_in_stock")]
     public bool? IsInStock { get; set; }
 
