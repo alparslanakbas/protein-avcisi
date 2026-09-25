@@ -1,7 +1,7 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { forkJoin, of } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 import { CATEGORY_INTROS, CATEGORY_LABELS } from '../core/category-labels';
 import { DealsService } from '../core/deals.service';
@@ -93,23 +93,20 @@ export class CategoryListPage implements OnInit {
           return;
         }
 
-        // Her kategori için gerçek ürün sayısını çekiyoruz (pageSize:1,
-        // sadece totalCount lazım) — uydurma/tahmini bir rakam göstermemek
-        // için, ana sayfadaki "siteProductCount" ile aynı desen.
-        const counts$ = options.categories.map((slug) =>
-          this.dealsService.getAllProducts({ categories: [slug], pageSize: 1 }).pipe(
-            map((result) => result.totalCount),
-            catchError(() => of(0)),
-          ),
-        );
-
-        forkJoin(counts$).subscribe((counts) => {
+        // Gerçek ürün sayıları (uydurma/tahmini bir rakam göstermemek için)
+        // TEK istekte. Eskiden kategori başına ayrı istek atılıyordu (9 istek)
+        // ve sayfalar arasında gidip gelen bir ziyaretçi Cloudflare'in API hız
+        // sınırını aşabilecek hâle geliyordu. Sunucu sayımı liste sorgusunun
+        // kendisiyle yapıyor, yani kategoriye tıklayınca gelen toplamla aynı.
+        this.dealsService.getCategoryProductCounts().pipe(
+          catchError(() => of({} as Record<string, number>)),
+        ).subscribe((counts) => {
           const cards = options.categories
-            .map((slug, i) => ({
+            .map((slug) => ({
               slug,
               label: CATEGORY_LABELS[slug] ?? slug,
               intro: CATEGORY_INTROS[slug] ?? '',
-              productCount: counts[i],
+              productCount: counts[slug] ?? 0,
               iconClass: categoryPhosphorIcon(slug),
               tone: CATEGORY_TONES[slug] ?? 'violet',
             }))

@@ -118,6 +118,30 @@ internal static class DealsEndpoints
             return Results.Ok(result);
         }).CacheOutput(cachePolicy);
 
+        // Kategoriler sayfasının ürün sayıları TEK istekte. Sayfa eskiden her
+        // kategori için ayrı /api/products?pageSize=1 atıyordu (9 istek);
+        // telefondan gezinen gerçek bir ziyaretçi 10 sn'de 42 API isteğine
+        // çıkıyordu ve API'yi Cloudflare hız sınırına (10 sn'de 30) almanın
+        // önündeki tek engel buydu (26 Eylül, Caddy logu).
+        // Sayım AYNI liste sorgusuyla, /api/products'ın argümanlarıyla yapılıyor;
+        // ayrı bir COUNT yazılmadı: kartta görünen sayı, kategoriye tıklayınca
+        // gelen listenin toplamıyla birebir aynı kalmalı. Sunucudaki iş eskisiyle
+        // aynı (kategori başına bir sorgu), yalnızca tek yanıtta ve önbellekte.
+        app.MapGet("/api/category-product-counts", async (
+            DealsQueryService deals, CatalogStatsQueryService katalog, CancellationToken ct) =>
+        {
+            var sayilar = new Dictionary<string, int>();
+            foreach (var kategori in (await katalog.GetFilterOptionsAsync(ct)).Categories)
+            {
+                var sonuc = await deals.GetDealsAsync(
+                    30, null, [kategori], null, null, null, null,
+                    onlyDiscounted: false, onlyStoreDiscounted: false, sortBy: null,
+                    page: 1, pageSize: 1, ct);
+                sayilar[kategori] = sonuc.TotalCount;
+            }
+            return Results.Ok(sayilar);
+        }).CacheOutput(cachePolicy);
+
         // Hesaplayıcı tablosundaki marka çipleri — yalnızca o kategoride servis
         // başı fiyatı hesaplanabilen ürünü olan markalar.
         app.MapGet("/api/best-value-brands", async (string? category, DealsQueryService deals, CancellationToken ct) =>

@@ -142,6 +142,11 @@ export class DealsService {
     return this.http.get<BrandProductCount[]>(`${API_BASE_URL}/api/brand-product-counts`);
   }
 
+  /** Kategori kodu → ürün sayısı, tek istekte (kategoriler sayfası). */
+  getCategoryProductCounts(): Observable<Record<string, number>> {
+    return this.http.get<Record<string, number>>(`${API_BASE_URL}/api/category-product-counts`);
+  }
+
   // Ürün kartlarındaki mini sparkline'lar için toplu istek — bir sayfa
   // (24 kart) için tek çağrı, kart başına ayrı istek (N+1) yerine.
   getSparklines(ids: number[], days = 30): Observable<ProductSparkline[]> {
