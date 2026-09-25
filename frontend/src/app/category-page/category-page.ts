@@ -3,6 +3,7 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
+import { LatestRequest } from '../core/latest-request';
 import { buildBreadcrumbJsonLd } from '../core/breadcrumb';
 import { canonicalOrigin } from '../core/canonical-link';
 import { CATEGORY_FAQS, FaqItem } from '../core/category-faqs';
@@ -34,6 +35,9 @@ export class CategoryPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly dealsService = inject(DealsService);
+  // Yalnızca son isteğin yanıtı işleniyor; filtre hızlı değişince geç gelen
+  // eski yanıt listeyi ezmesin (bkz. core/latest-request).
+  private readonly listRequest = new LatestRequest();
   private readonly pageMeta = inject(PageMetaService);
   private readonly document = inject(DOCUMENT);
   private readonly priceHistoryService = inject(PriceHistoryService);
@@ -211,7 +215,7 @@ export class CategoryPage implements OnInit {
           ? this.dealsService.getStoreDeals(query)
           : this.dealsService.getAllProducts(query);
 
-    request$.subscribe({
+    this.listRequest.run(request$, {
       next: (result) => {
         this.items.set(result.items);
         this.totalCount.set(result.totalCount);

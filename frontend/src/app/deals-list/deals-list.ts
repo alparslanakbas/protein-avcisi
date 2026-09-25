@@ -5,6 +5,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, NavigationEnd, Router, RouterLink } from '@angular/router';
 
+import { LatestRequest } from '../core/latest-request';
 import { filterSelectValue, readFilterSelection } from '../core/filter-select';
 import { buildProductJsonLdDescription } from '../core/product-facts';
 import { ArticleSummary } from '../core/article.model';
@@ -172,6 +173,10 @@ export class DealsList implements OnInit {
   // toplu istekle dolduruluyor (bkz. loadSparklines), kart başına ayrı
   // istek değil.
   protected readonly sparklines = signal<Map<number, PricePoint[]>>(new Map());
+  // Yalnızca son isteğin yanıtı işleniyor; filtre hızlı değişince geç gelen
+  // eski yanıt listeyi ezmesin (bkz. core/latest-request).
+  private readonly listRequest = new LatestRequest();
+  private readonly sparklineRequest = new LatestRequest();
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
   // Varsayılan sekme bilinçli olarak "store": "İndirimdekiler" (kendi
@@ -878,7 +883,7 @@ export class DealsList implements OnInit {
           ? this.dealsService.getStoreDeals(query)
           : this.dealsService.getAllProducts(query);
 
-    request$.subscribe({
+    this.listRequest.run(request$, {
       next: (result) => {
         this.deals.set(result.items);
         this.totalCount.set(result.totalCount);
@@ -896,8 +901,8 @@ export class DealsList implements OnInit {
   private loadSparklines(deals: Deal[]): void {
     this.sparklines.set(new Map());
     const ids = deals.map((d) => d.productId);
-    this.dealsService.getSparklines(ids).subscribe((result) => {
-      this.sparklines.set(new Map(result.map((s) => [s.productId, s.points])));
+    this.sparklineRequest.run(this.dealsService.getSparklines(ids), {
+      next: (result) => this.sparklines.set(new Map(result.map((s) => [s.productId, s.points]))),
     });
   }
 
