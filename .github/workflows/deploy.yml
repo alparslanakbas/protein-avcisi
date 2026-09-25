@@ -12,12 +12,22 @@ concurrency:
   group: deploy-oracle-vm
   cancel-in-progress: false
 
+# İş depoyu okumuyor bile (yalnızca SSH); GitHub jetonuna en dar yetki.
+permissions:
+  contents: read
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
+        # Etiket değil COMMIT SHA'sı: etiket sonradan başka koda taşınabilir
+        # (tj-actions olayı) ve bu adım üretim SSH anahtarını görüyor.
+        # SHA = v1.0.3, `git ls-remote https://github.com/appleboy/ssh-action refs/tags/v1.0.3`.
+        # Sunucu anahtarı parmak izi (fingerprint) BİLEREK eklenmedi: sunucu üç
+        # anahtar türü sunuyor, action'ın hangisini seçeceği belirsiz; yanlış tür
+        # bütün deploy'ları düşürür (güvenlik incelemesi, 25 Eylül).
+        uses: appleboy/ssh-action@029f5b4aeeeb58fdfe1410a5d17f967dacf36262 # v1.0.3
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
