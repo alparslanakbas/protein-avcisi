@@ -23,6 +23,26 @@ jobs:
   # deploy adımı gibi commit SHA'sına sabit.
   backend-test:
     runs-on: ubuntu-latest
+    # Gerçek PostgreSQL: DealsQueryService'in hataları SQL'e çevirme
+    # aşamasında çıkıyor (bu sınıf canlıyı iki kez düşürdü), bellek içi test
+    # onları göremez. initdb ayarları canlıyla aynı (builtin / C.UTF-8):
+    # farklı collation metin sıralamasını sessizce değiştirir.
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: indirim_test
+          POSTGRES_INITDB_ARGS: --encoding=UTF8 --locale-provider=builtin --builtin-locale=C.UTF-8
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TEST_DB: Host=localhost;Port=5432;Database=indirim_test;Username=postgres;Password=test
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
