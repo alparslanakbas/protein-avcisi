@@ -44,6 +44,24 @@ const app = express();
 // üretilmesine yol açıyordu.
 app.set('trust proxy', true);
 
+// Vekil başlıkları İSTEMCİDEN GELEBİLİR: Cloudflare X-Forwarded-Host'u olduğu
+// gibi taşıyor, Caddy de Cloudflare'i güvenilir vekil saydığı için dokunmuyor.
+// trust proxy açıkken req.hostname bu başlıktan okunuyor; sahte bir değer
+// robots.txt'ye "Disallow: /", sayfalara noindex bastırıyordu ve yanıt 4 saat
+// önbelleğe alınabilir işaretliydi (25 Eylül'de canlıda ölçüldü). Angular'ın
+// SSR motoru da istek adresini Forwarded / X-Forwarded-Host / -Port'tan
+// kurabiliyor. Zincirimizde bunları meşru olarak üreten yok: Host'un
+// kendisi doğru (Cloudflare yalnızca kendi alan adlarımızı iletiyor), bu
+// yüzden X-Forwarded-Host Host ile eziliyor, diğer ikisi siliniyor.
+app.use((req, _res, next) => {
+  const host = req.headers.host;
+  if (host) req.headers['x-forwarded-host'] = host;
+  else delete req.headers['x-forwarded-host'];
+  delete req.headers['forwarded'];
+  delete req.headers['x-forwarded-port'];
+  next();
+});
+
 // Canonical host DIŞINDA bir adresten (onrender.com, www'siz kök domain vb.)
 // gelen HER isteğe noindex header'ı ekliyoruz — sadece sitemap/robots değil,
 // Angular SSR'ın ürettiği TÜM sayfalar (ürün/kategori/marka/rehber) dahil.

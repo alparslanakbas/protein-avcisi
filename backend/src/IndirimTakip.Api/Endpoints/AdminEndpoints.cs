@@ -169,9 +169,12 @@ internal static class AdminEndpoints
         // Asıl gönderim artık DigestBackgroundService ile haftada bir otomatik
         // tetikleniyor — bu endpoint elle/anlık test tetiklemesi için hâlâ duruyor
         // (aynı /api/dev/ingest deseninde, BackgroundService eklendikten sonra da).
-        app.MapPost("/api/dev/send-digest", async (DigestService digest, HttpContext http, CancellationToken ct) =>
+        app.MapPost("/api/dev/send-digest", async (DigestService digest, IConfiguration config, CancellationToken ct) =>
         {
-            var baseUrl = $"{http.Request.Scheme}://{http.Request.Host}";
+            // Zamanlanmış gönderimle aynı adres. Host'tan kurulunca panel
+            // yolundan (www) tetiklenen bültende "listeden çık" bağlantıları
+            // frontend'e düşüp 404 veriyordu (güvenlik incelemesi, 25 Eylül).
+            var baseUrl = (config["PublicBaseUrl"] ?? "https://api.proteinavcisi.com.tr").TrimEnd('/');
             var result = await digest.SendDigestAsync(baseUrl, ct);
             return Results.Ok(result);
         }).RequireAdminKey(adminApiKey);

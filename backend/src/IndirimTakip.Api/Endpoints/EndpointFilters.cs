@@ -35,8 +35,11 @@ internal static class AdminAuthExtensions
         if (string.IsNullOrEmpty(expectedKey))
             return false;
 
+        // Oturum açma ucuyla aynı sabit zamanlı karşılaştırma. Bu yol düz ==
+        // kullanıyordu; anahtar bütün abonelere e-posta gönderebildiği için
+        // korumanın en çok gerektiği yer burası (güvenlik incelemesi, 25 Eylül).
         var providedKey = http.Request.Headers["X-Admin-Key"].FirstOrDefault();
-        if (providedKey == expectedKey)
+        if (YonetimSessionEndpoints.SabitZamanliEsit(providedKey, expectedKey))
             return true;
 
         var dataProtection = http.RequestServices.GetService<IDataProtectionProvider>();

@@ -98,6 +98,11 @@ export function upsertJsonLdScript(document: Document, existingEl: HTMLScriptEle
     el.type = 'application/ld+json';
     document.head.appendChild(el);
   }
-  el.textContent = JSON.stringify(data);
+  // "<" kaçırılıyor: JSON.stringify onu olduğu gibi bırakır ve SSR <script>
+  // içeriğini kaçırmadan yazar. Mağazadan kazınan bir ürün adında
+  // "</script><script>..." varsa etiket kapanır ve sonrası sayfada çalışırdı;
+  // yönetim paneli aynı origin'de olduğu için yöneticinin oturumuyla.
+  // < JSON olarak aynı karakter, okuyanlar farkı görmez.
+  el.textContent = JSON.stringify(data).replace(/</g, '\\u003c');
   return el;
 }

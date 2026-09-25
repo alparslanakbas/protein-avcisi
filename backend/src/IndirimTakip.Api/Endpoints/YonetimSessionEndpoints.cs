@@ -108,7 +108,7 @@ internal static class YonetimSessionEndpoints
     // Uzunluk farkı da sızdırmasın diye önce özet alınıyor: FixedTimeEquals
     // farklı uzunluktaki dizilerde erken dönerdi ve bu, anahtarın uzunluğunu
     // ölçmeye izin verirdi.
-    private static bool SabitZamanliEsit(string? verilen, string beklenen)
+    internal static bool SabitZamanliEsit(string? verilen, string beklenen)
     {
         if (string.IsNullOrEmpty(verilen))
             return false;
