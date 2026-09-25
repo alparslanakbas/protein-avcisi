@@ -17,7 +17,7 @@ internal static class PriceHistoryEndpoints
     {
         app.MapGet("/api/products/{id:int}/price-history", async (int id, int? days, PriceHistoryQueryService service, CancellationToken ct) =>
         {
-            var windowDays = days is null or <= 0 ? 30 : days.Value;
+            var windowDays = EndpointHelpers.NormalizeHistoryDays(days);
             var result = await service.GetPriceHistoryAsync(id, windowDays, ct);
             return result is null ? Results.NotFound() : Results.Ok(result);
         }).CacheOutput(cachePolicy);
@@ -28,7 +28,7 @@ internal static class PriceHistoryEndpoints
         // aynı desen).
         app.MapGet("/api/products/sparklines", async (int[] ids, int? days, PriceHistoryQueryService service, CancellationToken ct) =>
         {
-            var windowDays = days is null or <= 0 ? 30 : days.Value;
+            var windowDays = EndpointHelpers.NormalizeHistoryDays(days);
             var limitedIds = ids.Distinct().Take(100).ToList();
             var result = await service.GetSparklinesAsync(limitedIds, windowDays, ct);
             return Results.Ok(result);

@@ -276,8 +276,33 @@ internal static class EndpointHelpers
 
     // 2026-08-15 güvenlik denetimi: pageSize'a hiç üst sınır yoktu (ör.
     // ?pageSize=5000000 gibi bir istek büyük bir sıralı sorguya yol açabilirdi).
-
-    // 2026-08-15 güvenlik denetimi: pageSize'a hiç üst sınır yoktu (ör.
-    // ?pageSize=5000000 gibi bir istek büyük bir sıralı sorguya yol açabilirdi).
     internal static int NormalizePageSize(int? pageSize) => pageSize is null or <= 0 ? 24 : Math.Min(pageSize.Value, 100);
+
+    // page=2147483647, (sayfa-1)*boyut hesabında taşıp 500 döndürüyordu
+    // (25 Eylül'de canlıda ölçüldü). 10.000 sayfa, 100'lük boyutla bile
+    // katalogun çok üstünde.
+    internal static int NormalizePage(int? page) => page is null or <= 0 ? 1 : Math.Min(page.Value, 10_000);
+
+    // Fiyat geçmişi penceresi. Site hep 30 gün istiyor; days=99999999 AddDays'te
+    // taşıp 500 döndürüyordu (ölçüldü). 730 gün, sitenin yaşının çok üstünde.
+    internal static int NormalizeHistoryDays(int? days) => days is null or <= 0 ? 30 : Math.Min(days.Value, 730);
+
+    // Aramadaki her kelime SQL'e ayrı bir koşul bloğu ekliyor ve uzunluğa sınır
+    // yoktu. Gerçek aramalar (ürün adı dahil) bunun içinde kalıyor; fazlası
+    // atılıyor, arama yalnızca biraz genişliyor.
+    private const int MaxSearchLength = 100;
+    private const int MaxSearchWords = 8;
+
+    internal static string? NormalizeSearch(string? search)
+    {
+        if (string.IsNullOrWhiteSpace(search))
+            return search;
+
+        var metin = search.Trim();
+        if (metin.Length > MaxSearchLength)
+            metin = metin[..MaxSearchLength];
+
+        var kelimeler = metin.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return kelimeler.Length <= MaxSearchWords ? metin : string.Join(' ', kelimeler.Take(MaxSearchWords));
+    }
 }

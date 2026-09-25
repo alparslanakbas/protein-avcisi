@@ -44,6 +44,13 @@ public sealed class CloudflareAccessValidator
     private IReadOnlyCollection<JsonWebKey> keys = [];
     private DateTimeOffset keysFetchedAt = DateTimeOffset.MinValue;
 
+    // Tanınmayan kid yüzünden zorunlu tazeleme en fazla bu sıklıkta. Sınır
+    // yokken sahte Cf-Access-Jwt-Assertion başlıklı HER istek Cloudflare'den
+    // anahtar indirtiyordu; indirmeler kilit üzerinden sıraya girdiği için bu
+    // bir yavaşlatma aracıydı (güvenlik incelemesi, 25 Eylül).
+    private static readonly TimeSpan ZorunluTazelemeAraligi = TimeSpan.FromMinutes(5);
+    private long sonZorunluTazeleme;
+
     public CloudflareAccessValidator(
         IConfiguration configuration,
         IHttpClientFactory httpClientFactory,
@@ -82,8 +89,15 @@ public sealed class CloudflareAccessValidator
             var sonuc = await DogrulaAsync(token, tazele: false, cancellationToken);
 
             // İmza tutmadıysa anahtar dönmüş olabilir: bir kez tazeleyip yeniden dene.
-            if (!sonuc && await AnahtarlariTazeleAsync(cancellationToken))
+            // Yalnızca jetonun kid'i elimizdeki anahtarlarda YOKSA (bilinen bir
+            // anahtarla imza tutmuyorsa tazelemek bir şey değiştirmez) ve son
+            // zorunlu tazelemeden bu yana yeterli süre geçtiyse.
+            if (!sonuc && BilinmeyenAnahtarMi(token) && ZorunluTazelemeSirasiGeldiMi()
+                && await AnahtarlariTazeleAsync(cancellationToken))
+            {
+                logger.LogInformation("Cloudflare Access anahtarları tanınmayan bir kid yüzünden tazelendi.");
                 sonuc = await DogrulaAsync(token, tazele: true, cancellationToken);
+            }
 
             return sonuc;
         }
@@ -92,6 +106,33 @@ public sealed class CloudflareAccessValidator
             logger.LogWarning(ex, "Cloudflare Access jetonu doğrulanamadı.");
             return false;
         }
+    }
+
+    private bool BilinmeyenAnahtarMi(string token)
+    {
+        string kid;
+        try
+        {
+            kid = new JsonWebTokenHandler().ReadJsonWebToken(token).Kid;
+        }
+        catch (Exception)
+        {
+            // Çözülemeyen jeton hiçbir anahtarla doğrulanamaz; indirmeye değmez.
+            return false;
+        }
+
+        return !string.IsNullOrEmpty(kid) && keys.All(k => k.Kid != kid);
+    }
+
+    private bool ZorunluTazelemeSirasiGeldiMi()
+    {
+        var simdi = DateTimeOffset.UtcNow.UtcTicks;
+        var son = Interlocked.Read(ref sonZorunluTazeleme);
+        if (simdi - son < ZorunluTazelemeAraligi.Ticks)
+            return false;
+
+        // Aynı anda gelen isteklerden yalnızca biri hakkı alır.
+        return Interlocked.CompareExchange(ref sonZorunluTazeleme, simdi, son) == son;
     }
 
     private async Task<bool> DogrulaAsync(string token, bool tazele, CancellationToken cancellationToken)

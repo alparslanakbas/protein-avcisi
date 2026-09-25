@@ -12,12 +12,44 @@ concurrency:
   group: deploy-oracle-vm
   cancel-in-progress: false
 
-# İş depoyu okumuyor bile (yalnızca SSH); GitHub jetonuna en dar yetki.
+# Test işleri depoyu okuyor, deploy işi yalnızca SSH; jetona en dar yetki.
 permissions:
   contents: read
 
 jobs:
+  # TEST KAPISI: deploy ancak iki test işi de geçerse başlıyor. Önceden push
+  # doğrudan canlıya gidiyordu; "bütün uçlar 500" türünden hatalar (6 Eylül)
+  # ancak canlıda görülüyordu (güvenlik incelemesi, 25 Eylül). Action'lar
+  # deploy adımı gibi commit SHA'sına sabit.
+  backend-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: '10.0.x'
+      # Test PROJESİNİN yolu veriliyor: çözüm dosyası (.slnx) verilince
+      # dotnet test hiç test çalıştırmadan "başarılı" dönüyor (ölçüldü) ve
+      # kapı sahte güven verirdi.
+      - run: dotnet test backend/tests/IndirimTakip.Infrastructure.Tests/IndirimTakip.Infrastructure.Tests.csproj
+
+  frontend-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npx ng test --watch=false
+
   deploy:
+    needs: [backend-test, frontend-test]
     runs-on: ubuntu-latest
     steps:
       - name: Deploy via SSH

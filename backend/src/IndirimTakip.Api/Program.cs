@@ -15,6 +15,13 @@ using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// İstek gövdesi üst sınırı. Kestrel'in varsayılanı ~30 MB ve Minimal API'de
+// yetki filtresi gövde okunup JSON'a çevrildikten SONRA çalışıyor: anahtarsız
+// bir istek bile 30 MB'ı yükletip ayrıştırtabiliyordu (güvenlik incelemesi,
+// 25 Eylül). En büyük meşru gövde toplayıcının kaynak başına gönderimi; canlı
+// veriden en büyük kaynak ~450 kB tahmin edildi, 2 MB dört kat pay bırakıyor.
+builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = 2_000_000);
+
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();

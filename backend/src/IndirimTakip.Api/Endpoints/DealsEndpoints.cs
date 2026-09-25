@@ -37,11 +37,16 @@ internal static class DealsEndpoints
                 bool? preferBrandStore,
                 CancellationToken ct) =>
             {
-                var windowDays = days is null or <= 0 ? 30 : days.Value;
+                // Pencere SABİT 30 gün; days bilerek yok sayılıyor. Site bu uçlara
+                // days göndermiyor ve 30 dışındaki her değer ürün başına alt
+                // sorgulu eski yola düşüyordu: days=31 tek istekte 6,1 sn
+                // (normali 0,7 sn) ve rastgele bir parametreyle önbellek de
+                // atlanabiliyordu (25 Eylül'de canlıda ölçüldü).
+                const int windowDays = 30;
                 var result = await deals.GetDealsAsync(
-                    windowDays, brands, categories, sellers, search, minPrice, maxPrice,
+                    windowDays, brands, categories, sellers, EndpointHelpers.NormalizeSearch(search), minPrice, maxPrice,
                     onlyDiscounted, onlyStoreDiscounted, sortBy,
-                    page is null or <= 0 ? 1 : page.Value, EndpointHelpers.NormalizePageSize(pageSize), ct,
+                    EndpointHelpers.NormalizePage(page), EndpointHelpers.NormalizePageSize(pageSize), ct,
                     expandSearchSynonyms: expandSynonyms ?? true,
                     preferBrandStore: preferBrandStore ?? false);
                 return Results.Ok(result);
@@ -88,8 +93,8 @@ internal static class DealsEndpoints
             var result = await deals.GetBestValuePerServingAsync(
                 category,
                 brands is { Length: > 0 } ? brands : null,
-                string.IsNullOrWhiteSpace(search) ? null : search,
-                page is null or <= 0 ? 1 : page.Value,
+                string.IsNullOrWhiteSpace(search) ? null : EndpointHelpers.NormalizeSearch(search),
+                EndpointHelpers.NormalizePage(page),
                 EndpointHelpers.NormalizePageSize(pageSize),
                 ct);
 
