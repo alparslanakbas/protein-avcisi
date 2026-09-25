@@ -4,6 +4,7 @@ using IndirimTakip.Core.Scraping;
 using IndirimTakip.Infrastructure.Subscribers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace IndirimTakip.Infrastructure.Scraping;
 
@@ -11,7 +12,8 @@ public class ScrapeIngestionService(
     AppDbContext db,
     ProductWatchNotifier watchNotifier,
     IndexNowClient indexNow,
-    IConfiguration configuration)
+    IConfiguration configuration,
+    ILogger<ScrapeIngestionService> logger)
 {
     /// <summary>
     /// Kaynak başına eşzamanlılık kilidi. Aynı kaynağın iki taraması aynı anda
@@ -84,6 +86,17 @@ public class ScrapeIngestionService(
         CancellationToken cancellationToken)
     {
         var scrapedAt = DateTimeOffset.UtcNow;
+
+        // Her kaynağın geçtiği ortak kontrol (bkz. TaramaKaydiKontrolu).
+        // Elenen varsa sessiz kalmıyor: kaynağın bozulduğunun ilk işareti bu.
+        var gecerli = scrapedProducts.Select(TaramaKaydiKontrolu.Temizle).OfType<ScrapedProduct>().ToList();
+        if (gecerli.Count < scrapedProducts.Count)
+        {
+            logger.LogWarning(
+                "{Kaynak}: {Elenen} ürün ortak kontrolden geçmedi (fiyat sıfır/negatif ya da adres https değil).",
+                scraper.BrandName, scrapedProducts.Count - gecerli.Count);
+        }
+        scrapedProducts = gecerli;
 
         // Markalar ada göre önbelleğe alınıyor: çok markalı bir kaynakta
         // (bayi kataloğu) ürün başına marka çözmek gerekiyor ve her ürün için
