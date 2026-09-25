@@ -21,6 +21,16 @@ RUN apt-get update \
 
 COPY --from=build /app/publish .
 
+# ROOT OLMADAN ÇALIŞIYOR (güvenlik incelemesi, 26 Eylül). Backend üçüncü
+# tarafın HTML'ini ve görsellerini (ImageSharp, Tesseract) işliyor; o
+# ayrıştırıcılardan birinde çıkacak bir açık root yerine yetkisiz `app`
+# kullanıcısını (aspnet imajında hazır, UID 1654) ele geçirir.
+# Yazılan tek yer görsel dizini. Onu burada `app`'e vermek YENİ bir volume'a
+# doğru sahipliği taşıyor (Docker boş volume'u imajdaki dizinden doldurur);
+# VAR OLAN volume'un sahipliği bir kez elle çevrildi, bkz. altyapı notları.
+RUN mkdir -p /app/urun-gorsel && chown $APP_UID:$APP_UID /app/urun-gorsel
+USER $APP_UID
+
 # Render (ve benzeri platformlar) PORT ortam değişkenini kendisi atıyor —
 # varsa onu kullan, yoksa 8080'e düş.
 ENV PORT=8080

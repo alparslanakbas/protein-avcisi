@@ -64,6 +64,13 @@ public static class DependencyInjection
         services.AddDbContext<AppDbContext>(options =>
             options.UseNpgsql(configuration.GetConnectionString("Default")));
 
+        // Bütün HTTP istemcileri yalnızca genel adreslere bağlanıyor (SSRF
+        // koruması, bkz. DisAgBaglantisi). Varsayılan olarak konduğu için
+        // yeni bir scraper bunu unutamıyor; iç adrese bilerek giden istemci
+        // kendi işleyicisini açıkça seçmek zorunda.
+        services.ConfigureHttpClientDefaults(b =>
+            b.ConfigurePrimaryHttpMessageHandler(DisAgBaglantisi.IsleyiciOlustur));
+
         // Tarama bitince genel veri önbelleğini tazeleyen bağımlılık. GERÇEK
         // uygulama Api projesinde (ASP.NET'in çıktı önbelleğine bağlı);
         // buradaki yalnızca Api olmadan çalışan ortamlar (testler, konsol

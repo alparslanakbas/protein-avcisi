@@ -162,7 +162,11 @@ builder.Services.AddOutputCache(options =>
 builder.Services.AddHttpClient(nameof(OutputCacheRefresher), client =>
 {
     client.Timeout = TimeSpan.FromSeconds(30);
-});
+})
+    // Kendi API'mizi localhost'tan ısıtıyor: iç adrese BİLEREK giden tek
+    // istemci. Varsayılan işleyici (DisAgBaglantisi) localhost'u reddettiği
+    // için burada düz işleyici açıkça seçiliyor.
+    .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler());
 builder.Services.AddScoped<IPublicCacheRefresher, OutputCacheRefresher>();
 
 builder.Services.Configure<AffiliateOptions>(builder.Configuration.GetSection("Affiliate"));

@@ -107,6 +107,40 @@ public class ProductImageStoreTests
         Assert.Equal(150, sonuc.Height);
     }
 
+    /// <summary>
+    /// Birkaç düzine baytlık bir dosya başlığında 30000x30000 yazıyor. Kod
+    /// çözücüye verilseydi ~3,6 GB piksel belleği isterdi; sınır başlıkta
+    /// yakalanmalı. Mesaj bizim kontrolümüze ait, yani kütüphanenin başka
+    /// bir hatası testi geçiremez.
+    /// </summary>
+    [Fact]
+    public async Task Basligi_dev_boyut_soyleyen_gorsel_acilmiyor()
+    {
+        using var girdi = new MemoryStream(BmpBasligi(30_000, 30_000));
+
+        var hata = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => ProductImageStore.KucultAsync(girdi, 78, CancellationToken.None));
+
+        Assert.Contains("piksel sınırını aştı", hata.Message);
+        Assert.Contains("30000x30000", hata.Message);
+    }
+
+    // Sıkıştırmasız 24 bit BMP'nin yalnızca başlığı (14 + 40 bayt), piksel yok.
+    private static byte[] BmpBasligi(int genislik, int yukseklik)
+    {
+        var b = new byte[54];
+        b[0] = (byte)'B';
+        b[1] = (byte)'M';
+        BitConverter.GetBytes(54).CopyTo(b, 2);      // dosya boyutu
+        BitConverter.GetBytes(54).CopyTo(b, 10);     // piksel verisinin yeri
+        BitConverter.GetBytes(40).CopyTo(b, 14);     // bilgi başlığı boyutu
+        BitConverter.GetBytes(genislik).CopyTo(b, 18);
+        BitConverter.GetBytes(yukseklik).CopyTo(b, 22);
+        BitConverter.GetBytes((short)1).CopyTo(b, 26);   // düzlem
+        BitConverter.GetBytes((short)24).CopyTo(b, 28);  // bit/piksel
+        return b;
+    }
+
     private static MemoryStream SahteGorsel(int genislik, int yukseklik)
     {
         using var gorsel = new SixLabors.ImageSharp.Image<SixLabors.ImageSharp.PixelFormats.Rgba32>(genislik, yukseklik);

@@ -61,6 +61,13 @@ services:
     restart: unless-stopped
     # Site toplamı 1,5 çekirdek / 4 GB (scripts/proteinavcisi.slice).
     cgroup_parent: proteinavcisi.slice
+    # Root olmayan kullanıcı (Dockerfile) + hiçbir çekirdek yetkisi yok +
+    # setuid ikilileriyle yetki yükseltme kapalı. Uygulamanın bunlara
+    # ihtiyacı yok: port 8080, yazdığı tek yer kendi görsel dizini.
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - PORT=8080
@@ -140,6 +147,11 @@ services:
     restart: unless-stopped
     # Site toplamı 1,5 çekirdek / 4 GB (scripts/proteinavcisi.slice).
     cgroup_parent: proteinavcisi.slice
+    # Backend'deki gibi: root olmayan kullanıcı, yetki yok, yükseltme yok.
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     environment:
       - PORT=4000
       - NG_ALLOWED_HOSTS=proteinavcisi.com.tr,www.proteinavcisi.com.tr

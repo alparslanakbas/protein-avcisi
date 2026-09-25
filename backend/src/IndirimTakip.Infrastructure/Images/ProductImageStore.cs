@@ -40,6 +40,12 @@ public sealed class ProductImageStore(
     public const int EnFazlaKenar = 400;
 
     /// <summary>
+    /// Kod çözülecek en büyük görsel (genişlik x yükseklik). 40 milyon piksel
+    /// ~160 MB bellek demek (4 bayt/piksel); dilimin 4 GB tavanının çok altında.
+    /// </summary>
+    internal const long EnFazlaPiksel = 40_000_000;
+
+    /// <summary>
     /// Kaynak adres için üretilecek yerel dosya adı. Saf fonksiyon: aynı
     /// adres her zaman aynı adı veriyor.
     /// </summary>
@@ -122,6 +128,18 @@ public sealed class ProductImageStore(
     /// </summary>
     internal static async Task<byte[]> KucultAsync(Stream girdi, int kalite, CancellationToken cancellationToken)
     {
+        // PİKSEL SINIRI, KOD ÇÖZMEDEN ÖNCE (güvenlik incelemesi, 26 Eylül).
+        // Bayt sınırı yetmiyor: birkaç kB'lık bir dosya başlığında 30000x30000
+        // yazabilir ve kod çözücü o kadar pikseli bellekte açmaya kalkar
+        // (~3,6 GB; dilimin tavanı 4 GB). Başlık okunup boyut kontrol ediliyor,
+        // görüntü ancak sonra açılıyor.
+        var bilgi = await Image.IdentifyAsync(girdi, cancellationToken)
+            ?? throw new InvalidOperationException("Görsel biçimi tanınmadı.");
+        if ((long)bilgi.Width * bilgi.Height > EnFazlaPiksel)
+            throw new InvalidOperationException(
+                $"Görsel piksel sınırını aştı ({bilgi.Width}x{bilgi.Height}).");
+        girdi.Position = 0;
+
         using var gorsel = await Image.LoadAsync(girdi, cancellationToken);
 
         // KÜÇÜKSE BÜYÜTÜLMÜYOR: Max modu yalnızca sınırı aşan kenarı
