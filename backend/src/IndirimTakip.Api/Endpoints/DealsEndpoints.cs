@@ -129,16 +129,16 @@ internal static class DealsEndpoints
             return Results.Ok(result);
         }).CacheOutput(cachePolicy);
 
-        app.MapGet("/api/filters", async (DealsQueryService deals, CancellationToken ct) =>
+        app.MapGet("/api/filters", async (CatalogStatsQueryService katalog, CancellationToken ct) =>
         {
-            var result = await deals.GetFilterOptionsAsync(ct);
+            var result = await katalog.GetFilterOptionsAsync(ct);
             return Results.Ok(result);
         }).CacheOutput(cachePolicy);
 
         // Ana sayfadaki "canlı tarama şeridi" için özet sayılar.
-        app.MapGet("/api/stats", async (DealsQueryService deals, CancellationToken ct) =>
+        app.MapGet("/api/stats", async (CatalogStatsQueryService katalog, CancellationToken ct) =>
         {
-            var result = await deals.GetHomepageStatsAsync(cancellationToken: ct);
+            var result = await katalog.GetHomepageStatsAsync(cancellationToken: ct);
             return Results.Ok(result);
         }).CacheOutput(cachePolicy);
 
@@ -154,27 +154,27 @@ internal static class DealsEndpoints
         }).CacheOutput(cachePolicy);
 
         // Marka sayfasındaki "bu markaya genel bakış" bölümü için — kendi verimize
-        // dayanan, kopyalanmamış özgün içerik (bkz. DealsQueryService.GetBrandStatsAsync).
+        // dayanan, kopyalanmamış özgün içerik (bkz. CatalogStatsQueryService.GetBrandStatsAsync).
         // category verilirse istatistikler markanın yalnızca o kategorideki
         // ürünlerinden hesaplanır (marka × kategori sayfaları için).
-        app.MapGet("/api/brand-stats", async (string? brand, string? category, DealsQueryService deals, CancellationToken ct) =>
+        app.MapGet("/api/brand-stats", async (string? brand, string? category, CatalogStatsQueryService katalog, CancellationToken ct) =>
         {
             if (string.IsNullOrWhiteSpace(brand))
                 return Results.BadRequest(new { message = "brand parametresi gerekli." });
 
-            var result = await deals.GetBrandStatsAsync(
+            var result = await katalog.GetBrandStatsAsync(
                 brand, category: string.IsNullOrWhiteSpace(category) ? null : category, cancellationToken: ct);
             return Results.Ok(result);
         }).CacheOutput(cachePolicy);
 
         // Ürün incelemesi sayfasındaki "bu ürün kategorisinde nasıl konumlanıyor"
-        // bölümü için — bkz. DealsQueryService.GetCategoryPriceStatsAsync.
-        app.MapGet("/api/category-price-stats", async (string? category, DealsQueryService deals, CancellationToken ct) =>
+        // bölümü için — bkz. CatalogStatsQueryService.GetCategoryPriceStatsAsync.
+        app.MapGet("/api/category-price-stats", async (string? category, CatalogStatsQueryService katalog, CancellationToken ct) =>
         {
             if (string.IsNullOrWhiteSpace(category))
                 return Results.BadRequest(new { message = "category parametresi gerekli." });
 
-            var result = await deals.GetCategoryPriceStatsAsync(category, ct);
+            var result = await katalog.GetCategoryPriceStatsAsync(category, ct);
             return result is null ? Results.NotFound() : Results.Ok(result);
         }).CacheOutput(cachePolicy);
 
@@ -186,9 +186,9 @@ internal static class DealsEndpoints
 
         // sitemap.xml üretimi için — asıl XML frontend'in SSR sunucusunda kuruluyor
         // (kendi domain'ini biliyor), burası sadece ham veriyi veriyor.
-        app.MapGet("/api/products/sitemap", async (DealsQueryService deals, CancellationToken ct) =>
+        app.MapGet("/api/products/sitemap", async (CatalogStatsQueryService katalog, CancellationToken ct) =>
         {
-            var result = await deals.GetSitemapEntriesAsync(ct);
+            var result = await katalog.GetSitemapEntriesAsync(ct);
             return Results.Ok(result);
         }).CacheOutput(cachePolicy);
     }

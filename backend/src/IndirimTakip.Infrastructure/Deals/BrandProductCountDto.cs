@@ -10,6 +10,6 @@ namespace IndirimTakip.Infrastructure.Deals;
 // sayılmıyordu ve kategorisi hiç olmayan üç marka (BioBee, Dr Pan, SiS)
 // "0 ürün" görünüyordu.
 //
-// Buradaki sayı GetBrandStatsAsync ile AYNI tanımı kullanıyor (aktif marka +
+// Buradaki sayı CatalogStatsQueryService.GetBrandStatsAsync ile AYNI tanımı kullanıyor (aktif marka +
 // bayat olmayan ürün), böylece iki sayfa aynı rakamı veriyor.
 public record BrandProductCountDto(string BrandName, int ProductCount);
