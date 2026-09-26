@@ -1,0 +1,47 @@
+name: Bağımlılık taraması
+
+# Haftada bir: npm ve NuGet paketlerinde bilinen açık var mı (güvenlik
+# incelemesi, 26 Eylül). Angular 22.1.1'deki iki SSR açığı (25 Eylül) ancak
+# elle bakınca fark edilmişti; hiçbir iş bu kontrolü yapmıyordu.
+#
+# Deploy kapısına BİLEREK konmadı: yeni bir açık yayınlandığı gün deploy'u
+# kilitlerdi, oysa o gün en çok gereken şey düzeltmeyi canlıya çıkarabilmek.
+# Başarısız zamanlanmış çalıştırmayı GitHub e-postayla bildiriyor; elle de
+# çalıştırılabilir (Actions > Bağımlılık taraması > Run workflow).
+on:
+  schedule:
+    - cron: '17 5 * * 1' # pazartesi 05:17 UTC = 08:17 TSİ
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  npm:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+      # npm audit kilit dosyasını okuyor, kurulum gerekmiyor.
+      # Canlıya giden (SSR sunucusunda çalışan) paketler: orta ve üstü kırmızı.
+      - run: npm audit --omit=dev --audit-level=moderate
+      # Derleme/test araçları: yalnız yüksek ve kritik. Orta seviye geliştirme
+      # açıkları sık çıkıyor; her birinde kırmızı yanan bir iş bakılmayan bir
+      # alarma dönerdi.
+      - run: npm audit --audit-level=high
+
+  nuget:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: '10.0.x'
+      # `dotnet list package --vulnerable` açık bulsa da 0 dönüyor; kararı
+      # betik JSON çıktısından veriyor.
+      - run: python3 scripts/nuget-acik-kontrolu.py
