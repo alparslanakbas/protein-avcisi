@@ -25,7 +25,7 @@ internal static class DealsEndpoints
                 // sellers: ürünün satın alındığı yer (marka/üretici ile aynı şey değil).
                 // "Markanın kendi sitesi" etiketi DealsQueryService'te NULL'a çevriliyor.
                 DealsQueryService deals, string[]? brands, string[]? categories, string[]? sellers, string? search,
-                decimal? minPrice, decimal? maxPrice, int? days, string? sortBy, int? page, int? pageSize,
+                decimal? minPrice, decimal? maxPrice, string? sortBy, int? page, int? pageSize,
                 // Belirli bir bileşeni arayan sayfalar (ör. "Beta-Alanine Dozu"
                 // hesaplayıcısı) eşanlamlı genişletmeyi KAPATABİLİR: "alanine"
                 // araması, o kelime amino-asitler kategorisinin anahtar
@@ -37,11 +37,12 @@ internal static class DealsEndpoints
                 bool? preferBrandStore,
                 CancellationToken ct) =>
             {
-                // Pencere SABİT 30 gün; days bilerek yok sayılıyor. Site bu uçlara
-                // days göndermiyor ve 30 dışındaki her değer ürün başına alt
-                // sorgulu eski yola düşüyordu: days=31 tek istekte 6,1 sn
-                // (normali 0,7 sn) ve rastgele bir parametreyle önbellek de
-                // atlanabiliyordu (25 Eylül'de canlıda ölçüldü).
+                // Pencere SABİT 30 gün. Site bu uçlara days göndermiyor ve 30
+                // dışındaki her değer ürün başına alt sorgulu eski yola
+                // düşüyordu: days=31 tek istekte 6,1 sn (normali 0,7 sn; 25 Eylül,
+                // canlı). days imzadan da ÇIKARILDI (26 Eylül): önbellek anahtarı
+                // imzadaki parametrelerden kuruluyor, kullanılmayan bir days
+                // orada kalsaydı ?days=<rastgele> önbelleği yine atlatırdı.
                 const int windowDays = 30;
                 var result = await deals.GetDealsAsync(
                     windowDays, brands, categories, sellers, EndpointHelpers.NormalizeSearch(search), minPrice, maxPrice,

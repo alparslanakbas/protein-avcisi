@@ -22,4 +22,10 @@
     <ProjectReference Include="..\IndirimTakip.Infrastructure\IndirimTakip.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Testler gerçek uç tanımlarını (internal Map* sınıfları) kurup önbellek
+         anahtarlarını okuyor. -->
+    <InternalsVisibleTo Include="IndirimTakip.Infrastructure.Tests" />
+  </ItemGroup>
+
 </Project>

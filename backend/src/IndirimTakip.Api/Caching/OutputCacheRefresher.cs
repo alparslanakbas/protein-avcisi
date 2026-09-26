@@ -38,19 +38,28 @@ public sealed class OutputCacheRefresher(
     /// <summary>
     /// Isıtılacak adresler — ana sayfanın SSR'ında çağrılan uçlar.
     ///
-    /// Politika <c>SetVaryByQuery("*")</c> kullandığı için her farklı sorgu
-    /// dizesi AYRI bir önbellek girdisi. Buradaki adresler sayfanın gerçekten
-    /// istediği hâlleriyle BİREBİR aynı olmalı; yoksa ısıtma başka bir girdiyi
-    /// doldurur ve ziyaretçi yine soğuk önbelleğe düşer.
+    /// Anahtarda ucun bağladığı sorgu parametreleri var
+    /// (<see cref="UcSorguAnahtarlariPolitikasi"/>): buradaki adresler o
+    /// parametreleri sayfanın gerçekten gönderdiği DEĞERLERLE taşımalı; yoksa
+    /// ısıtma başka bir girdiyi doldurur ve ziyaretçi yine soğuk önbelleğe düşer.
+    /// (<c>preferred-products?take=12</c> tam bu yüzden hiçbir işe yaramıyordu:
+    /// uç <c>count</c> okuyor, ana sayfa <c>count=60</c> gönderiyor — 26 Eylül.)
+    /// Aynı gün kodla karşılaştırıldı: ana sayfanın varsayılan görünümü
+    /// <c>'store'</c>, yani ana liste <c>/api/store-deals</c>'tan geliyor ve hiç
+    /// ısıtılmıyordu; hero kartı ve ürün sayacı da ayrı birer liste sorgusu.
     /// </summary>
     private static readonly string[] IsitilacakYollar =
     [
+        "/api/store-deals?page=1&pageSize=24",
+        "/api/deals?pageSize=1",
+        "/api/products?pageSize=1",
+        // "İndirimler" görünümünün ilk sayfası.
         "/api/deals?page=1&pageSize=24",
         "/api/stats",
         "/api/filters",
         "/api/brand-category-pairs",
         "/api/brand-product-counts",
-        "/api/preferred-products?take=12",
+        "/api/preferred-products?count=60",
     ];
 
     /// <summary>

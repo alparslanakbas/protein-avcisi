@@ -11,6 +11,7 @@ import { brandSlug } from './app/core/brand-slug';
 import { API_BASE_URL } from './app/core/api.config';
 import { INTERNAL_API_HEADERS, toInternalApiUrl } from './app/core/internal-api';
 import { slugify } from './app/core/slugify';
+import { ssrOnbellekAnahtari } from './app/core/ssr-cache-key';
 import { BODY_CALCULATORS } from './app/core/body-calculators';
 import { SUPPLEMENT_DOSAGES } from './app/core/supplement-dosages';
 
@@ -400,14 +401,10 @@ interface SsrCacheEntry {
 /** Ekleme sırası korunduğu için en eski giriş her zaman ilk anahtar. */
 const ssrCache = new Map<string, SsrCacheEntry>();
 
+// Tanınmayan sorgu parametreli istekler de dışarıda (26 Eylül); gerekçe ve
+// "neden anahtardan atılmıyor" ssr-cache-key.ts'te.
 function ssrCacheKey(req: express.Request): string | null {
-  if (req.method !== 'GET') return null;
-  const path = req.path;
-  // Takip listesi tarayıcıdaki anahtara bağlı; kurtarma bağlantısı ise
-  // tek kişiye ait bir belirteç taşıyor.
-  if (path.startsWith('/favorilerim')) return null;
-  if (req.query['recover'] !== undefined) return null;
-  return req.originalUrl;
+  return ssrOnbellekAnahtari(req.method, req.originalUrl);
 }
 
 app.use((req, res, next) => {

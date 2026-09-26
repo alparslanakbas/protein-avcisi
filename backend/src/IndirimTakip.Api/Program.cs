@@ -137,24 +137,10 @@ var publicCacheSeconds = builder.Configuration.GetValue("OutputCache:PublicSecon
 builder.Services.AddOutputCache(options =>
 {
     options.AddBasePolicy(policy => policy.NoCache());
-    options.AddPolicy(PublicDataCachePolicy, policy => policy
-        .Expire(TimeSpan.FromSeconds(publicCacheSeconds))
-        // Tarama sonrası toplu temizleme bu etikete göre yapılıyor.
-        .Tag(OutputCacheRefresher.Tag)
-        // Filtre/sayfalama parametreleri yanıtı tamamen değiştiriyor; tümü
-        // önbellek anahtarına dahil edilmezse farklı filtreler birbirinin
-        // sonucunu görürdü.
-        .SetVaryByQuery("*")
-        // HOST ANAHTARDAN ÇIKARILDI (16 Eylül). SSR artık API'ye Docker iç
-        // ağından (http://backend:8080) gidiyor, Cloudflare'den dolaşmıyor.
-        // Node'un fetch'i Host başlığını değiştirmeye izin vermiyor (ölçüldü:
-        // özel Host gönderildi, sunucu yine 127.0.0.1 gördü), yani iç istek
-        // Host: backend:8080 ile geliyor. Host anahtarda kalsaydı SSR ısıtılmış
-        // girdileri (Host: api.proteinavcisi.com.tr) hiç görmez, her sayfa soğuk
-        // sorguya düşerdi. Bu uçların yanıtı Host'a bağlı değil ve API tek bir
-        // genel adresten sunuluyor. Şema anahtarda KALIYOR: SSR da ısıtma da
-        // X-Forwarded-Proto: https gönderiyor.
-        .SetVaryByHost(false));
+    // Süre, etiket ve anahtar kuralları GenelVeriOnbellegi'nde (testler de
+    // aynı kurulumu kullanıyor).
+    options.AddPolicy(PublicDataCachePolicy, policy =>
+        GenelVeriOnbellegi.Uygula(policy, TimeSpan.FromSeconds(publicCacheSeconds)));
 });
 
 // Tarama bitince önbelleği tazeleyen uygulama. Arayüz Core'da: scraper'ların
