@@ -11,6 +11,12 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <!-- Açıkça sabit: bu proje Relational'a Design (PrivateAssets) üzerinden
+         10.0.10 ile derleniyor, ama Design dışarı akmadığı için test projesi
+         Npgsql 10.0.3'ün istediği 10.0.4'ü alıyordu (CI'da MSB3277). SQL'e
+         çevirme Relational'da; gerçek PostgreSQL testi canlıdakiyle aynı
+         sürümü sınamalı (güvenlik incelemesi, 26 Eylül). -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.10" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.10" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.10" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
