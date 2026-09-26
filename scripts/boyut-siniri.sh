@@ -23,16 +23,28 @@ declare -A TAVAN=(
   [backend/src/IndirimTakip.Infrastructure/Deals/DealsQueryService.cs]=860
 )
 
+# Liste ÖNCE değişkene alınıyor: süreç ikamesinin (< <(...)) çıkış kodunu
+# set -e görmüyor; git hata verince döngü sıfır dosya okuyup "tamam" diyordu
+# (ölçüldü, 27 Eylül). Buradaki atamada git hatası betiği düşürüyor; liste
+# başka bir sebeple boş gelirse aşağıdaki sayaç düşürüyor.
+liste=$(git ls-files 'backend/src/*.cs' 'frontend/src/*.ts' 'frontend/src/*.html')
 hata=0
+sayac=0
 while IFS= read -r dosya; do
+  [[ -z $dosya || $dosya == */Migrations/* || $dosya == *.spec.ts ]] && continue
+  sayac=$((sayac + 1))
   satir=$(wc -l < "$dosya")
   tavan=${TAVAN[$dosya]:-$SINIR}
   if (( satir > tavan )); then
     echo "SINIR AŞILDI: $dosya $satir satır (izin verilen $tavan)"
     hata=1
   fi
-done < <(git ls-files 'backend/src/*.cs' 'frontend/src/*.ts' 'frontend/src/*.html' \
-           | grep -v -e '/Migrations/' -e '\.spec\.ts$')
+done <<< "$liste"
+
+if (( sayac == 0 )); then
+  echo "HATA: hiç dosya okunmadı — betik git deposunun içinde mi çalışıyor?"
+  exit 1
+fi
 
 for dosya in "${!TAVAN[@]}"; do
   if [[ ! -f $dosya ]]; then
@@ -46,4 +58,4 @@ if (( hata )); then
   echo "Dosyayı bölün ya da (bilerek) scripts/boyut-siniri.sh içindeki tavanı yükseltin."
   exit 1
 fi
-echo "Boyut sınırı tamam (sınır $SINIR satır, ${#TAVAN[@]} dosya bugünkü boyunda dondurulmuş)."
+echo "Boyut sınırı tamam ($sayac dosya; sınır $SINIR satır, ${#TAVAN[@]} dosya bugünkü boyunda dondurulmuş)."
