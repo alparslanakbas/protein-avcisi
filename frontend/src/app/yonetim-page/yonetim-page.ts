@@ -13,12 +13,10 @@ import {
   SATIR_ADI_ONERILERI,
   SATIR_SABLONLARI,
   eklenecekSablonSatirlari,
-  kayitliDigerSatirlar,
-  makroDegeri,
-  tabloTabaniMi,
 } from './besin-satirlari';
 import { YonetimDuzenleyiciOdagi } from './duzenleyici-odagi';
 import { YonetimHataSebebi } from './hata-sebebi';
+import { KaydedilenVeri, UrunVeriFormu, VeriTaslaklari } from './veri-formu';
 import {
   Abone,
   AboneDurumu,
@@ -38,19 +36,6 @@ type AboneFiltresi = 'tumu' | AboneDurumu;
 type GorunurlukGorunumu = 'markalar' | 'urunler';
 type MarkaFiltresi = 'tumu' | 'gorunur' | 'gizli';
 type VeriFiltresi = 'eksikBesin' | 'kategorisiz' | 'elleGirilmeli' | 'elleGirilmis';
-
-/** Düzenleyicinin çalışma kopyası; girdiler kaydedilene kadar metin olarak tutuluyor. */
-interface UrunVeriFormu extends Record<MakroAlani, string> {
-  urun: YonetimUrun;
-  /** '' = otomatik. */
-  kategori: string;
-  /** Paketten çıkan porsiyon sayısı; boşsa site paket boyutundan hesaplıyor. */
-  paketPorsiyon: string;
-  /** Porsiyon kutusu porsiyon değil tablonun gram tabanı ("100 g başına"). */
-  porsiyonBeyanYok: boolean;
-  /** Makroların dışındaki etiket satırları (kreatin, vitamin, kafein…). */
-  digerSatirlar: BesinSatiriFormu[];
-}
 
 interface BekleyenGorunurlukDegisikligi {
   tip: 'marka' | 'urun';
@@ -171,6 +156,7 @@ export class YonetimPage implements OnInit {
   readonly satirAdiOnerileri = SATIR_ADI_ONERILERI;
   /** Kategorisi ve besin değeri düzenlenen ürün; kapalıyken null. */
   readonly duzenlenenVeri = signal<UrunVeriFormu | null>(null);
+  private readonly veriTaslaklari = new VeriTaslaklari();
   readonly veriKaydediliyor = signal(false);
   readonly veriMesaji = signal<string | null>(null);
   // Backend'in ret kodu: 'enerji-tutmuyor' gelince "etiket böyle yazıyor" kutusu
@@ -737,28 +723,20 @@ export class YonetimPage implements OnInit {
   }
 
   veriDuzenleyiciAc(urun: YonetimUrun): void {
-    const tablo = this.besinTablosu(urun.nutritionJson);
-    const diger = kayitliDigerSatirlar(tablo);
-    // Otomatik bir okuma bu düzenleyicinin yazamayacağı satırlar taşıyabilir ("%10").
-    // Kaydetmek tablonun tamamını değiştiriyor; hangilerinin gideceği söyleniyor.
-    this.veriMesaji.set(
-      diger.atlananlar.length > 0
-        ? `Buradan kaydedersen düzenlenemeyen şu satırlar silinir: ${diger.atlananlar.join(', ')}.`
-        : null,
-    );
-    this.duzenlenenVeri.set({
-      urun,
-      kategori: urun.categoryIsManual ? (urun.category ?? '') : '',
-      porsiyon: urun.servingSizeGrams?.toString() ?? makroDegeri(tablo, 'porsiyon'),
-      paketPorsiyon: urun.servingsPerPackage?.toString() ?? '',
-      porsiyonBeyanYok: tabloTabaniMi(tablo),
-      enerji: makroDegeri(tablo, 'enerji'),
-      protein: makroDegeri(tablo, 'protein'),
-      karbonhidrat: makroDegeri(tablo, 'karbonhidrat'),
-      yag: makroDegeri(tablo, 'yag'),
-      lif: makroDegeri(tablo, 'lif'),
-      digerSatirlar: diger.satirlar,
-    });
+    const { form, taslak, atlananlar } = this.veriTaslaklari.ac(urun);
+    // Önceki ürünün reddi ve "etiket böyle yazıyor" onayı bu ürüne taşınmasın:
+    // onay kalori kontrolünü atlatıyor.
+    this.sonRetKodu.set(null);
+    this.etiketBoyleYaziyor.set(false);
+    // Kaydetmek tablonun tamamını değiştiriyor; düzenlenemeyen satırların gideceği söyleniyor.
+    const mesajlar = [
+      taslak ? 'Kaydetmeden kapattığın girdiler geri getirildi.' : '',
+      atlananlar.length > 0
+        ? `Buradan kaydedersen düzenlenemeyen şu satırlar silinir: ${atlananlar.join(', ')}.`
+        : '',
+    ];
+    this.veriMesaji.set(mesajlar.filter(Boolean).join(' ') || null);
+    this.duzenlenenVeri.set(form);
   }
 
   /** Şablon satırları hâlâ eklenebilen kategorinin adı, yoksa null. */
@@ -811,7 +789,9 @@ export class YonetimPage implements OnInit {
   }
 
   veriDuzenleyiciKapat(): void {
-    if (this.veriKaydediliyor()) return;
+    const form = this.duzenlenenVeri();
+    if (this.veriKaydediliyor() || !form) return;
+    this.veriTaslaklari.kapat(form);
     this.duzenlenenVeri.set(null);
   }
 
@@ -839,6 +819,7 @@ export class YonetimPage implements OnInit {
     this.veriDuzenlemesiCalistir(
       this.api.kategoriAyarla(form.urun.id, form.kategori || null),
       'Kategori kaydedildi',
+      'kategori',
     );
   }
 
@@ -876,27 +857,43 @@ export class YonetimPage implements OnInit {
     this.veriDuzenlemesiCalistir(
       this.api.besinAyarla(form.urun.id, { ...govde, digerSatirlar }),
       'Besin değeri kaydedildi',
+      'besin',
     );
   }
 
   besinTemizle(): void {
     const form = this.duzenlenenVeri();
     if (!form) return;
-    this.veriDuzenlemesiCalistir(this.api.besinTemizle(form.urun.id), 'Besin değeri silindi');
+    this.veriDuzenlemesiCalistir(
+      this.api.besinTemizle(form.urun.id),
+      'Besin değeri silindi',
+      'besin',
+    );
   }
 
   besinYok(): void {
     const form = this.duzenlenenVeri();
     if (!form) return;
-    this.veriDuzenlemesiCalistir(this.api.besinYok(form.urun.id), 'Tablosu yok olarak işaretlendi');
+    this.veriDuzenlemesiCalistir(
+      this.api.besinYok(form.urun.id),
+      'Tablosu yok olarak işaretlendi',
+      'besin',
+    );
   }
 
-  private veriDuzenlemesiCalistir(istek: Observable<ElleDuzenlemeYaniti>, yapildi: string): void {
+  private veriDuzenlemesiCalistir(
+    istek: Observable<ElleDuzenlemeYaniti>,
+    yapildi: string,
+    kaydedilen: KaydedilenVeri,
+  ): void {
+    // Gönderilen hâl: istek sürerken yazılan girdi kaydedilmiş sayılmasın.
+    const gonderilen = this.duzenlenenVeri();
     this.veriKaydediliyor.set(true);
     this.veriMesaji.set(null);
     istek.subscribe({
       next: (y) => {
         this.veriKaydediliyor.set(false);
+        if (gonderilen) this.veriTaslaklari.kaydedildi(gonderilen, kaydedilen);
         this.sonRetKodu.set(null);
         this.etiketBoyleYaziyor.set(false);
         this.veriMesaji.set(
@@ -915,15 +912,6 @@ export class YonetimPage implements OnInit {
         this.veriMesaji.set(mesaj?.trim() || this.hataMetni(e, 'Kaydedilemedi.'));
       },
     });
-  }
-
-  private besinTablosu(json: string | null): Record<string, string> {
-    if (!json) return {};
-    try {
-      return JSON.parse(json) as Record<string, string>;
-    } catch {
-      return {};
-    }
   }
 
   gorunurlukDegisikligiIste(

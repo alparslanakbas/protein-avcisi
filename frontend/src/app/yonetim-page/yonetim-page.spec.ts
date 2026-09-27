@@ -270,6 +270,83 @@ describe('YonetimPage görünürlük güvenliği', () => {
     expect(api.kategoriAyarla).toHaveBeenCalledWith(21, null);
   });
 
+  // Düzenleyicinin dışına tıklamak onu kapatıyor; yarım girdiler kaybolmamalı.
+  it('kaydetmeden kapatılan girdileri yeniden açınca geri getirir, başka ürüne taşımaz', () => {
+    sayfa.veriDuzenleyiciAc(urun);
+    sayfa.veriAlaniGuncelle('protein', 30);
+    sayfa.veriAlaniGuncelle('karbonhidrat', 5);
+    sayfa.digerSatirEkle();
+    sayfa.digerSatirGuncelle(1, 'ad', 'Kafein');
+    sayfa.veriDuzenleyiciKapat();
+    expect(sayfa.duzenlenenVeri()).toBeNull();
+
+    sayfa.veriDuzenleyiciAc({ ...urun, id: 22 });
+    expect(sayfa.duzenlenenVeri()!.protein).toBe('24.1');
+    expect(sayfa.veriMesaji()).toBeNull();
+    sayfa.veriDuzenleyiciKapat();
+
+    sayfa.veriDuzenleyiciAc(urun);
+    const form = sayfa.duzenlenenVeri()!;
+    expect(form.protein).toBe('30');
+    expect(form.karbonhidrat).toBe('5');
+    expect(form.yag).toBe('1.9');
+    expect(form.digerSatirlar.map((s) => s.ad)).toEqual(['Tuz / Salt', 'Kafein']);
+    expect(sayfa.veriMesaji()).toContain('geri getirildi');
+  });
+
+  it('değişmeyen ya da kaydedilen girdiyi taslak saymaz', () => {
+    sayfa.veriDuzenleyiciAc(urun);
+    sayfa.veriDuzenleyiciKapat();
+    sayfa.veriDuzenleyiciAc(urun);
+    expect(sayfa.veriMesaji()).toBeNull();
+
+    sayfa.veriAlaniGuncelle('protein', 30);
+    sayfa.besinKaydet();
+    sayfa.veriDuzenleyiciKapat();
+
+    // Taslak kalmadığı için form verilen ürün kaydından kuruluyor.
+    sayfa.veriDuzenleyiciAc(urun);
+    expect(sayfa.duzenlenenVeri()!.protein).toBe('24.1');
+    expect(sayfa.veriMesaji()).toBeNull();
+  });
+
+  // Kategori ve besin ayrı düğmelerle kaydediliyor.
+  it('yalnızca kategori kaydedilince besin girdisini taslak olarak tutar', () => {
+    sayfa.veriDuzenleyiciAc(urun);
+    sayfa.veriAlaniGuncelle('protein', 30);
+    sayfa.veriAlaniGuncelle('kategori', 'vitamin');
+    sayfa.kategoriKaydet();
+    sayfa.veriDuzenleyiciKapat();
+
+    sayfa.veriDuzenleyiciAc({ ...urun, category: 'vitamin', categoryIsManual: true });
+    expect(sayfa.duzenlenenVeri()!.protein).toBe('30');
+    expect(sayfa.duzenlenenVeri()!.kategori).toBe('vitamin');
+    expect(sayfa.veriMesaji()).toContain('geri getirildi');
+  });
+
+  it('reddedilen kaydın girdisini tutar, "etiket böyle yazıyor" onayını başka ürüne taşımaz', () => {
+    api.besinAyarla.mockReturnValueOnce(
+      throwError(() => ({
+        status: 400,
+        error: { message: 'Enerji 400 kcal makrolarla tutmuyor.', kod: 'enerji-tutmuyor' },
+      })),
+    );
+    sayfa.veriDuzenleyiciAc(urun);
+    sayfa.veriAlaniGuncelle('enerji', 400);
+    sayfa.besinKaydet();
+    expect(sayfa.sonRetKodu()).toBe('enerji-tutmuyor');
+    sayfa.etiketBoyleYaziyor.set(true);
+    sayfa.veriDuzenleyiciKapat();
+
+    sayfa.veriDuzenleyiciAc({ ...urun, id: 22 });
+    expect(sayfa.sonRetKodu()).toBeNull();
+    expect(sayfa.etiketBoyleYaziyor()).toBe(false);
+    sayfa.veriDuzenleyiciKapat();
+
+    sayfa.veriDuzenleyiciAc(urun);
+    expect(sayfa.duzenlenenVeri()!.enerji).toBe('400');
+  });
+
   // "Besin değeri eksik" binlerce satıra uyuyor; liste 200'de kesilirdi.
   it('ürün listesini sayfalar ve düzenlemeden sonra sayfayı korur', () => {
     api.urunler.mockImplementation((...args: unknown[]) =>
