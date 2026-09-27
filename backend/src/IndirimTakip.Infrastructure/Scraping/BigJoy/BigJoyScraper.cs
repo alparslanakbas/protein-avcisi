@@ -207,13 +207,15 @@ public partial class BigJoyScraper(HttpClient httpClient) : IBrandScraper, IProd
     /// yazıyor ama gerçek oran 1,013-1,047 arasında (174 üründen 41'inde,
     /// ölçüldü). Yalnızca alana bakan ilk sürüm o paketleri %4,7'ye varan
     /// oranda UCUZ gösterdi — sayfada 1.634 TL yazarken 1.561 TL.
+    /// Prime Nutrition da aynı altyapıda; tuzağın düzeltmesi tek yerde kalsın
+    /// diye ikisi de bunu kullanıyor.
     /// </remarks>
-    private static decimal VergiKatsayisi(BigJoyProduct item) =>
+    internal static decimal VergiKatsayisi(BigJoyProduct item) =>
         item.Price is > 0 && item.PriceWithTax is > 0
             ? item.PriceWithTax.Value / item.Price.Value
             : 1 + (item.TaxRate ?? 0m) / 100m;
 
-    private static decimal? WithTax(decimal? price, decimal katsayi) =>
+    internal static decimal? WithTax(decimal? price, decimal katsayi) =>
         price is null or <= 0 ? null : Math.Round(price.Value * katsayi, 2);
 
     private string? ImageUrlOf(string? path)

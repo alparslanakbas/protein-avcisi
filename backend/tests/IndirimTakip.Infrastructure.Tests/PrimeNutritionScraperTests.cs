@@ -1,116 +1,188 @@
+using System.Net;
+using System.Text;
+using IndirimTakip.Infrastructure.Scraping;
 using IndirimTakip.Infrastructure.Scraping.PrimeNutrition;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace IndirimTakip.Infrastructure.Tests;
 
-// HTML parçaları primenutrition.com.tr'nin gerçek çıktısından alındı
-// (2 Eylül 2026) — uydurulmadı.
+// Site 27 Eylül'de yenilendi; katalog artık GET /api/products'tan geliyor
+// (BigJoy ile aynı altyapı). Buradaki JSON canlı yanıttan alınmış gerçek
+// gruplardır, yalnızca kullanılmayan alanlar çıkarıldı.
 public class PrimeNutritionScraperTests
 {
-    // Sitenin fiyat kutusu: önce normal fiyat, sonra "Havale / EFT" indirimi.
-    private const string PriceBox = """
-        <ul class="list-unstyled price_pr col-6">
-          <li><span class="price">1.299,00 TL</span></li>
-          <li><small>Havale / EFT</small> <span>1.234,05 TL</span></li>
-        </ul>
+    private const string Katalog = """
+        {"products":[
+          {"name":"Prime Nutrition Whey Protein","seo_keyword":"prime-nutrition-whey-protein-495-strawberry-6188","manufacturer_name":"Prime Nutrition",
+           "tax_rate":1,"price":1286.14,"price_with_tax":1299,"special":null,"special_with_tax":null,"is_in_stock":true,
+           "thumb":"/image/cache/catalog/Prime/Prime%20%C3%9Cr%C3%BCnler/Whey%20Kavanoz/495/15-Servis-Whey-Strawberry-Mockup-png-300x300.webp",
+           "subgroup_value":"495 gram","variant_value":"Strawberry Cream","variant_attributes":[
+             {"seo_keyword":"prime-nutrition-whey-protein-495-strawberry-6188","subgroup_value":"495 gram","variant_value":"Strawberry Cream","price":1286.14,"special":null,"is_in_stock":true,"image":"/image/cache/catalog/Prime/Prime%20%C3%9Cr%C3%BCnler/Whey%20Kavanoz/495/15-Servis-Whey-Strawberry-Mockup-png-300x300.webp"},
+             {"seo_keyword":"whey-protein-double-chocolate-495g","subgroup_value":"495 gram","variant_value":"Double Chocolate","price":1286.14,"special":null,"is_in_stock":true,"image":"/image/cache/catalog/Prime/Prime%20%C3%9Cr%C3%BCnler/Whey%20Kavanoz/495/15-Servis-Whey-Chocolate-Mockup-png-yeni-300x300.webp"},
+             {"seo_keyword":"whey-protein-cookie-ice-cream-495g","subgroup_value":"495 gram","variant_value":"Cookie & Ice Cream","price":1286.14,"special":null,"is_in_stock":true,"image":"/image/cache/catalog/Prime/Prime%20%C3%9Cr%C3%BCnler/Whey%20Kavanoz/495/15-Servis-Whey-Cookie-Mockup-png-300x300.webp"}]},
+          {"name":"Prime Nutrition %100 Peanut Butter","seo_keyword":"100-peanut-butter","manufacturer_name":"Prime Nutrition",
+           "tax_rate":1,"price":296.04,"price_with_tax":299,"special":null,"special_with_tax":null,"is_in_stock":true,
+           "thumb":"/image/cache/catalog/Prime/Prime%20%C3%9Cr%C3%BCnler/Spread-Ezme/Peanut%20Butter/Peanut-Butter-Web1v-300x300.webp",
+           "subgroup_value":"350 gram","variant_value":"none","variant_attributes":[
+             {"seo_keyword":"100-peanut-butter","subgroup_value":"350 gram","variant_value":"none","price":296.04,"special":null,"is_in_stock":true,"image":"/image/cache/catalog/Prime/Prime%20%C3%9Cr%C3%BCnler/Spread-Ezme/Peanut%20Butter/Peanut-Butter-Web1v-300x300.webp"}]},
+          {"name":"Prime Nutrition Optimus Pre-Workout","seo_keyword":"optimus-pre-workout-sachet-20x14g","manufacturer_name":"Prime Nutrition",
+           "tax_rate":1,"price":890.1,"price_with_tax":899,"special":null,"special_with_tax":null,"is_in_stock":false,
+           "thumb":"/image/cache/catalog/Prime/Prime%20%C3%9Cr%C3%BCnler/Optimus%20Display/Optimus-Display-Blue-Webpng-300x300.webp",
+           "subgroup_value":"20 Adet x 14 gram","variant_value":"Blue Raspberry","variant_attributes":[
+             {"seo_keyword":"optimus-pre-workout-sachet-20x14g","subgroup_value":"20 Adet x 14 gram","variant_value":"Blue Raspberry","price":890.1,"special":null,"is_in_stock":false,"image":"/image/cache/catalog/Prime/Prime%20%C3%9Cr%C3%BCnler/Optimus%20Display/Optimus-Display-Blue-Webpng-300x300.webp"},
+             {"seo_keyword":"optimus-pre-workout-sachet-redfruit-20x14g","subgroup_value":"20 Adet x 14 gram","variant_value":"Red Fruit","price":890.1,"special":null,"is_in_stock":false,"image":"/image/cache/catalog/Prime/Prime%20%C3%9Cr%C3%BCnler/Optimus%20Display/Optimus%20Display%20K%C4%B1rm%C4%B1z%C4%B1%20Meyve%20Mockup%20png-300x300.webp"}]},
+          {"name":"Prime Nutrition Beyaz 30x100 Siyah Havlu","seo_keyword":"beyaz-siyah-havlu","manufacturer_name":"Prime Nutrition",
+           "tax_rate":10,"price":317.2727,"price_with_tax":349,"special":null,"special_with_tax":null,"is_in_stock":true,
+           "thumb":"/image/cache/catalog/Prime/Prime%20%C3%9Cr%C3%BCnler/Aksesuar/Siyah%20Havlu/Prime-Havlu-Beyaz-Nak%C4%B1%C5%9F1-300x300.webp",
+           "subgroup_value":null,"variant_value":null,"variant_attributes":[
+             {"seo_keyword":"beyaz-siyah-havlu","subgroup_value":null,"variant_value":"none","price":317.2727,"special":null,"is_in_stock":true,"image":"/image/cache/catalog/Prime/Prime%20%C3%9Cr%C3%BCnler/Aksesuar/Siyah%20Havlu/Prime-Havlu-Beyaz-Nak%C4%B1%C5%9F1-300x300.webp"}]},
+          {"name":"Jofit Straps","seo_keyword":"straps-siyah-mavi","manufacturer_name":"Jofit",
+           "tax_rate":10,"price":117.27,"price_with_tax":129,"special":null,"special_with_tax":null,"is_in_stock":true,
+           "thumb":"/image/cache/catalog/Jofit%20G%C3%BCncel/Lifting%20Straps/Mavi/Lifting-Straps-Mavi-5-300x300.webp",
+           "subgroup_value":"Siyah & Mavi","variant_value":"Standart","variant_attributes":[
+             {"seo_keyword":"straps-siyah-mavi","subgroup_value":"Siyah & Mavi","variant_value":"Standart","price":117.27,"special":null,"is_in_stock":true,"image":"/image/cache/catalog/Jofit%20G%C3%BCncel/Lifting%20Straps/Mavi/Lifting-Straps-Mavi-5-300x300.webp"}]},
+          {"name":"Effive Nutrition ZMA 120 Kapsül","seo_keyword":"zma","manufacturer_name":"Effive Nutrition",
+           "tax_rate":1,"price":513.86,"price_with_tax":519,"special":null,"special_with_tax":null,"is_in_stock":true,
+           "thumb":"/image/cache/catalog/Effive%20Nutrition/Zma-1-300x300.webp",
+           "subgroup_value":"120 Kapsül","variant_value":null,"variant_attributes":[
+             {"seo_keyword":"zma","subgroup_value":"120 Kapsül","variant_value":"none","price":513.86,"special":null,"is_in_stock":true,"image":"/image/cache/catalog/Effive%20Nutrition/Zma-1-300x300.webp"}]}
+        ],"total":6,"hasMore":false}
         """;
 
+    private static PrimeNutritionScraper Scraper(string json = Katalog) =>
+        new(new HttpClient(new KatalogHandler(json))
+        {
+            BaseAddress = new Uri("https://www.primenutrition.com.tr/"),
+        }, NullLogger<PrimeNutritionScraper>.Instance);
+
+    // Ad, eski taramanın og:title'dan okuduğu adla birebir aynı olmalı: ad
+    // değişirse sitemizdeki ürün adresi de değişir. Beklenen adlar canlı
+    // veritabanındaki kayıtlardan.
     [Fact]
-    public void HavaleIndirimiDegil_NormalFiyatiAlir()
+    public async Task Ad_grup_gramaj_ve_aromadan_eskisiyle_ayni_kuruluyor()
     {
-        // Son tutarı alsaydık 1.234,05 çıkardı ve her ürünü %5 ucuz
-        // gösterirdik — "gerçek indirim" iddiasını doğrudan zedelerdi.
-        Assert.Equal(1299.00m, PrimeNutritionScraper.ExtractPrice(PriceBox));
+        var products = await Scraper().ScrapeAsync();
+
+        Assert.Equal("Prime Nutrition Whey Protein 495 gram Double Chocolate",
+            Assert.Single(products, p => p.Url.EndsWith("/whey-protein-double-chocolate-495g")).Name);
+        Assert.Equal("Prime Nutrition Whey Protein 495 gram Cookie & Ice Cream",
+            Assert.Single(products, p => p.Url.EndsWith("/whey-protein-cookie-ice-cream-495g")).Name);
     }
 
-    // Sitenin kendi schema.org bloğu binlik ayracını ondalık sanıyor
-    // ("price": "1.3"). Fiyatı oradan DEĞİL sayfadan okuduğumuz için
-    // 1000 TL üstü doğru çıkmalı.
+    // Aromasız üründe alan "none" diye DÜZ METİN geliyor.
     [Fact]
-    public void BinlikAyraciniOndalikSanmaz()
+    public async Task None_aroma_ada_eklenmiyor()
     {
-        var html = """<ul class="price_pr"><span>2.899,00 TL</span></ul>""";
-        Assert.Equal(2899.00m, PrimeNutritionScraper.ExtractPrice(html));
+        var products = await Scraper().ScrapeAsync();
+
+        Assert.Equal("Prime Nutrition %100 Peanut Butter 350 gram",
+            Assert.Single(products, p => p.Url.EndsWith("/100-peanut-butter")).Name);
     }
 
+    // Varyant fiyatı KDV'siz geliyor (1286,14); sitede ve eski taramada 1.299 TL.
     [Fact]
-    public void DortHaneliFiyatiOkur()
+    public async Task Fiyat_kdvli_kart_fiyati()
     {
-        var html = """<div class="price_pr">12.450,00 TL</div>""";
-        Assert.Equal(12450.00m, PrimeNutritionScraper.ExtractPrice(html));
-    }
+        var products = await Scraper().ScrapeAsync();
 
-    [Fact]
-    public void BinlikAyracsizFiyatiOkur()
-    {
-        var html = """<div class="price_pr">319,00 TL</div>""";
-        Assert.Equal(319.00m, PrimeNutritionScraper.ExtractPrice(html));
-    }
-
-    // Kategori/blog sayfasında fiyat kutusu HİÇ yok — sitemap onları da
-    // listelediği için bu ayrım şart, yoksa kategori sayfaları ürün sanılırdı.
-    [Fact]
-    public void FiyatKutusuYoksaNullDoner()
-    {
-        var html = """<html><h1>Amino Asit</h1><div class="urun-liste">499,00 TL</div></html>""";
-        Assert.Null(PrimeNutritionScraper.ExtractPrice(html));
-    }
-
-    // Kutu bulunamazsa pencere ilerideki BAŞKA bir ürünün fiyatını
-    // yakalamamalı — bu yüzden regex penceresi 400 karakterle sınırlı.
-    [Fact]
-    public void UzaktakiFiyatiKutuyaBaglamaz()
-    {
-        var html = "<div class=\"price_pr\"></div>" + new string(' ', 600) + "<span>999,00 TL</span>";
-        Assert.Null(PrimeNutritionScraper.ExtractPrice(html));
-    }
-
-    // "price_pr" sayfada İKİ anlamda geçiyor: gerçek kutunun class'ı ve
-    // varyant değiştiren JavaScript'te bir seçici. Tükenmiş ürünlerde SADECE
-    // JS'teki var. Kalıp class özniteliğine bağlı olmasaydı JS bloğuna
-    // tutunup oradaki ürün dizisinden yanlış fiyat çekerdi.
-    [Fact]
-    public void JavaScriptIcindekiSeciciyeTutunmaz()
-    {
-        var html = """
-            <script>$('#price_pr').html(''); products[1]={product_id:"6170",price:"250,00 TL"};</script>
-            """;
-        Assert.Null(PrimeNutritionScraper.ExtractPrice(html));
-    }
-
-    // Aynı sayfada hem JS seçici hem gerçek kutu varsa, GERÇEK kutu kazanmalı.
-    [Fact]
-    public void JsSeciciVarken_GercekKutuyuBulur()
-    {
-        var html = """
-            <script>$('#price_pr').html(''); products[1]={product_id:"6170",price:"250,00 TL"};</script>
-            <ul class="list-unstyled price_pr col-6"><span>1.899,00 TL</span></ul>
-            """;
-        Assert.Equal(1899.00m, PrimeNutritionScraper.ExtractPrice(html));
-    }
-
-    // İlk gerçek taramada 57 ürünün 12'si "Cookie &amp; Cream" diye kaydolmuştu;
-    // çözülmezse kullanıcıya sitede aynen öyle görünüyor.
-    [Fact]
-    public void AddakiHtmlVarligiCozulur()
-    {
-        var html = """<meta property="og:title" content="Prime Nutrition Whey Protein 990 gram Cookie &amp; Cream" />""";
-        Assert.Equal("Prime Nutrition Whey Protein 990 gram Cookie & Cream",
-            PrimeNutritionScraper.ExtractName(html));
-    }
-
-    // Sitenin schema.org bloğu adı kısaltıyor (67 üründe yalnızca 26 farklı
-    // ad); og:title tam adı veriyor. Ad buradan okunmalı.
-    [Fact]
-    public void TamUrunAdiniOkur()
-    {
-        var html = """<meta property="og:title" content="Prime Nutrition Whey Protein 495 gram Strawberry Cream" />""";
-        Assert.Equal("Prime Nutrition Whey Protein 495 gram Strawberry Cream",
-            PrimeNutritionScraper.ExtractName(html));
+        Assert.Equal(1299m, Assert.Single(products, p => p.Url.EndsWith("/whey-protein-double-chocolate-495g")).Price);
+        Assert.Equal(299m, Assert.Single(products, p => p.Url.EndsWith("/100-peanut-butter")).Price);
+        Assert.All(products, p => Assert.Null(p.StoreOldPrice));
     }
 
     [Fact]
-    public void OgTitleYoksaBosDoner()
+    public async Task Her_varyant_kendi_adresiyle_ayri_satir()
     {
-        Assert.Equal(string.Empty, PrimeNutritionScraper.ExtractName("<html><body>yok</body></html>"));
+        var products = await Scraper().ScrapeAsync();
+
+        Assert.Equal(
+            ["https://www.primenutrition.com.tr/100-peanut-butter",
+             "https://www.primenutrition.com.tr/optimus-pre-workout-sachet-20x14g",
+             "https://www.primenutrition.com.tr/optimus-pre-workout-sachet-redfruit-20x14g",
+             "https://www.primenutrition.com.tr/prime-nutrition-whey-protein-495-strawberry-6188",
+             "https://www.primenutrition.com.tr/whey-protein-cookie-ice-cream-495g",
+             "https://www.primenutrition.com.tr/whey-protein-double-chocolate-495g"],
+            products.Select(p => p.Url).Order(StringComparer.Ordinal));
+    }
+
+    // Eski sayfa tükenen üründe fiyat yayınlamıyordu; uç fiyatı ve stoğu
+    // birlikte veriyor.
+    [Fact]
+    public async Task Stokta_olmayan_varyant_tukendi_olarak_aliniyor()
+    {
+        var products = await Scraper().ScrapeAsync();
+
+        var optimus = Assert.Single(products, p => p.Url.EndsWith("/optimus-pre-workout-sachet-20x14g"));
+        Assert.False(optimus.InStock);
+        Assert.Equal(899m, optimus.Price);
+    }
+
+    // Effive Nutrition takviyeleri ve Jofit aksesuarları da sitede satılıyor.
+    [Fact]
+    public async Task Baska_ureticiler_ve_aksesuarlar_alinmiyor()
+    {
+        var products = await Scraper().ScrapeAsync();
+
+        Assert.DoesNotContain(products, p => p.Url.EndsWith("/zma"));
+        Assert.DoesNotContain(products, p => p.Url.EndsWith("/straps-siyah-mavi"));
+        Assert.DoesNotContain(products, p => p.Url.EndsWith("/beyaz-siyah-havlu"));
+    }
+
+    [Fact]
+    public async Task Gorsel_varyantin_kendi_resmi()
+    {
+        var products = await Scraper().ScrapeAsync();
+
+        Assert.Equal(
+            "https://www.primenutrition.com.tr/image/cache/catalog/Prime/Prime%20%C3%9Cr%C3%BCnler/Whey%20Kavanoz/495/15-Servis-Whey-Chocolate-Mockup-png-yeni-300x300.webp",
+            Assert.Single(products, p => p.Url.EndsWith("/whey-protein-double-chocolate-495g")).ImageUrl);
+    }
+
+    // Eski sürüm site değişince 0 ürünle sessizce "başarılı" döndü; bozulma
+    // ancak 26 saat sonra sağlık ucunda görüldü.
+    [Fact]
+    public async Task Bos_katalog_hata_veriyor()
+    {
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => Scraper("""{"products":[],"total":0,"hasMore":false}""").ScrapeAsync());
+    }
+
+    // Sitenin kendi markalı aksesuarları (canlı katalogdaki adlar, 27 Eylül).
+    // Üretici süzgecinden geçiyorlar; ortak süzgeç yakalamalı.
+    [Theory]
+    [InlineData("Prime Nutrition Beyaz 30x100 Siyah Havlu")]
+    [InlineData("Prime Nutrition Yeşil 30x100 Siyah Havlu")]
+    [InlineData("Prime Nutrition Kırmızı Optimus Anahtarlık Set")]
+    [InlineData("Prime Nutrition Plaka Anahtarlık")]
+    [InlineData("Prime Nutrition Premium Anahtarlık Set")]
+    [InlineData("Prime Nutrition Matara 600 ml. Beyaz")]
+    [InlineData("Prime Nutrition Premium Team Şapka Siyah Standart")]
+    [InlineData("Prime Nutrition Soft-Tech Neon Sarı Tişört 2XLarge")]
+    [InlineData("Prime Nutrition Soft-Tech Siyah Tişört Medium")]
+    public void Markali_aksesuarlar_suzuluyor(string name)
+    {
+        Assert.True(NonSupplementProductFilter.IsAccessoryOrApparel(name));
+    }
+
+    [Theory]
+    [InlineData("Prime Nutrition BCAA 2:1:1", "24 Adet x 10 gram", "Cool Lime", "Prime Nutrition BCAA 2:1:1 24 Adet x 10 gram Cool Lime")]
+    [InlineData("Prime Nutrition Whey Protein", "66 Sachet x 33 gram", "Mix", "Prime Nutrition Whey Protein 66 Sachet x 33 gram Mix")]
+    [InlineData("Prime Nutrition Shaker 400 ml.", "Pembe", "Pembe", "Prime Nutrition Shaker 400 ml. Pembe")]
+    [InlineData("Prime Nutrition Smooth Coconut Spread", "350 gram", "None", "Prime Nutrition Smooth Coconut Spread 350 gram")]
+    [InlineData("Prime Nutrition Whey Protein", "990 gram", "Cookie &amp; Ice Cream", "Prime Nutrition Whey Protein 990 gram Cookie & Ice Cream")]
+    public void ComposeName_eski_ad_kuralini_veriyor(string group, string gramaj, string aroma, string expected)
+    {
+        Assert.Equal(expected, PrimeNutritionScraper.ComposeName(group, gramaj, aroma));
+    }
+
+    private sealed class KatalogHandler(string json) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken) =>
+            Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(json, Encoding.UTF8, "application/json"),
+            });
     }
 }

@@ -384,8 +384,8 @@ public static class DependencyInjection
         });
         services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<ImperiumSupplementsScraper>());
 
-        // Prime Nutrition — OpenCart; ürün başına HTML isteği (bkz. scraper
-        // yorumu: sitenin schema.org fiyatı bozuk).
+        // Prime Nutrition — 27 Eylül'den beri BigJoy ile aynı altyapı: katalog
+        // sitenin /api/products ucundan tek istekte (bkz. scraper yorumu).
         services.AddHttpClient<PrimeNutritionScraper>(client =>
         {
             client.BaseAddress = new Uri("https://www.primenutrition.com.tr/");

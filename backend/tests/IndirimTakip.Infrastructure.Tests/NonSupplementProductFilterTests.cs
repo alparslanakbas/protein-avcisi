@@ -79,6 +79,10 @@ public class NonSupplementProductFilterTests
     [InlineData("Protein 7 Powder Box -Toz Saklama Kabı Aksesuar Protein7 Diğer")]
     [InlineData("Xpro Pill Box -Tablet Saklama Kabı Aksesuar Xpro Nutrition")]
     [InlineData("Antrenman Havlusu 50x90 cm")]
+    // 27 Eylül: su şişesi canlıdaydı (fitcarsi), matara Prime Nutrition'ın
+    // yeni kataloğundan geliyordu.
+    [InlineData("Applied Nutrition Lifestyle Water Bottle 1000 ml")]
+    [InlineData("Prime Nutrition Matara 600 ml. Beyaz")]
     public void CanliyaKacanAksesuarlarArtikElenir(string ad)
     {
         Assert.True(NonSupplementProductFilter.IsAccessoryOrApparel(ad));

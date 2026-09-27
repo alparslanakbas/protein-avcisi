@@ -173,8 +173,14 @@ public static partial class NonSupplementProductFilter
     // "Bağışıklık Paketi-1 (ZMA+Arginine-Multivitamin 90 Kap.)" — oradaki
     // "Kap." KAPSÜL kısaltması, kap değil. Genel bir "kap" kalıbı gerçek bir
     // takviyeyi sessizce elerdi. (Testi var: KapsulKisaltmasiElenmiyor.)
+    //
+    // 27 Eylül: "matara" ve "water bottle" eklendi. Prime Nutrition'ın yeni
+    // kataloğunda markalı bir "Matara 600 ml." var ve süzgeçten geçiyordu.
+    // Canlı katalogdaki bütün adlar tarandı: "matara" başka hiçbir şeyi,
+    // "water bottle" yalnızca bir su şişesini (Applied Nutrition Lifestyle
+    // Water Bottle, fitcarsi) yakalıyor.
     [GeneratedRegex(
-        @"\b(t-?shirt|tisort[a-z]*|sweatshirt|sweatpant[a-z]*|hoodie|kap[u]?son[a-z]*|kolsuz|jogger[a-z]*|tayt|legging[a-z]*|sapka[a-z]*|beyzbol|pillbox|pill ?box|powder ?box|saklama kabi|bileklik[a-z]*|havlu[a-z]*|buff|atlet(i|ler|leri)?|anahtarlik[a-z]*|maskot|huni[a-z]*|shaker[a-z]*|sort[a-z]*|korse[a-z]*|esofman[a-z]*|canta(si|lar|lari)?|handbag|direnc band[a-z]*|loop band[a-z]*|strap[a-z]*|wrist wrap[a-z]*|agirlik kemer[a-z]*|dip belt[a-z]*|eldiven[a-z]*|hap kutusu|olcu kasig[a-z]*|olcek kasig[a-z]*|bakim seti|seyahat seti|kase(si|ler|leri)?|kuru yemislik|basmati|himalaya tuzu|hardal|sriracha|sweet drops|sos(u|lar|lari)?|ketcap|ketchup|garlic powder|hot chili|cajun|chicken mix|vegetable mix|bbq|sprey yag[i]?|tatlandirici)\b",
+        @"\b(t-?shirt|tisort[a-z]*|sweatshirt|sweatpant[a-z]*|hoodie|kap[u]?son[a-z]*|kolsuz|jogger[a-z]*|tayt|legging[a-z]*|sapka[a-z]*|beyzbol|pillbox|pill ?box|powder ?box|saklama kabi|bileklik[a-z]*|havlu[a-z]*|buff|atlet(i|ler|leri)?|anahtarlik[a-z]*|maskot|huni[a-z]*|shaker[a-z]*|matara[a-z]*|water ?bottle|sort[a-z]*|korse[a-z]*|esofman[a-z]*|canta(si|lar|lari)?|handbag|direnc band[a-z]*|loop band[a-z]*|strap[a-z]*|wrist wrap[a-z]*|agirlik kemer[a-z]*|dip belt[a-z]*|eldiven[a-z]*|hap kutusu|olcu kasig[a-z]*|olcek kasig[a-z]*|bakim seti|seyahat seti|kase(si|ler|leri)?|kuru yemislik|basmati|himalaya tuzu|hardal|sriracha|sweet drops|sos(u|lar|lari)?|ketcap|ketchup|garlic powder|hot chili|cajun|chicken mix|vegetable mix|bbq|sprey yag[i]?|tatlandirici)\b",
         RegexOptions.IgnoreCase)]
     private static partial Regex AccessoryKeywordRegex();
 

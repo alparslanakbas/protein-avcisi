@@ -2,6 +2,9 @@ using System.Text.Json.Serialization;
 
 namespace IndirimTakip.Infrastructure.Scraping.BigJoy;
 
+// Prime Nutrition da aynı altyapıda (27 Eylül'de geçti), aynı ucu ve bu
+// modelleri kullanıyor.
+
 /// <summary>Listeleme ucunun yanıtı: <c>GET /api/products?limit=..&amp;page=..</c>.</summary>
 internal sealed class BigJoyCategoryResponse
 {
@@ -63,6 +66,10 @@ internal sealed class BigJoyProduct
     [JsonPropertyName("subgroup_value")]
     public string? SubgroupValue { get; set; }
 
+    /// <summary>Aroma. Yalnızca Prime Nutrition okuyor; değer yoksa düz metin "none".</summary>
+    [JsonPropertyName("variant_value")]
+    public string? VariantValue { get; set; }
+
     [JsonPropertyName("variant_attributes")]
     public List<BigJoyVariant> VariantAttributes { get; set; } = [];
 }
@@ -76,6 +83,10 @@ internal sealed class BigJoyVariant
     /// <summary>Gramaj ("915g", "30 Kapsül").</summary>
     [JsonPropertyName("subgroup_value")]
     public string? SubgroupValue { get; set; }
+
+    /// <summary>Aroma. Yalnızca Prime Nutrition okuyor; değer yoksa düz metin "none".</summary>
+    [JsonPropertyName("variant_value")]
+    public string? VariantValue { get; set; }
 
     [JsonPropertyName("image")]
     public string? Image { get; set; }
