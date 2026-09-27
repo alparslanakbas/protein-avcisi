@@ -5,6 +5,7 @@ export const CATEGORY_LABELS: Record<string, string> = {
   kreatin: 'Kreatin',
   'amino-asitler': 'Amino Asitler',
   'pre-workout': 'Pre-Workout',
+  'enerji-jeli-sporcu-icecekleri': 'Enerji Jeli & Sporcu İçecekleri',
   'yag-yakici': 'Yağ Yakıcı',
   'kilo-hacim': 'Kilo & Hacim (Gainer)',
   vitamin: 'Vitamin & Mineral',
@@ -25,6 +26,8 @@ export const CATEGORY_INTROS: Record<string, string> = {
     'BCAA, EAA, glutamin ve arginin gibi amino asit takviyeleri, kas onarımı ve antrenman sonrası toparlanma sürecini desteklemek amacıyla tercih ediliyor.',
   'pre-workout':
     'Pre-workout ürünleri, antrenman öncesi enerji ve odaklanmayı artırmak amacıyla kafein, beta-alanin ve nitrik oksit destekleyici içerikler barındırır.',
+  'enerji-jeli-sporcu-icecekleri':
+    'Enerji jelleri, izotonik ve sporcu içecekleri ile elektrolit ürünleri; uzun koşu, bisiklet ve yarış gibi dayanıklılık sporlarında antrenman sırasında alınan yakıt. Porsiyon başına karbonhidrat, kafein ve sodyum miktarı üründen ürüne çok değiştiği için etiketi kontrol etmek gerekir.',
   'yag-yakici':
     'Yağ yakıcı takviyeler, termojenik bileşenler içeren ve diyet ile antrenman programını desteklemek amacıyla kullanılan ürünler.',
   'kilo-hacim':

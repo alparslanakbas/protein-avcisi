@@ -9,6 +9,8 @@ export const CATEGORY_ICON_PATHS: Record<string, string> = {
   kreatin: 'M13 2 4 14h6l-1 8 9-12h-6l1-8Z',
   'amino-asitler': 'M9 3h6M10 3v5.5L4.5 18a2 2 0 0 0 1.8 3h11.4a2 2 0 0 0 1.8-3L14 8.5V3',
   'pre-workout': 'M3 12h4l2-7 4 14 2-7h6',
+  'enerji-jeli-sporcu-icecekleri':
+    'M9 3h6M10 3v3L7 9v10a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9l-3-3V3M7 13h10',
   'yag-yakici': 'M12 3c-1 3-4 4-4 8a4 4 0 0 0 8 0c0-1-.5-1.5-1-2 .3 1.5-.5 2.5-1.5 2.5-1.4 0-2-1.2-1.2-2.7C13 7 12.6 5 12 3Z',
   'kilo-hacim': 'M3 17l6-6 4 4 8-8M14 7h7v7',
   vitamin: 'M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 16.9l-6.2 3.4 1.6-6.8L3.2 8.9l6.9-.6Z',
@@ -25,6 +27,8 @@ export const CATEGORY_PHOSPHOR_ICONS: Record<string, string> = {
   'amino-asitler': 'ph-share-network',
   kreatin: 'ph-lightning',
   'pre-workout': 'ph-gauge',
+  // Commit'lenmiş font alt kümesinde var; ph-lightning kreatinin.
+  'enerji-jeli-sporcu-icecekleri': 'ph-heartbeat',
   'protein-bar': 'ph-cookie',
   'yag-yakici': 'ph-fire',
   'kilo-hacim': 'ph-barbell',

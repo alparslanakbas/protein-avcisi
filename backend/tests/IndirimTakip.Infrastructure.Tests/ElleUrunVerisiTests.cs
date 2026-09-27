@@ -314,11 +314,14 @@ public class ElleUrunVerisiTests
         Assert.Equal("Beta Alanin", Assert.Single(ManualProductDataService.Kontrol(Satirlar(null, ("  Beta   Alanin ", 3.2m, "g"))).Satirlar).Ad);
 
     // Panelin açılır listesi ve kategori ucunun kontrolü bu listeye dayanıyor.
+    // 28 Eylül'den beri on kategori (enerji jeli & sporcu içecekleri); ön yüzdeki
+    // category-labels.ts aynı kodları taşımalı.
     [Fact]
-    public void Kategori_kodlari_sitenin_dokuz_kategorisi()
+    public void Kategori_kodlari_sitenin_on_kategorisi()
     {
-        Assert.Equal(9, ProductAttributeParser.CategorySlugs.Count);
+        Assert.Equal(10, ProductAttributeParser.CategorySlugs.Count);
         Assert.Contains("saglikli-atistirmaliklar", ProductAttributeParser.CategorySlugs);
         Assert.Contains("protein-tozu", ProductAttributeParser.CategorySlugs);
+        Assert.Contains("enerji-jeli-sporcu-icecekleri", ProductAttributeParser.CategorySlugs);
     }
 }

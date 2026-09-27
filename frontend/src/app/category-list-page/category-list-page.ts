@@ -22,7 +22,12 @@ type CategoryFilter = 'all' | 'performance' | 'nutrition' | 'weight';
 type CategoryTone = 'violet' | 'mint' | 'blue' | 'indigo' | 'cyan' | 'rose' | 'orange';
 
 const CATEGORY_FILTER_SLUGS: Record<Exclude<CategoryFilter, 'all'>, ReadonlySet<string>> = {
-  performance: new Set(['amino-asitler', 'kreatin', 'pre-workout']),
+  performance: new Set([
+    'amino-asitler',
+    'kreatin',
+    'pre-workout',
+    'enerji-jeli-sporcu-icecekleri',
+  ]),
   nutrition: new Set(['protein-tozu', 'vitamin', 'saglikli-atistirmaliklar']),
   weight: new Set(['kilo-hacim', 'l-carnitine-cla', 'yag-yakici']),
 };
@@ -35,6 +40,7 @@ const CATEGORY_TONES: Record<string, CategoryTone> = {
   'l-carnitine-cla': 'mint',
   kreatin: 'blue',
   'pre-workout': 'rose',
+  'enerji-jeli-sporcu-icecekleri': 'cyan',
   'saglikli-atistirmaliklar': 'orange',
   'yag-yakici': 'rose',
 };

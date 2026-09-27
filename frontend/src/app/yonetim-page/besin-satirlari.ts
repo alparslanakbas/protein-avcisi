@@ -82,6 +82,12 @@ export const SATIR_SABLONLARI: Record<string, SablonSatiri[]> = {
     { ad: 'Beta Alanin', birim: 'g' },
     { ad: 'Betain', birim: 'g' },
   ],
+  // Karbonhidratın kendi alanı var; jeli ve sporcu içeceğini ayıran satırlar.
+  'enerji-jeli-sporcu-icecekleri': [
+    { ad: 'Şekerler', birim: 'g' },
+    { ad: 'Sodyum', birim: 'mg' },
+    { ad: 'Kafein', birim: 'mg' },
+  ],
   'yag-yakici': [
     { ad: 'Kafein', birim: 'mg' },
     { ad: 'L-Karnitin', birim: 'mg' },

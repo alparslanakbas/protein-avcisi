@@ -196,6 +196,24 @@ export const CATEGORY_FAQS: Record<string, FaqItem[]> = {
     },
   ],
 
+  'enerji-jeli-sporcu-icecekleri': [
+    {
+      question: 'Enerji jeli ile sporcu içeceği arasındaki fark ne?',
+      answer:
+        'İkisi de egzersiz sırasında karbonhidrat sağlar. Jel küçük ve yoğun bir porsiyondur, genellikle suyla birlikte alınır; toz içecek ise karbonhidratı zaten içtiğin sıvıyla birleştirir. Kutu enerji içecekleri farklı bir üründür: kafein ağırlıklıdır ve çoğunda karbonhidrat az ya da hiç yoktur.',
+    },
+    {
+      question: 'İzotonik ne demek?',
+      answer:
+        'İzotonik jel ya da içecek, vücut sıvılarına yakın bir yoğunlukta hazırlanır ve ek su olmadan alınabilecek şekilde tasarlanır. Gram başına standart jelden daha az karbonhidrat taşıdığı için porsiyonu daha büyüktür.',
+    },
+    {
+      question: 'Elektrolit takviyesine ihtiyacım var mı?',
+      answer:
+        'Kısa ve orta tempolu antrenmanlarda su ve normal beslenme çoğu zaman yeterlidir. Elektrolitler uzun antrenmanlarda, sıcak havada ve çok terlendiğinde önem kazanır. Tansiyon, böbrek ya da kalp rahatsızlığın varsa yüksek sodyumlu ürünleri düzenli kullanmadan önce doktoruna danış.',
+    },
+  ],
+
   'kilo-hacim': [
     {
       question: 'Gainer nedir, protein tozundan farkı ne?',

@@ -107,10 +107,13 @@ public static partial class ProductAttributeParser
     /// <summary>
     /// Sitenin kategori kodları. Yönetim panelinin açılır listesi ve elle kategori
     /// ucunun doğrulaması buna dayanıyor: listede olmayan bir kod, hiçbir kategori
-    /// sayfasında görünmeyen bir ürün demek.
+    /// sayfasında görünmeyen bir ürün demek. "enerji-jeli-sporcu-icecekleri"
+    /// anahtar kelimeyle değil ürünün biçimiyle belirlendiği için ayrıca ekleniyor.
     /// </summary>
     public static readonly IReadOnlySet<string> CategorySlugs =
-        CategoryKeywords.Select(c => c.Category).ToHashSet(StringComparer.Ordinal);
+        CategoryKeywords.Select(c => c.Category)
+            .Append("enerji-jeli-sporcu-icecekleri")
+            .ToHashSet(StringComparer.Ordinal);
 
     /// <summary>
     /// Paket büyüklüğü. "mg" bir PAKET birimi değil, ETKEN MADDE DOZUdur —
@@ -302,6 +305,17 @@ public static partial class ProductAttributeParser
     /// </param>
     public static string? InferCategory(string productName, string? brandName = null)
     {
+        // Markanın ADI ürün tipini söylüyorsa marka silinmeden önce bakılıyor:
+        // "Prime Hydration" yalnızca elektrolit içeceği satıyor ve "hydration"
+        // markayla birlikte silinince 13 şişe kategorisiz kalıyordu (28 Eylül).
+        // Yalnızca elektrolit kelimeleri: canlıda bunları adında taşıyan tek marka
+        // bu ("Monster Energy" gibi "energy" markaları bilerek dışarıda).
+        if (brandName is not null
+            && ElektrolitRegex().IsMatch(brandName.Replace('İ', 'i').ToLowerInvariant()))
+        {
+            return "enerji-jeli-sporcu-icecekleri";
+        }
+
         productName = StripBrandName(productName, brandName);
 
         // ToLowerInvariant bilinçli — tr-TR kültüründe büyük "I" küçülünce
@@ -327,6 +341,17 @@ public static partial class ProductAttributeParser
         // "Barbekü Baharatı" bu yüzden atıştırmalık sayılıyordu.
         if (SnackBarFormRegex().IsMatch(normalized))
             return "saglikli-atistirmaliklar";
+
+        // ENERJİ JELİ & SPORCU İÇECEKLERİ (28 Eylül): dayanıklılık sporunda
+        // antrenman SIRASINDA alınan yakıt. Bu da BİÇİMLE, içerik kelimelerinden
+        // önce belirleniyor: jelin adı içindekini sayıyor ve her biri ürünü yanlış
+        // rafa çekiyordu (kafein → pre-workout, karbonhidrat/Vitargo → kilo-hacim,
+        // "Proteinocean" → protein tozu). Canlıda ölçüldü: 33 jel, 20 izotonik/
+        // sporcu içeceği ve 32 elektrolit ürününün çoğu kategorisizdi, kalanı
+        // beş kategoriye dağılmıştı. TR'de ayrı bir elektrolit kategorisi yok;
+        // elektrolitler de burada.
+        if (EnerjiJeliIcecekMi(normalized))
+            return "enerji-jeli-sporcu-icecekleri";
 
         foreach (var (category, keywords) in CategoryKeywords)
         {
@@ -490,4 +515,43 @@ public static partial class ProductAttributeParser
     /// </summary>
     [GeneratedRegex(@"\bbar(s|ı|i|lar|ler|ları|leri)?\b", RegexOptions.IgnoreCase)]
     private static partial Regex SnackBarFormRegex();
+
+    /// <summary>
+    /// Jel, izotonik/sporcu/enerji içeceği ve elektrolit ürünleri. Kelimeler canlı
+    /// katalogun bütün adlarında ölçüldü (28 Eylül):
+    /// <list type="bullet">
+    /// <item>"jel/gel" tek başına kapsülü de yakalar ("Soft Jel", "Gel Caps"); o
+    /// biçimler veto ediyor. Bitişik "softjel" kelime sınırına zaten takılmıyor.</item>
+    /// <item>Elektrolit bir İÇERİK de olabiliyor: adında amino/BCAA/EAA/kreatin
+    /// geçen ürün kendi kategorisinde kalıyor ("BCAA + Electrolytes"). Jel ve
+    /// içecek biçimi ise her zaman kazanıyor.</item>
+    /// <item>Gliserol ürünleri pre-workout'ta kalıyor (4 Eylül kararı); Nois
+    /// kendi gliserolüne "Enerji İçeceği" diyor.</item>
+    /// <item>Adında açıkça "pre-workout" yazan ürün orada kalıyor.</item>
+    /// </list>
+    /// </summary>
+    private static bool EnerjiJeliIcecekMi(string normalized) =>
+        !PreWorkoutAdiRegex().IsMatch(normalized)
+        && !normalized.Contains("glycerol", StringComparison.Ordinal)
+        && !normalized.Contains("gliserol", StringComparison.Ordinal)
+        && !KapsulJelRegex().IsMatch(normalized)
+        && (EnerjiBicimiRegex().IsMatch(normalized)
+            || (ElektrolitRegex().IsMatch(normalized) && !AminoKreatinRegex().IsMatch(normalized)));
+
+    [GeneratedRegex(
+        @"\b(jel|jeli|jelleri|gel|gels|energel|izotonik|isotonic|drink\s+mix)\b|sporcu\s+içece|sports?\s+drinks?|energy\s+drinks?|enerji\s+içece|energy\s+(chews?|blocks?|gummies)",
+        RegexOptions.IgnoreCase)]
+    private static partial Regex EnerjiBicimiRegex();
+
+    [GeneratedRegex(@"elektrolit|electrolyte|hidrasyon|hydration", RegexOptions.IgnoreCase)]
+    private static partial Regex ElektrolitRegex();
+
+    [GeneratedRegex(@"amino|bcaa|eaa|kreatin|creatine", RegexOptions.IgnoreCase)]
+    private static partial Regex AminoKreatinRegex();
+
+    [GeneratedRegex(@"\b(soft|liquid)[\s-]?(jel|gel)s?\b|\b(jel|gel)[\s-]?(kaps[uü]l|caps?)\b", RegexOptions.IgnoreCase)]
+    private static partial Regex KapsulJelRegex();
+
+    [GeneratedRegex(@"\bpre[\s-]?workout", RegexOptions.IgnoreCase)]
+    private static partial Regex PreWorkoutAdiRegex();
 }

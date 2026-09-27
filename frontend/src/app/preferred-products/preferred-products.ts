@@ -27,7 +27,11 @@ interface PreferenceTab {
 
 const PREFERENCE_TABS: readonly PreferenceTab[] = [
   { id: 'all', label: 'Tümü', categories: [] },
-  { id: 'performance', label: 'Performans', categories: ['amino-asitler', 'kreatin', 'pre-workout'] },
+  {
+    id: 'performance',
+    label: 'Performans',
+    categories: ['amino-asitler', 'kreatin', 'pre-workout', 'enerji-jeli-sporcu-icecekleri'],
+  },
   { id: 'nutrition', label: 'Beslenme', categories: ['protein-tozu', 'vitamin', 'saglikli-atistirmaliklar'] },
   { id: 'weight', label: 'Kilo Kontrolü', categories: ['yag-yakici', 'l-carnitine-cla', 'kilo-hacim'] },
 ];
