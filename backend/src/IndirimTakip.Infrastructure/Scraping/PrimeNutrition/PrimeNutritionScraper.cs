@@ -26,11 +26,16 @@ namespace IndirimTakip.Infrastructure.Scraping.PrimeNutrition;
 /// "Yeşil Elma"dan "Green Apple"a çevirmiş. Ad değişseydi sitemizdeki ürün
 /// adresleri de değişirdi.
 ///
-/// <b>Adresler değişti.</b> 57 ürünün 49'unun adresi yeni sitede farklı ve
-/// eski adresler 404 veriyor, yönlendirme yok. Ingest ürünü ADRESLE eşlediği
-/// için veritabanındaki adresler bu tarama çalışmadan önce ada göre elle
-/// güncellendi; yoksa her ürün yeni bir kayıt olur, fiyat geçmişi eskisinde
-/// kalırdı.
+/// <b>Adres, mağazanın adres adı (seo_keyword) DEĞİL, kalıcı ürün kimliği:</b>
+/// <c>/products/{product_id}</c>. Mağaza geçişten sonra adres adlarını
+/// temizlemeye devam ediyor: 27 Eylül'de iki tarama arasında (~50 dk) 10
+/// varyantın adı değişti ("prime-nutrition-whey-protein-495-strawberry-6188" →
+/// "whey-protein-strawberry-495g"). Ingest ürünü ADRESLE eşlediği için her ad
+/// değişikliği KOPYA bir kayıt açıyor, fiyat geçmişi eskisinde kalıyordu.
+/// Kimlik OpenCart döneminden beri sabit (eski adların sonundaki sayı), sayfa
+/// kimlikle de açılıyor ve canonical'ı kendisi; ziyaretçi doğru ürüne gidiyor.
+/// Geçişte veritabanındaki adresler elle güncellendi (eski OpenCart adresleri
+/// 404 veriyordu, yönlendirme yoktu); kopyalar eski kayıtlarına birleştirildi.
 ///
 /// <b>Fiyat, kartla ödenen fiyat</b> (sitenin gösterdiği havale indirimi
 /// değil; eski taramanın da bilerek seçtiği tutar). Varyant fiyatı KDV'siz
@@ -137,7 +142,10 @@ public class PrimeNutritionScraper(HttpClient httpClient, ILogger<PrimeNutrition
 
         foreach (var variant in VariantsOf(item))
         {
-            if (string.IsNullOrWhiteSpace(variant.SeoKeyword))
+            // Kimliksiz varyant alınmıyor: adres adına düşmek, bu kaynağın ad
+            // değişikliklerinde kopya kayıt açan eski davranışı geri getirirdi.
+            // Kimlik hiç gelmezse katalog boş kalır ve tarama hata verir.
+            if (variant.ProductId is not > 0)
                 continue;
 
             var name = ComposeName(groupName, variant.SubgroupValue, variant.VariantValue);
@@ -147,7 +155,7 @@ public class PrimeNutritionScraper(HttpClient httpClient, ILogger<PrimeNutrition
 
             // Grubun KENDİ sayfası olan varyantta sitenin verdiği KDV'li fiyat
             // doğrudan kullanılıyor; ötekilerde aynı katsayı uygulanıyor.
-            var kendiSayfasi = string.Equals(variant.SeoKeyword, item.SeoKeyword, StringComparison.OrdinalIgnoreCase);
+            var kendiSayfasi = variant.ProductId == item.ProductId;
             var listPrice = kendiSayfasi && item.PriceWithTax is > 0
                 ? item.PriceWithTax
                 : BigJoyScraper.WithTax(variant.Price, katsayi);
@@ -165,7 +173,7 @@ public class PrimeNutritionScraper(HttpClient httpClient, ILogger<PrimeNutrition
 
             yield return new ScrapedProduct(
                 Name: name,
-                Url: $"{BaseUrl}/{variant.SeoKeyword.Trim().Trim('/')}",
+                Url: $"{BaseUrl}/products/{variant.ProductId}",
                 ImageUrl: ImageUrlOf(variant.Image ?? item.Thumb),
                 // Sitenin kategorileri bizim slug'larımıza birebir oturmuyor;
                 // isimden çıkarım eski taramayla aynı sonucu veriyor (adlar da
@@ -188,6 +196,7 @@ public class PrimeNutritionScraper(HttpClient httpClient, ILogger<PrimeNutrition
             ? item.VariantAttributes
             : [new BigJoyVariant
             {
+                ProductId = item.ProductId,
                 SeoKeyword = item.SeoKeyword,
                 SubgroupValue = item.SubgroupValue,
                 VariantValue = item.VariantValue,

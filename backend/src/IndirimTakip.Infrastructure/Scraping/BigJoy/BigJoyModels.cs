@@ -24,6 +24,10 @@ internal sealed class BigJoyCategoryResponse
 /// </summary>
 internal sealed class BigJoyProduct
 {
+    /// <summary>Kalıcı kimlik; yalnızca Prime Nutrition okuyor (bkz. <see cref="BigJoyVariant.ProductId"/>).</summary>
+    [JsonPropertyName("product_id")]
+    public int? ProductId { get; set; }
+
     [JsonPropertyName("name")]
     public string? Name { get; set; }
 
@@ -77,6 +81,14 @@ internal sealed class BigJoyProduct
 /// <summary>Bir aroma/gramaj seçeneği: kendi adresi, fiyatı ve stoğu var.</summary>
 internal sealed class BigJoyVariant
 {
+    /// <summary>
+    /// Varyantın kalıcı kimliği (OpenCart döneminden beri aynı). Prime Nutrition
+    /// ürün adresini bundan kuruyor: mağaza adres adlarını değiştiriyor, kimliği
+    /// değiştirmiyor.
+    /// </summary>
+    [JsonPropertyName("product_id")]
+    public int? ProductId { get; set; }
+
     [JsonPropertyName("seo_keyword")]
     public string? SeoKeyword { get; set; }
 

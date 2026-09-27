@@ -13,44 +13,44 @@ public class PrimeNutritionScraperTests
 {
     private const string Katalog = """
         {"products":[
-          {"name":"Prime Nutrition Whey Protein","seo_keyword":"prime-nutrition-whey-protein-495-strawberry-6188","manufacturer_name":"Prime Nutrition",
+          {"name":"Prime Nutrition Whey Protein","product_id":6188,"seo_keyword":"prime-nutrition-whey-protein-495-strawberry-6188","manufacturer_name":"Prime Nutrition",
            "tax_rate":1,"price":1286.14,"price_with_tax":1299,"special":null,"special_with_tax":null,"is_in_stock":true,
            "thumb":"/image/cache/catalog/Prime/Prime%20%C3%9Cr%C3%BCnler/Whey%20Kavanoz/495/15-Servis-Whey-Strawberry-Mockup-png-300x300.webp",
            "subgroup_value":"495 gram","variant_value":"Strawberry Cream","variant_attributes":[
-             {"seo_keyword":"prime-nutrition-whey-protein-495-strawberry-6188","subgroup_value":"495 gram","variant_value":"Strawberry Cream","price":1286.14,"special":null,"is_in_stock":true,"image":"/image/cache/catalog/Prime/Prime%20%C3%9Cr%C3%BCnler/Whey%20Kavanoz/495/15-Servis-Whey-Strawberry-Mockup-png-300x300.webp"},
-             {"seo_keyword":"whey-protein-double-chocolate-495g","subgroup_value":"495 gram","variant_value":"Double Chocolate","price":1286.14,"special":null,"is_in_stock":true,"image":"/image/cache/catalog/Prime/Prime%20%C3%9Cr%C3%BCnler/Whey%20Kavanoz/495/15-Servis-Whey-Chocolate-Mockup-png-yeni-300x300.webp"},
-             {"seo_keyword":"whey-protein-cookie-ice-cream-495g","subgroup_value":"495 gram","variant_value":"Cookie & Ice Cream","price":1286.14,"special":null,"is_in_stock":true,"image":"/image/cache/catalog/Prime/Prime%20%C3%9Cr%C3%BCnler/Whey%20Kavanoz/495/15-Servis-Whey-Cookie-Mockup-png-300x300.webp"}]},
-          {"name":"Prime Nutrition %100 Peanut Butter","seo_keyword":"100-peanut-butter","manufacturer_name":"Prime Nutrition",
+             {"product_id":6188,"seo_keyword":"prime-nutrition-whey-protein-495-strawberry-6188","subgroup_value":"495 gram","variant_value":"Strawberry Cream","price":1286.14,"special":null,"is_in_stock":true,"image":"/image/cache/catalog/Prime/Prime%20%C3%9Cr%C3%BCnler/Whey%20Kavanoz/495/15-Servis-Whey-Strawberry-Mockup-png-300x300.webp"},
+             {"product_id":6187,"seo_keyword":"whey-protein-double-chocolate-495g","subgroup_value":"495 gram","variant_value":"Double Chocolate","price":1286.14,"special":null,"is_in_stock":true,"image":"/image/cache/catalog/Prime/Prime%20%C3%9Cr%C3%BCnler/Whey%20Kavanoz/495/15-Servis-Whey-Chocolate-Mockup-png-yeni-300x300.webp"},
+             {"product_id":6189,"seo_keyword":"whey-protein-cookie-ice-cream-495g","subgroup_value":"495 gram","variant_value":"Cookie & Ice Cream","price":1286.14,"special":null,"is_in_stock":true,"image":"/image/cache/catalog/Prime/Prime%20%C3%9Cr%C3%BCnler/Whey%20Kavanoz/495/15-Servis-Whey-Cookie-Mockup-png-300x300.webp"}]},
+          {"name":"Prime Nutrition %100 Peanut Butter","product_id":6207,"seo_keyword":"100-peanut-butter","manufacturer_name":"Prime Nutrition",
            "tax_rate":1,"price":296.04,"price_with_tax":299,"special":null,"special_with_tax":null,"is_in_stock":true,
            "thumb":"/image/cache/catalog/Prime/Prime%20%C3%9Cr%C3%BCnler/Spread-Ezme/Peanut%20Butter/Peanut-Butter-Web1v-300x300.webp",
            "subgroup_value":"350 gram","variant_value":"none","variant_attributes":[
-             {"seo_keyword":"100-peanut-butter","subgroup_value":"350 gram","variant_value":"none","price":296.04,"special":null,"is_in_stock":true,"image":"/image/cache/catalog/Prime/Prime%20%C3%9Cr%C3%BCnler/Spread-Ezme/Peanut%20Butter/Peanut-Butter-Web1v-300x300.webp"}]},
-          {"name":"Prime Nutrition Optimus Pre-Workout","seo_keyword":"optimus-pre-workout-sachet-20x14g","manufacturer_name":"Prime Nutrition",
+             {"product_id":6207,"seo_keyword":"100-peanut-butter","subgroup_value":"350 gram","variant_value":"none","price":296.04,"special":null,"is_in_stock":true,"image":"/image/cache/catalog/Prime/Prime%20%C3%9Cr%C3%BCnler/Spread-Ezme/Peanut%20Butter/Peanut-Butter-Web1v-300x300.webp"}]},
+          {"name":"Prime Nutrition Optimus Pre-Workout","product_id":6170,"seo_keyword":"optimus-pre-workout-sachet-20x14g","manufacturer_name":"Prime Nutrition",
            "tax_rate":1,"price":890.1,"price_with_tax":899,"special":null,"special_with_tax":null,"is_in_stock":false,
            "thumb":"/image/cache/catalog/Prime/Prime%20%C3%9Cr%C3%BCnler/Optimus%20Display/Optimus-Display-Blue-Webpng-300x300.webp",
            "subgroup_value":"20 Adet x 14 gram","variant_value":"Blue Raspberry","variant_attributes":[
-             {"seo_keyword":"optimus-pre-workout-sachet-20x14g","subgroup_value":"20 Adet x 14 gram","variant_value":"Blue Raspberry","price":890.1,"special":null,"is_in_stock":false,"image":"/image/cache/catalog/Prime/Prime%20%C3%9Cr%C3%BCnler/Optimus%20Display/Optimus-Display-Blue-Webpng-300x300.webp"},
-             {"seo_keyword":"optimus-pre-workout-sachet-redfruit-20x14g","subgroup_value":"20 Adet x 14 gram","variant_value":"Red Fruit","price":890.1,"special":null,"is_in_stock":false,"image":"/image/cache/catalog/Prime/Prime%20%C3%9Cr%C3%BCnler/Optimus%20Display/Optimus%20Display%20K%C4%B1rm%C4%B1z%C4%B1%20Meyve%20Mockup%20png-300x300.webp"}]},
-          {"name":"Prime Nutrition Beyaz 30x100 Siyah Havlu","seo_keyword":"beyaz-siyah-havlu","manufacturer_name":"Prime Nutrition",
+             {"product_id":6170,"seo_keyword":"optimus-pre-workout-sachet-20x14g","subgroup_value":"20 Adet x 14 gram","variant_value":"Blue Raspberry","price":890.1,"special":null,"is_in_stock":false,"image":"/image/cache/catalog/Prime/Prime%20%C3%9Cr%C3%BCnler/Optimus%20Display/Optimus-Display-Blue-Webpng-300x300.webp"},
+             {"product_id":6205,"seo_keyword":"optimus-pre-workout-sachet-redfruit-20x14g","subgroup_value":"20 Adet x 14 gram","variant_value":"Red Fruit","price":890.1,"special":null,"is_in_stock":false,"image":"/image/cache/catalog/Prime/Prime%20%C3%9Cr%C3%BCnler/Optimus%20Display/Optimus%20Display%20K%C4%B1rm%C4%B1z%C4%B1%20Meyve%20Mockup%20png-300x300.webp"}]},
+          {"name":"Prime Nutrition Beyaz 30x100 Siyah Havlu","product_id":6254,"seo_keyword":"beyaz-siyah-havlu","manufacturer_name":"Prime Nutrition",
            "tax_rate":10,"price":317.2727,"price_with_tax":349,"special":null,"special_with_tax":null,"is_in_stock":true,
            "thumb":"/image/cache/catalog/Prime/Prime%20%C3%9Cr%C3%BCnler/Aksesuar/Siyah%20Havlu/Prime-Havlu-Beyaz-Nak%C4%B1%C5%9F1-300x300.webp",
            "subgroup_value":null,"variant_value":null,"variant_attributes":[
-             {"seo_keyword":"beyaz-siyah-havlu","subgroup_value":null,"variant_value":"none","price":317.2727,"special":null,"is_in_stock":true,"image":"/image/cache/catalog/Prime/Prime%20%C3%9Cr%C3%BCnler/Aksesuar/Siyah%20Havlu/Prime-Havlu-Beyaz-Nak%C4%B1%C5%9F1-300x300.webp"}]},
-          {"name":"Jofit Straps","seo_keyword":"straps-siyah-mavi","manufacturer_name":"Jofit",
+             {"product_id":6254,"seo_keyword":"beyaz-siyah-havlu","subgroup_value":null,"variant_value":"none","price":317.2727,"special":null,"is_in_stock":true,"image":"/image/cache/catalog/Prime/Prime%20%C3%9Cr%C3%BCnler/Aksesuar/Siyah%20Havlu/Prime-Havlu-Beyaz-Nak%C4%B1%C5%9F1-300x300.webp"}]},
+          {"name":"Jofit Straps","product_id":6142,"seo_keyword":"straps-siyah-mavi","manufacturer_name":"Jofit",
            "tax_rate":10,"price":117.27,"price_with_tax":129,"special":null,"special_with_tax":null,"is_in_stock":true,
            "thumb":"/image/cache/catalog/Jofit%20G%C3%BCncel/Lifting%20Straps/Mavi/Lifting-Straps-Mavi-5-300x300.webp",
            "subgroup_value":"Siyah & Mavi","variant_value":"Standart","variant_attributes":[
-             {"seo_keyword":"straps-siyah-mavi","subgroup_value":"Siyah & Mavi","variant_value":"Standart","price":117.27,"special":null,"is_in_stock":true,"image":"/image/cache/catalog/Jofit%20G%C3%BCncel/Lifting%20Straps/Mavi/Lifting-Straps-Mavi-5-300x300.webp"}]},
-          {"name":"Effive Nutrition ZMA 120 Kapsül","seo_keyword":"zma","manufacturer_name":"Effive Nutrition",
+             {"product_id":6142,"seo_keyword":"straps-siyah-mavi","subgroup_value":"Siyah & Mavi","variant_value":"Standart","price":117.27,"special":null,"is_in_stock":true,"image":"/image/cache/catalog/Jofit%20G%C3%BCncel/Lifting%20Straps/Mavi/Lifting-Straps-Mavi-5-300x300.webp"}]},
+          {"name":"Effive Nutrition ZMA 120 Kapsül","product_id":6230,"seo_keyword":"zma","manufacturer_name":"Effive Nutrition",
            "tax_rate":1,"price":513.86,"price_with_tax":519,"special":null,"special_with_tax":null,"is_in_stock":true,
            "thumb":"/image/cache/catalog/Effive%20Nutrition/Zma-1-300x300.webp",
            "subgroup_value":"120 Kapsül","variant_value":null,"variant_attributes":[
-             {"seo_keyword":"zma","subgroup_value":"120 Kapsül","variant_value":"none","price":513.86,"special":null,"is_in_stock":true,"image":"/image/cache/catalog/Effive%20Nutrition/Zma-1-300x300.webp"}]},
-          {"name":"Effive Nutrition Pillbox","seo_keyword":"pillbox","manufacturer_name":"Effive Nutrition",
+             {"product_id":6230,"seo_keyword":"zma","subgroup_value":"120 Kapsül","variant_value":"none","price":513.86,"special":null,"is_in_stock":true,"image":"/image/cache/catalog/Effive%20Nutrition/Zma-1-300x300.webp"}]},
+          {"name":"Effive Nutrition Pillbox","product_id":6231,"seo_keyword":"pillbox","manufacturer_name":"Effive Nutrition",
            "tax_rate":20,"price":90.8333,"price_with_tax":109,"special":null,"special_with_tax":null,"is_in_stock":true,
            "thumb":"/image/cache/catalog/Effive%20Nutrition/Effive-pillbox-300x300.webp",
            "subgroup_value":"Siyah","variant_value":"Siyah","variant_attributes":[
-             {"seo_keyword":"pillbox","subgroup_value":"Siyah","variant_value":"Siyah","price":90.8333,"special":null,"is_in_stock":true,"image":"/image/cache/catalog/Effive%20Nutrition/Effive-pillbox-300x300.webp"}]}
+             {"product_id":6231,"seo_keyword":"pillbox","subgroup_value":"Siyah","variant_value":"Siyah","price":90.8333,"special":null,"is_in_stock":true,"image":"/image/cache/catalog/Effive%20Nutrition/Effive-pillbox-300x300.webp"}]}
         ],"total":7,"hasMore":false}
         """;
 
@@ -69,9 +69,9 @@ public class PrimeNutritionScraperTests
         var products = await Scraper().ScrapeAsync();
 
         Assert.Equal("Prime Nutrition Whey Protein 495 gram Double Chocolate",
-            Assert.Single(products, p => p.Url.EndsWith("/whey-protein-double-chocolate-495g")).Name);
+            Assert.Single(products, p => p.Url.EndsWith("/products/6187")).Name);
         Assert.Equal("Prime Nutrition Whey Protein 495 gram Cookie & Ice Cream",
-            Assert.Single(products, p => p.Url.EndsWith("/whey-protein-cookie-ice-cream-495g")).Name);
+            Assert.Single(products, p => p.Url.EndsWith("/products/6189")).Name);
     }
 
     // Aromasız üründe alan "none" diye DÜZ METİN geliyor.
@@ -81,7 +81,7 @@ public class PrimeNutritionScraperTests
         var products = await Scraper().ScrapeAsync();
 
         Assert.Equal("Prime Nutrition %100 Peanut Butter 350 gram",
-            Assert.Single(products, p => p.Url.EndsWith("/100-peanut-butter")).Name);
+            Assert.Single(products, p => p.Url.EndsWith("/products/6207")).Name);
     }
 
     // Varyant fiyatı KDV'siz geliyor (1286,14); sitede ve eski taramada 1.299 TL.
@@ -90,8 +90,8 @@ public class PrimeNutritionScraperTests
     {
         var products = await Scraper().ScrapeAsync();
 
-        Assert.Equal(1299m, Assert.Single(products, p => p.Url.EndsWith("/whey-protein-double-chocolate-495g")).Price);
-        Assert.Equal(299m, Assert.Single(products, p => p.Url.EndsWith("/100-peanut-butter")).Price);
+        Assert.Equal(1299m, Assert.Single(products, p => p.Url.EndsWith("/products/6187")).Price);
+        Assert.Equal(299m, Assert.Single(products, p => p.Url.EndsWith("/products/6207")).Price);
         Assert.All(products, p => Assert.Null(p.StoreOldPrice));
     }
 
@@ -101,14 +101,47 @@ public class PrimeNutritionScraperTests
         var products = await Scraper().ScrapeAsync();
 
         Assert.Equal(
-            ["https://www.primenutrition.com.tr/100-peanut-butter",
-             "https://www.primenutrition.com.tr/optimus-pre-workout-sachet-20x14g",
-             "https://www.primenutrition.com.tr/optimus-pre-workout-sachet-redfruit-20x14g",
-             "https://www.primenutrition.com.tr/prime-nutrition-whey-protein-495-strawberry-6188",
-             "https://www.primenutrition.com.tr/whey-protein-cookie-ice-cream-495g",
-             "https://www.primenutrition.com.tr/whey-protein-double-chocolate-495g",
-             "https://www.primenutrition.com.tr/zma"],
+            ["https://www.primenutrition.com.tr/products/6170",
+             "https://www.primenutrition.com.tr/products/6187",
+             "https://www.primenutrition.com.tr/products/6188",
+             "https://www.primenutrition.com.tr/products/6189",
+             "https://www.primenutrition.com.tr/products/6205",
+             "https://www.primenutrition.com.tr/products/6207",
+             "https://www.primenutrition.com.tr/products/6230"],
             products.Select(p => p.Url).Order(StringComparer.Ordinal));
+    }
+
+    // REGRESYON (27 Eylül): mağaza iki tarama arasında 10 varyantın adres adını
+    // değiştirdi ("...-495-strawberry-6188" -> "whey-protein-strawberry-495g")
+    // ve adres adına bağlı sürüm her birine KOPYA kayıt açtı. Adres kimlikten
+    // kurulduğu için ad değişse de aynı kalmalı.
+    [Fact]
+    public async Task Adres_adi_degisse_de_adres_ayni_kaliyor()
+    {
+        var yeniAdli = Katalog.Replace(
+            "prime-nutrition-whey-protein-495-strawberry-6188", "whey-protein-strawberry-495g");
+        Assert.NotEqual(Katalog, yeniAdli);
+
+        var once = await Scraper().ScrapeAsync();
+        var sonra = await Scraper(yeniAdli).ScrapeAsync();
+
+        Assert.Equal(
+            once.Select(p => p.Url).Order(StringComparer.Ordinal),
+            sonra.Select(p => p.Url).Order(StringComparer.Ordinal));
+        Assert.Single(sonra, p => p.Url.EndsWith("/products/6188"));
+    }
+
+    // Adres adına düşmek kopya kayıt sorununu geri getirirdi.
+    [Fact]
+    public async Task Kimliksiz_varyant_alinmiyor()
+    {
+        var kimliksiz = Katalog.Replace("\"product_id\":6187,", string.Empty);
+        Assert.NotEqual(Katalog, kimliksiz);
+
+        var products = await Scraper(kimliksiz).ScrapeAsync();
+
+        Assert.DoesNotContain(products, p => p.Name == "Prime Nutrition Whey Protein 495 gram Double Chocolate");
+        Assert.Equal(6, products.Count);
     }
 
     // Eski sayfa tükenen üründe fiyat yayınlamıyordu; uç fiyatı ve stoğu
@@ -118,7 +151,7 @@ public class PrimeNutritionScraperTests
     {
         var products = await Scraper().ScrapeAsync();
 
-        var optimus = Assert.Single(products, p => p.Url.EndsWith("/optimus-pre-workout-sachet-20x14g"));
+        var optimus = Assert.Single(products, p => p.Url.EndsWith("/products/6170"));
         Assert.False(optimus.InStock);
         Assert.Equal(899m, optimus.Price);
     }
@@ -129,7 +162,7 @@ public class PrimeNutritionScraperTests
     {
         var products = await Scraper().ScrapeAsync();
 
-        var zma = Assert.Single(products, p => p.Url.EndsWith("/zma"));
+        var zma = Assert.Single(products, p => p.Url.EndsWith("/products/6230"));
         Assert.Equal("Effive Nutrition ZMA 120 Kapsül", zma.Name);
         Assert.Equal("Effive Nutrition", zma.BrandName);
         Assert.Equal("primenutrition.com.tr", zma.Seller);
@@ -156,9 +189,9 @@ public class PrimeNutritionScraperTests
     {
         var products = await Scraper().ScrapeAsync();
 
-        Assert.DoesNotContain(products, p => p.Url.EndsWith("/straps-siyah-mavi"));
-        Assert.DoesNotContain(products, p => p.Url.EndsWith("/beyaz-siyah-havlu"));
-        Assert.DoesNotContain(products, p => p.Url.EndsWith("/pillbox"));
+        Assert.DoesNotContain(products, p => p.Url.EndsWith("/products/6142"));
+        Assert.DoesNotContain(products, p => p.Url.EndsWith("/products/6254"));
+        Assert.DoesNotContain(products, p => p.Url.EndsWith("/products/6231"));
     }
 
     [Fact]
@@ -168,7 +201,7 @@ public class PrimeNutritionScraperTests
 
         Assert.Equal(
             "https://www.primenutrition.com.tr/image/cache/catalog/Prime/Prime%20%C3%9Cr%C3%BCnler/Whey%20Kavanoz/495/15-Servis-Whey-Chocolate-Mockup-png-yeni-300x300.webp",
-            Assert.Single(products, p => p.Url.EndsWith("/whey-protein-double-chocolate-495g")).ImageUrl);
+            Assert.Single(products, p => p.Url.EndsWith("/products/6187")).ImageUrl);
     }
 
     // Eski sürüm site değişince 0 ürünle sessizce "başarılı" döndü; bozulma
