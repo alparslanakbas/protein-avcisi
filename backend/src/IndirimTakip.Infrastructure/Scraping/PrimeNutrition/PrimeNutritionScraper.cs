@@ -41,17 +41,33 @@ namespace IndirimTakip.Infrastructure.Scraping.PrimeNutrition;
 /// <b>Stokta olmayan varyant da alınıyor.</b> Eski sayfa tükenen üründe fiyat
 /// yayınlamadığı için onları atlıyorduk; uç fiyatı ve stok durumunu birlikte
 /// veriyor, yani artık uydurmadan "tükendi" diye gösterilebiliyorlar.
+///
+/// <b>Hibrit kaynak:</b> kendi ürünlerinin yanında Effive Nutrition'ı BAYİ
+/// olarak satıyor (bkz. <see cref="Manufacturers"/>).
 /// </remarks>
 public class PrimeNutritionScraper(HttpClient httpClient, ILogger<PrimeNutritionScraper> logger) : IBrandScraper
 {
     public string BrandName => "Prime Nutrition";
     public string BaseUrl => "https://www.primenutrition.com.tr";
 
+    private const string SellerName = "primenutrition.com.tr";
+
     /// <summary>
-    /// Sitede Effive Nutrition takviyeleri ve Jofit aksesuarları da satılıyor;
-    /// onları bu markanın altında göstermek yanlış olurdu (BigJoy'daki gerekçe).
+    /// Alınan üreticiler: (ürünün markası, satıcı). Prime'ın kendi ürünlerinde
+    /// ikisi de boş, kaynak markanın kendisi. Effive Nutrition'ı site bayi
+    /// olarak satıyor: marka Effive, satıcı bu site (Dr Supplement'teki Herbina
+    /// gibi). Marka bizde bayilerden zaten var; bu, ona bir satıcı daha ekliyor.
+    ///
+    /// Listede olmayan üretici alınmıyor. "Kalanların hepsini satıcı olarak al"
+    /// kuralı ölçüldü ve elendi: Jofit'in "Knee Wraps" ve "Elbow Wraps" ürünleri
+    /// (6 varyant) aksesuar süzgecinden geçiyor, takviye diye listelenirlerdi.
     /// </summary>
-    private const string OwnManufacturer = "Prime Nutrition";
+    private static readonly Dictionary<string, (string? Brand, string? Seller)> Manufacturers =
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Prime Nutrition"] = (null, null),
+            ["Effive Nutrition"] = ("Effive Nutrition", SellerName),
+        };
 
     private const int PageSize = 200;
 
@@ -76,13 +92,13 @@ public class PrimeNutritionScraper(HttpClient httpClient, ILogger<PrimeNutrition
             foreach (var item in payload.Products)
             {
                 groups++;
-                if (!string.Equals(item.ManufacturerName?.Trim(), OwnManufacturer, StringComparison.OrdinalIgnoreCase))
+                if (!Manufacturers.TryGetValue(item.ManufacturerName?.Trim() ?? string.Empty, out var kaynak))
                 {
                     otherMaker++;
                     continue;
                 }
 
-                foreach (var product in ProductsOf(item))
+                foreach (var product in ProductsOf(item, kaynak.Brand, kaynak.Seller))
                     products.TryAdd(product.Url, product);
             }
 
@@ -99,15 +115,19 @@ public class PrimeNutritionScraper(HttpClient httpClient, ILogger<PrimeNutrition
             throw new InvalidOperationException($"Prime Nutrition: katalogdan hiç ürün alınamadı ({groups} grup okundu).");
 
         logger.LogInformation(
-            "Prime Nutrition: {Groups} grup okundu, {Found} ürün alındı ({OutOfStock} stokta yok), " +
-            "{OtherMaker} grup başka üreticinin.",
-            groups, products.Count, products.Values.Count(p => p.InStock == false), otherMaker);
+            "Prime Nutrition: {Groups} grup okundu, {Found} ürün alındı ({Resold} bayi ürünü, " +
+            "{OutOfStock} stokta yok), {OtherMaker} grup alınmayan üreticinin.",
+            groups, products.Count, products.Values.Count(p => p.Seller is not null),
+            products.Values.Count(p => p.InStock == false), otherMaker);
 
         return products.Values.ToList();
     }
 
-    /// <summary>Bir ürün grubunun her aroma/gramajı, kendi sayfasıyla ayrı satır.</summary>
-    internal IEnumerable<ScrapedProduct> ProductsOf(BigJoyProduct item)
+    /// <summary>
+    /// Bir ürün grubunun her aroma/gramajı, kendi sayfasıyla ayrı satır.
+    /// Marka ve satıcı boşsa ürün bu kaynağın kendi markasına yazılıyor.
+    /// </summary>
+    internal IEnumerable<ScrapedProduct> ProductsOf(BigJoyProduct item, string? brandName, string? seller)
     {
         if (string.IsNullOrWhiteSpace(item.Name))
             yield break;
@@ -153,7 +173,9 @@ public class PrimeNutritionScraper(HttpClient httpClient, ILogger<PrimeNutrition
                 Category: null,
                 Price: current.Value,
                 StoreOldPrice: storeOld,
-                InStock: variant.IsInStock);
+                BrandName: brandName,
+                InStock: variant.IsInStock,
+                Seller: seller);
         }
     }
 

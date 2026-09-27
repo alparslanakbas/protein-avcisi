@@ -45,8 +45,13 @@ public class PrimeNutritionScraperTests
            "tax_rate":1,"price":513.86,"price_with_tax":519,"special":null,"special_with_tax":null,"is_in_stock":true,
            "thumb":"/image/cache/catalog/Effive%20Nutrition/Zma-1-300x300.webp",
            "subgroup_value":"120 Kapsül","variant_value":null,"variant_attributes":[
-             {"seo_keyword":"zma","subgroup_value":"120 Kapsül","variant_value":"none","price":513.86,"special":null,"is_in_stock":true,"image":"/image/cache/catalog/Effive%20Nutrition/Zma-1-300x300.webp"}]}
-        ],"total":6,"hasMore":false}
+             {"seo_keyword":"zma","subgroup_value":"120 Kapsül","variant_value":"none","price":513.86,"special":null,"is_in_stock":true,"image":"/image/cache/catalog/Effive%20Nutrition/Zma-1-300x300.webp"}]},
+          {"name":"Effive Nutrition Pillbox","seo_keyword":"pillbox","manufacturer_name":"Effive Nutrition",
+           "tax_rate":20,"price":90.8333,"price_with_tax":109,"special":null,"special_with_tax":null,"is_in_stock":true,
+           "thumb":"/image/cache/catalog/Effive%20Nutrition/Effive-pillbox-300x300.webp",
+           "subgroup_value":"Siyah","variant_value":"Siyah","variant_attributes":[
+             {"seo_keyword":"pillbox","subgroup_value":"Siyah","variant_value":"Siyah","price":90.8333,"special":null,"is_in_stock":true,"image":"/image/cache/catalog/Effive%20Nutrition/Effive-pillbox-300x300.webp"}]}
+        ],"total":7,"hasMore":false}
         """;
 
     private static PrimeNutritionScraper Scraper(string json = Katalog) =>
@@ -101,7 +106,8 @@ public class PrimeNutritionScraperTests
              "https://www.primenutrition.com.tr/optimus-pre-workout-sachet-redfruit-20x14g",
              "https://www.primenutrition.com.tr/prime-nutrition-whey-protein-495-strawberry-6188",
              "https://www.primenutrition.com.tr/whey-protein-cookie-ice-cream-495g",
-             "https://www.primenutrition.com.tr/whey-protein-double-chocolate-495g"],
+             "https://www.primenutrition.com.tr/whey-protein-double-chocolate-495g",
+             "https://www.primenutrition.com.tr/zma"],
             products.Select(p => p.Url).Order(StringComparer.Ordinal));
     }
 
@@ -117,15 +123,42 @@ public class PrimeNutritionScraperTests
         Assert.Equal(899m, optimus.Price);
     }
 
-    // Effive Nutrition takviyeleri ve Jofit aksesuarları da sitede satılıyor.
+    // Site Effive Nutrition'ı bayi olarak satıyor: marka Effive, satıcı bu site.
     [Fact]
-    public async Task Baska_ureticiler_ve_aksesuarlar_alinmiyor()
+    public async Task Effive_bayi_urunu_olarak_aliniyor()
     {
         var products = await Scraper().ScrapeAsync();
 
-        Assert.DoesNotContain(products, p => p.Url.EndsWith("/zma"));
+        var zma = Assert.Single(products, p => p.Url.EndsWith("/zma"));
+        Assert.Equal("Effive Nutrition ZMA 120 Kapsül", zma.Name);
+        Assert.Equal("Effive Nutrition", zma.BrandName);
+        Assert.Equal("primenutrition.com.tr", zma.Seller);
+        Assert.Equal(519m, zma.Price);
+    }
+
+    // Kendi ürünlerinde marka ve satıcı boş: ürün kaynağın kendi markasına yazılıyor.
+    [Fact]
+    public async Task Kendi_urunlerinde_marka_ve_satici_bos()
+    {
+        var products = await Scraper().ScrapeAsync();
+
+        Assert.All(products.Where(p => p.Name.StartsWith("Prime Nutrition")), p =>
+        {
+            Assert.Null(p.BrandName);
+            Assert.Null(p.Seller);
+        });
+    }
+
+    // Jofit listede olmayan üretici (aksesuarlarının bir kısmı süzgeçten
+    // geçiyor); havlu ve pillbox ise aksesuar süzgecinde kalıyor.
+    [Fact]
+    public async Task Jofit_ve_aksesuarlar_alinmiyor()
+    {
+        var products = await Scraper().ScrapeAsync();
+
         Assert.DoesNotContain(products, p => p.Url.EndsWith("/straps-siyah-mavi"));
         Assert.DoesNotContain(products, p => p.Url.EndsWith("/beyaz-siyah-havlu"));
+        Assert.DoesNotContain(products, p => p.Url.EndsWith("/pillbox"));
     }
 
     [Fact]
