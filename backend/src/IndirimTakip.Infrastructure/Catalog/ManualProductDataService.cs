@@ -16,6 +16,11 @@ namespace IndirimTakip.Infrastructure.Catalog;
 /// etiketleri böyle basıyor ("1 kapsül"). Gramı etikette nadiren yazıyor; o zaman
 /// PorsiyonGram boş kalıyor, tahmin edilmiyor.
 /// </param>
+/// <param name="PorsiyonMl">
+/// Sıvının porsiyonu, etiketin yazdığı gibi ("20 ml" shot, "60 ml" jel). ml gram
+/// değil, hiçbir yerde grama çevrilmiyor. <paramref name="PorsiyonBeyanYok"/> ile
+/// tablonun tabanı oluyor ("100 ml başına": içecek etiketleri).
+/// </param>
 public sealed record ElleBesinIstegi(
     decimal? PorsiyonGram,
     decimal? Kalori,
@@ -28,7 +33,8 @@ public sealed record ElleBesinIstegi(
     int? PaketPorsiyonSayisi = null,
     bool PorsiyonBeyanYok = false,
     int? PorsiyonAdedi = null,
-    string? PorsiyonBirimi = null);
+    string? PorsiyonBirimi = null,
+    decimal? PorsiyonMl = null);
 
 /// <summary>Etiketteki bir satır: ad, porsiyon başına miktar ve birimi.</summary>
 public sealed record ElleBesinSatiri(string? Ad, decimal? Miktar, string? Birim);
@@ -203,6 +209,10 @@ public sealed class ManualProductDataService(AppDbContext db)
     private static readonly string[] PorsiyonBirimleri = ["kapsül", "tablet", "softjel"];
     private const int EnFazlaPorsiyonAdedi = 20;
 
+    // Sıvı porsiyonu ml (226ERS Sea Water "20ml" yazıyor); bir porsiyonun olabileceği
+    // en fazla miktar bir litre.
+    private const decimal EnFazlaPorsiyonMl = 1000m;
+
     // Makroların kendi alanları var ve orada kalori kontrolünden geçiyorlar; serbest
     // satır olarak yazılsalar o kontrolü atlarlardı. Yaygın yazımlarıyla birlikte.
     /// <summary>Porsiyon beyanı olmayan tablonun taban satırının adı ("Değerler: 100 g başına").</summary>
@@ -250,25 +260,28 @@ public sealed class ManualProductDataService(AppDbContext db)
         decimal?[] besinler = [istek.ProteinGram, istek.KarbonhidratGram, istek.YagGram];
         var besinVar = besinler.Any(v => v is not null);
 
-        var (sayiliPorsiyon, porsiyonHatasi) = SayiliPorsiyon(istek);
+        var (porsiyonMetni, porsiyonHatasi) = PorsiyonMetni(istek);
         if (porsiyonHatasi is not null)
             return Ret(porsiyonHatasi);
 
         var satirlar = new List<(string, string)>();
-        // PORSİYON BEYANI YOKSA gram değeri porsiyon değil TABLONUN TABANI ("100 g
-        // başına", "50 g başına"): markalar farklı tabanlar kullanıyor. Porsiyon diye
-        // yazılsaydı site ondan servis sayısı ve servis başı maliyet hesaplardı, yani
-        // markanın hiç beyan etmediği bir porsiyon uydurmuş olurduk.
-        if (istek.PorsiyonBeyanYok && sayiliPorsiyon is not null)
-            return Ret("\"1 kapsül\" de bir porsiyon beyanı; 'markanın porsiyonu yok' kutusunu kaldır");
-        if (istek.PorsiyonBeyanYok && istek.PorsiyonGram is null)
-            return Ret("değerler kaç gram başına yazıyorsa porsiyon kutusuna o sayıyı gir (ör. 100 ya da 50)");
-        if (sayiliPorsiyon is not null)
-            satirlar.Add(("Porsiyon", sayiliPorsiyon));
+        // PORSİYON BEYANI YOKSA kutudaki değer porsiyon değil TABLONUN TABANI ("100 g
+        // başına", "50 g başına", içeceklerde "100 ml başına"): markalar farklı tabanlar
+        // kullanıyor. Porsiyon diye yazılsaydı site ondan servis sayısı ve servis başı
+        // maliyet hesaplardı, yani markanın hiç beyan etmediği bir porsiyon uydurmuş olurduk.
+        if (istek.PorsiyonBeyanYok)
+        {
+            if (istek.PorsiyonAdedi is not null || !string.IsNullOrWhiteSpace(istek.PorsiyonBirimi))
+                return Ret("\"1 kapsül\" de bir porsiyon beyanı; 'markanın porsiyonu yok' kutusunu kaldır");
+            if ((istek.PorsiyonGram is null) == (istek.PorsiyonMl is null))
+                return Ret("değerler kaç gram ya da ml başına yazıyorsa porsiyon kutusuna yalnız onu gir (ör. 100 ya da 100 ml)");
+            var taban = istek.PorsiyonMl is { } tabanMl ? Yaz(tabanMl, "ml") : Yaz(istek.PorsiyonGram!.Value, "g");
+            satirlar.Add((TabanSatiri, taban + " başına"));
+        }
+        else if (porsiyonMetni is not null)
+            satirlar.Add(("Porsiyon", porsiyonMetni));
         else if (istek.PorsiyonGram is { } porsiyon)
-            satirlar.Add(istek.PorsiyonBeyanYok
-                ? (TabanSatiri, Yaz(porsiyon, "g") + " başına")
-                : ("Porsiyon", Yaz(porsiyon, "g")));
+            satirlar.Add(("Porsiyon", Yaz(porsiyon, "g")));
 
         if (besinVar)
         {
@@ -428,19 +441,35 @@ public sealed class ManualProductDataService(AppDbContext db)
     // tanıyor (bkz. besin-satirlari.ts), yani düzenleme bozulmuyor.
     private static readonly CultureInfo TurkceYazim = CultureInfo.GetCultureInfo("tr-TR");
 
-    // Sayılı porsiyonun "Porsiyon" satırı: "1 kapsül", "2 tablet (1,2 g)".
-    private static (string? Metin, string? Hata) SayiliPorsiyon(ElleBesinIstegi istek)
+    // Adetli ya da sıvı porsiyonun "Porsiyon" satırı: "1 kapsül", "2 tablet (1,2 g)",
+    // "20 ml". Yalnız gramsa ya da porsiyon yoksa null.
+    private static (string? Metin, string? Hata) PorsiyonMetni(ElleBesinIstegi istek)
     {
-        if (istek.PorsiyonAdedi is null && string.IsNullOrWhiteSpace(istek.PorsiyonBirimi))
+        var adetli = istek.PorsiyonAdedi is not null || !string.IsNullOrWhiteSpace(istek.PorsiyonBirimi);
+        if (adetli && istek.PorsiyonMl is not null)
+            return (null, "porsiyon ya adetle ya ml ile yazılır, ikisi birden değil");
+
+        string metin;
+        if (istek.PorsiyonMl is { } ml)
+        {
+            if (ml <= 0 || ml > EnFazlaPorsiyonMl)
+                return (null, $"ml porsiyonu 0'dan büyük ve en fazla {EnFazlaPorsiyonMl:0} olmalı");
+            metin = Yaz(ml, "ml");
+        }
+        else if (adetli)
+        {
+            var birim = PorsiyonBirimleri.FirstOrDefault(b => Katla(b) == Katla(istek.PorsiyonBirimi?.Trim() ?? ""));
+            if (birim is null)
+                return (null, $"porsiyon {string.Join(", ", PorsiyonBirimleri)} olarak sayılır ya da gram ya da ml ile yazılır");
+            if (istek.PorsiyonAdedi is not { } adet || adet < 1 || adet > EnFazlaPorsiyonAdedi)
+                return (null, $"porsiyon 1 ile {EnFazlaPorsiyonAdedi} {birim} arasında olmalı");
+            metin = $"{adet} {birim}";
+        }
+        else
+        {
             return (null, null);
+        }
 
-        var birim = PorsiyonBirimleri.FirstOrDefault(b => Katla(b) == Katla(istek.PorsiyonBirimi?.Trim() ?? ""));
-        if (birim is null)
-            return (null, $"porsiyon {string.Join(", ", PorsiyonBirimleri)} olarak sayılır ya da gramla yazılır");
-        if (istek.PorsiyonAdedi is not { } adet || adet < 1 || adet > EnFazlaPorsiyonAdedi)
-            return (null, $"porsiyon 1 ile {EnFazlaPorsiyonAdedi} {birim} arasında olmalı");
-
-        var metin = $"{adet} {birim}";
         return (istek.PorsiyonGram is { } gram ? $"{metin} ({Yaz(gram, "g")})" : metin, null);
     }
 

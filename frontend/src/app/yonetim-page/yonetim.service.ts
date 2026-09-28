@@ -281,6 +281,8 @@ export interface ElleBesin {
   /** Adetle sayılan porsiyon ("1 kapsül"): adedi ve birimi. */
   porsiyonAdedi: number | null;
   porsiyonBirimi: string | null;
+  /** Sıvı porsiyonu ya da tabanı ("20 ml", "100 ml başına"); grama çevrilmiyor. */
+  porsiyonMl: number | null;
   kalori: number | null;
   proteinGram: number | null;
   karbonhidratGram: number | null;

@@ -8,6 +8,7 @@ import {
   MakroAlani,
   katla,
   kayitliDigerSatirlar,
+  makroAlani,
   makroDegeri,
   tabloTabaniMi,
 } from './besin-satirlari';
@@ -46,27 +47,43 @@ const PORSIYON_KELIMELERI: Record<string, (typeof PORSIYON_BIRIMLERI)[number]> =
   softgel: 'softjel',
 };
 const GRAM_PORSIYON = /^(\d+(?:[.,]\d+)?)\s*g?$/i;
+const ML_PORSIYON = /^(\d+(?:[.,]\d+)?)\s*ml\s*(?:\(\s*(\d+(?:[.,]\d+)?)\s*g\s*\))?$/i;
 const SAYILI_PORSIYON = /^(\d+)\s*([a-zçğıöşü]+)\s*(?:\(\s*(\d+(?:[.,]\d+)?)\s*g\s*\))?$/i;
 
-type Porsiyon = Pick<ElleBesin, 'porsiyonGram' | 'porsiyonAdedi' | 'porsiyonBirimi'>;
+type Porsiyon = Pick<ElleBesin, 'porsiyonGram' | 'porsiyonAdedi' | 'porsiyonBirimi' | 'porsiyonMl'>;
+const PORSIYON_YOK: Porsiyon = {
+  porsiyonGram: null,
+  porsiyonAdedi: null,
+  porsiyonBirimi: null,
+  porsiyonMl: null,
+};
 
 // Kutu artık metin: "30,5" de yazılabiliyor.
 const ondalik = (metin: string) => Number(metin.replace(',', '.'));
 
 /**
- * Porsiyon kutusu: gram ("30"), ya da kapsül ve tablet etiketlerinin yazdığı gibi
- * adet ("1 kapsül", "2 tablet (1,2 g)"); bunların gramı etikette nadiren yazıyor.
- * İkisi de değilse null.
+ * Porsiyon kutusu: gram ("30"), sıvıda ml ("20 ml"), ya da kapsül ve tablet
+ * etiketlerinin yazdığı gibi adet ("1 kapsül", "2 tablet (1,2 g)"); bunların gramı
+ * etikette nadiren yazıyor. Hiçbiri değilse null.
  */
 export function porsiyonCoz(metin: string): Porsiyon | null {
   const m = metin.trim();
-  if (m === '') return { porsiyonGram: null, porsiyonAdedi: null, porsiyonBirimi: null };
+  if (m === '') return { ...PORSIYON_YOK };
   const gram = m.match(GRAM_PORSIYON);
-  if (gram) return { porsiyonGram: ondalik(gram[1]), porsiyonAdedi: null, porsiyonBirimi: null };
+  if (gram) return { ...PORSIYON_YOK, porsiyonGram: ondalik(gram[1]) };
+  const sivi = m.match(ML_PORSIYON);
+  if (sivi) {
+    return {
+      ...PORSIYON_YOK,
+      porsiyonGram: sivi[2] ? ondalik(sivi[2]) : null,
+      porsiyonMl: ondalik(sivi[1]),
+    };
+  }
   const sayili = m.match(SAYILI_PORSIYON);
   const birim = sayili && PORSIYON_KELIMELERI[katla(sayili[2])];
   if (!sayili || !birim) return null;
   return {
+    ...PORSIYON_YOK,
     porsiyonGram: sayili[3] ? ondalik(sayili[3]) : null,
     porsiyonAdedi: Number(sayili[1]),
     porsiyonBirimi: birim,
@@ -82,10 +99,14 @@ function besinTablosu(json: string | null): Record<string, string> {
   }
 }
 
-// Sayılı porsiyon ("2 kapsül") yalnızca tabloda; gram ayrıca sütunda da duruyor.
+// Adetli ya da sıvı porsiyon ("2 kapsül", "20 ml") ve ml tabanı ("100 ml başına")
+// yalnızca tabloda; gram ayrıca sütunda da duruyor. ml tabanı "100" diye geri
+// okunsaydı ikinci kayıt onu sessizce "100 g başına"ya çevirirdi.
 function kayitliPorsiyon(urun: YonetimUrun, tablo: Record<string, string>): string {
-  const satir = tablo['Porsiyon']?.trim() ?? '';
-  if (porsiyonCoz(satir)?.porsiyonBirimi) return satir;
+  const satir = Object.entries(tablo).find(([ad]) => makroAlani(ad) === 'porsiyon')?.[1] ?? '';
+  const metin = satir.replace(/\s*başına\s*$/i, '').trim();
+  const cozulen = porsiyonCoz(metin);
+  if (cozulen?.porsiyonBirimi || cozulen?.porsiyonMl) return metin;
   return urun.servingSizeGrams?.toString() ?? makroDegeri(tablo, 'porsiyon');
 }
 
@@ -123,7 +144,7 @@ export function besinIstegi(
   etiketBoyleYaziyor: boolean,
 ): { govde: ElleBesin } | { hata: string } {
   const porsiyon = porsiyonCoz(form.porsiyon);
-  if (!porsiyon) return { hata: 'Porsiyon: gram ("30") ya da adet ("1 kapsül", "2 tablet").' };
+  if (!porsiyon) return { hata: 'Porsiyon: gram ("30"), ml ("20 ml") ya da adet ("1 kapsül", "2 tablet").' };
 
   // Boş alan 0 değil null kalıyor: boş lif "girilmedi" demek; dört temel değerin
   // birlikte girilmesini backend kendisi istiyor.

@@ -256,6 +256,62 @@ public class ElleUrunVerisiTests
         Assert.False(string.IsNullOrWhiteSpace(kontrol.RetSebebi));
     }
 
+    // --- Sıvı porsiyonu: 226ERS Sea Water değerleri 20 ml için veriyor ---
+
+    [Fact]
+    public void Sivi_porsiyonu_ml_olarak_kaliyor_grama_cevrilmiyor()
+    {
+        var kontrol = ManualProductDataService.Kontrol(new ElleBesinIstegi(
+            null, null, null, null, null, null, Elektrolit, PorsiyonMl: 20));
+
+        Assert.True(kontrol.Kabul, kontrol.RetSebebi);
+        Assert.Equal(("Porsiyon", "20 ml"), kontrol.Satirlar[0]);
+    }
+
+    [Fact]
+    public void Gramiyla_birlikte_sivi_porsiyonu_ikisini_tasiyor()
+    {
+        var kontrol = ManualProductDataService.Kontrol(new ElleBesinIstegi(
+            20.5m, null, null, null, null, null, Elektrolit, PorsiyonMl: 20));
+
+        Assert.True(kontrol.Kabul, kontrol.RetSebebi);
+        Assert.Equal(("Porsiyon", "20 ml (20,5 g)"), kontrol.Satirlar[0]);
+    }
+
+    // İçecek etiketleri çoğunlukla porsiyon değil "100 ml başına" yazıyor.
+    [Fact]
+    public void Porsiyonu_olmayan_icecek_tablosu_ml_tabaniyla_yaziliyor()
+    {
+        var kontrol = ManualProductDataService.Kontrol(new ElleBesinIstegi(
+            null, 45, 0, 11, 0, null, null, PorsiyonBeyanYok: true, PorsiyonMl: 100));
+
+        Assert.True(kontrol.Kabul, kontrol.RetSebebi);
+        Assert.Equal((ManualProductDataService.TabanSatiri, "100 ml başına"), kontrol.Satirlar[0]);
+    }
+
+    [Theory]
+    [InlineData(0.0, null)]
+    [InlineData(1001.0, null)]    // bir litreden fazla: yazım hatası
+    [InlineData(20.0, "kapsül")]  // hem adetli hem ml
+    public void Siniri_disindaki_sivi_porsiyonu_reddediliyor(double ml, string? birim)
+    {
+        var kontrol = ManualProductDataService.Kontrol(new ElleBesinIstegi(
+            null, null, null, null, null, null, Elektrolit,
+            PorsiyonAdedi: birim is null ? null : 1, PorsiyonBirimi: birim, PorsiyonMl: (decimal)ml));
+
+        Assert.False(kontrol.Kabul);
+        Assert.False(string.IsNullOrWhiteSpace(kontrol.RetSebebi));
+    }
+
+    [Fact]
+    public void Taban_hem_gram_hem_ml_olamaz()
+    {
+        var kontrol = ManualProductDataService.Kontrol(new ElleBesinIstegi(
+            100, 45, 0, 11, 0, null, null, PorsiyonBeyanYok: true, PorsiyonMl: 100));
+
+        Assert.False(kontrol.Kabul);
+    }
+
     // "1 kapsül" de bir porsiyon beyanı; "100 g başına" tabanla birlikte olamaz.
     [Fact]
     public void Sayili_porsiyon_porsiyonsuz_tabloyla_birlikte_reddediliyor()

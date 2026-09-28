@@ -145,8 +145,8 @@ export class YonetimPage implements OnInit {
     etiket,
   }));
   readonly besinAlanlari: { alan: MakroAlani; etiket: string; metin?: boolean }[] = [
-    // Metin: sayılı porsiyon ("1 kapsül") gramla aynı kutuya yazılıyor.
-    { alan: 'porsiyon', etiket: 'Porsiyon (g ya da "1 kapsül")', metin: true },
+    // Metin: adetli ya da sıvı porsiyon ("1 kapsül", "20 ml") gramla aynı kutuya yazılıyor.
+    { alan: 'porsiyon', etiket: 'Porsiyon (g, "20 ml" ya da "1 kapsül")', metin: true },
     { alan: 'enerji', etiket: 'Enerji (kcal)' },
     { alan: 'protein', etiket: 'Protein (g)' },
     { alan: 'karbonhidrat', etiket: 'Karbonhidrat (g)' },

@@ -140,6 +140,7 @@ describe('YonetimPage görünürlük güvenliği', () => {
       porsiyonGram: 30,
       porsiyonAdedi: null,
       porsiyonBirimi: null,
+      porsiyonMl: null,
       kalori: 119,
       proteinGram: 24.1,
       karbonhidratGram: 1.4,
@@ -201,6 +202,7 @@ describe('YonetimPage görünürlük güvenliği', () => {
       porsiyonGram: 5,
       porsiyonAdedi: null,
       porsiyonBirimi: null,
+      porsiyonMl: null,
       kalori: null,
       proteinGram: null,
       karbonhidratGram: null,
@@ -244,6 +246,40 @@ describe('YonetimPage görünürlük güvenliği', () => {
     expect(api.besinAyarla).toHaveBeenCalledWith(
       21,
       expect.objectContaining({ porsiyonGram: 1.2, porsiyonAdedi: 2, porsiyonBirimi: 'tablet' }),
+    );
+  });
+
+  // 226ERS Sea Water: değerler 20 ml için. ml, ml olarak kalıyor; grama çevrilmiyor.
+  it('sıvı porsiyonunu ml olarak gönderir', () => {
+    sayfa.veriDuzenleyiciAc({ ...urun, servingSizeGrams: null, nutritionJson: null });
+    sayfa.veriAlaniGuncelle('porsiyon', '20 ml');
+    sayfa.digerSatirEkle();
+    sayfa.digerSatirGuncelle(0, 'ad', 'Sodyum');
+    sayfa.digerSatirGuncelle(0, 'miktar', 141);
+    sayfa.besinKaydet();
+
+    expect(api.besinAyarla).toHaveBeenCalledWith(
+      21,
+      expect.objectContaining({ porsiyonGram: null, porsiyonMl: 20, porsiyonAdedi: null }),
+    );
+  });
+
+  // İçecek etiketi "100 ml başına": geri okununca "100" olsaydı ikinci kayıt tabanı
+  // sessizce "100 g başına"ya çevirirdi.
+  it('ml tabanlı tabloyu ml olarak geri okur ve aynen gönderir', () => {
+    sayfa.veriDuzenleyiciAc({
+      ...urun,
+      servingSizeGrams: null,
+      nutritionJson: '{"Değerler":"100 ml başına","Enerji":"45 kcal","Yağ":"0 g","Karbonhidrat":"11 g","Protein":"0 g"}',
+    });
+    const form = sayfa.duzenlenenVeri()!;
+    expect(form.porsiyon).toBe('100 ml');
+    expect(form.porsiyonBeyanYok).toBe(true);
+
+    sayfa.besinKaydet();
+    expect(api.besinAyarla).toHaveBeenCalledWith(
+      21,
+      expect.objectContaining({ porsiyonGram: null, porsiyonMl: 100, porsiyonBeyanYok: true }),
     );
   });
 
