@@ -217,6 +217,55 @@ public class ElleUrunVerisiTests
         Assert.False(kontrol.Kabul);
     }
 
+    // --- Adetle sayılan porsiyon: kapsül ve tablet etiketleri "1 kapsül" yazıp gram vermiyor ---
+
+    private static readonly ElleBesinSatiri[] Elektrolit = [new("Sodyum", 141, "mg"), new("Klorür", 309.5m, "mg")];
+
+    [Fact]
+    public void Kapsul_porsiyonu_tablonun_basinda_gram_uydurulmadan_yaziliyor()
+    {
+        var kontrol = ManualProductDataService.Kontrol(new ElleBesinIstegi(
+            null, null, null, null, null, null, Elektrolit, PorsiyonAdedi: 1, PorsiyonBirimi: "kapsül"));
+
+        Assert.True(kontrol.Kabul, kontrol.RetSebebi);
+        Assert.Equal(("Porsiyon", "1 kapsül"), kontrol.Satirlar[0]);
+    }
+
+    // Gram da yazıyorsa tek satır ikisini birden taşıyor; Türkçede sayıdan sonra çoğul yok.
+    [Fact]
+    public void Gramiyla_birlikte_sayilan_porsiyon_gram_satirinin_yerini_aliyor()
+    {
+        var kontrol = ManualProductDataService.Kontrol(Whey with { PorsiyonAdedi = 2, PorsiyonBirimi = "TABLET" });
+
+        Assert.True(kontrol.Kabul, kontrol.RetSebebi);
+        Assert.Equal(new[] { "2 tablet (30 g)" }, kontrol.Satirlar.Where(s => s.Ad == "Porsiyon").Select(s => s.Deger));
+    }
+
+    [Theory]
+    [InlineData(1, "ölçek")]   // listede yok: ölçek gramla yazılıyor
+    [InlineData(0, "kapsül")]
+    [InlineData(21, "kapsül")] // hiçbir porsiyon bu kadar değil: yazım hatası
+    [InlineData(null, "kapsül")]
+    [InlineData(2, null)]
+    public void Liste_disindaki_sayili_porsiyon_reddediliyor(int? adet, string? birim)
+    {
+        var kontrol = ManualProductDataService.Kontrol(new ElleBesinIstegi(
+            null, null, null, null, null, null, Elektrolit, PorsiyonAdedi: adet, PorsiyonBirimi: birim));
+
+        Assert.False(kontrol.Kabul);
+        Assert.False(string.IsNullOrWhiteSpace(kontrol.RetSebebi));
+    }
+
+    // "1 kapsül" de bir porsiyon beyanı; "100 g başına" tabanla birlikte olamaz.
+    [Fact]
+    public void Sayili_porsiyon_porsiyonsuz_tabloyla_birlikte_reddediliyor()
+    {
+        var kontrol = ManualProductDataService.Kontrol(new ElleBesinIstegi(
+            100, null, null, null, null, null, Elektrolit, PorsiyonBeyanYok: true, PorsiyonAdedi: 1, PorsiyonBirimi: "kapsül"));
+
+        Assert.False(kontrol.Kabul);
+    }
+
     // 24,1 yerine 241 yazmak.
     [Fact]
     public void Kalori_toplamini_bozan_yazim_hatasi_sebebiyle_reddedilir()

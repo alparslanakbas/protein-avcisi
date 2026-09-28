@@ -138,6 +138,8 @@ describe('YonetimPage görünürlük güvenliği', () => {
 
     expect(api.besinAyarla).toHaveBeenCalledWith(21, {
       porsiyonGram: 30,
+      porsiyonAdedi: null,
+      porsiyonBirimi: null,
       kalori: 119,
       proteinGram: 24.1,
       karbonhidratGram: 1.4,
@@ -197,6 +199,8 @@ describe('YonetimPage görünürlük güvenliği', () => {
 
     expect(api.besinAyarla).toHaveBeenCalledWith(21, {
       porsiyonGram: 5,
+      porsiyonAdedi: null,
+      porsiyonBirimi: null,
       kalori: null,
       proteinGram: null,
       karbonhidratGram: null,
@@ -210,6 +214,49 @@ describe('YonetimPage görünürlük güvenliği', () => {
         { ad: 'Kafein', miktar: 200, birim: 'mg' },
       ],
     });
+  });
+
+  // Kapsüllü elektrolit (28 Eylül): etiketin porsiyonu "1 kapsül", gramını
+  // yazmıyor; gram gönderilmiyor.
+  it('porsiyon kutusuna yazılan kapsül porsiyonunu gramsız gönderir', () => {
+    sayfa.veriDuzenleyiciAc({ ...urun, servingSizeGrams: null, nutritionJson: null });
+    sayfa.veriAlaniGuncelle('porsiyon', '1 Kapsül');
+    sayfa.digerSatirEkle();
+    sayfa.digerSatirGuncelle(0, 'ad', 'Sodyum');
+    sayfa.digerSatirGuncelle(0, 'miktar', 141);
+    sayfa.besinKaydet();
+
+    expect(api.besinAyarla).toHaveBeenCalledWith(
+      21,
+      expect.objectContaining({ porsiyonGram: null, porsiyonAdedi: 1, porsiyonBirimi: 'kapsül' }),
+    );
+  });
+
+  it('kayıtlı sayılı porsiyonu gramıyla, yazıldığı gibi geri okur', () => {
+    sayfa.veriDuzenleyiciAc({
+      ...urun,
+      servingSizeGrams: 1.2,
+      nutritionJson: '{"Porsiyon":"2 tablet (1,2 g)","Kafein":"200 mg"}',
+    });
+    expect(sayfa.duzenlenenVeri()?.porsiyon).toBe('2 tablet (1,2 g)');
+
+    sayfa.besinKaydet();
+    expect(api.besinAyarla).toHaveBeenCalledWith(
+      21,
+      expect.objectContaining({ porsiyonGram: 1.2, porsiyonAdedi: 2, porsiyonBirimi: 'tablet' }),
+    );
+  });
+
+  it('okuyamadığı porsiyonu göndermez, virgüllü gramı okur', () => {
+    sayfa.veriDuzenleyiciAc(urun);
+    sayfa.veriAlaniGuncelle('porsiyon', '2 ölçek');
+    sayfa.besinKaydet();
+    expect(api.besinAyarla).not.toHaveBeenCalled();
+    expect(sayfa.veriMesaji()).toContain('Porsiyon');
+
+    sayfa.veriAlaniGuncelle('porsiyon', '30,5');
+    sayfa.besinKaydet();
+    expect(api.besinAyarla).toHaveBeenCalledWith(21, expect.objectContaining({ porsiyonGram: 30.5 }));
   });
 
   it('kategori şablonunu bir kez ekler ve miktarsız satırları göndermez', () => {

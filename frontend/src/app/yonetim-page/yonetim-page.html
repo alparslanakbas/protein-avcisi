@@ -1333,10 +1333,10 @@
                   <label
                     >{{ b.etiket }}
                     <input
-                      type="number"
+                      [type]="b.metin ? 'text' : 'number'"
                       min="0"
                       step="0.1"
-                      inputmode="decimal"
+                      [attr.inputmode]="b.metin ? null : 'decimal'"
                       [ngModel]="form[b.alan]"
                       (ngModelChange)="veriAlaniGuncelle(b.alan, $event)"
                       [ngModelOptions]="{ standalone: true }"

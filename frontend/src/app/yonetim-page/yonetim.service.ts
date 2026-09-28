@@ -278,6 +278,9 @@ export type UrunAramaSecenekleri = Partial<Record<UrunFiltresi, boolean>> & {
 
 export interface ElleBesin {
   porsiyonGram: number | null;
+  /** Adetle sayılan porsiyon ("1 kapsül"): adedi ve birimi. */
+  porsiyonAdedi: number | null;
+  porsiyonBirimi: string | null;
   kalori: number | null;
   proteinGram: number | null;
   karbonhidratGram: number | null;

@@ -11,6 +11,11 @@ namespace IndirimTakip.Infrastructure.Catalog;
 /// Makrolar dışındaki satırlar: takviye etiketlerindeki ("Kreatin Monohidrat 5 g",
 /// "Kafein 200 mg", "D3 Vitamini 25 mcg") ya da tablodaki tuz, şeker gibi satırlar.
 /// </param>
+/// <param name="PorsiyonAdedi">
+/// Adetle sayılan porsiyon, <paramref name="PorsiyonBirimi"/> ile: kapsül ve tablet
+/// etiketleri böyle basıyor ("1 kapsül"). Gramı etikette nadiren yazıyor; o zaman
+/// PorsiyonGram boş kalıyor, tahmin edilmiyor.
+/// </param>
 public sealed record ElleBesinIstegi(
     decimal? PorsiyonGram,
     decimal? Kalori,
@@ -21,7 +26,9 @@ public sealed record ElleBesinIstegi(
     IReadOnlyList<ElleBesinSatiri>? DigerSatirlar = null,
     bool EtiketBoyleYaziyor = false,
     int? PaketPorsiyonSayisi = null,
-    bool PorsiyonBeyanYok = false);
+    bool PorsiyonBeyanYok = false,
+    int? PorsiyonAdedi = null,
+    string? PorsiyonBirimi = null);
 
 /// <summary>Etiketteki bir satır: ad, porsiyon başına miktar ve birimi.</summary>
 public sealed record ElleBesinSatiri(string? Ad, decimal? Miktar, string? Birim);
@@ -190,6 +197,12 @@ public sealed class ManualProductDataService(AppDbContext db)
 
     private static readonly string[] Birimler = ["g", "mg", "mcg", "IU", "milyar CFU"];
 
+    // Porsiyonun adetle sayılabildiği birimler (28 Eylül: kapsüllü elektrolit
+    // etiketleri "1 kapsül" yazıp ağırlık vermiyor). Gram PorsiyonGram'da kalıyor.
+    // Bir porsiyonun çıkabileceği en fazla adedin üstü yazım hatası.
+    private static readonly string[] PorsiyonBirimleri = ["kapsül", "tablet", "softjel"];
+    private const int EnFazlaPorsiyonAdedi = 20;
+
     // Makroların kendi alanları var ve orada kalori kontrolünden geçiyorlar; serbest
     // satır olarak yazılsalar o kontrolü atlarlardı. Yaygın yazımlarıyla birlikte.
     /// <summary>Porsiyon beyanı olmayan tablonun taban satırının adı ("Değerler: 100 g başına").</summary>
@@ -237,14 +250,22 @@ public sealed class ManualProductDataService(AppDbContext db)
         decimal?[] besinler = [istek.ProteinGram, istek.KarbonhidratGram, istek.YagGram];
         var besinVar = besinler.Any(v => v is not null);
 
+        var (sayiliPorsiyon, porsiyonHatasi) = SayiliPorsiyon(istek);
+        if (porsiyonHatasi is not null)
+            return Ret(porsiyonHatasi);
+
         var satirlar = new List<(string, string)>();
         // PORSİYON BEYANI YOKSA gram değeri porsiyon değil TABLONUN TABANI ("100 g
         // başına", "50 g başına"): markalar farklı tabanlar kullanıyor. Porsiyon diye
         // yazılsaydı site ondan servis sayısı ve servis başı maliyet hesaplardı, yani
         // markanın hiç beyan etmediği bir porsiyon uydurmuş olurduk.
+        if (istek.PorsiyonBeyanYok && sayiliPorsiyon is not null)
+            return Ret("\"1 kapsül\" de bir porsiyon beyanı; 'markanın porsiyonu yok' kutusunu kaldır");
         if (istek.PorsiyonBeyanYok && istek.PorsiyonGram is null)
             return Ret("değerler kaç gram başına yazıyorsa porsiyon kutusuna o sayıyı gir (ör. 100 ya da 50)");
-        if (istek.PorsiyonGram is { } porsiyon)
+        if (sayiliPorsiyon is not null)
+            satirlar.Add(("Porsiyon", sayiliPorsiyon));
+        else if (istek.PorsiyonGram is { } porsiyon)
             satirlar.Add(istek.PorsiyonBeyanYok
                 ? (TabanSatiri, Yaz(porsiyon, "g") + " başına")
                 : ("Porsiyon", Yaz(porsiyon, "g")));
@@ -406,6 +427,22 @@ public sealed class ManualProductDataService(AppDbContext db)
     // aynı sayfada iki ayrı ondalık işareti demekti. Geri okuma iki biçimi de
     // tanıyor (bkz. besin-satirlari.ts), yani düzenleme bozulmuyor.
     private static readonly CultureInfo TurkceYazim = CultureInfo.GetCultureInfo("tr-TR");
+
+    // Sayılı porsiyonun "Porsiyon" satırı: "1 kapsül", "2 tablet (1,2 g)".
+    private static (string? Metin, string? Hata) SayiliPorsiyon(ElleBesinIstegi istek)
+    {
+        if (istek.PorsiyonAdedi is null && string.IsNullOrWhiteSpace(istek.PorsiyonBirimi))
+            return (null, null);
+
+        var birim = PorsiyonBirimleri.FirstOrDefault(b => Katla(b) == Katla(istek.PorsiyonBirimi?.Trim() ?? ""));
+        if (birim is null)
+            return (null, $"porsiyon {string.Join(", ", PorsiyonBirimleri)} olarak sayılır ya da gramla yazılır");
+        if (istek.PorsiyonAdedi is not { } adet || adet < 1 || adet > EnFazlaPorsiyonAdedi)
+            return (null, $"porsiyon 1 ile {EnFazlaPorsiyonAdedi} {birim} arasında olmalı");
+
+        var metin = $"{adet} {birim}";
+        return (istek.PorsiyonGram is { } gram ? $"{metin} ({Yaz(gram, "g")})" : metin, null);
+    }
 
     private static string Yaz(decimal miktar, string birim) =>
         miktar.ToString("0.###", TurkceYazim) + " " + birim;

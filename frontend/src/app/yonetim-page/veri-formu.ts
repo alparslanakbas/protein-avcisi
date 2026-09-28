@@ -6,11 +6,12 @@
 import {
   BesinSatiriFormu,
   MakroAlani,
+  katla,
   kayitliDigerSatirlar,
   makroDegeri,
   tabloTabaniMi,
 } from './besin-satirlari';
-import { YonetimUrun } from './yonetim.service';
+import { ElleBesin, YonetimUrun } from './yonetim.service';
 
 /** Düzenleyicinin çalışma kopyası; girdiler kaydedilene kadar metin olarak tutuluyor. */
 export interface UrunVeriFormu extends Record<MakroAlani, string> {
@@ -28,6 +29,50 @@ export interface UrunVeriFormu extends Record<MakroAlani, string> {
 /** Kategori ile besin tablosu ayrı düğmelerle, ayrı isteklerle kaydediliyor. */
 export type KaydedilenVeri = 'kategori' | 'besin';
 
+/** Porsiyonun adetle sayılabildiği birimler: backend'in listesi, aynı yazımla. */
+export const PORSIYON_BIRIMLERI = ['kapsül', 'tablet', 'softjel'] as const;
+
+// Kapsül ve tablet etiketlerinin sayılı porsiyon için yazdığı kelimeler ("1 kapsül").
+const PORSIYON_KELIMELERI: Record<string, (typeof PORSIYON_BIRIMLERI)[number]> = {
+  kap: 'kapsül',
+  kaps: 'kapsül',
+  kapsul: 'kapsül',
+  kapsül: 'kapsül',
+  kapsüller: 'kapsül',
+  tab: 'tablet',
+  tablet: 'tablet',
+  tabletler: 'tablet',
+  softjel: 'softjel',
+  softgel: 'softjel',
+};
+const GRAM_PORSIYON = /^(\d+(?:[.,]\d+)?)\s*g?$/i;
+const SAYILI_PORSIYON = /^(\d+)\s*([a-zçğıöşü]+)\s*(?:\(\s*(\d+(?:[.,]\d+)?)\s*g\s*\))?$/i;
+
+type Porsiyon = Pick<ElleBesin, 'porsiyonGram' | 'porsiyonAdedi' | 'porsiyonBirimi'>;
+
+// Kutu artık metin: "30,5" de yazılabiliyor.
+const ondalik = (metin: string) => Number(metin.replace(',', '.'));
+
+/**
+ * Porsiyon kutusu: gram ("30"), ya da kapsül ve tablet etiketlerinin yazdığı gibi
+ * adet ("1 kapsül", "2 tablet (1,2 g)"); bunların gramı etikette nadiren yazıyor.
+ * İkisi de değilse null.
+ */
+export function porsiyonCoz(metin: string): Porsiyon | null {
+  const m = metin.trim();
+  if (m === '') return { porsiyonGram: null, porsiyonAdedi: null, porsiyonBirimi: null };
+  const gram = m.match(GRAM_PORSIYON);
+  if (gram) return { porsiyonGram: ondalik(gram[1]), porsiyonAdedi: null, porsiyonBirimi: null };
+  const sayili = m.match(SAYILI_PORSIYON);
+  const birim = sayili && PORSIYON_KELIMELERI[katla(sayili[2])];
+  if (!sayili || !birim) return null;
+  return {
+    porsiyonGram: sayili[3] ? ondalik(sayili[3]) : null,
+    porsiyonAdedi: Number(sayili[1]),
+    porsiyonBirimi: birim,
+  };
+}
+
 function besinTablosu(json: string | null): Record<string, string> {
   if (!json) return {};
   try {
@@ -35,6 +80,13 @@ function besinTablosu(json: string | null): Record<string, string> {
   } catch {
     return {};
   }
+}
+
+// Sayılı porsiyon ("2 kapsül") yalnızca tabloda; gram ayrıca sütunda da duruyor.
+function kayitliPorsiyon(urun: YonetimUrun, tablo: Record<string, string>): string {
+  const satir = tablo['Porsiyon']?.trim() ?? '';
+  if (porsiyonCoz(satir)?.porsiyonBirimi) return satir;
+  return urun.servingSizeGrams?.toString() ?? makroDegeri(tablo, 'porsiyon');
 }
 
 /**
@@ -51,7 +103,7 @@ export function kayitliVeriFormu(urun: YonetimUrun): {
     form: {
       urun,
       kategori: urun.categoryIsManual ? (urun.category ?? '') : '',
-      porsiyon: urun.servingSizeGrams?.toString() ?? makroDegeri(tablo, 'porsiyon'),
+      porsiyon: kayitliPorsiyon(urun, tablo),
       paketPorsiyon: urun.servingsPerPackage?.toString() ?? '',
       porsiyonBeyanYok: tabloTabaniMi(tablo),
       enerji: makroDegeri(tablo, 'enerji'),
@@ -63,6 +115,42 @@ export function kayitliVeriFormu(urun: YonetimUrun): {
     },
     atlananlar: diger.atlananlar,
   };
+}
+
+/** Formdan kurulan kayıt isteği, ya da istek yerine kişiye söylenecek şey. */
+export function besinIstegi(
+  form: UrunVeriFormu,
+  etiketBoyleYaziyor: boolean,
+): { govde: ElleBesin } | { hata: string } {
+  const porsiyon = porsiyonCoz(form.porsiyon);
+  if (!porsiyon) return { hata: 'Porsiyon: gram ("30") ya da adet ("1 kapsül", "2 tablet").' };
+
+  // Boş alan 0 değil null kalıyor: boş lif "girilmedi" demek; dört temel değerin
+  // birlikte girilmesini backend kendisi istiyor.
+  const sayi = (metin: string) => (metin.trim() === '' ? null : Number(metin));
+  const govde = {
+    ...porsiyon,
+    kalori: sayi(form.enerji),
+    proteinGram: sayi(form.protein),
+    karbonhidratGram: sayi(form.karbonhidrat),
+    yagGram: sayi(form.yag),
+    lifGram: sayi(form.lif),
+    etiketBoyleYaziyor,
+    paketPorsiyonSayisi: sayi(form.paketPorsiyon),
+    porsiyonBeyanYok: form.porsiyonBeyanYok,
+  };
+  // Miktarı boş bırakılan şablon satırı etikette yok demek: hata olarak
+  // gönderilmiyor, atlanıyor. Adı ve miktarı olan satır backend kontrolüne gidiyor.
+  const digerSatirlar = form.digerSatirlar
+    .filter((s) => s.miktar.trim() !== '')
+    .map((s) => ({ ad: s.ad, miktar: sayi(s.miktar), birim: s.birim }));
+  if (
+    Object.values(govde).some((v) => typeof v === 'number' && Number.isNaN(v)) ||
+    digerSatirlar.some((s) => s.miktar !== null && Number.isNaN(s.miktar))
+  ) {
+    return { hata: 'Yalnızca sayı gir.' };
+  }
+  return { govde: { ...govde, digerSatirlar } };
 }
 
 // Ürün kaydı dışındaki her alan. Anahtarlar formun kendisinden okunuyor: forma

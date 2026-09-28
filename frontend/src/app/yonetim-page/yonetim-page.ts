@@ -16,7 +16,7 @@ import {
 } from './besin-satirlari';
 import { YonetimDuzenleyiciOdagi } from './duzenleyici-odagi';
 import { YonetimHataSebebi } from './hata-sebebi';
-import { KaydedilenVeri, UrunVeriFormu, VeriTaslaklari } from './veri-formu';
+import { KaydedilenVeri, UrunVeriFormu, VeriTaslaklari, besinIstegi } from './veri-formu';
 import {
   Abone,
   AboneDurumu,
@@ -144,8 +144,9 @@ export class YonetimPage implements OnInit {
     slug,
     etiket,
   }));
-  readonly besinAlanlari: { alan: MakroAlani; etiket: string }[] = [
-    { alan: 'porsiyon', etiket: 'Porsiyon (g)' },
+  readonly besinAlanlari: { alan: MakroAlani; etiket: string; metin?: boolean }[] = [
+    // Metin: sayılı porsiyon ("1 kapsül") gramla aynı kutuya yazılıyor.
+    { alan: 'porsiyon', etiket: 'Porsiyon (g ya da "1 kapsül")', metin: true },
     { alan: 'enerji', etiket: 'Enerji (kcal)' },
     { alan: 'protein', etiket: 'Protein (g)' },
     { alan: 'karbonhidrat', etiket: 'Karbonhidrat (g)' },
@@ -826,36 +827,13 @@ export class YonetimPage implements OnInit {
   besinKaydet(): void {
     const form = this.duzenlenenVeri();
     if (!form) return;
-
-    // Boş alan 0 değil null kalıyor: boş lif "girilmedi" demek; dört temel değerin
-    // birlikte girilmesini backend kendisi istiyor.
-    const sayi = (metin: string) => (metin.trim() === '' ? null : Number(metin));
-    const govde = {
-      porsiyonGram: sayi(form.porsiyon),
-      kalori: sayi(form.enerji),
-      proteinGram: sayi(form.protein),
-      karbonhidratGram: sayi(form.karbonhidrat),
-      yagGram: sayi(form.yag),
-      lifGram: sayi(form.lif),
-      etiketBoyleYaziyor: this.etiketBoyleYaziyor(),
-      paketPorsiyonSayisi: sayi(form.paketPorsiyon),
-      porsiyonBeyanYok: form.porsiyonBeyanYok,
-    };
-    // Miktarı boş bırakılan şablon satırı etikette yok demek: hata olarak
-    // gönderilmiyor, atlanıyor. Adı ve miktarı olan satır backend kontrolüne gidiyor.
-    const digerSatirlar = form.digerSatirlar
-      .filter((s) => s.miktar.trim() !== '')
-      .map((s) => ({ ad: s.ad, miktar: sayi(s.miktar), birim: s.birim }));
-    if (
-      Object.values(govde).some((v) => v !== null && Number.isNaN(v)) ||
-      digerSatirlar.some((s) => s.miktar !== null && Number.isNaN(s.miktar))
-    ) {
-      this.veriMesaji.set('Yalnızca sayı gir.');
+    const istek = besinIstegi(form, this.etiketBoyleYaziyor());
+    if ('hata' in istek) {
+      this.veriMesaji.set(istek.hata);
       return;
     }
-
     this.veriDuzenlemesiCalistir(
-      this.api.besinAyarla(form.urun.id, { ...govde, digerSatirlar }),
+      this.api.besinAyarla(form.urun.id, istek.govde),
       'Besin değeri kaydedildi',
       'besin',
     );
