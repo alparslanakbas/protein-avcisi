@@ -52,7 +52,6 @@ internal static class SupplementlerCategories
         ("kilo-aldirici", 29, "kilo-hacim"),
         ("kilo-aldiricilar", 5, "kilo-hacim"),
         ("ogun-tozu", 382, "kilo-hacim"),
-        ("karbonhidrat-ve-jel", 45, "kilo-hacim"),
 
         // Yağ yakıcı
         ("diyet-fat-burner", 4, "yag-yakici"),
@@ -88,6 +87,14 @@ internal static class SupplementlerCategories
         ("kompleks-tribulus", 50, null),
         ("hazir-icecek", 42, null),
         ("elektrolitler", 395, null),
+        // Karbonhidrat tozlarını enerji jelleri ve izotoniklerle aynı başlıkta
+        // topluyor. 28 Eylül'e kadar kilo-hacim'e eşleniyordu ve jeller orada
+        // kalıyordu; artık isim kuralı ayırıyor. Kuru çalıştırmada ölçüldü:
+        // 12 jel/izotonik/elektrolit enerji kategorisine geçiyor, Carbonox ve
+        // Carbopure kilo-hacim'de kalıyor. Liste sonunda, çünkü ilk görülen
+        // başlık kazanıyor: başka bir başlıkta da duran ürün onun kesin
+        // kategorisini almaya devam ediyor.
+        ("karbonhidrat-ve-jel", 45, null),
         ("bitki-tozu-superfoods", 403, null),
         ("hindistan-cevizi-yagi", 405, null),
     ];

@@ -39,9 +39,44 @@ public class EnerjiJeliKategoriTests
     }
 
     /// <summary>
+    /// Supplementler'in "karbonhidrat ve jel" başlığı 28 Eylül'den beri eşlemesiz,
+    /// ad kuralına bırakılıyor: jel ve izotonikler enerji kategorisine gidiyor,
+    /// karbonhidrat tozları kilo-hacim'de kalıyor. Adlar o başlığın kendisinden.
+    /// </summary>
+    [Theory]
+    [InlineData("Supplementler.com Carbo Gel 50 Gr 18 Adet", "Supplementler", Kategori)]
+    [InlineData("PR Nutrition Hyper Energy + Electrolytes Powder 1350 Gr", "PR Nutrition", Kategori)]
+    [InlineData("Olimp Carbonox 1000 Gr", "Olimp", "kilo-hacim")]
+    [InlineData("Hardline Carbopure 2000 Gr", "Hardline", "kilo-hacim")]
+    public void Karbonhidrat_ve_jel_basligi_adla_ayriliyor(string ad, string marka, string beklenen)
+    {
+        Assert.Equal(beklenen, ProductAttributeParser.InferCategory(ad, marka));
+    }
+
+    /// <summary>
+    /// "Monster Energy" kutuları (28 Eylül, kullanıcı kararı): tip yalnızca
+    /// markada yazıyor. "Taurine + Ginseng" kuraldan önce amino asitlerdeydi.
+    /// </summary>
+    [Theory]
+    [InlineData("MONSTER ENERGY ULTRA RED 500 ML")]
+    [InlineData("MONSTER ENERGY TAURİNE + GİNSENG 500 ML")]
+    public void Energy_markasinin_kutulari_yeni_kategoride(string ad)
+    {
+        Assert.Equal(Kategori, ProductAttributeParser.InferCategory(ad, "Monster Energy"));
+    }
+
+    // ml şartı: aynı kelimeyi taşıyan bir markanın tozu taşınmıyor. Canlıda
+    // böyle bir marka yok; örnek şartın kendisini sınıyor.
+    [Fact]
+    public void Energy_markasinin_tozu_tasinmiyor()
+    {
+        Assert.Equal("protein-tozu", ProductAttributeParser.InferCategory("Energy Nutrition Whey Protein 2000 Gr", "Energy Nutrition"));
+    }
+
+    /// <summary>
     /// Kural bütün canlı adlarda çalıştırılınca bulunan benzerler: elektrolitin
     /// yalnızca içerik olduğu amino ürünleri, gliserol (4 Eylül'den beri
-    /// pre-workout), bitişik "softjel" kapsülleri ve "energy" markası.
+    /// pre-workout) ve bitişik "softjel" kapsülleri.
     /// </summary>
     [Theory]
     [InlineData("Amino Hydration - Buzlu Mavi Frambuaz", null, "amino-asitler")]
@@ -51,12 +86,6 @@ public class EnerjiJeliKategoriTests
     public void Benzerler_yerinde_kaliyor(string ad, string? marka, string beklenen)
     {
         Assert.Equal(beklenen, ProductAttributeParser.InferCategory(ad, marka));
-    }
-
-    [Fact]
-    public void Energy_markasi_tasinmiyor()
-    {
-        Assert.NotEqual(Kategori, ProductAttributeParser.InferCategory("MONSTER ENERGY ULTRA RED 500 ML", "Monster Energy"));
     }
 
     // Soft jel iki kelime yazılınca da kapsül.

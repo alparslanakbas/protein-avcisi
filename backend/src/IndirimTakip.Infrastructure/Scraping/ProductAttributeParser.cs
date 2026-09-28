@@ -87,7 +87,10 @@ public static partial class ProductAttributeParser
         // – 5443 g"). 1 Eylül'de 1100 üründe tarandı; "bulk" geçen diğer üç
         // ürün SSN'in ve onların kategorisi KAYNAKTAN geliyor (SSN kendi slug'ını
         // veriyor), parser'a hiç düşmüyorlar — yani bu ekleme onları taşımaz.
-        ("kilo-hacim", ["gainer", "gain", "mass", "kilo", "hacim", "bulk", "maltodextrin", "dextrose", "vitargo", "cream of rice", "carbopure", "pirinç unu", "muscle rice"]),
+        // "carbonox" (Olimp'in karbonhidrat tozu, 28 Eylül): Supplementler'in
+        // "karbonhidrat ve jel" başlığı eşlemeden çıkınca kilo-hacim'den
+        // düşecekti; aynı ürün dört bayide zaten kategorisizdi.
+        ("kilo-hacim", ["gainer", "gain", "mass", "kilo", "hacim", "bulk", "maltodextrin", "dextrose", "vitargo", "cream of rice", "carbopure", "pirinç unu", "muscle rice", "carbonox"]),
         // Kapsamlı kategori taraması (2026-08-17): vitamin/mineral kategorisinin
         // kendi açıklaması zaten geniş bir yelpaze tanımlıyor ("multivitaminden
         // omega-3'e, magnezyumdan çinkoya") — bu ruhla, önceden hiç bir kategoriye
@@ -308,12 +311,19 @@ public static partial class ProductAttributeParser
         // Markanın ADI ürün tipini söylüyorsa marka silinmeden önce bakılıyor:
         // "Prime Hydration" yalnızca elektrolit içeceği satıyor ve "hydration"
         // markayla birlikte silinince 13 şişe kategorisiz kalıyordu (28 Eylül).
-        // Yalnızca elektrolit kelimeleri: canlıda bunları adında taşıyan tek marka
-        // bu ("Monster Energy" gibi "energy" markaları bilerek dışarıda).
-        if (brandName is not null
-            && ElektrolitRegex().IsMatch(brandName.Replace('İ', 'i').ToLowerInvariant()))
+        // "Monster Energy" kutularında da tip yalnızca markada yazıyor
+        // ("MONSTER ENERGY MANGO LOCO 500 ML"): 7 kutunun 6'sı kategorisizdi,
+        // "Taurine + Ginseng" amino asitlerdeydi. Enerji markasında ml şartı var,
+        // aynı kelimeyi taşıyan bir markanın tozu buraya düşmesin. Canlıda bu
+        // kelimeleri adında taşıyan markalar yalnızca bu ikisi.
+        if (brandName is not null)
         {
-            return "enerji-jeli-sporcu-icecekleri";
+            var marka = brandName.Replace('İ', 'i').ToLowerInvariant();
+            if (ElektrolitRegex().IsMatch(marka)
+                || (EnerjiMarkasiRegex().IsMatch(marka) && HazirIcecekRegex().IsMatch(productName)))
+            {
+                return "enerji-jeli-sporcu-icecekleri";
+            }
         }
 
         productName = StripBrandName(productName, brandName);
@@ -545,6 +555,13 @@ public static partial class ProductAttributeParser
 
     [GeneratedRegex(@"elektrolit|electrolyte|hidrasyon|hydration", RegexOptions.IgnoreCase)]
     private static partial Regex ElektrolitRegex();
+
+    [GeneratedRegex(@"\b(energy|enerji)\b", RegexOptions.IgnoreCase)]
+    private static partial Regex EnerjiMarkasiRegex();
+
+    /// <summary>Kutu ya da şişe içecek: miktarı mililitreyle yazılıyor.</summary>
+    [GeneratedRegex(@"\d\s*(ml|cl)\b", RegexOptions.IgnoreCase)]
+    private static partial Regex HazirIcecekRegex();
 
     [GeneratedRegex(@"amino|bcaa|eaa|kreatin|creatine", RegexOptions.IgnoreCase)]
     private static partial Regex AminoKreatinRegex();
