@@ -1,0 +1,22 @@
+# Dışarıdan toplayıcının DERLEMESİ (Supplementler, Renovafood). Toplayıcı konteyner
+# olarak ÇALIŞMIYOR: WireGuard tüneli yalnızca `toplayici` kullanıcısının (uid 999)
+# trafiğini ev bağlantısına çıkarıyor, bu yüzden sunucuda /opt/toplayici'de duran
+# tek dosyalık bir ikili. Bu dosya yalnızca o ikiliyi üretiyor; scripts/deploy.sh
+# `docker build --output` ile dışarı alıp kuruyor.
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+
+# Önce yalnızca proje dosyaları: paket geri yüklemesi önbellekte kalsın, kod
+# değişince baştan inmesin. Geri yükleme yayımla aynı RID ve SelfContained
+# değeriyle yapılıyor, yoksa --no-restore'lu yayım çalışma zamanı paketini bulamaz.
+COPY src/IndirimTakip.Toplayici/IndirimTakip.Toplayici.csproj IndirimTakip.Toplayici/
+COPY src/IndirimTakip.Core/IndirimTakip.Core.csproj IndirimTakip.Core/
+COPY src/IndirimTakip.Infrastructure/IndirimTakip.Infrastructure.csproj IndirimTakip.Infrastructure/
+RUN dotnet restore IndirimTakip.Toplayici/IndirimTakip.Toplayici.csproj -r linux-arm64 -p:SelfContained=true
+
+COPY src/ .
+RUN dotnet publish IndirimTakip.Toplayici/IndirimTakip.Toplayici.csproj -c Release -r linux-arm64 \
+    --self-contained true -p:PublishSingleFile=true --no-restore -o /out
+
+FROM scratch
+COPY --from=build /out/IndirimTakip.Toplayici /
