@@ -283,16 +283,35 @@ describe('YonetimPage görünürlük güvenliği', () => {
     );
   });
 
-  it('okuyamadığı porsiyonu göndermez, virgüllü gramı okur', () => {
+  // Mesaj yazılanı söylüyor; eskisinin örneği ("30") en az değer gibi okunmuştu.
+  it('okuyamadığı porsiyonu göndermez ve neyi okuyamadığını söyler, virgüllü gramı okur', () => {
     sayfa.veriDuzenleyiciAc(urun);
     sayfa.veriAlaniGuncelle('porsiyon', '2 ölçek');
     sayfa.besinKaydet();
     expect(api.besinAyarla).not.toHaveBeenCalled();
-    expect(sayfa.veriMesaji()).toContain('Porsiyon');
+    expect(sayfa.veriMesaji()).toContain('"2 ölçek"');
+    expect(sayfa.veriMesaji()).not.toContain('"30"');
 
     sayfa.veriAlaniGuncelle('porsiyon', '30,5');
     sayfa.besinKaydet();
     expect(api.besinAyarla).toHaveBeenCalledWith(21, expect.objectContaining({ porsiyonGram: 30.5 }));
+  });
+
+  // 226ers HydraZero (28 Eylül): WheyProof'ta "7,5g" reddedilmişti; "gr" de yazılıyor.
+  it.each([
+    ['7,5 gr', { porsiyonGram: 7.5, porsiyonAdedi: null, porsiyonBirimi: null }],
+    ['7.5 gram', { porsiyonGram: 7.5, porsiyonAdedi: null, porsiyonBirimi: null }],
+    ['1 saşe (7,5 gr)', { porsiyonGram: 7.5, porsiyonAdedi: 1, porsiyonBirimi: 'saşe' }],
+    ['20,5 ml', { porsiyonGram: null, porsiyonMl: 20.5 }],
+  ])('"%s" porsiyonunu okur', (yazilan, beklenen) => {
+    sayfa.veriDuzenleyiciAc({ ...urun, servingSizeGrams: null, nutritionJson: null });
+    sayfa.veriAlaniGuncelle('porsiyon', yazilan);
+    sayfa.digerSatirEkle();
+    sayfa.digerSatirGuncelle(0, 'ad', 'Sodyum');
+    sayfa.digerSatirGuncelle(0, 'miktar', 500);
+    sayfa.besinKaydet();
+
+    expect(api.besinAyarla).toHaveBeenCalledWith(21, expect.objectContaining(beklenen));
   });
 
   it('kategori şablonunu bir kez ekler ve miktarsız satırları göndermez', () => {

@@ -31,9 +31,9 @@ export interface UrunVeriFormu extends Record<MakroAlani, string> {
 export type KaydedilenVeri = 'kategori' | 'besin';
 
 /** Porsiyonun adetle sayılabildiği birimler: backend'in listesi, aynı yazımla. */
-export const PORSIYON_BIRIMLERI = ['kapsül', 'tablet', 'softjel'] as const;
+export const PORSIYON_BIRIMLERI = ['kapsül', 'tablet', 'softjel', 'saşe'] as const;
 
-// Kapsül ve tablet etiketlerinin sayılı porsiyon için yazdığı kelimeler ("1 kapsül").
+// Etiketlerin sayılı porsiyon için yazdığı kelimeler ("1 kapsül", "1 saşe x 7,5 gr").
 const PORSIYON_KELIMELERI: Record<string, (typeof PORSIYON_BIRIMLERI)[number]> = {
   kap: 'kapsül',
   kaps: 'kapsül',
@@ -45,10 +45,17 @@ const PORSIYON_KELIMELERI: Record<string, (typeof PORSIYON_BIRIMLERI)[number]> =
   tabletler: 'tablet',
   softjel: 'softjel',
   softgel: 'softjel',
+  saşe: 'saşe',
+  sase: 'saşe',
+  sachet: 'saşe',
 };
-const GRAM_PORSIYON = /^(\d+(?:[.,]\d+)?)\s*g?$/i;
-const ML_PORSIYON = /^(\d+(?:[.,]\d+)?)\s*ml\s*(?:\(\s*(\d+(?:[.,]\d+)?)\s*g\s*\))?$/i;
-const SAYILI_PORSIYON = /^(\d+)\s*([a-zçğıöşü]+)\s*(?:\(\s*(\d+(?:[.,]\d+)?)\s*g\s*\))?$/i;
+// "7,5 gr" de "7.5 g" de yazılıyor (28 Eylül: WheyProof'ta "7,5g" reddedilmişti).
+const GRAM = String.raw`\s*(?:g|gr|gram)`;
+const SAYI = String.raw`(\d+(?:[.,]\d+)?)`;
+const PARANTEZ_GRAM = String.raw`(?:\(\s*${SAYI}${GRAM}\s*\))?`;
+const GRAM_PORSIYON = new RegExp(`^${SAYI}(?:${GRAM})?$`, 'i');
+const ML_PORSIYON = new RegExp(String.raw`^${SAYI}\s*ml\s*${PARANTEZ_GRAM}$`, 'i');
+const SAYILI_PORSIYON = new RegExp(String.raw`^(\d+)\s*([a-zçğıöşü]+)\s*${PARANTEZ_GRAM}$`, 'i');
 
 type Porsiyon = Pick<ElleBesin, 'porsiyonGram' | 'porsiyonAdedi' | 'porsiyonBirimi' | 'porsiyonMl'>;
 const PORSIYON_YOK: Porsiyon = {
@@ -144,7 +151,13 @@ export function besinIstegi(
   etiketBoyleYaziyor: boolean,
 ): { govde: ElleBesin } | { hata: string } {
   const porsiyon = porsiyonCoz(form.porsiyon);
-  if (!porsiyon) return { hata: 'Porsiyon: gram ("30"), ml ("20 ml") ya da adet ("1 kapsül", "2 tablet").' };
+  // Yazılanı söylüyor ve örnek veriyor; çıplak bir örnek sayı ("30") kutunun
+  // istediği en az değer gibi okunmuştu.
+  if (!porsiyon) {
+    return {
+      hata: `Porsiyon "${form.porsiyon.trim()}" okunamadı: gram ("7,5 g"), ml ("20 ml") ya da adet ("1 kapsül", "1 saşe (7,5 g)") yaz.`,
+    };
+  }
 
   // Boş alan 0 değil null kalıyor: boş lif "girilmedi" demek; dört temel değerin
   // birlikte girilmesini backend kendisi istiyor.

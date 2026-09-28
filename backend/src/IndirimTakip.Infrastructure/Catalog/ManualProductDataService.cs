@@ -206,7 +206,8 @@ public sealed class ManualProductDataService(AppDbContext db)
     // Porsiyonun adetle sayılabildiği birimler (28 Eylül: kapsüllü elektrolit
     // etiketleri "1 kapsül" yazıp ağırlık vermiyor). Gram PorsiyonGram'da kalıyor.
     // Bir porsiyonun çıkabileceği en fazla adedin üstü yazım hatası.
-    private static readonly string[] PorsiyonBirimleri = ["kapsül", "tablet", "softjel"];
+    // "saşe" (aynı gün): tek kullanımlık tozlar "1 saşe x 7,5 gr" yazıyor.
+    private static readonly string[] PorsiyonBirimleri = ["kapsül", "tablet", "softjel", "saşe"];
     private const int EnFazlaPorsiyonAdedi = 20;
 
     // Sıvı porsiyonu ml (226ERS Sea Water "20ml" yazıyor); bir porsiyonun olabileceği

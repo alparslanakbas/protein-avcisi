@@ -256,6 +256,17 @@ public class ElleUrunVerisiTests
         Assert.False(string.IsNullOrWhiteSpace(kontrol.RetSebebi));
     }
 
+    // 226ers HydraZero: "1 saşe x 7,5 gr".
+    [Fact]
+    public void Saset_gramiyla_birlikte_sayilan_porsiyon()
+    {
+        var kontrol = ManualProductDataService.Kontrol(new ElleBesinIstegi(
+            7.5m, null, null, null, null, null, Elektrolit, PorsiyonAdedi: 1, PorsiyonBirimi: "SAŞE"));
+
+        Assert.True(kontrol.Kabul, kontrol.RetSebebi);
+        Assert.Equal(("Porsiyon", "1 saşe (7,5 g)"), kontrol.Satirlar[0]);
+    }
+
     // --- Sıvı porsiyonu: 226ERS Sea Water değerleri 20 ml için veriyor ---
 
     [Fact]
