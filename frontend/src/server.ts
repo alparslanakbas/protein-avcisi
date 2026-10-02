@@ -14,6 +14,7 @@ import { slugify } from './app/core/slugify';
 import { ssrOnbellekAnahtari } from './app/core/ssr-cache-key';
 import { BODY_CALCULATORS } from './app/core/body-calculators';
 import { SUPPLEMENT_DOSAGES } from './app/core/supplement-dosages';
+import { FINDER_PATH, SUPPLEMENT_GOALS } from './app/core/supplement-goals';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
@@ -202,6 +203,12 @@ app.get('/sitemap.xml', async (req, res) => {
       ).join('') +
       BODY_CALCULATORS.map(
         (c) => `<url><loc>${origin}/hesaplama/${c.slug}</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>`,
+      ).join('') +
+      // "Hangi takviye?" testi ve hedef sayfaları. Hedef sayfalarındaki ürün
+      // listesi her taramada değişebildiği için haftalık.
+      `<url><loc>${origin}${FINDER_PATH}</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>` +
+      SUPPLEMENT_GOALS.map(
+        (g) => `<url><loc>${origin}${FINDER_PATH}/${g.slug}</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>`,
       ).join('');
 
     // Marka karşılaştırma sayfaları — tüm marka ikilileri, alfabetik

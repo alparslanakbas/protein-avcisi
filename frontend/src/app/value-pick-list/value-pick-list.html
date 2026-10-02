@@ -1,0 +1,94 @@
+@let s = section();
+<section [id]="s.id" class="scroll-mt-24">
+  <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+    <h3 class="text-[19px] font-semibold tracking-[-0.02em]">{{ s.title }}</h3>
+    <a [routerLink]="s.allLink.path" class="text-sm font-medium text-[var(--noc-accent)] hover:underline">{{ s.allLink.label }}</a>
+  </div>
+  @if (s.note) {
+    <p class="mt-1 max-w-2xl text-[13px] text-[var(--noc-neutral-500)]">{{ s.note }}</p>
+  }
+
+  @if (s.proteinFilter) {
+    <div class="pa-calculator-tabs mt-3" role="group" aria-label="Protein tozu türü">
+      @for (option of proteinTypes; track option.label) {
+        <button type="button" [class.is-active]="type() === option.value" [attr.aria-pressed]="type() === option.value" (click)="setProteinType(option.value)">
+          {{ option.label }}
+        </button>
+      }
+    </div>
+  }
+
+  @switch (state()) {
+    @case ('loading') {
+      <div class="mt-3 overflow-hidden rounded-[14px] border border-[var(--noc-divider)] bg-[var(--noc-card)]" aria-busy="true">
+        @for (row of skeletonRows; track row) {
+          <div class="flex items-center gap-3 border-b border-[var(--noc-divider)] px-[14px] py-[12px] last:border-b-0">
+            <div class="pa-skeleton h-[52px] w-[52px] shrink-0 rounded-[10px]"></div>
+            <div class="flex-1">
+              <div class="pa-skeleton h-[12px] w-3/4 rounded"></div>
+              <div class="pa-skeleton mt-2 h-[10px] w-1/3 rounded"></div>
+            </div>
+            <div class="pa-skeleton h-[38px] w-[84px] rounded-[8px]"></div>
+          </div>
+        }
+      </div>
+    }
+    @case ('error') {
+      <p class="mt-3 rounded-[14px] border border-[var(--noc-divider)] bg-[var(--noc-card)] px-5 py-6 text-sm text-[var(--noc-neutral-300)]">
+        Fiyatlar şu anda yüklenemedi. Biraz sonra sayfayı yenile ya da
+        <a [routerLink]="s.allLink.path" class="font-medium text-[var(--noc-accent)] underline">kategori sayfasına bak</a>.
+      </p>
+    }
+    @default {
+      @if (picks().length === 0) {
+        <p class="mt-3 rounded-[14px] border border-[var(--noc-divider)] bg-[var(--noc-card)] px-5 py-6 text-sm text-[var(--noc-neutral-300)]">
+          Bu ölçüte uyan, stokta ve paket ağırlığı bilinen ürün şu an yok.
+          <a [routerLink]="s.allLink.path" class="font-medium text-[var(--noc-accent)] underline">{{ s.allLink.label }}</a>
+        </p>
+      } @else {
+        <ol class="mt-3 overflow-hidden rounded-[14px] border border-[var(--noc-divider)] bg-[var(--noc-card)] shadow-[var(--noc-shadow-sm)]">
+          @for (pick of picks(); track pick.productId) {
+            <!-- Mobilde fiyat ve düğme adın altına iniyor: yan yana üç sütunda ad
+                 ~130 px'e sıkışıp kesiliyordu (375 px'te ölçüldü). -->
+            <li class="grid grid-cols-[52px_minmax(0,1fr)] gap-x-3 gap-y-[10px] border-b border-[var(--noc-divider)] px-[14px] py-[12px] last:border-b-0 sm:grid-cols-[64px_minmax(0,1fr)_auto] sm:items-center sm:gap-x-4 sm:px-[18px]">
+              <a [routerLink]="productPath(pick)" tabindex="-1" aria-hidden="true" class="row-span-2 flex h-[52px] w-[52px] items-center justify-center self-start overflow-hidden rounded-[10px] bg-white sm:row-span-1 sm:h-[64px] sm:w-[64px] sm:self-center">
+                @if (pick.imageUrl) {
+                  <img [src]="pick.imageUrl" alt="" width="64" height="64" loading="lazy" decoding="async" class="h-full w-full object-contain p-1" />
+                }
+              </a>
+              <div class="min-w-0">
+                <a [routerLink]="productPath(pick)" class="line-clamp-2 text-[14px] font-medium leading-snug hover:text-[var(--noc-accent)]">{{ displayName(pick.productName) }}</a>
+                <div class="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-[var(--noc-neutral-500)]">
+                  <span>{{ pick.brandName }}</span>
+                  @if (pick.size) {
+                    <span>{{ pick.size }}</span>
+                  }
+                  @if (pick.seller) {
+                    <span>{{ pick.seller }} satıyor</span>
+                  }
+                  @if (pick.isAtThirtyDayLow) {
+                    <span class="pa-positive-badge whitespace-nowrap" title="Bizim fiyat geçmişimize göre son 30 günün en düşük fiyatı">30 günün en düşüğü</span>
+                  } @else if (pick.discountPercent > 0) {
+                    <span class="pa-positive-badge whitespace-nowrap" title="Son 30 günün en yüksek fiyatına göre, bizim fiyat geçmişimizden">Gerçek indirim -%{{ pick.discountPercent | number: '1.0-1' }}</span>
+                  }
+                </div>
+              </div>
+              <div class="col-start-2 flex items-center justify-between gap-3 sm:col-start-3 sm:row-start-1 sm:flex-col sm:items-end sm:justify-center sm:gap-1.5 sm:text-right">
+                <div>
+                  <div class="whitespace-nowrap text-[16px] font-semibold tabular-nums sm:text-[18px]">
+                    {{ pick.pricePerKg | number: '1.0-0' }} ₺<span class="text-xs font-normal text-[var(--noc-neutral-500)]">/kg</span>
+                  </div>
+                  <div class="whitespace-nowrap text-xs tabular-nums text-[var(--noc-neutral-500)]">Paket {{ pick.currentPrice | number: '1.2-2' }} ₺</div>
+                </div>
+                <a [href]="pick.storeUrl" target="_blank" rel="nofollow sponsored noopener" (click)="trackStoreClick(pick)" class="pa-secondary-button h-[32px] px-[10px] text-xs">
+                  Mağazaya git<i class="ph ph-arrow-square-out ml-1 text-[13px]" aria-hidden="true"></i>
+                </a>
+              </div>
+            </li>
+          }
+        </ol>
+        <p class="mt-2 text-xs text-[var(--noc-neutral-500)]">{{ eligibleCount() }} uygun ürün arasından, her markanın kilogram fiyatı en düşük ürünü.</p>
+      }
+    }
+  }
+</section>

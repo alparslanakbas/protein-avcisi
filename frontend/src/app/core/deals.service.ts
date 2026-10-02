@@ -9,6 +9,7 @@ import { Deal } from './deal.model';
 import { HomepageStats } from './homepage-stats.model';
 import { FilterOptions, PagedResult } from './paged-result.model';
 import { ProductSparkline } from './product-sparkline.model';
+import { ValuePicks } from './value-pick.model';
 
 // Marka × kategori kesişimi — hangi markanın hangi kategoride kaç ürünü var.
 export interface BrandCategoryPair {
@@ -127,6 +128,15 @@ export class DealsService {
   getBestValueBrands(category: string): Observable<string[]> {
     const params = new HttpParams().set('category', category);
     return this.http.get<string[]>(`${API_BASE_URL}/api/best-value-brands`, { params });
+  }
+
+  // "Hangi takviye?" sayfalarının ürün listesi: kategoride kilogram fiyatına
+  // göre, her markadan bir ürün. `type` protein tozunda izole/bitkisel,
+  // kilo-hacimde gainer/karbonhidrat.
+  getValuePicks(category: string, type: string | null, count: number): Observable<ValuePicks> {
+    let params = new HttpParams().set('category', category).set('count', count);
+    if (type) params = params.set('type', type);
+    return this.http.get<ValuePicks>(`${API_BASE_URL}/api/value-picks`, { params });
   }
 
   // Marka × kategori kesişim sayfaları — yalnızca gerçekten ürünü olan

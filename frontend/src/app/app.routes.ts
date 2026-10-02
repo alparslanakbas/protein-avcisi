@@ -103,6 +103,18 @@ export const routes: Routes = [
     path: 'hesaplama/:slug',
     loadComponent: () => import('./supplement-dosage-page/supplement-dosage-page').then((m) => m.SupplementDosagePage),
   },
+  // "Hangi takviyeyi seçmeliyim?" testi ve hedef başına bir sonuç sayfası.
+  // Hedef sayfası tek parametreli rota: hedef listesi (bütün sayfa metniyle)
+  // ana pakete girmesin diye burada açılmıyor; bilinmeyen hedefte bileşen
+  // 404 gösteriyor.
+  {
+    path: 'hangi-takviye',
+    loadComponent: () => import('./supplement-finder-page/supplement-finder-page').then((m) => m.SupplementFinderPage),
+  },
+  {
+    path: 'hangi-takviye/:slug',
+    loadComponent: () => import('./supplement-goal-page/supplement-goal-page').then((m) => m.SupplementGoalPage),
+  },
   {
     path: 'favorilerim',
     loadComponent: () => import('./favorites-page/favorites-page').then((m) => m.FavoritesPage),
