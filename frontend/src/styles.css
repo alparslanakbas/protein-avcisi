@@ -1621,6 +1621,20 @@ body {
   transition: color 160ms ease, background 160ms ease;
 }
 
+/* 641 px ve üstünde etiketler tek satır kalıyor; şerit sığmayınca esnek kap
+   bağlantıları 92 px'e kadar daraltıp uzun etiketleri komşunun üstüne
+   taşırıyordu (768 ve 1024 px'te 5 etiket, ölçüldü). Artık hiçbir bağlantı
+   kendi etiketinden dar olamıyor; temel genişlik yine 92 px, kısa etiketler
+   gerekirse daralıp uzunlara yer açıyor (1280'de hepsi sığıyor). Yine de
+   sığmazsa şerit mobildeki gibi yatay kayıyor. Mobilde etiket alt satıra
+   kırıldığı için oradaki kurallar değişmedi. */
+@media (min-width: 641px) {
+  .pa-category-link {
+    width: 92px;
+    min-width: max-content;
+  }
+}
+
 .dark .pa-category-link {
   color: var(--noc-neutral-300);
 }

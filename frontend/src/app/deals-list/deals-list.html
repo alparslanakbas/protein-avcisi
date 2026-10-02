@@ -64,7 +64,10 @@
       </div>
     </header>
 
-    <section class="pa-container relative grid gap-5 py-8 md:grid-cols-[330px_minmax(700px,1fr)] md:items-center md:py-9">
+    <!-- Metin ve fırsat kartı yan yana yalnızca xl'de: kart beş sütunda ~880 px
+         istiyor. Eskiden md'den başlayan minmax(700px,1fr) sütunu 641–1.260 px
+         arasında sayfayı yana taşırıyordu (768'de 1.236 px, ölçüldü). -->
+    <section class="pa-container relative grid gap-5 py-8 md:py-9 xl:grid-cols-[330px_minmax(0,1fr)] xl:items-center">
       <div class="py-3">
         @if (selectedDeal(); as deal) {
           <h1 class="max-w-xl text-[34px] font-bold leading-[1.05] tracking-[-0.04em] text-white sm:text-[44px]">{{ displayName(deal.productName) }} Fiyatı</h1>
@@ -83,7 +86,9 @@
       </div>
 
       @if (showFullHomepageContent() && heroDeal(); as hero) {
-        <article class="pa-featured-deal pa-hero-card grid gap-5 p-4 sm:grid-cols-[110px_minmax(190px,1.2fr)_minmax(140px,.72fr)_minmax(190px,.9fr)_180px] sm:items-center">
+        <!-- 641–1023 px: görsel | bilgi | fiyat, düğmeler altta yan yana, grafik
+             gizli. Beş sütun lg'den itibaren (kart orada tam genişlik, ≥996 px). -->
+        <article class="pa-featured-deal pa-hero-card grid gap-5 p-4 sm:grid-cols-[110px_minmax(0,1fr)_auto] sm:items-center lg:grid-cols-[110px_minmax(190px,1.2fr)_minmax(140px,.72fr)_minmax(190px,.9fr)_180px]">
           <a [href]="productPath(hero)" (click)="onProductClick($event, hero)" tabindex="-1" aria-hidden="true" class="pa-hero-product flex h-[112px] items-center justify-center rounded-[10px] bg-white/[0.06]">
             @if (hero.imageUrl) { <img [src]="hero.imageUrl" [alt]="displayName(hero.productName)" class="h-full w-full object-contain p-2" /> }
           </a>
@@ -105,7 +110,7 @@
             }
           </div>
 
-          <div class="pa-hero-chart hidden border-l border-white/10 pl-5 sm:block">
+          <div class="pa-hero-chart hidden border-l border-white/10 pl-5 lg:block">
             @if (heroCoordinates().length > 1) {
               <svg viewBox="0 0 280 90" class="h-[70px] w-full" role="img" aria-label="Ürünün fiyat geçmişi grafiği">
                 <path [attr.d]="heroAreaPath()" fill="#8f80ff" fill-opacity="0.13" />
@@ -116,7 +121,7 @@
             }
           </div>
 
-          <div class="pa-hero-actions flex flex-col gap-2 border-white/10 sm:border-l sm:pl-5">
+          <div class="pa-hero-actions flex flex-col gap-2 border-white/10 sm:col-span-3 sm:flex-row lg:col-span-1 lg:flex-col lg:border-l lg:pl-5">
             <a [href]="goToStoreUrl(hero)" (click)="magazaTiklamasi(hero.productId)" target="_blank" rel="nofollow sponsored noopener" class="pa-primary-button h-11 w-full whitespace-nowrap px-4 text-sm">Mağazaya git<i class="ph ph-arrow-square-out ml-2 shrink-0 text-base" aria-hidden="true"></i></a>
             <a [href]="productPath(hero)" (click)="onProductClick($event, hero)" class="flex h-10 w-full items-center justify-center whitespace-nowrap rounded-[9px] border border-white/15 px-3 text-xs font-semibold text-[#e2e4ef] hover:border-[#8f80ff]/70">Fiyat geçmişini aç</a>
           </div>
