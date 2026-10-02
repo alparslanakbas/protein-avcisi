@@ -460,6 +460,7 @@ public static class DependencyInjection
         services.AddScoped<ProductDetailBackfillService>();
         services.AddScoped<DealsQueryService>();
         services.AddScoped<CatalogStatsQueryService>();
+        services.AddScoped<ValuePicksQueryService>();
         services.AddScoped<PriceHistoryQueryService>();
         services.AddScoped<CouponService>();
         services.AddScoped<IndirimTakip.Infrastructure.Catalog.ManualProductDataService>();

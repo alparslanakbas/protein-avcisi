@@ -126,6 +126,7 @@ public class GenelVeriOnbellegiTests
         var builder = WebApplication.CreateBuilder();
         builder.Services.AddScoped<DealsQueryService>();
         builder.Services.AddScoped<CatalogStatsQueryService>();
+        builder.Services.AddScoped<ValuePicksQueryService>();
         builder.Services.AddScoped<PriceHistoryQueryService>();
         builder.Services.AddScoped<ArticleService>();
         builder.Services.AddScoped<CouponService>();
@@ -166,6 +167,7 @@ public class GenelVeriOnbellegiTests
             "/api/products/{id:int}/price-history -> days",
             "/api/stats -> ",
             $"/api/store-deals -> {liste}",
+            "/api/value-picks -> category,type,count",
         ];
         Assert.Equal(beklenen.Order(StringComparer.Ordinal), gercek);
     }

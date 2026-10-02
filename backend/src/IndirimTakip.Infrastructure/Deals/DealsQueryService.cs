@@ -831,8 +831,8 @@ public partial class DealsQueryService(
 
     // "900 Gr" / "2 Kg" gibi metinleri grama çevirir. Kapsül/adet/ml gibi
     // birimlerde servis başı gram hesabı anlamsız olurdu — null dönüp o
-    // ürünler listeye hiç girmiyor.
-    private static decimal? ParsePackageGrams(string? size)
+    // ürünler listeye hiç girmiyor. ValuePickRanker de kullanıyor (aynı kural).
+    internal static decimal? ParsePackageGrams(string? size)
     {
         if (string.IsNullOrWhiteSpace(size))
             return null;

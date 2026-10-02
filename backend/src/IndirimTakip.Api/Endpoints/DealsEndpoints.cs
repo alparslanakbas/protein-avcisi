@@ -102,6 +102,23 @@ internal static class DealsEndpoints
             return Results.Ok(result);
         }).CacheOutput(cachePolicy);
 
+        // "Hangi takviye?" sayfalarının ürün listesi: kategoride kilogram
+        // fiyatına göre, her markadan bir ürün (bkz. ValuePickRanker).
+        // Kategori ve tür kapalı listeden: serbest metin kabul edilseydi her
+        // uydurma değer önbellekte ayrı bir girdi açardı.
+        app.MapGet("/api/value-picks", async (
+            string? category, string? type, int? count, ValuePicksQueryService picks, CancellationToken ct) =>
+        {
+            if (string.IsNullOrWhiteSpace(category) || !ProductAttributeParser.CategorySlugs.Contains(category))
+                return Results.BadRequest(new { message = "Geçerli bir category parametresi gerekli." });
+            if (type is not null && !ValuePickRanker.IsValidType(category, type))
+                return Results.BadRequest(new { message = "Bu kategoride böyle bir type yok." });
+
+            var result = await picks.GetAsync(
+                category, type, Math.Clamp(count ?? ValuePickRanker.DefaultCount, 1, ValuePickRanker.MaxCount), ct);
+            return Results.Ok(result);
+        }).CacheOutput(cachePolicy);
+
         // Marka × kategori kesişim sayfaları (/marka/:brand/:category) — sitemap ve
         // iç linkler yalnızca gerçekten ürünü olan çiftleri kullanıyor.
         app.MapGet("/api/brand-category-pairs", async (DealsQueryService deals, CancellationToken ct) =>
