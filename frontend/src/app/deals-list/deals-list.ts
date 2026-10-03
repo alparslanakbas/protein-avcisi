@@ -94,7 +94,7 @@ const FAQ_ITEMS: { question: string; answer: string }[] = [
   {
     question: '"İndirimdekiler" ile "Mağaza Kampanyaları" arasındaki fark nedir?',
     answer:
-      '"İndirimdekiler", bizim topladığımız gerçek fiyat geçmişine dayanır — bir ürünün güncel fiyatı son 30 günün en yüksek fiyatından düşükse burada listelenir. "Mağaza Kampanyaları" ise markanın kendi sitesinde beyan ettiği eski/yeni fiyat farkıdır, henüz bizim tarafımızdan doğrulanmamıştır.',
+      '"İndirimdekiler", bizim topladığımız gerçek fiyat geçmişine dayanır — bir ürünün güncel fiyatı, son 30 günde en az bir hafta boyunca gördüğümüz en yüksek fiyattan düşükse burada listelenir. "Mağaza Kampanyaları" ise markanın kendi sitesinde beyan ettiği eski/yeni fiyat farkıdır, henüz bizim tarafımızdan doğrulanmamıştır.',
   },
   {
     question: 'Fiyatlar ne sıklıkla güncelleniyor?',

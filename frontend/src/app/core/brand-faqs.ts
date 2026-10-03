@@ -108,7 +108,7 @@ export function buildBrandFaqs(input: BrandFaqInput): FaqItem[] {
     {
       question: 'Buradaki indirimler markanın kendi kampanyası mı?',
       answer:
-        '"Gerçek indirim" sekmesindeki oranlar bizim kendi topladığımız fiyat geçmişinden hesaplanıyor: ürünün şu anki fiyatı, son 30 günde gördüğümüz en yüksek fiyattan düşükse indirim sayılıyor. "Mağaza kampanyası" sekmesi ise markanın kendi sitesinde gösterdiği eski/yeni fiyat farkı — onu doğrulamıyoruz, ayrı etiketliyoruz. İkisini bilinçli olarak karıştırmıyoruz.',
+        '"Gerçek indirim" sekmesindeki oranlar bizim kendi topladığımız fiyat geçmişinden hesaplanıyor: ürünün şu anki fiyatı, son 30 günde en az bir hafta boyunca gördüğümüz en yüksek fiyattan düşükse indirim sayılıyor; yalnızca birkaç gün süren bir fiyat sıçraması indirim üretmiyor. "Mağaza kampanyası" sekmesi ise markanın kendi sitesinde gösterdiği eski/yeni fiyat farkı — onu doğrulamıyoruz, ayrı etiketliyoruz. İkisini bilinçli olarak karıştırmıyoruz.',
     },
     {
       question: `${brandName} fiyatları ne sıklıkla güncelleniyor?`,

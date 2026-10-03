@@ -69,7 +69,7 @@
                   @if (pick.isAtThirtyDayLow) {
                     <span class="pa-positive-badge whitespace-nowrap" title="Bizim fiyat geçmişimize göre son 30 günün en düşük fiyatı">30 günün en düşüğü</span>
                   } @else if (pick.discountPercent > 0) {
-                    <span class="pa-positive-badge whitespace-nowrap" title="Son 30 günün en yüksek fiyatına göre, bizim fiyat geçmişimizden">Gerçek indirim -%{{ pick.discountPercent | number: '1.0-1' }}</span>
+                    <span class="pa-positive-badge whitespace-nowrap" title="Son 30 günde en az bir hafta görülen en yüksek fiyata göre, bizim fiyat geçmişimizden">Gerçek indirim -%{{ pick.discountPercent | number: '1.0-1' }}</span>
                   }
                 </div>
               </div>

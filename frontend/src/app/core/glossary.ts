@@ -265,7 +265,7 @@ export const GLOSSARY: GlossaryGroup[] = [
         term: 'Gerçek İndirim (ProteinAvcısı tanımı)',
         slug: 'gercek-indirim',
         definition:
-          'Bir ürünün son 30 gün içindeki en yüksek fiyatına göre şu anki fiyatının gerçekten düşük olması. ' +
+          'Bir ürünün son 30 gün içinde en az bir hafta boyunca görülen en yüksek fiyatına göre şu anki fiyatının gerçekten düşük olması. ' +
           'Markanın kendi sitesinde yazan "eski fiyat/yeni fiyat" beyanına değil, bizim topladığımız fiyat ' +
           'geçmişine dayanır — ProteinAvcısı bu ayrımı "Gerçek İndirim" ve "Mağaza Kampanyası" olarak iki ayrı ' +
           'etiketle gösterir.',

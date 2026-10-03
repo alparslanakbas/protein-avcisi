@@ -100,25 +100,36 @@ public sealed class UrunListesiVeritabani : IAsyncLifetime
             return urun;
         }
 
+        // Gerçek indirim: önceki fiyat en az bir hafta (olağan fiyat), sonra düşüş.
+        static decimal[] Hafta(decimal onceki, decimal son) =>
+            [.. Enumerable.Repeat(onceki, PriceSummaryRefresher.OlaganGunSayisi), son];
+
         // Görünen ürünler. Adlar bilerek tuzaklı: Türkçe İ/ı, aynı ad iki
         // satıcıda (sayfalamada eşitlik bozucu olmazsa sıra oynar), boşluklu
         // marka ("protein ocean" aramasının kardeşi).
         for (var i = 1; i <= 8; i++)
-            Urun(hardline, $"Hardline Whey 3 Matrix {i * 100} gr", "protein-tozu", null, 1000m + i, 900m + i);
+            Urun(hardline, $"Hardline Whey 3 Matrix {i * 100} gr", "protein-tozu", null, Hafta(1000m + i, 900m + i));
         for (var i = 1; i <= 5; i++)
             Urun(hardline, $"Hardline Kreatin {i}", "kreatin", null, 500m);
-        Urun(hardline, "VİTAMİN D3 1000 IU", "vitamin", null, 300m, 250m);
+        Urun(hardline, "VİTAMİN D3 1000 IU", "vitamin", null, Hafta(300m, 250m));
         Urun(hardline, "Vitamin C", "vitamin", null, 200m);
         Urun(hardline, "Işıl Amino", "amino-asitler", null, 400m, 450m);
+
+        // Görünen ama İNDİRİMLİ OLMAYANLAR (3 Ekim kuralı): önceki fiyat bir
+        // haftadan kısa görüldü. Eski hesap (30 günün en yükseği) ikisini de
+        // indirimli sayıyordu; sıçramalı olan %75 gösterirdi.
+        Urun(hardline, "Kısa Geçmişli Düşüş", "kreatin", null, 300m, 250m);
+        Urun(hardline, "Sıçramalı Kreatin", "kreatin", null,
+            [.. Enumerable.Repeat(500m, 8), 2000m, 2000m, 500m]);
 
         // Aynı ad, aynı fiyat, iki bayi: sıralama anahtarları birebir eşit.
         for (var i = 0; i < 4; i++)
         {
-            Urun(olimp, "Olimp Whey Protein Complex 2270 gr", "protein-tozu", "protein7.com", 2500m, 2400m);
-            Urun(olimp, "Olimp Whey Protein Complex 2270 gr", "protein-tozu", "provitamin.com.tr", 2500m, 2400m);
+            Urun(olimp, "Olimp Whey Protein Complex 2270 gr", "protein-tozu", "protein7.com", Hafta(2500m, 2400m));
+            Urun(olimp, "Olimp Whey Protein Complex 2270 gr", "protein-tozu", "provitamin.com.tr", Hafta(2500m, 2400m));
         }
         Urun(swiss, "Swiss Nutrition Kolajen", null, null, 700m);
-        Urun(swiss, "Swiss Nutrition Magnezyum", "vitamin", "swissnutrition.com.tr", 150m, 120m);
+        Urun(swiss, "Swiss Nutrition Magnezyum", "vitamin", "swissnutrition.com.tr", Hafta(150m, 120m));
 
         GorunenUrun = sira;
         IndirimliUrun = 8 + 1 + 8 + 1; // whey'ler, D3, Olimp'ler, magnezyum
@@ -216,6 +227,23 @@ public class UrunListesiVeritabaniTests(UrunListesiVeritabani veri) : IClassFixt
 
         Assert.Equal(veri.IndirimliUrun, sonuc.TotalCount);
         Assert.All(sonuc.Items, d => Assert.True(d.DiscountPercent > 0, d.ProductName));
+        Assert.DoesNotContain(sonuc.Items, d => d.ProductName is "Kısa Geçmişli Düşüş" or "Sıçramalı Kreatin");
+    }
+
+    // Olağan fiyatı olmayan ürün listede kalıyor, indirimi 0: referans güncel
+    // fiyat. Referans NULL olsaydı liste sorgusu ürünü tamamen düşürürdü.
+    [VeritabaniFact]
+    public async Task Kisa_gecmisli_urun_listede_kalir_indirimi_sifir()
+    {
+        await using var db = veri.Baglam();
+
+        var sonuc = await Getir(Servis(db), null, null, null, false, 1, 100);
+
+        var kisa = Assert.Single(sonuc.Items, d => d.ProductName == "Kısa Geçmişli Düşüş");
+        Assert.Equal(0m, kisa.DiscountPercent);
+        Assert.Equal(kisa.CurrentPrice, kisa.ReferencePrice);
+        var sicrama = Assert.Single(sonuc.Items, d => d.ProductName == "Sıçramalı Kreatin");
+        Assert.Equal(500m, sicrama.ReferencePrice);
     }
 
     /// <summary>

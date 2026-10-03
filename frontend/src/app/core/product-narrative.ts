@@ -50,11 +50,11 @@ function priceParagraph(deal: Deal, discountEventCount?: number): string {
       `${name}, şu anda ${price(deal.currentPrice)} ile son 30 günde ölçtüğümüz en düşük seviyede.`,
     );
     sentences.push(
-      `Aynı dönemde ${price(deal.referencePrice)} seviyesini de gördük; bugünkü fiyat bunun %${deal.discountPercent} altında.`,
+      `Aynı dönemde en az bir hafta boyunca ${price(deal.referencePrice)} seviyesini gördük; bugünkü fiyat bunun %${deal.discountPercent} altında.`,
     );
   } else if (deal.discountPercent > 0) {
     sentences.push(
-      `${name} şu anda ${price(deal.currentPrice)}. Son 30 günde ölçtüğümüz en yüksek fiyat ${price(deal.referencePrice)} olduğu için bu, referansın %${deal.discountPercent} altında bir seviye.`,
+      `${name} şu anda ${price(deal.currentPrice)}. Son 30 günde en az bir hafta boyunca ${price(deal.referencePrice)} seviyesini gördük; bugünkü fiyat bunun %${deal.discountPercent} altında.`,
     );
   } else {
     sentences.push(
