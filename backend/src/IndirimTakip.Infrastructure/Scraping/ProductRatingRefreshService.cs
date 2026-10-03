@@ -24,9 +24,12 @@ public class ProductRatingRefreshService(
     IHttpClientFactory httpClientFactory,
     ILogger<ProductRatingRefreshService> logger)
 {
-    // Marka sitelerini yormamak için istekler arası nezaket beklemesi —
-    // ProductDetailBackfillService ile aynı değer.
-    private static readonly TimeSpan DelayBetweenProducts = TimeSpan.FromMilliseconds(750);
+    // İstekler arası nezaket beklemesi; ProductDetailBackfillService ile aynı.
+    // 750 ms'ydi: 3 Ekim'de Shopify sunucunun IP'sini bütün platformda 429'la
+    // sınırladı (hiç taramadığımız mağazalarda da) ve sınır, 80 sayfalık puan
+    // patlamalarının (~1 istek/sn) ardından geliyordu. Tur seyrekleşti
+    // (RatingRefresh:IntervalHours 6 → 24), istekler de yayıldı.
+    private static readonly TimeSpan DelayBetweenProducts = TimeSpan.FromSeconds(5);
 
     // Her çalışmada en eski kontrol edilenlerden bu kadarı tazeleniyor.
     // Katalog ~1000 ürün olduğu için tam bir tur birkaç güne yayılıyor;

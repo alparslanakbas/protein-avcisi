@@ -19,8 +19,11 @@ public class ProductDetailBackfillService(
     IEnumerable<IBrandScraper> scrapers,
     ILogger<ProductDetailBackfillService> logger)
 {
-    // Marka sitesini yormamak için ürün istekleri arası nezaket beklemesi.
-    private static readonly TimeSpan DelayBetweenProducts = TimeSpan.FromMilliseconds(750);
+    // Marka sitesini yormamak için ürün istekleri arası nezaket beklemesi. 750 ms'ydi;
+    // Shopify 3 Ekim'de sunucunun IP'sini bütün platformda 429'la sınırladığından beri
+    // ürün sayfası çeken iki servis de istekleri 5 sn'ye yayıyor (bkz.
+    // ProductRatingRefreshService).
+    private static readonly TimeSpan DelayBetweenProducts = TimeSpan.FromSeconds(5);
 
     // Tek bir çalışmada en fazla bu kadar ürün denenir — tüm eksikleri tek
     // seferde çekmek yerine kademeli ilerlemek hem bir çalışmanın süresini
