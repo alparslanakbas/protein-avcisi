@@ -90,7 +90,8 @@ public partial class DealsQueryService(
     private DealDto MapToDealDto(DealRow row)
     {
         var latest = row.Latest;
-        var referencePrice = row.ReferencePrice;
+        // Tekil sorgularda güncel fiyat canlı, referans özetten: tarama sürerken eksi indirim olmasın.
+        var referencePrice = Math.Max(row.ReferencePrice, latest.Price);
         return new DealDto(
             row.Product.Id, row.Product.Name, row.Product.Url,
             // Yerel kopya varsa o, yoksa kaynak adres. Sorgu değil, bellek
@@ -434,6 +435,7 @@ public partial class DealsQueryService(
         int productId, int referenceWindowDays = 30, CancellationToken cancellationToken = default)
     {
         var referenceSince = DateTimeOffset.UtcNow.AddDays(-referenceWindowDays);
+        var ozetiKullan = referenceWindowDays == PriceSummaryRefresher.WindowDays;
 
         var row = await (
             from p in db.Products
@@ -444,7 +446,8 @@ public partial class DealsQueryService(
                 Product = p,
                 BrandName = b.Name,
                 Latest = p.PriceHistories.OrderByDescending(ph => ph.ScrapedAt).FirstOrDefault(),
-                ReferencePrice = p.PriceHistories
+                // Referans özetten, listelerle aynı olağan fiyat (bkz. PriceSummaryRefresher); özet yoksa canlı en yüksek.
+                ReferencePrice = (ozetiKullan ? p.ReferencePrice30 : null) ?? p.PriceHistories
                     .Where(ph => ph.ScrapedAt >= referenceSince)
                     .Max(ph => (decimal?)ph.Price),
                 ThirtyDayLowPrice = p.PriceHistories
@@ -503,6 +506,7 @@ public partial class DealsQueryService(
         IReadOnlyCollection<int> productIds, int referenceWindowDays = 30, CancellationToken cancellationToken = default)
     {
         var referenceSince = DateTimeOffset.UtcNow.AddDays(-referenceWindowDays);
+        var ozetiKullan = referenceWindowDays == PriceSummaryRefresher.WindowDays;
 
         var rows = await (
             from p in db.Products
@@ -513,7 +517,7 @@ public partial class DealsQueryService(
                 Product = p,
                 BrandName = b.Name,
                 Latest = p.PriceHistories.OrderByDescending(ph => ph.ScrapedAt).FirstOrDefault(),
-                ReferencePrice = p.PriceHistories
+                ReferencePrice = (ozetiKullan ? p.ReferencePrice30 : null) ?? p.PriceHistories
                     .Where(ph => ph.ScrapedAt >= referenceSince)
                     .Max(ph => (decimal?)ph.Price),
                 ThirtyDayLowPrice = p.PriceHistories
@@ -547,6 +551,7 @@ public partial class DealsQueryService(
         int count, int referenceWindowDays = 30, CancellationToken cancellationToken = default)
     {
         var referenceSince = DateTimeOffset.UtcNow.AddDays(-referenceWindowDays);
+        var ozetiKullan = referenceWindowDays == PriceSummaryRefresher.WindowDays;
         var staleSince = DateTimeOffset.UtcNow - StaleThreshold;
 
         var rows = await (
@@ -560,7 +565,7 @@ public partial class DealsQueryService(
                 Product = p,
                 BrandName = b.Name,
                 Latest = p.PriceHistories.OrderByDescending(ph => ph.ScrapedAt).FirstOrDefault(),
-                ReferencePrice = p.PriceHistories
+                ReferencePrice = (ozetiKullan ? p.ReferencePrice30 : null) ?? p.PriceHistories
                     .Where(ph => ph.ScrapedAt >= referenceSince)
                     .Max(ph => (decimal?)ph.Price),
                 ThirtyDayLowPrice = p.PriceHistories

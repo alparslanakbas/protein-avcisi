@@ -36,8 +36,12 @@ namespace IndirimTakip.Infrastructure.Deals;
 /// fiyata dayanıyordu. Eşik kullanıcı kararı ("bir haftalık fiyat").
 /// Alan bilerek aynı kaldı (anlamı değişti): liste sorguları NULL referanslı
 /// ürünü dışarıda bırakıyor, yeni bir alan geçmişi kısa ürünleri listeden
-/// düşürürdü; indirim filtresi, yüzdesi, sıralama ve istatistikler bu alanı
-/// okuduğu için hiçbirine dokunmak gerekmedi.
+/// düşürürdü. Listelerin indirim filtresi, yüzdesi ve sıralaması bu alanı
+/// zaten okuyordu. Ürün sayfası, favoriler, vitrin ve ana sayfa/marka
+/// istatistikleri ise referansı kendileri canlı (pencerenin en yükseği)
+/// hesaplıyordu; ilk sürümde gözden kaçtı ve ürün sayfası eski yüzdeyi
+/// göstermeye devam etti. Artık hepsi bu alanı okuyor, alan henüz yoksa
+/// (yeni ürün) canlı hesaba düşüyor.
 ///
 /// <b>TAZELİK.</b> Referans fiyat 30 günlük KAYAN pencereden hesaplanıyor,
 /// yani yeni tarama olmasa bile eski bir nokta pencereden çıkınca değişir.

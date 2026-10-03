@@ -31,11 +31,12 @@ public record DealDto(
     decimal? StoreOldPrice,
     decimal? StoreDiscountPercent,
     DateTimeOffset ScrapedAt,
-    // Güncel fiyat, aynı 30 günlük referans penceresinin en düşüğüne eşit mi
-    // (ReferencePrice'ın Max karşılığı — burada Min) VE pencerede gerçekten
-    // bir fiyat farkı var mı (ThirtyDayLowPrice < ReferencePrice). İkinci şart
-    // olmadan, hiç fiyatı değişmemiş bir ürün (Min=Max=Latest) trivially
-    // "30 günün dibi" sayılırdı — bkz. DealsQueryService.MapToDealDto.
+    // Güncel fiyat, aynı 30 günlük pencerenin en düşüğüne eşit mi VE en düşük
+    // fiyat referansın (olağan fiyat) altında mı (ThirtyDayLowPrice <
+    // ReferencePrice). İkinci şart olmadan, hiç fiyatı değişmemiş bir ürün
+    // (Min=Max=Latest) trivially "30 günün dibi" sayılırdı; 3 Ekim'den beri
+    // birkaç günlük bir sıçramadan sonra olağan fiyatına dönen ürün de
+    // sayılmıyor — bkz. DealsQueryService.MapToDealDto.
     bool IsAtThirtyDayLow,
     // Aşağıdaki iki alanı YALNIZCA GetProductByIdAsync dolduruyor (tekil ürün
     // sayfası); listelerde donmuş kayıtlar zaten gizlendiği için orada anlamı

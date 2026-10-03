@@ -275,4 +275,30 @@ public class UrunListesiVeritabaniTests(UrunListesiVeritabani veri) : IClassFixt
         Assert.All(kendi.Items, d => Assert.Null(d.Seller));
         Assert.Equal(veri.GorunenUrun, bayi.TotalCount + kendi.TotalCount);
     }
+
+    // Ürün sayfası, favoriler ve istatistikler referansı kendileri (pencerenin
+    // en yükseği) hesaplıyordu: 3 Ekim'in ilk sürümünde listeler olağan fiyata
+    // geçti, ürün sayfası sıçramalı ürünün eski yüzdesini göstermeye devam etti.
+    // Aynı ürün her yerde aynı referansı göstermeli.
+    [VeritabaniFact]
+    public async Task Urun_sayfasi_favoriler_ve_istatistikler_listeyle_ayni_referansi_kullanir()
+    {
+        await using var db = veri.Baglam();
+        var servis = Servis(db);
+        var sicramali = await db.Products.Where(p => p.Name == "Sıçramalı Kreatin").Select(p => p.Id).SingleAsync();
+        var kisa = await db.Products.Where(p => p.Name == "Kısa Geçmişli Düşüş").Select(p => p.Id).SingleAsync();
+
+        var urun = await servis.GetProductByIdAsync(sicramali);
+        Assert.NotNull(urun);
+        Assert.Equal(500m, urun.ReferencePrice);
+        Assert.Equal(0m, urun.DiscountPercent);
+
+        var favoriler = await servis.GetDealsByIdsAsync([sicramali, kisa]);
+        Assert.Equal(2, favoriler.Count);
+        Assert.All(favoriler, d => Assert.Equal(0m, d.DiscountPercent));
+
+        var katalog = new CatalogStatsQueryService(db);
+        Assert.Equal(veri.IndirimliUrun, (await katalog.GetHomepageStatsAsync()).DiscountCount);
+        Assert.Equal(8 + 1, (await katalog.GetBrandStatsAsync("Hardline")).DiscountCount); // whey'ler, D3
+    }
 }

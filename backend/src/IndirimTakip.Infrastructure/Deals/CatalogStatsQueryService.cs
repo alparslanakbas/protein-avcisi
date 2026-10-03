@@ -61,6 +61,7 @@ public sealed class CatalogStatsQueryService(AppDbContext db)
     public async Task<HomepageStatsDto> GetHomepageStatsAsync(int referenceWindowDays = 30, CancellationToken cancellationToken = default)
     {
         var referenceSince = DateTimeOffset.UtcNow.AddDays(-referenceWindowDays);
+        var ozetiKullan = referenceWindowDays == PriceSummaryRefresher.WindowDays;
         var staleSince = DateTimeOffset.UtcNow.Subtract(DealsQueryService.StaleThreshold);
 
         // Donmuş/hayalet ürünleri gizle — bkz. StaleThreshold üzerindeki yorum.
@@ -81,7 +82,10 @@ public sealed class CatalogStatsQueryService(AppDbContext db)
         var statsQuery = activeProducts.Select(p => new
         {
             Latest = p.PriceHistories.OrderByDescending(ph => ph.ScrapedAt).Select(ph => (decimal?)ph.Price).FirstOrDefault(),
-            ReferencePrice = p.PriceHistories.Where(ph => ph.ScrapedAt >= referenceSince).Max(ph => (decimal?)ph.Price),
+            // Referans listelerle aynı: özetteki olağan fiyat, özet yoksa
+            // pencerenin en yükseği (bkz. PriceSummaryRefresher).
+            ReferencePrice = (ozetiKullan ? p.ReferencePrice30 : null)
+                ?? p.PriceHistories.Where(ph => ph.ScrapedAt >= referenceSince).Max(ph => (decimal?)ph.Price),
             ThirtyDayLowPrice = p.PriceHistories.Where(ph => ph.ScrapedAt >= referenceSince).Min(ph => (decimal?)ph.Price),
         });
 
@@ -110,6 +114,7 @@ public sealed class CatalogStatsQueryService(AppDbContext db)
         string brandName, int referenceWindowDays = 30, string? category = null, CancellationToken cancellationToken = default)
     {
         var referenceSince = DateTimeOffset.UtcNow.AddDays(-referenceWindowDays);
+        var ozetiKullan = referenceWindowDays == PriceSummaryRefresher.WindowDays;
         var staleSince = DateTimeOffset.UtcNow.Subtract(DealsQueryService.StaleThreshold);
 
         var activeProducts = (
@@ -125,7 +130,10 @@ public sealed class CatalogStatsQueryService(AppDbContext db)
         var statsQuery = activeProducts.Select(p => new
         {
             Latest = p.PriceHistories.OrderByDescending(ph => ph.ScrapedAt).Select(ph => (decimal?)ph.Price).FirstOrDefault(),
-            ReferencePrice = p.PriceHistories.Where(ph => ph.ScrapedAt >= referenceSince).Max(ph => (decimal?)ph.Price),
+            // Referans listelerle aynı: özetteki olağan fiyat, özet yoksa
+            // pencerenin en yükseği (bkz. PriceSummaryRefresher).
+            ReferencePrice = (ozetiKullan ? p.ReferencePrice30 : null)
+                ?? p.PriceHistories.Where(ph => ph.ScrapedAt >= referenceSince).Max(ph => (decimal?)ph.Price),
             ThirtyDayLowPrice = p.PriceHistories.Where(ph => ph.ScrapedAt >= referenceSince).Min(ph => (decimal?)ph.Price),
         });
 

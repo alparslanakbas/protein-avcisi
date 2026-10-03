@@ -20,7 +20,7 @@ declare -A TAVAN=(
   [frontend/src/app/yonetim-page/yonetim-page.html]=1590
   [frontend/src/app/deals-list/deals-list.ts]=1107
   [frontend/src/app/yonetim-page/yonetim-page.ts]=1013
-  [backend/src/IndirimTakip.Infrastructure/Deals/DealsQueryService.cs]=860
+  [backend/src/IndirimTakip.Infrastructure/Deals/DealsQueryService.cs]=865
 )
 
 # Liste ÖNCE değişkene alınıyor: süreç ikamesinin (< <(...)) çıkış kodunu
