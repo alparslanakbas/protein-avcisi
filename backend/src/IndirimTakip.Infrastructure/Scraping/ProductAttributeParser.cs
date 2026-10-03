@@ -352,6 +352,15 @@ public static partial class ProductAttributeParser
         if (SnackBarFormRegex().IsMatch(normalized))
             return "saglikli-atistirmaliklar";
 
+        // Fıstık/fındık EZMESİ de bir biçim (3 Ekim): "Proteinli Fıstık Ezmesi"
+        // adındaki "protein" yüzünden toz kategorisine düşüyordu (canlıda 9
+        // ürün, Gigi's'in yeni ezmesi de), büyük harfli "FISTIK EZMESİ" ise
+        // listedeki "fıstık"la eşleşmeyip kategorisiz kalıyordu (2 ürün). Yalnız
+        // Türkçe isim biçimi: İngilizce "Peanut Butter" tozlarda AROMA adı
+        // ("Whey ... Peanut Butter Cookie"); "ezmesi aromalı" ve whey de toz.
+        if (SpreadFormRegex().IsMatch(normalized) && !normalized.Contains("whey"))
+            return "saglikli-atistirmaliklar";
+
         // ENERJİ JELİ & SPORCU İÇECEKLERİ (28 Eylül): dayanıklılık sporunda
         // antrenman SIRASINDA alınan yakıt. Bu da BİÇİMLE, içerik kelimelerinden
         // önce belirleniyor: jelin adı içindekini sayıyor ve her biri ürünü yanlış
@@ -525,6 +534,15 @@ public static partial class ProductAttributeParser
     /// </summary>
     [GeneratedRegex(@"\bbar(s|ı|i|lar|ler|ları|leri)?\b", RegexOptions.IgnoreCase)]
     private static partial Regex SnackBarFormRegex();
+
+    /// <summary>
+    /// Fıstık/fındık ezmesi, isim biçimi. Ad ToLowerInvariant'tan geçtiği için
+    /// büyük harfli "FISTIK" noktalı "fistik" oluyor; ikisi de yakalanıyor.
+    /// Arkasından "aromalı" geliyorsa bir tozun aromasıdır, ezme değil
+    /// ("aromasız" ise ezmenin kendisi).
+    /// </summary>
+    [GeneratedRegex(@"\bf[ıi](st|nd)[ıi](k|ğ[ıi])\s+ezmesi\b(?!\s+aromal)", RegexOptions.IgnoreCase)]
+    private static partial Regex SpreadFormRegex();
 
     /// <summary>
     /// Jel, izotonik/sporcu/enerji içeceği ve elektrolit ürünleri. Kelimeler canlı

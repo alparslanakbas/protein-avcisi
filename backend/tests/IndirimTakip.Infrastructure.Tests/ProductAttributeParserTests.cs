@@ -276,6 +276,32 @@ public class ProductAttributeParserTests
         Assert.Equal("saglikli-atistirmaliklar", ProductAttributeParser.InferCategory(productName));
     }
 
+    // REGRESYON (3 Ekim): fıstık ezmesi de bir biçim. Adlar canlı katalogdan;
+    // ilk üçü protein tozu, sonraki ikisi kategorisizdi.
+    [Theory]
+    [InlineData("Mealjoy Proteinli Fıstık Ezmesi Kakaolu 320g")]
+    [InlineData("Mealjoy Proteinli Fıstık Ezmesi Aromasız 320g")]
+    [InlineData("MEAL JOY PROTEİNLİ FISTIK EZMESİ 320 GR BİSKÜVİLİ")]
+    [InlineData("PROTEİN FISTIK EZMESİ (VANİLYA)")]
+    [InlineData("FISTIK EZMESİ")]
+    [InlineData("KAKAOLU FISTIK EZMESİ")]
+    [InlineData("Gigi's Yüksek Proteinli Kakaolu Yer Fıstığı Ezmesi 200 g")]
+    public void InferCategory_fistik_ezmesini_toz_sanmiyor(string productName)
+    {
+        Assert.Equal("saglikli-atistirmaliklar", ProductAttributeParser.InferCategory(productName));
+    }
+
+    [Theory]
+    // İngilizce "Peanut Butter" tozlarda aroma adı; canlıdaki tek örnek bu.
+    [InlineData("SWISS WHEY GOLD DELUXE PROTEİN WPC80 - Peanut Butter Cookie", "protein-tozu")]
+    // "ezmesi aromalı" ya da whey: tozun aroması, ezme değil.
+    [InlineData("Protein Tozu Fıstık Ezmesi Aromalı 1000 gr", "protein-tozu")]
+    [InlineData("Whey Protein Fıstık Ezmesi 2000 gr", "protein-tozu")]
+    public void InferCategory_fistik_ezmesi_aromali_tozu_tasimiyor(string productName, string expected)
+    {
+        Assert.Equal(expected, ProductAttributeParser.InferCategory(productName));
+    }
+
     [Theory]
     // Gerçek protein TOZLARI etkilenmemeli.
     [InlineData("HIQ Whey Protein Tozu 2000 Gr", "protein-tozu")]
