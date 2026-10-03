@@ -187,9 +187,8 @@ public static class DependencyInjection
         });
         services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<VitabearScraper>());
 
-        // Gigi's — ikas; products.xml sitemap + ürün sayfasındaki schema.org.
-        // GraphQL ucu bu mağazada totalCount:0 döndüğü için sitemap yolu
-        // kullanılıyor (bkz. IkasSchemaOrgCatalog).
+        // Gigi's — 1 Ekim 2026'dan beri Shopify (products.json, Bahs deseni);
+        // öncesinde ikas'tı (bkz. GigisScraper).
         services.AddHttpClient<GigisScraper>(client =>
         {
             client.BaseAddress = new Uri("https://gigis.com.tr/");
