@@ -44,4 +44,8 @@ public static class BackgroundJobNames
     // DEĞİL, yalnızca dolan aralık başlatıyor.
     public const string TaramaTuru = "tarama-turu";
     public const string PuanTazeleme = "puan-tazeleme";
+
+    // Aralıkla değil sabit saatte (21:00 UTC); deploy'un yarıda kestiği ya da
+    // kaçırılan gün açılışta telafi ediliyor (PersistedSchedule.RunDailyAsync).
+    public const string GunlukTarama = "gunluk-tarama";
 }

@@ -1,4 +1,5 @@
 using IndirimTakip.Core.Caching;
+using IndirimTakip.Core.Entities;
 using IndirimTakip.Infrastructure.Deals;
 using IndirimTakip.Core.Scraping;
 using Microsoft.Extensions.Configuration;
@@ -22,6 +23,10 @@ namespace IndirimTakip.Infrastructure.Scraping;
 /// çizildiği için ürün başına ayrı istek atmak gerekiyor. 900+ ürünü 6
 /// saatte bir çekmek karşı sunucuya günde binlerce istek demek olurdu ve
 /// engellenme riskini ciddi biçimde artırırdı.
+///
+/// Zamanlama veritabanında (bkz. PersistedSchedule.RunDailyAsync): deploy
+/// taramayı yarıda keserse açılışta hemen yeniden çalışıyor; eskiden ertesi
+/// gece yarısını bekliyordu ve o günün verisi kayboluyordu.
 /// </summary>
 public class DailyScrapingBackgroundService(
     IServiceScopeFactory scopeFactory,
@@ -33,54 +38,22 @@ public class DailyScrapingBackgroundService(
     // kalıcı olarak UTC+3.
     private const int RunAtUtcHour = 21;
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override Task ExecuteAsync(CancellationToken stoppingToken) =>
+        configuration.GetValue("Scraping:Enabled", true)
+            ? PersistedSchedule.RunDailyAsync(
+                scopeFactory, BackgroundJobNames.GunlukTarama, RunAtUtcHour, logger, RunAsync, stoppingToken)
+            : Task.CompletedTask;
+
+    private async Task RunAsync(IServiceProvider services, CancellationToken cancellationToken)
     {
-        if (!configuration.GetValue("Scraping:Enabled", true))
-            return;
-
-        while (!stoppingToken.IsCancellationRequested)
-        {
-            var bekleme = NextRunDelay(DateTimeOffset.UtcNow);
-            logger.LogInformation(
-                "Günlük tarama {Saat} sonra çalışacak (00:00 Türkiye saati).",
-                bekleme);
-
-            try
-            {
-                await Task.Delay(bekleme, stoppingToken);
-            }
-            catch (OperationCanceledException)
-            {
-                return;
-            }
-
-            await RunAsync(stoppingToken);
-        }
-    }
-
-    /// <summary>
-    /// Bir sonraki 21:00 UTC'ye kalan süre. Saat tam denk gelirse bir sonraki
-    /// güne kaydırılıyor: aksi halde tarama biter bitmez sıfır beklemeyle
-    /// tekrar tetiklenebilirdi.
-    /// </summary>
-    internal static TimeSpan NextRunDelay(DateTimeOffset now)
-    {
-        var bugununCalismasi = new DateTimeOffset(now.Year, now.Month, now.Day, RunAtUtcHour, 0, 0, TimeSpan.Zero);
-        var hedef = now < bugununCalismasi ? bugununCalismasi : bugununCalismasi.AddDays(1);
-        return hedef - now;
-    }
-
-    private async Task RunAsync(CancellationToken cancellationToken)
-    {
-        using var scope = scopeFactory.CreateScope();
-        var scrapers = scope.ServiceProvider.GetServices<IBrandScraper>()
+        var scrapers = services.GetServices<IBrandScraper>()
             .Where(s => s.DailyOnly)
             .ToList();
 
         if (scrapers.Count == 0)
             return;
 
-        var ingestion = scope.ServiceProvider.GetRequiredService<ScrapeIngestionService>();
+        var ingestion = services.GetRequiredService<ScrapeIngestionService>();
         logger.LogInformation("Günlük tarama başladı ({Count} kaynak).", scrapers.Count);
 
         foreach (var scraper in scrapers)
@@ -99,10 +72,10 @@ public class DailyScrapingBackgroundService(
 
         // Fiyat özeti ÖNCE: önbellek ısıtması bu alanları okuyor, ters
         // sırada ısıtma eski özeti önbelleğe alırdı.
-        await scope.ServiceProvider.GetRequiredService<PriceSummaryRefresher>()
+        await services.GetRequiredService<PriceSummaryRefresher>()
             .RefreshAsync(cancellationToken);
 
-        await scope.ServiceProvider.GetRequiredService<IPublicCacheRefresher>()
+        await services.GetRequiredService<IPublicCacheRefresher>()
             .RefreshAsync(cancellationToken);
 
         logger.LogInformation("Günlük tarama bitti.");

@@ -24,6 +24,12 @@ namespace IndirimTakip.Infrastructure;
 /// yazılıyor: deploy'un yarıda kestiği tur eski damgayı bırakıyor ve sonraki
 /// açılış onu hemen yeniden çalıştırıyor — iptal edilen tarama hiçbir şey
 /// kaydetmiyor, o günün fiyatları bir aralık beklememeli.
+///
+/// <b>GÜNLÜK İŞ (4 Ekim).</b> Gece yarısı taraması sabit saatte çalıştığı için
+/// süreç belleğinde bir sonraki 21:00'e kadar bekliyordu: deploy onu yarıda
+/// keserse ertesi gece yarısına kadar hiç çalışmıyordu (2 Eylül'de Provitamin'in
+/// gecelik verisi böyle kayboldu). <see cref="RunDailyAsync"/> aynı damgayı
+/// kullanıyor: son tamamlanma en son planlı saatten önceyse iş hemen çalışıyor.
 /// </remarks>
 public static class PersistedSchedule
 {
@@ -38,13 +44,48 @@ public static class PersistedSchedule
     }
 
     /// <summary>
+    /// Her gün <paramref name="runAtUtcHour"/>'da çalışan işin sırasına kalan süre.
+    /// En son planlı saatten bu yana tamamlanmadıysa (deploy kesti, sunucu kapalıydı)
+    /// sıfır. Hiç kaydı yoksa (iş ilk kez bu takvimle açılıyor) bir sonraki planlı
+    /// saat: gece taramasını gün ortasındaki bir deploy'da başlatmamak için.
+    /// </summary>
+    internal static TimeSpan TimeUntilDailyDue(DateTimeOffset? lastCompleted, int runAtUtcHour, DateTimeOffset now)
+    {
+        var bugun = new DateTimeOffset(now.UtcDateTime.Date.AddHours(runAtUtcHour), TimeSpan.Zero);
+        var sonPlanli = now >= bugun ? bugun : bugun.AddDays(-1);
+        if (lastCompleted is not null && lastCompleted < sonPlanli)
+            return TimeSpan.Zero;
+
+        return sonPlanli.AddDays(1) - now;
+    }
+
+    /// <summary>
     /// Sıra gelene kadar bekler, işi çalıştırır, tamamlanmayı kaydeder ve uygulama
     /// kapanana kadar tekrarlar. <paramref name="run"/> her seferinde yeni bir kapsamla çağrılır.
     /// </summary>
-    public static async Task RunAsync(
+    public static Task RunAsync(
         IServiceScopeFactory scopeFactory,
         string jobName,
         TimeSpan interval,
+        ILogger logger,
+        Func<IServiceProvider, CancellationToken, Task> run,
+        CancellationToken stoppingToken) =>
+        RunCoreAsync(scopeFactory, jobName, (last, now) => TimeUntilDue(last, interval, now), logger, run, stoppingToken);
+
+    /// <summary><see cref="RunAsync"/> gibi, ama her gün sabit bir saatte (UTC).</summary>
+    public static Task RunDailyAsync(
+        IServiceScopeFactory scopeFactory,
+        string jobName,
+        int runAtUtcHour,
+        ILogger logger,
+        Func<IServiceProvider, CancellationToken, Task> run,
+        CancellationToken stoppingToken) =>
+        RunCoreAsync(scopeFactory, jobName, (last, now) => TimeUntilDailyDue(last, runAtUtcHour, now), logger, run, stoppingToken);
+
+    private static async Task RunCoreAsync(
+        IServiceScopeFactory scopeFactory,
+        string jobName,
+        Func<DateTimeOffset?, DateTimeOffset, TimeSpan> timeUntilDue,
         ILogger logger,
         Func<IServiceProvider, CancellationToken, Task> run,
         CancellationToken stoppingToken)
@@ -54,7 +95,7 @@ public static class PersistedSchedule
             try
             {
                 var lastCompleted = await ReadLastCompletedAsync(scopeFactory, jobName, stoppingToken);
-                var wait = TimeUntilDue(lastCompleted, interval, DateTimeOffset.UtcNow);
+                var wait = timeUntilDue(lastCompleted, DateTimeOffset.UtcNow);
                 if (wait > TimeSpan.Zero)
                 {
                     logger.LogInformation(
