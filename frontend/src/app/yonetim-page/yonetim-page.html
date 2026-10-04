@@ -786,38 +786,9 @@
 
                 @if (suzulenMarkalar().length > 0) {
                   <div class="pagination">
-                    <span
-                      >{{ markaAraligiBaslangic() }}–{{ markaAraligiBitis() }} /
-                      {{ suzulenMarkalar().length }} marka</span
-                    >
-                    <div>
-                      <button
-                        type="button"
-                        [disabled]="markaSayfa() === 1"
-                        (click)="markaSayfasinaGit(markaSayfa() - 1)"
-                        aria-label="Önceki sayfa"
-                      >
-                        <i class="ph ph-caret-left" aria-hidden="true"></i>
-                      </button>
-                      @for (sayfa of gorunenMarkaSayfalari(); track sayfa) {
-                        <button
-                          type="button"
-                          [class.active]="sayfa === markaSayfa()"
-                          [attr.aria-current]="sayfa === markaSayfa() ? 'page' : null"
-                          (click)="markaSayfasinaGit(sayfa)"
-                        >
-                          {{ sayfa }}
-                        </button>
-                      }
-                      <button
-                        type="button"
-                        [disabled]="markaSayfa() === markaToplamSayfa()"
-                        (click)="markaSayfasinaGit(markaSayfa() + 1)"
-                        aria-label="Sonraki sayfa"
-                      >
-                        <i class="ph ph-caret-right" aria-hidden="true"></i>
-                      </button>
-                    </div>
+                    <ng-container
+                      *ngTemplateOutlet="sayfalama; context: { $implicit: markaSayfalama() }"
+                    />
                   </div>
                 }
 
@@ -909,41 +880,9 @@
                 </div>
               } @else {
                 <div class="pagination product-pagination-top" aria-label="Ürün sayfalama">
-                  <span
-                    >{{ urunAraligiBaslangic() }}–{{ urunAraligiBitis() }} /
-                    {{ urunToplam() }} satır</span
-                  >
-                  @if (urunToplamSayfa() > 1) {
-                    <div>
-                      <button
-                        type="button"
-                        [disabled]="urunSayfa() === 1 || urunlerYukleniyor()"
-                        (click)="urunSayfasinaGit(urunSayfa() - 1)"
-                        aria-label="Önceki sayfa"
-                      >
-                        <i class="ph ph-caret-left" aria-hidden="true"></i>
-                      </button>
-                      @for (sayfa of gorunenUrunSayfalari(); track sayfa) {
-                        <button
-                          type="button"
-                          [class.active]="sayfa === urunSayfa()"
-                          [attr.aria-current]="sayfa === urunSayfa() ? 'page' : null"
-                          [disabled]="urunlerYukleniyor()"
-                          (click)="urunSayfasinaGit(sayfa)"
-                        >
-                          {{ sayfa }}
-                        </button>
-                      }
-                      <button
-                        type="button"
-                        [disabled]="urunSayfa() === urunToplamSayfa() || urunlerYukleniyor()"
-                        (click)="urunSayfasinaGit(urunSayfa() + 1)"
-                        aria-label="Sonraki sayfa"
-                      >
-                        <i class="ph ph-caret-right" aria-hidden="true"></i>
-                      </button>
-                    </div>
-                  }
+                  <ng-container
+                    *ngTemplateOutlet="sayfalama; context: { $implicit: urunSayfalama() }"
+                  />
                 </div>
                 <div class="table-shell visibility-table product-table">
                   <table>
@@ -1039,41 +978,9 @@
                   </table>
                 </div>
                 <div class="pagination">
-                  <span
-                    >{{ urunAraligiBaslangic() }}–{{ urunAraligiBitis() }} /
-                    {{ urunToplam() }} satır</span
-                  >
-                  @if (urunToplamSayfa() > 1) {
-                    <div>
-                      <button
-                        type="button"
-                        [disabled]="urunSayfa() === 1 || urunlerYukleniyor()"
-                        (click)="urunSayfasinaGit(urunSayfa() - 1)"
-                        aria-label="Önceki sayfa"
-                      >
-                        <i class="ph ph-caret-left" aria-hidden="true"></i>
-                      </button>
-                      @for (sayfa of gorunenUrunSayfalari(); track sayfa) {
-                        <button
-                          type="button"
-                          [class.active]="sayfa === urunSayfa()"
-                          [attr.aria-current]="sayfa === urunSayfa() ? 'page' : null"
-                          [disabled]="urunlerYukleniyor()"
-                          (click)="urunSayfasinaGit(sayfa)"
-                        >
-                          {{ sayfa }}
-                        </button>
-                      }
-                      <button
-                        type="button"
-                        [disabled]="urunSayfa() === urunToplamSayfa() || urunlerYukleniyor()"
-                        (click)="urunSayfasinaGit(urunSayfa() + 1)"
-                        aria-label="Sonraki sayfa"
-                      >
-                        <i class="ph ph-caret-right" aria-hidden="true"></i>
-                      </button>
-                    </div>
-                  }
+                  <ng-container
+                    *ngTemplateOutlet="sayfalama; context: { $implicit: urunSayfalama() }"
+                  />
                 </div>
                 <p class="impact-note">
                   <i class="ph ph-info" aria-hidden="true"></i>Her boyut ayrı bir satır. Gizleme
@@ -1129,7 +1036,7 @@
           >
         </section>
 
-        @if (aboneVerisi(); as veri) {
+        @if (abone.veri(); as veri) {
           <section class="cards subscriber-cards" aria-label="Abone göstergeleri">
             <article class="card">
               <span class="card-icon"><i class="ph ph-check-circle" aria-hidden="true"></i></span>
@@ -1162,30 +1069,35 @@
               <input
                 type="search"
                 placeholder="E-posta ara…"
-                [ngModel]="aboneArama()"
-                (ngModelChange)="aboneArama.set($event)"
+                [ngModel]="abone.arama()"
+                (ngModelChange)="abone.aramaDegisti($event)"
               />
             </label>
             <div class="status-filters" aria-label="Abone durumu">
               @for (f of ['tumu', 'aktif', 'bekliyor', 'ayrildi']; track f) {
                 <button
                   type="button"
-                  [class.active]="aboneFiltresi() === f"
-                  (click)="aboneFiltresiSec($any(f))"
+                  [class.active]="abone.filtre() === f"
+                  (click)="abone.filtreSec($any(f))"
                 >
-                  {{ aboneDurumEtiketi($any(f)) }}
+                  {{ abone.durumEtiketi($any(f)) }}
                 </button>
               }
             </div>
           </div>
 
-          @if (aboneMesaji()) {
-            <p class="info" role="status">{{ aboneMesaji() }}</p>
+          @if (abone.mesaj()) {
+            <p class="info" role="status">{{ abone.mesaj() }}</p>
           }
 
-          @if (abonelerYukleniyor() && !aboneVerisi()) {
+          @if (abone.yukleniyor() && !abone.veri()) {
             <p class="empty-state">Aboneler yükleniyor…</p>
           } @else {
+            <div class="pagination" aria-label="Abone sayfalama">
+              <ng-container
+                *ngTemplateOutlet="sayfalama; context: { $implicit: abone.sayfalama() }"
+              />
+            </div>
             <div class="table-shell subscriber-table">
               <table>
                 <thead>
@@ -1199,12 +1111,12 @@
                   </tr>
                 </thead>
                 <tbody>
-                  @for (a of suzulenAboneler(); track a.id) {
+                  @for (a of abone.veri()?.aboneler ?? []; track a.id) {
                     <tr [class.inactive]="a.durum !== 'aktif'">
                       <td class="subscriber-email">{{ a.email }}</td>
                       <td data-label="Durum">
                         <span class="row-status" [class.is-hidden]="a.durum !== 'aktif'"
-                          ><span></span>{{ aboneDurumEtiketi(a.durum) }}</span
+                          ><span></span>{{ abone.durumEtiketi(a.durum) }}</span
                         >
                       </td>
                       <td data-label="Kayıt / Onay">
@@ -1227,8 +1139,8 @@
                             <button
                               type="button"
                               class="row-action"
-                              [disabled]="aboneIslemdeId() === a.id"
-                              (click)="pasifeAlmaIste(a)"
+                              [disabled]="abone.islemdeId() === a.id"
+                              (click)="abone.islemIste(a, 'pasife-al')"
                             >
                               Pasife al
                             </button>
@@ -1236,12 +1148,20 @@
                             <button
                               type="button"
                               class="row-action primary"
-                              [disabled]="aboneIslemdeId() === a.id"
-                              (click)="onayGonder(a)"
+                              [disabled]="abone.islemdeId() === a.id"
+                              (click)="abone.onayGonder(a)"
                             >
-                              {{ aboneIslemdeId() === a.id ? 'Gönderiliyor…' : 'Onay gönder' }}
+                              {{ abone.islemdeId() === a.id ? 'Gönderiliyor…' : 'Onay gönder' }}
                             </button>
                           }
+                          <button
+                            type="button"
+                            class="row-action danger"
+                            [disabled]="abone.islemdeId() === a.id"
+                            (click)="abone.islemIste(a, 'sil')"
+                          >
+                            Sil
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -1256,7 +1176,8 @@
             <p class="impact-note">
               <i class="ph ph-info" aria-hidden="true"></i>Abonelik yalnızca kişi kendi gelen
               kutusundan onaylayınca açılır; bu yüzden burada "aktife al" yok. "Onay gönder" onay
-              düğmesini tekrar e-postalar.
+              düğmesini tekrar e-postalar. "Sil" kaydı alarmları ve favorileriyle birlikte kalıcı
+              olarak kaldırır.
             </p>
           }
         </section>
@@ -1509,8 +1430,8 @@
       </div>
     }
 
-    @if (bekleyenPasifeAlma(); as abone) {
-      <div class="confirm-backdrop" (click)="pasifeAlmaIptal()">
+    @if (abone.bekleyenIslem(); as islem) {
+      <div class="confirm-backdrop" (click)="abone.islemIptal()">
         <section
           class="confirm-dialog"
           role="alertdialog"
@@ -1520,29 +1441,44 @@
         >
           <span class="confirm-icon"><i class="ph ph-warning-circle" aria-hidden="true"></i></span>
           <p class="eyebrow">Abonelik</p>
-          <h2 id="abone-onay-basligi">{{ abone.email }} pasife alınsın mı?</h2>
-          <p>
-            Bülten ve fiyat alarmı e-postaları duracak
-            @if (abone.takipSayisi > 0) {
-              ({{ abone.takipSayisi }} ürün alarmı dahil)
-            }. Tekrar açmak için kişinin aboneliğini yeniden onaylaması gerekir.
-          </p>
+          @if (islem.tur === 'sil') {
+            <h2 id="abone-onay-basligi">{{ islem.abone.email }} kalıcı olarak silinsin mi?</h2>
+            <p>
+              Kayıt, {{ islem.abone.takipSayisi }} ürün alarmı ve
+              {{ islem.abone.favoriSayisi }} favorisiyle birlikte silinir. Geri alınamaz; kişi
+              isterse yeniden abone olabilir.
+            </p>
+          } @else {
+            <h2 id="abone-onay-basligi">{{ islem.abone.email }} pasife alınsın mı?</h2>
+            <p>
+              Bülten ve fiyat alarmı e-postaları duracak
+              @if (islem.abone.takipSayisi > 0) {
+                ({{ islem.abone.takipSayisi }} ürün alarmı dahil)
+              }. Tekrar açmak için kişinin aboneliğini yeniden onaylaması gerekir.
+            </p>
+          }
           <div class="confirm-actions">
             <button
               type="button"
               class="cancel"
-              [disabled]="aboneIslemdeId() !== null"
-              (click)="pasifeAlmaIptal()"
+              [disabled]="abone.islemdeId() !== null"
+              (click)="abone.islemIptal()"
             >
               Vazgeç
             </button>
             <button
               type="button"
               class="confirm-hide"
-              [disabled]="aboneIslemdeId() !== null"
-              (click)="pasifeAlmaOnayla()"
+              [disabled]="abone.islemdeId() !== null"
+              (click)="abone.islemOnayla()"
             >
-              {{ aboneIslemdeId() !== null ? 'Kaydediliyor…' : 'Pasife al' }}
+              {{
+                abone.islemdeId() !== null
+                  ? 'Kaydediliyor…'
+                  : islem.tur === 'sil'
+                    ? 'Kalıcı olarak sil'
+                    : 'Pasife al'
+              }}
             </button>
           </div>
         </section>
@@ -1588,3 +1524,38 @@
     }
   }
 </div>
+
+<ng-template #sayfalama let-s>
+  <span>{{ s.ozet }}</span>
+  @if (s.toplamSayfa > 1) {
+    <div>
+      <button
+        type="button"
+        [disabled]="s.sayfa === 1 || s.mesgul"
+        (click)="s.git(s.sayfa - 1)"
+        aria-label="Önceki sayfa"
+      >
+        <i class="ph ph-caret-left" aria-hidden="true"></i>
+      </button>
+      @for (sayfa of s.sayfalar; track sayfa) {
+        <button
+          type="button"
+          [class.active]="sayfa === s.sayfa"
+          [attr.aria-current]="sayfa === s.sayfa ? 'page' : null"
+          [disabled]="s.mesgul"
+          (click)="s.git(sayfa)"
+        >
+          {{ sayfa }}
+        </button>
+      }
+      <button
+        type="button"
+        [disabled]="s.sayfa === s.toplamSayfa || s.mesgul"
+        (click)="s.git(s.sayfa + 1)"
+        aria-label="Sonraki sayfa"
+      >
+        <i class="ph ph-caret-right" aria-hidden="true"></i>
+      </button>
+    </div>
+  }
+</ng-template>

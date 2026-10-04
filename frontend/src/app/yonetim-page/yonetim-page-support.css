@@ -623,6 +623,11 @@
   background: var(--noc-accent);
   color: var(--noc-bg);
 }
+/* Kalıcı silme gibi geri alınamaz satır işlemi. */
+.row-action.danger {
+  border-color: var(--pa-negative);
+  color: var(--pa-negative);
+}
 .row-action:disabled {
   opacity: 0.55;
 }

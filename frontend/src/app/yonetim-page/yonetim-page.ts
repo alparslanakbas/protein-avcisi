@@ -1,4 +1,4 @@
-import { isPlatformBrowser } from '@angular/common';
+import { NgTemplateOutlet, isPlatformBrowser } from '@angular/common';
 import { Component, OnInit, PLATFORM_ID, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Observable } from 'rxjs';
@@ -14,13 +14,12 @@ import {
   SATIR_SABLONLARI,
   eklenecekSablonSatirlari,
 } from './besin-satirlari';
+import { AboneYonetimi } from './abone-yonetimi';
 import { YonetimDuzenleyiciOdagi } from './duzenleyici-odagi';
 import { YonetimHataSebebi } from './hata-sebebi';
+import { Sayfalama, gorunenSayfalar } from './sayfalama';
 import { KaydedilenVeri, UrunVeriFormu, VeriTaslaklari, besinIstegi } from './veri-formu';
 import {
-  Abone,
-  AboneDurumu,
-  AbonelerYaniti,
   Durum,
   ElleDuzenlemeYaniti,
   Kupon,
@@ -32,7 +31,6 @@ import {
 } from './yonetim.service';
 
 type Sekme = 'durum' | 'olaylar' | 'kuponlar' | 'gorunurluk' | 'aboneler';
-type AboneFiltresi = 'tumu' | AboneDurumu;
 type GorunurlukGorunumu = 'markalar' | 'urunler';
 type MarkaFiltresi = 'tumu' | 'gorunur' | 'gizli';
 type VeriFiltresi = 'eksikBesin' | 'kategorisiz' | 'elleGirilmeli' | 'elleGirilmis';
@@ -55,7 +53,7 @@ const GORUNURLUK_KILIT_BITISI = Date.parse('2026-09-19T00:00:00+03:00');
  */
 @Component({
   selector: 'app-yonetim-page',
-  imports: [FormsModule, YonetimDuzenleyiciOdagi, YonetimHataSebebi],
+  imports: [FormsModule, NgTemplateOutlet, YonetimDuzenleyiciOdagi, YonetimHataSebebi],
   templateUrl: './yonetim-page.html',
   styleUrls: [
     './yonetim-page.css',
@@ -128,11 +126,14 @@ export class YonetimPage implements OnInit {
   readonly urunToplamSayfa = computed(() =>
     Math.max(1, Math.ceil(this.urunToplam() / Math.max(1, this.urunSayfaBoyutu()))),
   );
-  readonly gorunenUrunSayfalari = computed(() => {
-    const toplam = this.urunToplamSayfa();
-    const baslangic = Math.min(Math.max(1, this.urunSayfa() - 2), Math.max(1, toplam - 4));
-    return Array.from({ length: Math.min(5, toplam) }, (_, index) => baslangic + index);
-  });
+  readonly urunSayfalama = computed<Sayfalama>(() => ({
+    ozet: `${this.urunAraligiBaslangic()}–${this.urunAraligiBitis()} / ${this.urunToplam()} satır`,
+    sayfa: this.urunSayfa(),
+    toplamSayfa: this.urunToplamSayfa(),
+    sayfalar: gorunenSayfalar(this.urunSayfa(), this.urunToplamSayfa()),
+    mesgul: this.urunlerYukleniyor(),
+    git: (sayfa) => this.urunSayfasinaGit(sayfa),
+  }));
   readonly urunAraligiBaslangic = computed(
     () => (this.urunSayfa() - 1) * this.urunSayfaBoyutu() + 1,
   );
@@ -172,22 +173,8 @@ export class YonetimPage implements OnInit {
   readonly bekleyenDegisiklik = signal<BekleyenGorunurlukDegisikligi | null>(null);
   readonly degisiklikYapiliyor = signal(false);
 
-  readonly aboneVerisi = signal<AbonelerYaniti | null>(null);
-  readonly abonelerYukleniyor = signal(false);
-  readonly aboneArama = signal('');
-  readonly aboneFiltresi = signal<AboneFiltresi>('tumu');
-  readonly aboneMesaji = signal<string | null>(null);
-  readonly bekleyenPasifeAlma = signal<Abone | null>(null);
-  /** İsteği süren satırın kimliği; yalnızca o satırın düğmeleri kilitlensin. */
-  readonly aboneIslemdeId = signal<number | null>(null);
-
-  readonly suzulenAboneler = computed(() => {
-    const sorgu = this.aboneArama().trim().toLowerCase();
-    const filtre = this.aboneFiltresi();
-    return (this.aboneVerisi()?.aboneler ?? []).filter(
-      (a) => (filtre === 'tumu' || a.durum === filtre) && (!sorgu || a.email.includes(sorgu)),
-    );
-  });
+  /** Aboneler sekmesi (sayfalama, pasife alma, kalıcı silme): bkz. abone-yonetimi.ts. */
+  readonly abone = new AboneYonetimi(this.api, (e, varsayilan) => this.hataMetni(e, varsayilan));
 
   readonly suzulenMarkalar = computed(() => {
     const query = this.normalize(this.markaArama());
@@ -209,11 +196,16 @@ export class YonetimPage implements OnInit {
     return this.suzulenMarkalar().slice(baslangic, baslangic + MARKA_SAYFA_BOYUTU);
   });
 
-  readonly gorunenMarkaSayfalari = computed(() => {
-    const toplam = this.markaToplamSayfa();
-    const mevcut = this.markaSayfa();
-    const baslangic = Math.min(Math.max(1, mevcut - 2), Math.max(1, toplam - 4));
-    return Array.from({ length: Math.min(5, toplam) }, (_, index) => baslangic + index);
+  readonly markaSayfalama = computed<Sayfalama>(() => {
+    const toplam = this.suzulenMarkalar().length;
+    return {
+      ozet: `${this.markaAraligiBaslangic()}–${this.markaAraligiBitis()} / ${toplam} marka`,
+      sayfa: this.markaSayfa(),
+      toplamSayfa: this.markaToplamSayfa(),
+      sayfalar: gorunenSayfalar(this.markaSayfa(), this.markaToplamSayfa()),
+      mesgul: false,
+      git: (sayfa) => this.markaSayfasinaGit(sayfa),
+    };
   });
 
   readonly markaAraligiBaslangic = computed(
@@ -298,7 +290,7 @@ export class YonetimPage implements OnInit {
         this.duzenlenenKupon.set(null);
         this.markalar.set([]);
         this.urunler.set([]);
-        this.aboneVerisi.set(null);
+        this.abone.veri.set(null);
         this.markalarIlkKezYuklendi = false;
       },
     });
@@ -316,91 +308,7 @@ export class YonetimPage implements OnInit {
     }
     // Bir kez değil HER ziyarette yükleniyor: panel açıkken biri gelen
     // kutusundan aboneliğini onaylayabilir.
-    if (yeniSekme === 'aboneler') this.abonelerYukle();
-  }
-
-  abonelerYukle(): void {
-    this.abonelerYukleniyor.set(true);
-    this.api.aboneler().subscribe({
-      next: (veri) => {
-        this.aboneVerisi.set(veri);
-        this.abonelerYukleniyor.set(false);
-      },
-      error: (e) => {
-        this.abonelerYukleniyor.set(false);
-        this.aboneMesaji.set(this.hataMetni(e, 'Aboneler alınamadı.'));
-      },
-    });
-  }
-
-  /** Pasife almak birinin e-postasını keser; marka gizlemedeki gibi önce sorar. */
-  pasifeAlmaIste(abone: Abone): void {
-    this.aboneMesaji.set(null);
-    this.bekleyenPasifeAlma.set(abone);
-  }
-
-  pasifeAlmaIptal(): void {
-    if (this.aboneIslemdeId() !== null) return;
-    this.bekleyenPasifeAlma.set(null);
-  }
-
-  pasifeAlmaOnayla(): void {
-    const abone = this.bekleyenPasifeAlma();
-    if (!abone) return;
-
-    this.aboneIslemdeId.set(abone.id);
-    this.api.abonePasifeAl(abone.id).subscribe({
-      next: () => {
-        this.aboneIslemdeId.set(null);
-        this.bekleyenPasifeAlma.set(null);
-        this.aboneMesaji.set(`${abone.email} artık abone değil.`);
-        this.abonelerYukle();
-      },
-      error: (e) => {
-        this.aboneIslemdeId.set(null);
-        this.bekleyenPasifeAlma.set(null);
-        this.aboneMesaji.set(this.hataMetni(e, 'Abone pasife alınamadı.'));
-      },
-    });
-  }
-
-  onayGonder(abone: Abone): void {
-    this.aboneMesaji.set(null);
-    this.aboneIslemdeId.set(abone.id);
-    this.api.aboneOnayGonder(abone.id).subscribe({
-      next: () => {
-        this.aboneIslemdeId.set(null);
-        this.aboneMesaji.set(`${abone.email} adresine onay e-postası gönderildi.`);
-        this.abonelerYukle();
-      },
-      error: (e) => {
-        this.aboneIslemdeId.set(null);
-        // Bekleme süresini ve sağlayıcı hatasını backend kendi cümlesiyle
-        // anlatıyor; genel bir "gönderilemedi" hangisinin olduğunu gizlerdi
-        // (kupon eklemede yaşanan hatanın aynısı, bkz. kuponEklemeHatasi).
-        const govde = (e as { error?: unknown } | null)?.error;
-        const mesaj =
-          typeof govde === 'string' ? govde : (govde as { message?: string } | null)?.message;
-        this.aboneMesaji.set(mesaj?.trim() || this.hataMetni(e, 'Onay e-postası gönderilemedi.'));
-      },
-    });
-  }
-
-  aboneFiltresiSec(filtre: AboneFiltresi): void {
-    this.aboneFiltresi.set(filtre);
-  }
-
-  aboneDurumEtiketi(durum: AboneFiltresi): string {
-    switch (durum) {
-      case 'tumu':
-        return 'Tümü';
-      case 'aktif':
-        return 'Aktif';
-      case 'bekliyor':
-        return 'Onay bekliyor';
-      default:
-        return 'Ayrıldı';
-    }
+    if (yeniSekme === 'aboneler') this.abone.yukle();
   }
 
   durumYukle(): void {

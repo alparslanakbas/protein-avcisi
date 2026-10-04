@@ -17,9 +17,9 @@ cd "$(dirname "$0")/.."
 
 SINIR=800
 declare -A TAVAN=(
-  [frontend/src/app/yonetim-page/yonetim-page.html]=1590
+  [frontend/src/app/yonetim-page/yonetim-page.html]=1561
   [frontend/src/app/deals-list/deals-list.ts]=1107
-  [frontend/src/app/yonetim-page/yonetim-page.ts]=1013
+  [frontend/src/app/yonetim-page/yonetim-page.ts]=921
   [backend/src/IndirimTakip.Infrastructure/Deals/DealsQueryService.cs]=865
 )
 

@@ -1,7 +1,9 @@
 using IndirimTakip.Core.Entities;
 using IndirimTakip.Infrastructure.Deals;
 using IndirimTakip.Infrastructure.Images;
+using IndirimTakip.Infrastructure.Subscribers;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Npgsql;
@@ -300,5 +302,90 @@ public class UrunListesiVeritabaniTests(UrunListesiVeritabani veri) : IClassFixt
         var katalog = new CatalogStatsQueryService(db);
         Assert.Equal(veri.IndirimliUrun, (await katalog.GetHomepageStatsAsync()).DiscountCount);
         Assert.Equal(8 + 1, (await katalog.GetBrandStatsAsync("Hardline")).DiscountCount); // whey'ler, D3
+    }
+
+    // Yönetim paneli abone listesi (4 Ekim): sayfa, durum süzgeci ve e-posta araması
+    // sunucuda. Test kendi abonelerini "liste-" önekiyle ekliyor; öteki testlerin
+    // kayıtları sayıları etkilemesin.
+    [VeritabaniFact]
+    public async Task Abone_listesi_sayfalaniyor_suzuluyor_ve_araniyor()
+    {
+        await using var db = veri.Baglam();
+        var simdi = DateTimeOffset.UtcNow;
+        for (var i = 1; i <= 12; i++)
+        {
+            // i % 3: 0 aktif, 1 onay bekliyor, 2 ayrıldı — her durumdan dört kayıt.
+            db.Subscribers.Add(new Subscriber
+            {
+                Email = $"liste-{i:00}@ornek.test",
+                Token = Guid.NewGuid().ToString("N"),
+                IsConfirmed = i % 3 == 0,
+                SubscribedAt = simdi.AddMinutes(-i),
+                UnsubscribedAt = i % 3 == 2 ? simdi : null,
+            });
+        }
+        await db.SaveChangesAsync();
+        var servis = AboneServisi(db);
+
+        var ilk = await servis.ListForAdminAsync("liste-", null, 1, 10);
+        var ikinci = await servis.ListForAdminAsync("liste-", null, 2, 10);
+        Assert.Equal(12, ilk.Toplam);
+        Assert.Equal(10, ilk.Aboneler.Count);
+        Assert.Equal(2, ikinci.Aboneler.Count);
+        Assert.Equal("liste-01@ornek.test", ilk.Aboneler[0].Email); // en yeni önce
+        Assert.Equal(12, ilk.Aboneler.Concat(ikinci.Aboneler).Select(a => a.Id).Distinct().Count());
+
+        foreach (var durum in new[] { SubscriberStatus.Active, SubscriberStatus.Pending, SubscriberStatus.Unsubscribed })
+        {
+            var suzulen = await servis.ListForAdminAsync("liste-", durum, 1, 50);
+            Assert.Equal(4, suzulen.Toplam);
+            Assert.All(suzulen.Aboneler, a => Assert.Equal(durum, a.Durum));
+        }
+
+        // Büyük harfle arama da bulmalı.
+        var tek = await servis.ListForAdminAsync("LISTE-07", null, 1, 50);
+        Assert.Equal("liste-07@ornek.test", Assert.Single(tek.Aboneler).Email);
+    }
+
+    // Kalıcı silme: takip listesi ve favoriler cascade ile gidiyor, başka abonenin
+    // kayıtlarına dokunulmuyor. Kısıt veritabanında (migration); kodda değil.
+    [VeritabaniFact]
+    public async Task Abone_silinince_takip_ve_favorileri_de_gider()
+    {
+        await using var db = veri.Baglam();
+        var urun = await db.Products.OrderBy(p => p.Id).FirstAsync();
+        Subscriber Yeni(string email) => new()
+        {
+            Email = email, Token = Guid.NewGuid().ToString("N"), IsConfirmed = true, SubscribedAt = DateTimeOffset.UtcNow,
+        };
+        var trol = Yeni("silme-trol@ornek.test");
+        var gercek = Yeni("silme-gercek@ornek.test");
+        db.Subscribers.AddRange(trol, gercek);
+        await db.SaveChangesAsync();
+        db.ProductWatches.AddRange(
+            new ProductWatch { SubscriberId = trol.Id, ProductId = urun.Id, CreatedAt = DateTimeOffset.UtcNow },
+            new ProductWatch { SubscriberId = gercek.Id, ProductId = urun.Id, CreatedAt = DateTimeOffset.UtcNow });
+        db.ProductFavorites.Add(new ProductFavorite { SubscriberId = trol.Id, ProductId = urun.Id, CreatedAt = DateTimeOffset.UtcNow });
+        await db.SaveChangesAsync();
+
+        var servis = AboneServisi(db);
+        Assert.True(await servis.DeleteAsync(trol.Id));
+        Assert.False(await servis.DeleteAsync(trol.Id)); // ikinci kez: artık yok
+
+        await using var kontrol = veri.Baglam();
+        Assert.False(await kontrol.Subscribers.AnyAsync(s => s.Id == trol.Id));
+        Assert.False(await kontrol.ProductWatches.IgnoreQueryFilters().AnyAsync(w => w.SubscriberId == trol.Id));
+        Assert.False(await kontrol.ProductFavorites.IgnoreQueryFilters().AnyAsync(f => f.SubscriberId == trol.Id));
+        Assert.True(await kontrol.ProductWatches.IgnoreQueryFilters().AnyAsync(w => w.SubscriberId == gercek.Id));
+    }
+
+    private static SubscriberService AboneServisi(AppDbContext db) =>
+        new(db, new GonderilmeyenEposta(), new ConfigurationBuilder().Build(), NullLogger<SubscriberService>.Instance);
+
+    // Listeleme ve silme e-posta göndermez; gönderirse test bunu yakalasın.
+    private sealed class GonderilmeyenEposta : IEmailSender
+    {
+        public Task SendAsync(string toEmail, string subject, string htmlBody, CancellationToken cancellationToken = default) =>
+            throw new InvalidOperationException("Bu testte e-posta gönderilmemeli.");
     }
 }

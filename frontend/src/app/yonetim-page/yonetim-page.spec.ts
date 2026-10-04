@@ -15,10 +15,17 @@ describe('YonetimPage görünürlük güvenliği', () => {
     urunler: vi.fn((..._args: unknown[]) =>
       of({ urunler: [] as unknown[], toplam: 0, sayfa: 1, sayfaBoyutu: 50 }),
     ),
-    aboneler: vi.fn(() =>
-      of({ aboneler: [], ozet: { toplam: 0, aktif: 0, bekleyen: 0, ayrilan: 0 } }),
+    aboneler: vi.fn((..._args: unknown[]) =>
+      of({
+        aboneler: [] as unknown[],
+        toplam: 0,
+        sayfa: 1,
+        sayfaBoyutu: 50,
+        ozet: { toplam: 0, aktif: 0, bekleyen: 0, ayrilan: 0 },
+      }),
     ),
     abonePasifeAl: vi.fn(() => of({})),
+    aboneSil: vi.fn(() => of({})),
     aboneOnayGonder: vi.fn(() => of({ message: 'gönderildi' })),
     besinAyarla: vi.fn(() => of({ guncellenenSatir: 3 })),
     kategoriAyarla: vi.fn(() => of({ guncellenenSatir: 3 })),
@@ -99,16 +106,68 @@ describe('YonetimPage görünürlük güvenliği', () => {
   });
 
   it('aboneyi pasife almadan önce sorar, yalnızca onaydan sonra pasife alır', () => {
-    sayfa.pasifeAlmaIste(abone);
+    sayfa.abone.islemIste(abone, 'pasife-al');
 
-    expect(sayfa.bekleyenPasifeAlma()).toEqual(abone);
+    expect(sayfa.abone.bekleyenIslem()).toEqual({ abone, tur: 'pasife-al' });
     expect(api.abonePasifeAl).not.toHaveBeenCalled();
 
-    sayfa.pasifeAlmaOnayla();
+    sayfa.abone.islemOnayla();
 
     expect(api.abonePasifeAl).toHaveBeenCalledWith(7);
-    expect(sayfa.bekleyenPasifeAlma()).toBeNull();
+    expect(api.aboneSil).not.toHaveBeenCalled();
+    expect(sayfa.abone.bekleyenIslem()).toBeNull();
     expect(api.aboneler).toHaveBeenCalled();
+  });
+
+  it('aboneyi kalıcı silmeden önce sorar, onaydan sonra siler ve listeyi yeniler', () => {
+    sayfa.abone.islemIste(abone, 'sil');
+
+    expect(sayfa.abone.bekleyenIslem()).toEqual({ abone, tur: 'sil' });
+    expect(api.aboneSil).not.toHaveBeenCalled();
+
+    sayfa.abone.islemOnayla();
+
+    expect(api.aboneSil).toHaveBeenCalledWith(7);
+    expect(api.abonePasifeAl).not.toHaveBeenCalled();
+    expect(sayfa.abone.bekleyenIslem()).toBeNull();
+    expect(sayfa.abone.mesaj()).toBe('okur@example.com kalıcı olarak silindi.');
+    expect(api.aboneler).toHaveBeenCalled();
+  });
+
+  // Sayfanın tek satırı silinince o sayfa boş kalır; bir önceki sayfa istenmeli.
+  it('sayfanın son abonesi silinince bir önceki sayfayı ister', () => {
+    api.aboneler.mockReturnValueOnce(
+      of({
+        aboneler: [abone],
+        toplam: 51,
+        sayfa: 2,
+        sayfaBoyutu: 50,
+        ozet: { toplam: 51, aktif: 51, bekleyen: 0, ayrilan: 0 },
+      }),
+    );
+    sayfa.abone.yukle(2);
+    expect(sayfa.abone.sayfalama().ozet).toBe('51–51 / 51 abone');
+
+    sayfa.abone.islemIste(abone, 'sil');
+    sayfa.abone.islemOnayla();
+
+    expect(api.aboneler).toHaveBeenLastCalledWith({ ara: '', durum: 'tumu', sayfa: 1 });
+  });
+
+  it('abone aramasında yazmanın bitmesini bekler ve ilk sayfadan sorar', () => {
+    vi.useFakeTimers();
+    try {
+      sayfa.abone.aramaDegisti('tr');
+      sayfa.abone.aramaDegisti('trol');
+      expect(api.aboneler).not.toHaveBeenCalled();
+
+      vi.advanceTimersByTime(300);
+
+      expect(api.aboneler).toHaveBeenCalledTimes(1);
+      expect(api.aboneler).toHaveBeenCalledWith({ ara: 'trol', durum: 'tumu', sayfa: 1 });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   // Bekleme süresi dolmadan tekrar gönderilince backend'in KENDİ cümlesi
@@ -121,10 +180,10 @@ describe('YonetimPage görünürlük güvenliği', () => {
       })),
     );
 
-    sayfa.onayGonder({ ...abone, durum: 'bekliyor', confirmedAt: null });
+    sayfa.abone.onayGonder({ ...abone, durum: 'bekliyor', confirmedAt: null });
 
-    expect(sayfa.aboneMesaji()).toBe('Son 5 dakika içinde zaten bir onay e-postası gönderildi.');
-    expect(sayfa.aboneIslemdeId()).toBeNull();
+    expect(sayfa.abone.mesaj()).toBe('Son 5 dakika içinde zaten bir onay e-postası gönderildi.');
+    expect(sayfa.abone.islemdeId()).toBeNull();
   });
   it('düzenleyiciyi iki dilli, virgüllü kayıtlı tablodan doldurur ve boşu null gönderir', () => {
     sayfa.veriDuzenleyiciAc(urun);

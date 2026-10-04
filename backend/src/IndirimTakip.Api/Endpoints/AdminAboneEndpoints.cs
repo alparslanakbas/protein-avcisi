@@ -35,37 +35,27 @@ internal static class AdminAboneEndpoints
 
         // --- Bulten aboneleri (yonetim paneli) ---
         //
-        // OZET LISTEDEN AYRI SAYILIYOR (guvenlik olaylarindaki gerekceyle
-        // ayni): liste 1000 satirla sinirli, kirpilmis listeden sayi cikarmak
-        // toplami eksik gosterirdi.
-        app.MapGet("/api/dev/aboneler", async (AppDbContext db, CancellationToken ct) =>
+        // Sayfa sayfa geliyor (4 Ekim; arama ve durum suzgeci sunucuda, bkz.
+        // SubscriberService.ListForAdminAsync). OZET LISTEDEN AYRI SAYILIYOR:
+        // sayfadaki satirlardan sayi cikarmak toplami eksik gosterirdi.
+        app.MapGet("/api/dev/aboneler", async (
+            AppDbContext db, SubscriberService aboneServisi, string? ara, string? durum,
+            int? sayfa, int? sayfaBoyutu, CancellationToken ct) =>
         {
-            var satirlar = await db.Subscribers
-                .AsNoTracking()
-                .OrderByDescending(s => s.SubscribedAt)
-                .Take(1000)
-                .Select(s => new
-                {
-                    s.Id,
-                    s.Email,
-                    s.IsConfirmed,
-                    s.SubscribedAt,
-                    s.ConfirmedAt,
-                    s.UnsubscribedAt,
-                    s.LastConfirmationEmailSentAt,
-                    s.LastDigestSentAt,
-                    // Ayni tablo fiyat alarmini ve takip listesini de tasiyor;
-                    // pasife almanin neyi etkileyecegini gosteriyor.
-                    takipSayisi = db.ProductWatches.Count(w => w.SubscriberId == s.Id),
-                    favoriSayisi = db.ProductFavorites.Count(f => f.SubscriberId == s.Id),
-                })
-                .ToListAsync(ct);
+            SubscriberStatus? durumSuzgeci = durum switch
+            {
+                "aktif" => SubscriberStatus.Active,
+                "bekliyor" => SubscriberStatus.Pending,
+                "ayrildi" => SubscriberStatus.Unsubscribed,
+                _ => null,
+            };
+            var sonuc = await aboneServisi.ListForAdminAsync(ara, durumSuzgeci, sayfa ?? 1, sayfaBoyutu ?? 50, ct);
 
-            var aboneler = satirlar.Select(s => new
+            var aboneler = sonuc.Aboneler.Select(s => new
             {
                 s.Id,
                 s.Email,
-                durum = SubscriberService.StatusOf(s.IsConfirmed, s.UnsubscribedAt) switch
+                durum = s.Durum switch
                 {
                     SubscriberStatus.Active => "aktif",
                     SubscriberStatus.Pending => "bekliyor",
@@ -76,8 +66,8 @@ internal static class AdminAboneEndpoints
                 s.UnsubscribedAt,
                 s.LastConfirmationEmailSentAt,
                 s.LastDigestSentAt,
-                s.takipSayisi,
-                s.favoriSayisi,
+                s.TakipSayisi,
+                s.FavoriSayisi,
             });
 
             var ozet = await db.Subscribers
@@ -94,6 +84,9 @@ internal static class AdminAboneEndpoints
             return Results.Ok(new
             {
                 aboneler,
+                toplam = sonuc.Toplam,
+                sayfa = sonuc.Sayfa,
+                sayfaBoyutu = sonuc.SayfaBoyutu,
                 ozet = ozet ?? new { toplam = 0, aktif = 0, bekleyen = 0, ayrilan = 0 },
             });
         }).RequireAdminKey(adminApiKey);
@@ -101,6 +94,13 @@ internal static class AdminAboneEndpoints
         app.MapPost("/api/dev/aboneler/{id:int}/pasife-al", async (int id, SubscriberService aboneler, CancellationToken ct) =>
             await aboneler.DeactivateAsync(id, ct)
                 ? Results.Ok(new { id, durum = "ayrildi" })
+                : Results.NotFound($"{id} numarali abone bulunamadi.")).RequireAdminKey(adminApiKey);
+
+        // KALICI silme (trol/sahte kayitlar, silinme talebi). Takip ve favoriler
+        // de gidiyor; geri alinamaz, panel once soruyor.
+        app.MapDelete("/api/dev/aboneler/{id:int}", async (int id, SubscriberService aboneler, CancellationToken ct) =>
+            await aboneler.DeleteAsync(id, ct)
+                ? Results.Ok(new { id, silindi = true })
                 : Results.NotFound($"{id} numarali abone bulunamadi.")).RequireAdminKey(adminApiKey);
 
         app.MapPost("/api/dev/aboneler/{id:int}/onay-gonder", async (

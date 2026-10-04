@@ -113,8 +113,20 @@ export class YonetimService {
     return this.http.post<ElleDuzenlemeYaniti>(`${this.base}/urunler/${id}/besin-yok`, {});
   }
 
-  aboneler(): Observable<AbonelerYaniti> {
-    return this.http.get<AbonelerYaniti>(`${this.base}/aboneler`);
+  /** Sunucuda sayfalanıyor ve süzülüyor (ürün listesiyle aynı desen). */
+  aboneler(secenekler: AboneAramaSecenekleri = {}): Observable<AbonelerYaniti> {
+    const { ara = '', durum = 'tumu', sayfa = 1 } = secenekler;
+    const params = new URLSearchParams();
+    if (ara.trim()) params.set('ara', ara.trim());
+    if (durum !== 'tumu') params.set('durum', durum);
+    if (sayfa > 1) params.set('sayfa', String(sayfa));
+    const sorgu = params.toString();
+    return this.http.get<AbonelerYaniti>(`${this.base}/aboneler${sorgu ? `?${sorgu}` : ''}`);
+  }
+
+  /** KALICI: takip listesi ve favoriler de gider, geri alınamaz. */
+  aboneSil(id: number): Observable<unknown> {
+    return this.http.delete(`${this.base}/aboneler/${id}`);
   }
 
   abonePasifeAl(id: number): Observable<unknown> {
@@ -131,6 +143,13 @@ export class YonetimService {
 }
 
 export type AboneDurumu = 'aktif' | 'bekliyor' | 'ayrildi';
+export type AboneFiltresi = 'tumu' | AboneDurumu;
+
+export interface AboneAramaSecenekleri {
+  ara?: string;
+  durum?: AboneFiltresi;
+  sayfa?: number;
+}
 
 export interface Abone {
   id: number;
@@ -147,6 +166,10 @@ export interface Abone {
 
 export interface AbonelerYaniti {
   aboneler: Abone[];
+  /** Süzgece uyan toplam; özetteki toplam ise bütün aboneler. */
+  toplam: number;
+  sayfa: number;
+  sayfaBoyutu: number;
   ozet: { toplam: number; aktif: number; bekleyen: number; ayrilan: number };
 }
 

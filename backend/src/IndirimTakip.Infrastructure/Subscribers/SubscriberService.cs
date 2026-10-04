@@ -207,6 +207,67 @@ public class SubscriberService(
         return subscriber is not null && await MarkUnsubscribedAsync(subscriber, cancellationToken);
     }
 
+    // Yönetim paneli: KALICI silme (4 Ekim). Pasife almadan farkı kaydın hiç
+    // kalmaması: trol/sahte kayıtlar ve kişinin silinme talebi için. Takip
+    // listesi ve favoriler veritabanındaki cascade kısıtıyla birlikte gidiyor
+    // (ProductWatches/ProductFavorites -> Subscribers, ON DELETE CASCADE).
+    // Geri alınamaz; aynı adres istersen yeniden abone olabilir (çift onayla).
+    // Günlüğe e-posta değil numara yazılıyor: adres kişisel veri.
+    public async Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default)
+    {
+        var silinen = await db.Subscribers.Where(s => s.Id == id).ExecuteDeleteAsync(cancellationToken);
+        if (silinen > 0)
+            logger.LogInformation("Abone kalıcı olarak silindi: {Id}.", id);
+        return silinen > 0;
+    }
+
+    // Yönetim paneli listesi: sayfa sayfa, e-posta araması ve durum süzgeciyle
+    // (ürün listesiyle aynı desen). Eskiden en yeni 1000 kayıt tek seferde
+    // geliyor, arama tarayıcıda yapılıyordu; 1000'i geçen abone hiç görünmezdi.
+    // Durum koşulları StatusOf ile BİREBİR aynı.
+    public async Task<AdminAboneSayfasi> ListForAdminAsync(
+        string? ara, SubscriberStatus? durum, int sayfa, int sayfaBoyutu, CancellationToken cancellationToken = default)
+    {
+        var boyut = Math.Clamp(sayfaBoyutu, 10, 100);
+        var gecerliSayfa = Math.Max(1, sayfa);
+        var sorgu = db.Subscribers.AsNoTracking();
+
+        if (!string.IsNullOrWhiteSpace(ara))
+        {
+            var desen = "%" + ara.Trim() + "%";
+            sorgu = sorgu.Where(s => EF.Functions.ILike(s.Email, desen));
+        }
+        sorgu = durum switch
+        {
+            SubscriberStatus.Active => sorgu.Where(s => s.UnsubscribedAt == null && s.IsConfirmed),
+            SubscriberStatus.Pending => sorgu.Where(s => s.UnsubscribedAt == null && !s.IsConfirmed),
+            SubscriberStatus.Unsubscribed => sorgu.Where(s => s.UnsubscribedAt != null),
+            _ => sorgu,
+        };
+
+        var toplam = await sorgu.CountAsync(cancellationToken);
+        var satirlar = await sorgu
+            .OrderByDescending(s => s.SubscribedAt)
+            .ThenByDescending(s => s.Id)
+            .Skip((gecerliSayfa - 1) * boyut)
+            .Take(boyut)
+            .Select(s => new
+            {
+                s.Id, s.Email, s.IsConfirmed, s.SubscribedAt, s.ConfirmedAt, s.UnsubscribedAt,
+                s.LastConfirmationEmailSentAt, s.LastDigestSentAt,
+                // Aynı tablo fiyat alarmını ve takip listesini de taşıyor;
+                // pasife almanın ya da silmenin neyi etkileyeceğini gösteriyor.
+                Takip = db.ProductWatches.Count(w => w.SubscriberId == s.Id),
+                Favori = db.ProductFavorites.Count(f => f.SubscriberId == s.Id),
+            })
+            .ToListAsync(cancellationToken);
+
+        var aboneler = satirlar.Select(s => new AdminAbone(
+            s.Id, s.Email, StatusOf(s.IsConfirmed, s.UnsubscribedAt), s.SubscribedAt, s.ConfirmedAt,
+            s.UnsubscribedAt, s.LastConfirmationEmailSentAt, s.LastDigestSentAt, s.Takip, s.Favori)).ToList();
+        return new AdminAboneSayfasi(aboneler, toplam, gecerliSayfa, boyut);
+    }
+
     // PANELDE "AKTİFE AL" YOK. Çift onay gereği aboneliği yalnızca kişi kendi
     // gelen kutusundaki düğmeyle açabilir; panelden açmak onaylamamış (ya da
     // ayrılmış) birine e-posta gönderilmesi demek olurdu. Panel yalnızca onay
@@ -252,3 +313,10 @@ public class SubscriberService(
 public enum SubscriberStatus { Active, Pending, Unsubscribed }
 
 public enum AdminConfirmationResult { NotFound, AlreadyActive, CoolingDown, Sent, Failed }
+
+public sealed record AdminAbone(
+    int Id, string Email, SubscriberStatus Durum, DateTimeOffset SubscribedAt, DateTimeOffset? ConfirmedAt,
+    DateTimeOffset? UnsubscribedAt, DateTimeOffset? LastConfirmationEmailSentAt, DateTimeOffset? LastDigestSentAt,
+    int TakipSayisi, int FavoriSayisi);
+
+public sealed record AdminAboneSayfasi(IReadOnlyList<AdminAbone> Aboneler, int Toplam, int Sayfa, int SayfaBoyutu);
