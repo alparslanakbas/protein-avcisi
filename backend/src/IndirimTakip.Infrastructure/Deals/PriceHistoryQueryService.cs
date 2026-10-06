@@ -63,7 +63,37 @@ public class PriceHistoryQueryService(AppDbContext db)
             .GroupBy(r => r.ProductId)
             .Select(g => new ProductSparklineDto(
                 g.Key,
-                g.Select(r => new PricePointDto(r.Price, r.ScrapedAt)).ToList()))
+                KosuSinirlari(g.Select(r => new PricePointDto(r.Price, r.ScrapedAt)).ToList())))
             .ToList();
+    }
+
+    /// <summary>
+    /// Aynı fiyatın art arda geldiği noktalardan yalnızca koşunun ilk ve son
+    /// noktasını bırakır; çizim değişmiyor.
+    /// </summary>
+    /// <remarks>
+    /// Kart grafiği noktaları zamana göre yerleştirip düz çizgiyle birleştiriyor
+    /// (frontend <c>spark-chart.ts</c>). Aynı fiyatlı bir koşunun ara noktaları,
+    /// koşunun ilk ve son noktasını birleştiren yatay çizginin üstünde duruyor;
+    /// atılınca çizgi de altındaki alan da birebir aynı kalıyor. Fiyat günde
+    /// birkaç kez taranıp seyrek değiştiği için 30 günlük ~139 nokta çoğu üründe
+    /// birkaç noktaya iniyor.
+    ///
+    /// Neden (6 Ekim): ürün sayfası ana listeyi de render ettiği için 24 kartın
+    /// sparkline'ı sayfaya gömülen aktarım verisine biniyordu (219 KB; ölçülen
+    /// ürün sayfasında HTML'in %86'sı aktarım verisiydi). "Günde bir nokta" seyreltmesi
+    /// seçilmedi: gün içindeki bir düşüşü siliyor ve çizimi değiştiriyordu.
+    /// </remarks>
+    internal static List<PricePointDto> KosuSinirlari(List<PricePointDto> noktalar)
+    {
+        var sonuc = new List<PricePointDto>(noktalar.Count);
+        for (var i = 0; i < noktalar.Count; i++)
+        {
+            var oncekiAyni = i > 0 && noktalar[i - 1].Price == noktalar[i].Price;
+            var sonrakiAyni = i < noktalar.Count - 1 && noktalar[i + 1].Price == noktalar[i].Price;
+            if (!(oncekiAyni && sonrakiAyni))
+                sonuc.Add(noktalar[i]);
+        }
+        return sonuc;
     }
 }

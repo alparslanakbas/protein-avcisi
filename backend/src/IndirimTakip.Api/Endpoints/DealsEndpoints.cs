@@ -192,7 +192,7 @@ internal static class DealsEndpoints
             // havuz istiyor; üst sınır kötüye kullanıma karşı sabit.
             var take = Math.Clamp(count ?? 60, 1, 100);
             var result = await deals.GetPreferredProductsAsync(take, cancellationToken: ct);
-            return Results.Ok(result);
+            return Results.Ok(result.Select(VitrinIcin).ToList());
         }).CacheOutput(cachePolicy);
 
         // Marka sayfasındaki "bu markaya genel bakış" bölümü için — kendi verimize
@@ -234,4 +234,20 @@ internal static class DealsEndpoints
             return Results.Ok(result);
         }).CacheOutput(cachePolicy);
     }
+
+    /// <summary>
+    /// Vitrin kartının okumadığı iki ağır alanı boşaltır: üretici açıklaması
+    /// ve besin tablosu.
+    /// </summary>
+    /// <remarks>
+    /// Vitrin her ürün sayfasında da render ediliyor (ürün sayfası ana listenin
+    /// üstünde pencere olarak açılıyor), yani yanıt sayfaya gömülen aktarım
+    /// verisine biniyor. 6 Ekim ölçümü: 60 ürünlük yanıt 196 KB'tı ve bunun
+    /// yaklaşık üçte ikisi açıklamaydı (tek bir ürününki 26 KB). Kart yalnızca
+    /// ad, marka, görsel, kategori, fiyat ve puanı gösteriyor; tıklanınca ürün
+    /// adresine gidiyor, pencere ürünü kendi isteğiyle yüklüyor. Sorgu
+    /// (<c>DealsQueryService</c>) bilerek değiştirilmedi.
+    /// </remarks>
+    internal static DealDto VitrinIcin(DealDto deal) =>
+        deal with { Description = null, NutritionJson = null };
 }
