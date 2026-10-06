@@ -73,6 +73,11 @@ export const routes: Routes = [
     path: 'urun-inceleme/:id/:slug',
     loadComponent: () => import('./product-review-page/product-review-page').then((m) => m.ProductReviewPage),
   },
+  // Slug'sız adres 404 dönüyordu (ürün sayfasında 301); bileşen kanonik adrese yönlendiriyor.
+  {
+    path: 'urun-inceleme/:id',
+    loadComponent: () => import('./product-review-page/product-review-page').then((m) => m.ProductReviewPage),
+  },
   {
     path: 'hesaplama',
     loadComponent: () => import('./calculator-list-page/calculator-list-page').then((m) => m.CalculatorListPage),

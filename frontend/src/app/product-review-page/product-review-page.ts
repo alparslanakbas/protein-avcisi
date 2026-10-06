@@ -125,11 +125,11 @@ export class ProductReviewPage implements OnInit {
         showNotFound(this.router);
         return;
       }
-      this.load(id);
+      this.load(id, params.get('slug'));
     });
   }
 
-  private load(id: number): void {
+  private load(id: number, slug: string | null): void {
     this.loading.set(true);
     this.loadError.set(false);
 
@@ -138,6 +138,20 @@ export class ProductReviewPage implements OnInit {
       history: this.priceHistoryService.get(id, HISTORY_DAYS).pipe(catchError(() => of({ points: [] as PricePoint[] }))),
     }).subscribe({
       next: ({ deal, history }) => {
+        // Slug eksik ya da ürün adı değiştiği için eskiyse kanonik adrese git.
+        // Eskiden slug'sız adres 404, yanlış slug'lı adres 200 + canonical
+        // dönüyordu (SEO denetimi, 6 Ekim); ürün sayfasındaki
+        // ensureCanonicalSlug ile aynı mekanizma, server.ts SSR'da 301'e çeviriyor.
+        // Boş slug'da (adında harf/rakam olmayan ürün) yönlendirme yok: boş
+        // segment slug'sız adrese döner, o da tekrar buraya — sonsuz döngü.
+        const kanonikSlug = slugify(deal.productName);
+        if (kanonikSlug && slug !== kanonikSlug) {
+          this.router.navigate(['/urun-inceleme', deal.productId, kanonikSlug], {
+            replaceUrl: true,
+            queryParamsHandling: 'preserve',
+          });
+          return;
+        }
         this.deal.set(deal);
         // Aynı gün + aynı fiyat tekrarlarını ele — yoksa hover art arda
         // aynı tarihi gösteriyor (modalda yaşanan hatanın aynısı).

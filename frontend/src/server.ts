@@ -444,12 +444,15 @@ app.use((req, res, next) => {
       // için bu sayfalar "Yönlendirmeli sayfa" kutusunda birikiyor ve
       // doğrulama tekrar tekrar başarısız oluyordu.
       //
-      // Yalnızca ürün adresine giden yönlendirmeler 301'e çevriliyor.
+      // Yalnızca ürün ve inceleme adresine giden yönlendirmeler 301'e
+      // çevriliyor (inceleme 6 Ekim'de eklendi: slug'sız/yanlış slug'lı
+      // inceleme adresi artık kanonik adrese gidiyor).
       // Ana sayfaya düşenler KAPSAM DIŞI: onlar "böyle bir ürün yok"
       // durumunun karşılığı, kalıcı bir taşınma değil — 301 demek
       // Google'a "bu ürün artık ana sayfadır" demek olurdu.
       const location = response.headers.get('location');
-      if (response.status === 302 && location && new URL(location, 'https://x').pathname.startsWith('/urun/')) {
+      const hedef = location ? new URL(location, 'https://x').pathname : '';
+      if (response.status === 302 && (hedef.startsWith('/urun/') || hedef.startsWith('/urun-inceleme/'))) {
         response = new Response(response.body, {
           status: 301,
           statusText: 'Moved Permanently',
