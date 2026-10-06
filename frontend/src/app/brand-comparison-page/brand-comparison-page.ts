@@ -84,7 +84,7 @@ export class BrandComparisonPage implements OnInit {
   }
 
   private setMeta(comparison: BrandComparison): void {
-    const title = `${comparison.brand1} vs ${comparison.brand2} Fiyat Karşılaştırması | ProteinAvcısı`;
+    const title = `${comparison.brand1} vs ${comparison.brand2} Fiyat Karşılaştırması | Protein Avcısı`;
     const description = `${comparison.brand1} ve ${comparison.brand2} markalarının kategori bazında güncel ortalama fiyatlarını karşılaştır — gerçek fiyat verisine dayanır.`;
 
     this.pageMeta.set({

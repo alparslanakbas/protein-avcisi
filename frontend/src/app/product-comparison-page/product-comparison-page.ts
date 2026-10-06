@@ -306,7 +306,7 @@ export class ProductComparisonPage implements OnInit {
   private setMeta(a: Deal, b: Deal): void {
     const nameA = displayName(a.productName);
     const nameB = displayName(b.productName);
-    const title = `${nameA} vs ${nameB} — Fiyat Karşılaştırması | ProteinAvcısı`;
+    const title = `${nameA} vs ${nameB} — Fiyat Karşılaştırması | Protein Avcısı`;
     this.pageMeta.set({
       title,
       description: `${a.brandName} ${nameA} ile ${b.brandName} ${nameB} ürünlerini güncel fiyat, servis başı maliyet ve 30 günlük fiyat geçmişiyle yan yana karşılaştır.`,

@@ -74,11 +74,11 @@ describe('adrestenSayfa', () => {
 
 describe('sayfaliBaslik', () => {
   it('ilk sayfada başlık değişmiyor', () => {
-    expect(sayfaliBaslik('Kreatin Fiyatları | ProteinAvcısı', 1)).toBe('Kreatin Fiyatları | ProteinAvcısı');
+    expect(sayfaliBaslik('Kreatin Fiyatları | Protein Avcısı', 1)).toBe('Kreatin Fiyatları | Protein Avcısı');
   });
 
   it('ek marka kuyruğundan ÖNCE giriyor', () => {
-    expect(sayfaliBaslik('Kreatin Fiyatları | ProteinAvcısı', 4)).toBe('Kreatin Fiyatları – Sayfa 4 | ProteinAvcısı');
+    expect(sayfaliBaslik('Kreatin Fiyatları | Protein Avcısı', 4)).toBe('Kreatin Fiyatları – Sayfa 4 | Protein Avcısı');
   });
 
   it('ayıraç yoksa sona ekleniyor', () => {
@@ -89,14 +89,14 @@ describe('sayfaliBaslik', () => {
   // sonrasını atıyor. Sayfa eki sona konsaydı tam da kırpılan parçada
   // kalır ve uzun başlıklı sayfalar yine aynı başlığı taşırdı.
   it('kırpılan uzun başlıkta sayfa numarası hayatta kalıyor', () => {
-    const uzun = 'Optimum Nutrition Sağlıklı Atıştırmalıklar Fiyatları ve İndirimleri 2026 | ProteinAvcısı';
+    const uzun = 'Optimum Nutrition Sağlıklı Atıştırmalıklar Fiyatları ve İndirimleri 2026 | Protein Avcısı';
     const kirpilmis = clampTitle(sayfaliBaslik(uzun, 7));
     expect(kirpilmis).toContain('Sayfa 7');
   });
 
   it('kısa başlıkta marka eki de duruyor', () => {
-    const kisa = 'Kreatin Fiyatları 2026 | ProteinAvcısı';
+    const kisa = 'Kreatin Fiyatları 2026 | Protein Avcısı';
     const kirpilmis = clampTitle(sayfaliBaslik(kisa, 2));
-    expect(kirpilmis).toBe('Kreatin Fiyatları 2026 – Sayfa 2 | ProteinAvcısı');
+    expect(kirpilmis).toBe('Kreatin Fiyatları 2026 – Sayfa 2 | Protein Avcısı');
   });
 });

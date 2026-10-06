@@ -21,15 +21,15 @@ export function buildProductDescription(input: ProductDescriptionInput): string 
   if (!intro) {
     // Açıklaması olmayan ürünlerde eski şablon aynen kalıyor — boş bırakmıyoruz.
     return input.discountPercent > 0
-      ? `${input.displayName} şu an ${input.priceText} — ${input.brandName} markasında %${formatDiscountPercent(input.discountPercent)} doğrulanmış indirim. Fiyat geçmişini ProteinAvcısı'nda takip et.`
-      : `${input.displayName} güncel fiyatı ${input.priceText}. ${input.brandName} markasının fiyat geçmişini ProteinAvcısı'nda takip et.`;
+      ? `${input.displayName} şu an ${input.priceText} — ${input.brandName} markasında %${formatDiscountPercent(input.discountPercent)} doğrulanmış indirim. Fiyat geçmişini Protein Avcısı'nda takip et.`
+      : `${input.displayName} güncel fiyatı ${input.priceText}. ${input.brandName} markasının fiyat geçmişini Protein Avcısı'nda takip et.`;
   }
 
   const priceSentence = input.discountPercent > 0
     ? `${input.priceText}, %${formatDiscountPercent(input.discountPercent)} doğrulanmış indirim.`
     : `Güncel fiyatı ${input.priceText}.`;
 
-  const full = `${intro} ${priceSentence} Fiyat geçmişi ProteinAvcısı'nda.`;
+  const full = `${intro} ${priceSentence} Fiyat geçmişi Protein Avcısı'nda.`;
   // Google açıklamayı ~160 karakterde kesiyor; sığmıyorsa marka kuyruğunu
   // atıyoruz, çünkü ürünün ne olduğu ve fiyatı daha değerli.
   return full.length > 165 ? `${intro} ${priceSentence}` : full;
@@ -160,7 +160,7 @@ export function clampDescription(text: string, max = 155): string {
  * Son çare güvenlik ağı: `page-meta.service.ts` bunu TÜM sayfalara uyguluyor,
  * yani `buildPageTitle`'dan geçmeyen marka/kategori sayfaları da buraya
  * düşüyor. Onların başlığı "<Marka> <Kategori> Fiyatları ve İndirimleri 2026
- * | ProteinAvcısı" kalıbında ve 65 karakteri aşınca eskiden kuyruğun ORTASINDAN
+ * | Protein Avcısı" kalıbında ve 65 karakteri aşınca eskiden kuyruğun ORTASINDAN
  * kesiliyordu: "…İndirimleri 2026 |…". Canlıdan alınan 160 sayfalık örnekte
  * sayfaların %16'sı böyleydi ve bunlar neredeyse tamamen marka×kategori
  * sayfaları — GSC'ye göre sayfa başına en çok gösterim alan tip (26 gösterim;

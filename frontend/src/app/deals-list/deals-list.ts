@@ -71,7 +71,7 @@ const SCAN_TIME_FORMATTER = new Intl.DateTimeFormat('tr-TR', { hour: '2-digit', 
 const SCAN_DATE_FORMATTER = new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'long', timeZone: 'Europe/Istanbul' });
 
 // Title/description'da bilinçli olarak "Protein Avcısı" (boşluklu) kullanılıyor
-// — logodaki bitişik "ProteinAvcısı" yazımı marka kimliği olarak kalıyor, ama
+// — logodaki bitişik "Protein Avcısı" yazımı marka kimliği olarak kalıyor, ama
 // insanlar arama kutusuna doğal olarak boşluklu yazıyor; arama motoruna dönük
 // metinlerde bu ayrımı güçlendirmek ucuz ve düşük riskli bir SEO düzeltmesi.
 // SIRA ÖNEMLİ: anahtar kelimeler ÖNDE, marka kuyrukta.
@@ -101,9 +101,9 @@ const FAQ_ITEMS: { question: string; answer: string }[] = [
     answer: 'Takip ettiğimiz markalar günde 4 kez otomatik olarak taranıyor, fiyat değişiklikleri buna göre güncelleniyor.',
   },
   {
-    question: 'Ürünü ProteinAvcısı üzerinden mi satın alıyorum?',
+    question: 'Ürünü Protein Avcısı üzerinden mi satın alıyorum?',
     answer:
-      'Hayır. ProteinAvcısı bir satış sitesi değil, fiyat takip sitesidir. "Mağazaya Git" butonuna tıklayınca doğrudan ilgili markanın kendi sitesine yönlendirilirsin, satış işlemi orada gerçekleşir.',
+      'Hayır. Protein Avcısı bir satış sitesi değil, fiyat takip sitesidir. "Mağazaya Git" butonuna tıklayınca doğrudan ilgili markanın kendi sitesine yönlendirilirsin, satış işlemi orada gerçekleşir.',
   },
   {
     question: 'Kupon kodlarını nereden buluyorsunuz?',
@@ -380,7 +380,7 @@ export class DealsList implements OnInit {
       // Uzun ürün adlarında başlık 118 karaktere kadar çıkıyordu; Google o
       // uzunlukta başlığı tamamen kendi yeniden yazıyor (bkz. buildPageTitle).
       const title = buildPageTitle(displayedName, 'Fiyatı ve Fiyat Geçmişi', deal.brandName);
-      const ogTitle = `${displayedName} Fiyatı: ${priceText} | ${deal.brandName} — ProteinAvcısı`;
+      const ogTitle = `${displayedName} Fiyatı: ${priceText} | ${deal.brandName} — Protein Avcısı`;
       // Açıklama artık markanın kendi ürün metninden besleniyor (bkz.
       // core/meta-description.ts) — arama sonucunda ürünün ne olduğunu
       // söyleyen tek şey burasıydı ve yalnızca fiyat cümlesi taşıyordu.
@@ -438,20 +438,12 @@ export class DealsList implements OnInit {
           priceCurrency: 'TRY',
           price: deal.currentPrice.toFixed(2),
         },
-        // Markanın kendi sitesindeki müşteri puanı. YALNIZCA veri gerçekten
-        // varsa ekleniyor ve sayfada da görünür durumda (bilgi listesinde,
-        // markanın adıyla etiketli) — Google, işaretlemedeki puanın sayfada
-        // gösterilmesini şart koşuyor.
-        ...(deal.ratingValue !== null && deal.ratingCount !== null
-          ? {
-              aggregateRating: {
-                '@type': 'AggregateRating',
-                ratingValue: deal.ratingValue,
-                reviewCount: deal.ratingCount,
-                bestRating: 5,
-              },
-            }
-          : {}),
+        // aggregateRating BİLEREK YOK (6 Ekim). Puanımız markanın kendi
+        // sitesindeki müşteri puanı ve Google başka siteden alınan puanın
+        // işaretlenmesini yasaklıyor ("Don't aggregate reviews or ratings from
+        // other websites", review snippet yönergeleri); cezası zengin sonucun
+        // tamamen kaybı. 29 Ağustos'ta GSC'nin "aggregateRating eksik" uyarısı
+        // için eklenmişti, o uyarı kritik değil. Puan sayfada metin olarak duruyor.
       };
 
       this.structuredDataEl = upsertJsonLdScript(this.document, this.structuredDataEl, jsonLd);

@@ -97,7 +97,7 @@ export const SUPPLEMENT_GOALS: SupplementGoal[] = [
     description: 'Ağırlık antrenmanı yapıyorum, güçlenmek istiyorum',
     icon: 'ph-barbell',
     h1: 'Kas kazanmak için hangi takviye?',
-    metaTitle: 'Kas Kazanmak İçin Hangi Takviye? | ProteinAvcısı',
+    metaTitle: 'Kas Kazanmak İçin Hangi Takviye? | Protein Avcısı',
     metaDescription:
       'Kas ve güç için kanıtı güçlü iki takviye: kreatin ve gerekirse protein tozu. Gerekmeyenler ve kilogram fiyatı en uygun güncel ürünler.',
     answer:
@@ -176,7 +176,7 @@ export const SUPPLEMENT_GOALS: SupplementGoal[] = [
     description: 'Yeterince yiyemiyorum, kilo almakta zorlanıyorum',
     icon: 'ph-scales',
     h1: 'Kilo almak için hangi takviye?',
-    metaTitle: 'Kilo Almak İçin Hangi Takviye? | ProteinAvcısı',
+    metaTitle: 'Kilo Almak İçin Hangi Takviye? | Protein Avcısı',
     metaDescription:
       'Kilo almakta zorlanıyorsan gainer mı, karbonhidrat tozu mu? Hangisi ne zaman işe yarar, hangisi gereksiz; kilogram fiyatına göre güncel ürünler.',
     answer:
@@ -259,7 +259,7 @@ export const SUPPLEMENT_GOALS: SupplementGoal[] = [
     description: 'Kilo vermek istiyorum, kas kaybetmeden',
     icon: 'ph-fire',
     h1: 'Yağ yakmak için hangi takviye?',
-    metaTitle: 'Yağ Yakmak İçin Hangi Takviye? | ProteinAvcısı',
+    metaTitle: 'Yağ Yakmak İçin Hangi Takviye? | Protein Avcısı',
     metaDescription:
       'Yağ yakmak için gerçekten işe yarayan takviye az: protein tozu ve kafein. Yağ yakıcı ve L-karnitin neden listede yok; güncel protein tozu fiyatları.',
     answer:
@@ -332,7 +332,7 @@ export const SUPPLEMENT_GOALS: SupplementGoal[] = [
     description: 'Koşu, bisiklet, yüzme gibi uzun süreli sporlar',
     icon: 'ph-person-simple-run',
     h1: 'Koşu ve dayanıklılık sporları için hangi takviye?',
-    metaTitle: 'Koşu ve Dayanıklılık İçin Hangi Takviye? | ProteinAvcısı',
+    metaTitle: 'Koşu ve Dayanıklılık İçin Hangi Takviye? | Protein Avcısı',
     metaDescription:
       'Koşu, bisiklet ve uzun antrenmanlar için karbonhidrat, elektrolit ve kafein: ne zaman gerekir, ne zaman gerekmez. Güncel sporcu içeceği fiyatları.',
     answer:

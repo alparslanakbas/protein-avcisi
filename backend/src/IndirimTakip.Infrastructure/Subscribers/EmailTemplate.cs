@@ -62,7 +62,7 @@ internal static class EmailTemplate
     // Görseli engelleyen istemcide alt metni markanın adını gösterir.
     private static string Logo(string frontendBaseUrl) => $"""
         <a href="{Encode(frontendBaseUrl)}" style="display:inline-block;text-decoration:none;">
-          <img src="{Encode(AssetUrl(frontendBaseUrl, "proteinavcisi-logo.png"))}" width="220" height="35" alt="ProteinAvcısı" style="display:block;width:220px;height:35px;border:0;color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:20px;font-weight:800;">
+          <img src="{Encode(AssetUrl(frontendBaseUrl, "proteinavcisi-logo.png"))}" width="220" height="35" alt="Protein Avcısı" style="display:block;width:220px;height:35px;border:0;color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:20px;font-weight:800;">
         </a>
         """;
 

@@ -550,8 +550,8 @@ export class BrandPage implements OnInit {
       this.pageMeta.set({
         title: sayfaliBaslik(
           bayi
-            ? `${brand} ${label} Bayi Fiyatları 2026 | ProteinAvcısı`
-            : `${brand} ${label} Fiyatları ve İndirimleri 2026 | ProteinAvcısı`,
+            ? `${brand} ${label} Bayi Fiyatları 2026 | Protein Avcısı`
+            : `${brand} ${label} Fiyatları ve İndirimleri 2026 | Protein Avcısı`,
           sayfa,
         ),
         description: bayi
@@ -573,13 +573,13 @@ export class BrandPage implements OnInit {
 
     const title = sayfaliBaslik(
       bayi
-        ? `${brand} Bayi Fiyatları ve Satıcıları 2026 | ProteinAvcısı`
-        : `${brand} İndirim Kodu ve Kampanyaları 2026 | ProteinAvcısı`,
+        ? `${brand} Bayi Fiyatları ve Satıcıları 2026 | Protein Avcısı`
+        : `${brand} İndirim Kodu ve Kampanyaları 2026 | Protein Avcısı`,
       sayfa,
     );
     const description = bayi
       ? `${brand} ürünlerini satan bayiler ve güncel bayi fiyatları. Aynı ürün için satıcılar arasındaki fiyat farkını tek sayfada karşılaştır.`
-      : `${brand} için güncel kupon kodları ve gerçek fiyat geçmişine dayanan doğrulanmış indirimler. ProteinAvcısı, ${brand} markasının fiyatlarını düzenli olarak takip ediyor.`;
+      : `${brand} için güncel kupon kodları ve gerçek fiyat geçmişine dayanan doğrulanmış indirimler. Protein Avcısı, ${brand} markasının fiyatlarını düzenli olarak takip ediyor.`;
 
     this.pageMeta.set({
       title,

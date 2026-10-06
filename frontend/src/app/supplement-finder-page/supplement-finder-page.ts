@@ -75,7 +75,7 @@ export class SupplementFinderPage implements OnInit {
 
   ngOnInit(): void {
     this.pageMeta.set({
-      title: 'Hangi Takviyeyi Seçmeliyim? 3 Soruluk Test | ProteinAvcısı',
+      title: 'Hangi Takviyeyi Seçmeliyim? 3 Soruluk Test | Protein Avcısı',
       description:
         'Üç soruda hedefine göre gerçekten işe yarayan takviyeleri öğren: kas, kilo alma, yağ yakımı ve dayanıklılık. Gerekmeyenler ve kilogram fiyatı en uygun ürünler.',
       canonicalPath: FINDER_PATH,

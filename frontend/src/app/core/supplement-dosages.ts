@@ -35,7 +35,7 @@ export const SUPPLEMENT_DOSAGES: SupplementDosage[] = [
   {
     slug: 'kreatin-dozu',
     name: 'Kreatin',
-    title: 'Kreatin Dozu Hesaplama: Günde Kaç Gram? | ProteinAvcısı',
+    title: 'Kreatin Dozu Hesaplama: Günde Kaç Gram? | Protein Avcısı',
     description:
       'Günlük kreatin dozunu ve seçtiğin ürünün kaç gün yeteceğini hesapla. Güncel fiyatlarla servis başı ve günlük maliyeti gör.',
     h1: 'Kreatin Dozu Hesaplama',
@@ -56,7 +56,7 @@ export const SUPPLEMENT_DOSAGES: SupplementDosage[] = [
   {
     slug: 'beta-alanine-dozu',
     name: 'Beta-Alanine',
-    title: 'Beta-Alanine Dozu Hesaplama: Günde Kaç Gram? | ProteinAvcısı',
+    title: 'Beta-Alanine Dozu Hesaplama: Günde Kaç Gram? | Protein Avcısı',
     description:
       'Günlük beta-alanine dozunu ve paketinin kaç gün yeteceğini hesapla. Güncel fiyatlarla günlük maliyetini gör.',
     h1: 'Beta-Alanine Dozu Hesaplama',
@@ -73,7 +73,7 @@ export const SUPPLEMENT_DOSAGES: SupplementDosage[] = [
   {
     slug: 'sitrulin-dozu',
     name: 'Sitrülin',
-    title: 'Sitrülin (Citrulline) Dozu Hesaplama | ProteinAvcısı',
+    title: 'Sitrülin (Citrulline) Dozu Hesaplama | Protein Avcısı',
     description:
       'Günlük sitrülin dozunu ve paketinin kaç gün yeteceğini hesapla. Güncel fiyatlarla günlük maliyetini gör.',
     h1: 'Sitrülin Dozu Hesaplama',
@@ -90,7 +90,7 @@ export const SUPPLEMENT_DOSAGES: SupplementDosage[] = [
   {
     slug: 'betain-dozu',
     name: 'Betain',
-    title: 'Betain (Betaine) Dozu Hesaplama | ProteinAvcısı',
+    title: 'Betain (Betaine) Dozu Hesaplama | Protein Avcısı',
     description:
       'Günlük betain dozunu ve paketinin kaç gün yeteceğini hesapla. Güncel fiyatlarla günlük maliyetini gör.',
     h1: 'Betain Dozu Hesaplama',
@@ -107,7 +107,7 @@ export const SUPPLEMENT_DOSAGES: SupplementDosage[] = [
   {
     slug: 'eaa-dozu',
     name: 'EAA',
-    title: 'EAA Dozu Hesaplama: Günde Kaç Gram? | ProteinAvcısı',
+    title: 'EAA Dozu Hesaplama: Günde Kaç Gram? | Protein Avcısı',
     description:
       'Günlük EAA dozunu ve paketinin kaç gün yeteceğini hesapla. Güncel fiyatlarla günlük maliyetini gör.',
     h1: 'EAA Dozu Hesaplama',

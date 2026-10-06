@@ -11,7 +11,7 @@ export class ShareButton {
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   // Verilmezse mevcut sayfanın kendisi paylaşılır (site geneli paylaşım butonu).
-  readonly title = input<string>('ProteinAvcısı — Spor Takviyesi Fiyat Takibi');
+  readonly title = input<string>('Protein Avcısı — Spor Takviyesi Fiyat Takibi');
   readonly shareUrl = input<string | undefined>(undefined);
 
   protected readonly menuOpen = signal(false);

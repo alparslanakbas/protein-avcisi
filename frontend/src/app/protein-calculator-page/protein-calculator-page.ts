@@ -223,7 +223,7 @@ export class ProteinCalculatorPage implements OnInit {
 
   ngOnInit(): void {
     this.pageMeta.set({
-      title: 'Günlük Protein İhtiyacı Hesaplama | ProteinAvcısı',
+      title: 'Günlük Protein İhtiyacı Hesaplama | Protein Avcısı',
       description:
         'Kilona ve antrenman yoğunluğuna göre günlük protein ihtiyacını hesapla, sonucu doğrudan güncel fiyatlarla karşılaştır — servis başı en uygun protein tozu ürünlerini gör.',
       canonicalPath: '/hesaplama/protein-ihtiyaci',

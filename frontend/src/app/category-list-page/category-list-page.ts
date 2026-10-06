@@ -86,7 +86,7 @@ export class CategoryListPage implements OnInit {
     this.pageMeta.set({
       // "Tüm Kategoriler" hiçbir arama niyetiyle eşleşmiyordu — konuyu
       // taşıyan bir başlık (aynısı H1'de de kullanılıyor).
-      title: 'Spor Takviyesi Kategorileri ve Fiyatları | ProteinAvcısı',
+      title: 'Spor Takviyesi Kategorileri ve Fiyatları | Protein Avcısı',
       description: 'Protein tozu, kreatin, amino asitler, pre-workout ve daha fazlası — takip ettiğimiz tüm spor takviyesi kategorilerini gerçek ürün sayılarıyla keşfet.',
       canonicalPath: '/kategoriler',
     });

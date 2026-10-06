@@ -346,8 +346,8 @@ export class CategoryPage implements OnInit {
     // kalır. Başlık da ayrışmalı, yoksa 200+ adres aynı başlığı taşır.
     const toplam = this.totalPages();
     const sayfa = toplam > 0 && this.currentPage() > toplam ? 1 : this.currentPage();
-    const title = sayfaliBaslik(`${label} Fiyatları ve İndirimleri 2026 | ProteinAvcısı`, sayfa);
-    const description = `${label} kategorisindeki güncel fiyatlar, gerçek fiyat geçmişine dayanan doğrulanmış indirimler ve mağaza kampanyaları. ProteinAvcısı, fiyatları düzenli olarak takip ediyor.`;
+    const title = sayfaliBaslik(`${label} Fiyatları ve İndirimleri 2026 | Protein Avcısı`, sayfa);
+    const description = `${label} kategorisindeki güncel fiyatlar, gerçek fiyat geçmişine dayanan doğrulanmış indirimler ve mağaza kampanyaları. Protein Avcısı, fiyatları düzenli olarak takip ediyor.`;
 
     this.pageMeta.set({
       title,

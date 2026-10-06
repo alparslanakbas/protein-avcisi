@@ -78,7 +78,7 @@ export class FavoritesPage implements OnInit, OnDestroy {
     // değiştirmenin SEO/kullanıcı tarafında hiçbir karşılığı yok (sayfa
     // zaten noindex).
     this.pageMeta.set({
-      title: 'Takip listem | ProteinAvcısı',
+      title: 'Takip listem | Protein Avcısı',
       description: 'Takip listene eklediğin ürünlerin güncel fiyatlarını ve fiyat düşüşlerini buradan izle.',
       canonicalPath: '/favorilerim',
     });

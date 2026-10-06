@@ -63,7 +63,7 @@ export class CalculatorListPage implements OnInit {
 
   ngOnInit(): void {
     this.pageMeta.set({
-      title: 'Spor Takviyesi Hesaplama Araçları | ProteinAvcısı',
+      title: 'Spor Takviyesi Hesaplama Araçları | Protein Avcısı',
       description:
         'Protein ihtiyacı, kreatin, beta-alanine, sitrülin, betain ve EAA dozu hesaplama araçları — sonuçlar güncel ürün fiyatlarına bağlı.',
       canonicalPath: '/hesaplama',

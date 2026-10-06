@@ -70,7 +70,7 @@ export const CATEGORY_GUIDES: Partial<Record<string, CategoryGuide>> = {
             'paketten "ucuz" görünse bile porsiyon başına protein miktarı farklıysa gerçek maliyet tam tersi ' +
             'olabilir. Doğru karşılaştırma birimi servis başına protein maliyeti: paket fiyatı ÷ (paketten ' +
             'çıkan servis sayısı × servis başına protein gramı).',
-          'ProteinAvcısı, markanın kendi beyan ettiği servis büyüklüğü ve porsiyon başına protein bilgisi ' +
+          'Protein Avcısı, markanın kendi beyan ettiği servis büyüklüğü ve porsiyon başına protein bilgisi ' +
             'ulaşılabildiğinde bu hesabı otomatik yapıp ürün kartlarında "servis başı fiyat" olarak gösteriyor ' +
             '— bu bilgi markanın sitesinde yoksa tahmini bir rakam üretmiyoruz, alan boş kalıyor.',
         ],
@@ -95,7 +95,7 @@ export const CATEGORY_GUIDES: Partial<Record<string, CategoryGuide>> = {
             'eklenmesi). Informed Sport veya NSF Certified for Sport gibi bağımsız sertifikalar, ürünün ' +
             'etikette yazan içeriği gerçekten taşıdığını ve yasaklı madde içermediğini üçüncü bir tarafın ' +
             'test ettiği anlamına gelir.',
-          'ProteinAvcısı şu an için bu sertifikaları ürün verisinde ayrı bir alan olarak takip etmiyor — ' +
+          'Protein Avcısı şu an için bu sertifikaları ürün verisinde ayrı bir alan olarak takip etmiyor — ' +
             'bir ürünü değerlendirirken markanın kendi ürün sayfasında bu sertifikalardan bahsedip ' +
             'bahsetmediğine bakmak, ekstra bir güven katmanı ekler.',
         ],

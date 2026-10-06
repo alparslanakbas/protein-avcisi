@@ -208,7 +208,7 @@ export function buildProductJsonLdDescription(deal: Deal): string {
   const perServing = pricePerServing(deal);
   if (perServing !== null) parts.push(`Servis başına ${formatPrice(perServing)}.`);
 
-  parts.push('Fiyat geçmişi ProteinAvcısı tarafından düzenli olarak ölçülüyor.');
+  parts.push('Fiyat geçmişi Protein Avcısı tarafından düzenli olarak ölçülüyor.');
 
   return parts.join(' ');
 }

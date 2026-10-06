@@ -55,7 +55,7 @@ export const BODY_CALCULATORS: BodyCalculator[] = [
   {
     slug: 'kalori-ihtiyaci',
     name: 'Günlük Kalori İhtiyacı',
-    title: 'Günlük Kalori İhtiyacı Hesaplama (TDEE) | ProteinAvcısı',
+    title: 'Günlük Kalori İhtiyacı Hesaplama (TDEE) | Protein Avcısı',
     description:
       'Boy, kilo, yaş ve aktivite seviyene göre günlük kalori ihtiyacını (TDEE) hesapla. Kilo alma ve verme hedefleri için gereken kaloriyi gör.',
     h1: 'Günlük Kalori İhtiyacı Hesaplama',
@@ -90,7 +90,7 @@ export const BODY_CALCULATORS: BodyCalculator[] = [
   {
     slug: 'vucut-kitle-indeksi',
     name: 'Vücut Kitle İndeksi (BMI)',
-    title: 'Vücut Kitle İndeksi (BMI) Hesaplama | ProteinAvcısı',
+    title: 'Vücut Kitle İndeksi (BMI) Hesaplama | Protein Avcısı',
     description:
       'Boy ve kilona göre vücut kitle indeksini (BMI) hesapla. Sporcularda BMI\'nin neden yanıltıcı olabileceğini öğren.',
     h1: 'Vücut Kitle İndeksi (BMI) Hesaplama',
@@ -129,7 +129,7 @@ export const BODY_CALCULATORS: BodyCalculator[] = [
   {
     slug: 'gunluk-su-ihtiyaci',
     name: 'Günlük Su İhtiyacı',
-    title: 'Günlük Su İhtiyacı Hesaplama | ProteinAvcısı',
+    title: 'Günlük Su İhtiyacı Hesaplama | Protein Avcısı',
     description: 'Kilona ve aktivite seviyene göre günlük su ihtiyacını hesapla.',
     h1: 'Günlük Su İhtiyacı Hesaplama',
     intro:

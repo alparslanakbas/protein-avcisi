@@ -3,7 +3,7 @@
 // Your Life) niteliğindeki bir konuda (takviye/sağlık) Google'ın E-E-A-T
 // değerlendirmesinde ciddiye aldığı bir sinyal — rakip analizinde ismi
 // açık bir "Kurucu" profili taşıyorlardı, bizde hiç yoktu.
-export const SITE_NAME = 'ProteinAvcısı';
+export const SITE_NAME = 'Protein Avcısı';
 
 export const FOUNDER = {
   name: 'Alparslan Akbaş',

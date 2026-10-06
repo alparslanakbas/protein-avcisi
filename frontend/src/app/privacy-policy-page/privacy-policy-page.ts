@@ -15,8 +15,8 @@ export class PrivacyPolicyPage implements OnInit {
 
   ngOnInit(): void {
     this.pageMeta.set({
-      title: 'Gizlilik Politikası | ProteinAvcısı',
-      description: 'ProteinAvcısı hangi verileri topluyor, nasıl kullanıyor ve KVKK kapsamındaki haklarınız neler — açıkça anlatıyoruz.',
+      title: 'Gizlilik Politikası | Protein Avcısı',
+      description: 'Protein Avcısı hangi verileri topluyor, nasıl kullanıyor ve KVKK kapsamındaki haklarınız neler — açıkça anlatıyoruz.',
       canonicalPath: '/gizlilik-politikasi',
     });
   }

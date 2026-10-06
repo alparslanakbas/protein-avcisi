@@ -92,7 +92,7 @@ export class BrandListPage implements OnInit {
 
   ngOnInit(): void {
     this.pageMeta.set({
-      title: 'Spor Takviyesi Markaları ve Güncel Fiyatları | ProteinAvcısı',
+      title: 'Spor Takviyesi Markaları ve Güncel Fiyatları | Protein Avcısı',
       description:
         'Protein tozu, kreatin ve sporcu gıdası markalarını gerçek ürün sayıları, güncel fiyatları ve fiyat geçmişleriyle keşfet.',
       canonicalPath: '/markalar',

@@ -48,7 +48,7 @@ export class ArticlePage implements OnInit {
   }
 
   private setMeta(article: Article): void {
-    const title = `${article.title} | ProteinAvcısı Rehber`;
+    const title = `${article.title} | Protein Avcısı Rehber`;
 
     this.pageMeta.set({
       title,

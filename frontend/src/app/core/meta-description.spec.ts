@@ -103,14 +103,14 @@ describe('buildProductDescription', () => {
 
 describe('clampTitle', () => {
   it('sınırın altındaki başlığa dokunmaz', () => {
-    const t = 'HIQ Kreatin Fiyatları 2026 | ProteinAvcısı';
+    const t = 'HIQ Kreatin Fiyatları 2026 | Protein Avcısı';
     expect(clampTitle(t)).toBe(t);
   });
 
   // Canlıdan gerçek örnek: 160 sayfalık örneğin %16'sı böyleydi ve neredeyse
   // tamamı marka×kategori sayfasıydı — sayfa başına en çok gösterim alan tip.
   it('kuyruk sığmıyorsa yarım bırakmak yerine tamamını atar', () => {
-    const t = 'ProteinOcean Kreatin Fiyatları ve İndirimleri 2026 | ProteinAvcısı';
+    const t = 'ProteinOcean Kreatin Fiyatları ve İndirimleri 2026 | Protein Avcısı';
     const sonuc = clampTitle(t);
     expect(sonuc).toBe('ProteinOcean Kreatin Fiyatları ve İndirimleri 2026');
     expect(sonuc).not.toContain('|');
@@ -119,9 +119,9 @@ describe('clampTitle', () => {
 
   it('hiçbir başlık ayıraç ya da üç noktayla sarkık bitmez', () => {
     const ornekler = [
-      'West Nutrition Amino Asitler Fiyatları ve İndirimleri 2026 | ProteinAvcısı',
-      'SSN L-Carnitine & CLA Fiyatları ve İndirimleri 2026 | ProteinAvcısı',
-      'Swiss Nutrition Protein Tozu Fiyatları ve İndirimleri 2026 | ProteinAvcısı',
+      'West Nutrition Amino Asitler Fiyatları ve İndirimleri 2026 | Protein Avcısı',
+      'SSN L-Carnitine & CLA Fiyatları ve İndirimleri 2026 | Protein Avcısı',
+      'Swiss Nutrition Protein Tozu Fiyatları ve İndirimleri 2026 | Protein Avcısı',
     ];
     for (const t of ornekler) {
       expect(clampTitle(t)).not.toMatch(/[|·,:;&/–-]\s*…?\s*$/);

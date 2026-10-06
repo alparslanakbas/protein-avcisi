@@ -15,8 +15,8 @@ export class HowItWorksPage implements OnInit {
 
   ngOnInit(): void {
     this.pageMeta.set({
-      title: 'Nasıl Çalışıyoruz? | ProteinAvcısı',
-      description: 'ProteinAvcısı fiyatları nasıl topluyor, "gerçek indirim" nasıl hesaplanıyor, gelir modelimiz sıralamayı etkiliyor mu — açıkça anlatıyoruz.',
+      title: 'Nasıl Çalışıyoruz? | Protein Avcısı',
+      description: 'Protein Avcısı fiyatları nasıl topluyor, "gerçek indirim" nasıl hesaplanıyor, gelir modelimiz sıralamayı etkiliyor mu — açıkça anlatıyoruz.',
       canonicalPath: '/nasil-calisiyoruz',
     });
   }

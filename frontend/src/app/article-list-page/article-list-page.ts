@@ -88,7 +88,7 @@ export class ArticleListPage implements OnInit {
     this.pageMeta.set({
       // "Rehber" tek başına hiçbir arama niyetiyle eşleşmiyordu — konuyu
       // (spor takviyesi) taşıyan bir başlık hem title hem H1'de kullanılıyor.
-      title: 'Spor Takviyesi Rehberi | ProteinAvcısı',
+      title: 'Spor Takviyesi Rehberi | Protein Avcısı',
       description: 'Protein tozu, kreatin, pre-workout ve diğer spor takviyeleri hakkında bilgi amaçlı rehberler — hangi ürünü nasıl seçeceğine dair gerçek, tarafsız içerik.',
       canonicalPath: '/rehber',
     });

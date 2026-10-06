@@ -15,8 +15,8 @@ export class CookiePolicyPage implements OnInit {
 
   ngOnInit(): void {
     this.pageMeta.set({
-      title: 'Çerez Politikası | ProteinAvcısı',
-      description: 'ProteinAvcısı hangi çerezleri/yerel depolama teknolojilerini kullanıyor, ne zaman izin isteyeceğiz — açıkça anlatıyoruz.',
+      title: 'Çerez Politikası | Protein Avcısı',
+      description: 'Protein Avcısı hangi çerezleri/yerel depolama teknolojilerini kullanıyor, ne zaman izin isteyeceğiz — açıkça anlatıyoruz.',
       canonicalPath: '/cerez-politikasi',
     });
   }

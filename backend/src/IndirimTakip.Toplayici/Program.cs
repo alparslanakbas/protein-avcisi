@@ -7,7 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 // ---------------------------------------------------------------------------
-// ProteinAvcısı — dışarıdan toplayıcı
+// Protein Avcısı — dışarıdan toplayıcı
 //
 // NEDEN VAR: Supplementler.com sunucumuzun bulunduğu datacenter aralığından
 // Cloudflare managed challenge'ı ile karşılanıyor (403 gövdesi "Just a

@@ -125,6 +125,16 @@ export class App implements OnInit {
       sameAs: [FOUNDER.linkedInUrl],
       worksFor: { '@type': 'Organization', name: SITE_NAME, url: origin },
     });
+    // Google arama sonucundaki site adını öncelikle WebSite işaretlemesinden
+    // seçiyor; yoktu ve başlıklarda iki yazım karışıktı (6 Ekim SEO denetimi).
+    // Ad "Protein Avcısı" (kullanıcı kararı); eski bitişik yazım alternatif ad.
+    upsertJsonLdScript(this.document, null, {
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      name: SITE_NAME,
+      alternateName: 'ProteinAvcısı',
+      url: `${origin}/`,
+    });
 
     // Kullanıcı geri bildirimi: footer'daki bir linke (ör. Rehber, Kategoriler)
     // tıklayınca sayfa değişiyor ama scroll konumu sayfanın altında kalıyor —
