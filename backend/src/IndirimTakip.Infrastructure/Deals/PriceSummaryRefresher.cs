@@ -63,14 +63,29 @@ public sealed class PriceSummaryRefresher(AppDbContext db, ILogger<PriceSummaryR
     /// </summary>
     public const int OlaganGunSayisi = 7;
 
+    /// <summary>
+    /// Fiyat geçmişinde bundan uzun bir ara varsa ürün o aralıktan sonra "yeniden başlamış" sayılır:
+    /// olağan fiyat ve 30 günün en düşüğü yalnız aradan SONRAKİ noktalardan hesaplanır.
+    /// </summary>
+    /// <remarks>
+    /// Neden (6 Ekim): WheyProof'ta 30 Eylül'den beri görünmeyen bir ON paketi ev tüneliyle geri geldi; içerik
+    /// değişmişti ve Eylül'ün 237,56 $'ı olağan fiyat kaldığı için 47,68 $ "%80 gerçek indirim" göründü. Ürünün
+    /// kaybolup döndüğünü bilemeyiz; döndüğü fiyatın eskisiyle kıyaslanabilir olduğunu da. Bu yüzden dönen ürün
+    /// olağan fiyatını yeniden kazanana kadar (7 gün) indirim göstermiyor.
+    /// Eşik ölçülerek seçildi (canlı, son 30 gün): TR'de en büyük arası 48 saati geçen 419 ürün var, çoğu günde bir
+    /// taranan kaynaklarda kaçan tek bir tur; 72 saati geçen 53. ON vakasının arası 5 gündü.
+    /// </remarks>
+    public const int BoslukEsigiSaat = 72;
+
     public async Task<int> RefreshAsync(CancellationToken cancellationToken = default)
     {
         // Tek deyim, küme tabanlı. Ürün başına döngü YOK — düzeltmeye
         // çalıştığımız sorunun ta kendisi o olurdu.
         //
         // `son` : en güncel fiyat noktası (DISTINCT ON ile ürün başına bir satır)
-        // `pencere` : son 30 günün en yüksek/en düşük fiyatı
-        // `gunluk` : her fiyatın pencerede görüldüğü farklı gün sayısı
+        // `bolum` : son BoslukEsigiSaat'ten uzun aradan sonraki ilk tarama (ara yoksa NULL)
+        // `pencere` : son 30 günün (ara varsa aradan sonrasının) en yüksek/en düşük fiyatı
+        // `gunluk` : her fiyatın aynı aralıkta görüldüğü farklı gün sayısı
         // `olagan` : en az OlaganGunSayisi gün görülmüş fiyatların en yükseği
         //
         // Penceresi boş ürünlerde (30 gündür taranmayan) referans eskisi gibi
@@ -83,19 +98,32 @@ public sealed class PriceSummaryRefresher(AppDbContext db, ILogger<PriceSummaryR
                 FROM "PriceHistories" ph
                 ORDER BY ph."ProductId", ph."ScrapedAt" DESC
             ),
+            bolum AS (
+                SELECT a."ProductId",
+                       MAX(a."ScrapedAt") FILTER (WHERE a."ScrapedAt" - a.onceki > @boslukEsigi) AS baslangic
+                FROM (
+                    SELECT ph."ProductId", ph."ScrapedAt",
+                           LAG(ph."ScrapedAt") OVER (PARTITION BY ph."ProductId" ORDER BY ph."ScrapedAt") AS onceki
+                    FROM "PriceHistories" ph
+                    WHERE ph."ScrapedAt" >= @pencereBaslangici
+                ) a
+                GROUP BY a."ProductId"
+            ),
             pencere AS (
                 SELECT ph."ProductId",
                        MAX(ph."Price") AS en_yuksek,
                        MIN(ph."Price") AS en_dusuk
                 FROM "PriceHistories" ph
-                WHERE ph."ScrapedAt" >= @pencereBaslangici
+                JOIN bolum b ON b."ProductId" = ph."ProductId"
+                WHERE ph."ScrapedAt" >= COALESCE(b.baslangic, @pencereBaslangici)
                 GROUP BY ph."ProductId"
             ),
             gunluk AS (
                 SELECT ph."ProductId", ph."Price",
                        COUNT(DISTINCT (ph."ScrapedAt" AT TIME ZONE 'UTC')::date) AS gun
                 FROM "PriceHistories" ph
-                WHERE ph."ScrapedAt" >= @pencereBaslangici
+                JOIN bolum b ON b."ProductId" = ph."ProductId"
+                WHERE ph."ScrapedAt" >= COALESCE(b.baslangic, @pencereBaslangici)
                 GROUP BY ph."ProductId", ph."Price"
             ),
             olagan AS (
@@ -140,6 +168,7 @@ public sealed class PriceSummaryRefresher(AppDbContext db, ILogger<PriceSummaryR
             [
                 new Npgsql.NpgsqlParameter("pencereBaslangici", pencereBaslangici),
                 new Npgsql.NpgsqlParameter("olaganGun", OlaganGunSayisi),
+                new Npgsql.NpgsqlParameter("boslukEsigi", TimeSpan.FromHours(BoslukEsigiSaat)),
                 new Npgsql.NpgsqlParameter("simdi", simdi),
             ],
             cancellationToken);

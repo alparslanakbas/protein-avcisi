@@ -124,6 +124,17 @@ public sealed class UrunListesiVeritabani : IAsyncLifetime
         Urun(hardline, "Sıçramalı Kreatin", "kreatin", null,
             [.. Enumerable.Repeat(500m, 8), 2000m, 2000m, 500m]);
 
+        // Boşluk kuralı (6 Ekim): sekiz gün 4.150, sonra altı gün görünmüyor, sonra üç gün 3.526. Eski hesap
+        // olağan fiyatı 4.150 sayıp %15 "gerçek indirim" veriyordu; aradan sonra olağan fiyat yok, indirim 0.
+        var donen = Urun(hardline, "Boşluktan Dönen", "protein-tozu", null,
+            [.. Enumerable.Repeat(4150m, 8), 3526m, 3526m, 3526m]);
+        foreach (var f in donen.PriceHistories.Where(f => f.Price == 4150m))
+            f.ScrapedAt = f.ScrapedAt.AddDays(-5);
+        // Kontrol: iki günlük ara eşiğin altında (günde bir taranan kaynakta kaçan tur), indirim duruyor.
+        var kisaAra = Urun(hardline, "Kısa Aralı Düşüş", "protein-tozu", null, Hafta(1000m, 900m));
+        foreach (var f in kisaAra.PriceHistories.Where(f => f.Price == 1000m))
+            f.ScrapedAt = f.ScrapedAt.AddDays(-1);
+
         // Aynı ad, aynı fiyat, iki bayi: sıralama anahtarları birebir eşit.
         for (var i = 0; i < 4; i++)
         {
@@ -134,7 +145,7 @@ public sealed class UrunListesiVeritabani : IAsyncLifetime
         Urun(swiss, "Swiss Nutrition Magnezyum", "vitamin", "swissnutrition.com.tr", Hafta(150m, 120m));
 
         GorunenUrun = sira;
-        IndirimliUrun = 8 + 1 + 8 + 1; // whey'ler, D3, Olimp'ler, magnezyum
+        IndirimliUrun = 8 + 1 + 8 + 1 + 1; // whey'ler, D3, Olimp'ler, magnezyum, kısa aralı düşüş
 
         // GÖRÜNMEMESİ gerekenler.
         var bayat = Urun(hardline, "Bayat Ürün", "protein-tozu", null, 999m);
@@ -232,6 +243,22 @@ public class UrunListesiVeritabaniTests(UrunListesiVeritabani veri) : IClassFixt
         Assert.DoesNotContain(sonuc.Items, d => d.ProductName is "Kısa Geçmişli Düşüş" or "Sıçramalı Kreatin");
     }
 
+    // Fiyat geçmişinde eşikten uzun aradan sonra dönen ürün olağan fiyatını yeniden kazanmalı; kısa ara (kaçan tur)
+    // indirimi silmemeli.
+    [VeritabaniFact]
+    public async Task Bosluktan_donen_urunun_olagan_fiyati_aradan_sonrasindan()
+    {
+        await using var db = veri.Baglam();
+
+        var sonuc = await Getir(Servis(db), null, null, null, false, 1, 100);
+
+        var donen = Assert.Single(sonuc.Items, d => d.ProductName == "Boşluktan Dönen");
+        Assert.Equal(0m, donen.DiscountPercent);
+        Assert.Equal(3526m, donen.ReferencePrice);
+        var kisaAra = Assert.Single(sonuc.Items, d => d.ProductName == "Kısa Aralı Düşüş");
+        Assert.Equal(1000m, kisaAra.ReferencePrice);
+    }
+
     // Olağan fiyatı olmayan ürün listede kalıyor, indirimi 0: referans güncel
     // fiyat. Referans NULL olsaydı liste sorgusu ürünü tamamen düşürürdü.
     [VeritabaniFact]
@@ -301,7 +328,7 @@ public class UrunListesiVeritabaniTests(UrunListesiVeritabani veri) : IClassFixt
 
         var katalog = new CatalogStatsQueryService(db);
         Assert.Equal(veri.IndirimliUrun, (await katalog.GetHomepageStatsAsync()).DiscountCount);
-        Assert.Equal(8 + 1, (await katalog.GetBrandStatsAsync("Hardline")).DiscountCount); // whey'ler, D3
+        Assert.Equal(8 + 1 + 1, (await katalog.GetBrandStatsAsync("Hardline")).DiscountCount); // whey'ler, D3, kısa aralı (boşluktan dönen değil)
     }
 
     // Yönetim paneli abone listesi (4 Ekim): sayfa, durum süzgeci ve e-posta araması
