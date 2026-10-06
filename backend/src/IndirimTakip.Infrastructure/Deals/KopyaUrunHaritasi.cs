@@ -74,4 +74,41 @@ internal static class KopyaUrunHaritasi
 
         return harita;
     }
+
+    /// <summary>
+    /// Tek bir ürün için <see cref="OlusturAsync"/>'in vereceği cevap: ürün aynı marka + adlı bir
+    /// grubun ikincil kaydıysa asıl kaydın kimliği, değilse null. Seçim kuralı aynı (en çok fiyat
+    /// geçmişi olan, eşitlikte küçük kimlik); yalnızca o ürünün grubu okunuyor.
+    /// </summary>
+    /// <remarks>
+    /// Ürün sayfası ucu (<c>GetProductByIdAsync</c>) eskiden her istekte bütün haritayı kuruyordu:
+    /// bütün ürünler + kopya gruplarındaki ~470 ürünün bütün geçmiş satırlarının sayımı (6 Ekim,
+    /// canlıda ~45 ms). Google her ürün sayfasını önbelleksiz istediği için bu her taramada ödeniyordu.
+    /// </remarks>
+    public static async Task<int?> AsilIdAsync(
+        AppDbContext db, int urunId, int markaId, string ad, CancellationToken cancellationToken)
+    {
+        var grup = await db.Products
+            .AsNoTracking()
+            .Where(p => p.BrandId == markaId && p.Name == ad)
+            .Select(p => p.Id)
+            .ToListAsync(cancellationToken);
+
+        if (grup.Count < 2)
+            return null;
+
+        var gecmisSayilari = await db.PriceHistories
+            .AsNoTracking()
+            .Where(h => grup.Contains(h.ProductId))
+            .GroupBy(h => h.ProductId)
+            .Select(g => new { ProductId = g.Key, Adet = g.Count() })
+            .ToDictionaryAsync(x => x.ProductId, x => x.Adet, cancellationToken);
+
+        var asil = grup
+            .OrderByDescending(id => gecmisSayilari.GetValueOrDefault(id))
+            .ThenBy(id => id)
+            .First();
+
+        return asil == urunId ? null : asil;
+    }
 }

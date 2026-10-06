@@ -445,7 +445,6 @@ public partial class DealsQueryService(
             {
                 Product = p,
                 BrandName = b.Name,
-                Latest = p.PriceHistories.OrderByDescending(ph => ph.ScrapedAt).FirstOrDefault(),
                 // Referans özetten, listelerle aynı olağan fiyat (bkz. PriceSummaryRefresher); özet yoksa canlı en yüksek.
                 ReferencePrice = (ozetiKullan ? p.ReferencePrice30 : null) ?? p.PriceHistories
                     .Where(ph => ph.ScrapedAt >= referenceSince)
@@ -455,17 +454,18 @@ public partial class DealsQueryService(
                     .Min(ph => (decimal?)ph.Price),
             }).AsNoTracking().FirstOrDefaultAsync(cancellationToken);
 
-        if (row?.Latest is null || row.ReferencePrice is null || row.ThirtyDayLowPrice is null)
+        // Son fiyat ayrı, indeksli sorguda: projeksiyondaki FirstOrDefault EF'te BÜTÜN fiyat
+        // geçmişi üzerinde ROW_NUMBER penceresine dönüşüyordu (6 Ekim: tek ürün 0,4-0,9 sn).
+        var latest = row is null ? null : await db.PriceHistories.AsNoTracking().Where(ph => ph.ProductId == productId)
+            .OrderByDescending(ph => ph.ScrapedAt).FirstOrDefaultAsync(cancellationToken);
+        if (latest is null || row!.ReferencePrice is null || row.ThirtyDayLowPrice is null)
             return null;
 
-        var dto = MapToDealDto(new DealRow(row.Product, row.BrandName, row.Latest, row.ReferencePrice.Value, row.ThirtyDayLowPrice.Value));
+        var dto = MapToDealDto(new DealRow(row.Product, row.BrandName, latest, row.ReferencePrice.Value, row.ThirtyDayLowPrice.Value));
 
-        // Bu ürün, aynı marka+isimli bir grubun İKİNCİL kaydıysa canonical
-        // asıl sayfayı göstermeli. Yalnızca bu uçta hesaplanıyor: liste
-        // sorguları sıcak yol, oraya ek sorgu koymanın anlamı yok — canonical
-        // etiketi zaten tek bir ürün sayfasında üretiliyor.
-        var kopyalar = await KopyaUrunHaritasi.OlusturAsync(db, cancellationToken);
-        if (kopyalar.TryGetValue(productId, out var asilId))
+        // Ürün aynı marka+isimli bir grubun İKİNCİL kaydıysa canonical asıl sayfayı göstermeli.
+        // Yalnızca bu uçta hesaplanıyor (liste sorguları sıcak yol; canonical tek ürün sayfasında).
+        if (await KopyaUrunHaritasi.AsilIdAsync(db, productId, row.Product.BrandId, row.Product.Name, cancellationToken) is int asilId)
             dto = dto with { CanonicalProductId = asilId };
 
         // Bu uç, listelerdeki donmuş-ürün filtresinden BİLİNÇLİ olarak muaf
@@ -481,7 +481,7 @@ public partial class DealsQueryService(
         // tercih. Onun yerine sayfaya, kendisinin güncel olmadığını ve varsa
         // yerine geçen kaydın hangisi olduğunu söylüyoruz.
         var staleSince = DateTimeOffset.UtcNow.Subtract(StaleThreshold);
-        var isStale = row.Latest.ScrapedAt < staleSince;
+        var isStale = latest.ScrapedAt < staleSince;
         if (!isStale)
             return dto;
 
