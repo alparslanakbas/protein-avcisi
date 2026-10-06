@@ -516,7 +516,6 @@ public partial class DealsQueryService(
             {
                 Product = p,
                 BrandName = b.Name,
-                Latest = p.PriceHistories.OrderByDescending(ph => ph.ScrapedAt).FirstOrDefault(),
                 ReferencePrice = (ozetiKullan ? p.ReferencePrice30 : null) ?? p.PriceHistories
                     .Where(ph => ph.ScrapedAt >= referenceSince)
                     .Max(ph => (decimal?)ph.Price),
@@ -524,10 +523,11 @@ public partial class DealsQueryService(
                     .Where(ph => ph.ScrapedAt >= referenceSince)
                     .Min(ph => (decimal?)ph.Price),
             }).AsNoTracking().ToListAsync(cancellationToken);
+        var sonFiyatlar = await SonFiyatSorgusu.UrunlerIcinAsync(db, productIds, cancellationToken); // bkz. SonFiyatSorgusu
 
         return rows
-            .Where(r => r.Latest != null && r.ReferencePrice != null && r.ThirtyDayLowPrice != null)
-            .Select(r => new DealRow(r.Product, r.BrandName, r.Latest!, r.ReferencePrice!.Value, r.ThirtyDayLowPrice!.Value))
+            .Where(r => sonFiyatlar.ContainsKey(r.Product.Id) && r.ReferencePrice != null && r.ThirtyDayLowPrice != null)
+            .Select(r => new DealRow(r.Product, r.BrandName, sonFiyatlar[r.Product.Id], r.ReferencePrice!.Value, r.ThirtyDayLowPrice!.Value))
             .Select(MapToDealDto)
             .ToList();
     }

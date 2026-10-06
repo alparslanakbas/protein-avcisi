@@ -259,6 +259,27 @@ public class UrunListesiVeritabaniTests(UrunListesiVeritabani veri) : IClassFixt
         Assert.Equal(1000m, kisaAra.ReferencePrice);
     }
 
+    // Favoriler son fiyatı ürün başına ayrı sorguyla değil, tek toplu sorguyla alıyor (6 Ekim; projeksiyondaki
+    // FirstOrDefault bütün fiyat geçmişini pencereliyordu). Her ürün, ürün sayfasıyla aynı son fiyatı vermeli.
+    [VeritabaniFact]
+    public async Task Favoriler_her_urunde_urun_sayfasiyla_ayni_son_fiyati_veriyor()
+    {
+        await using var db = veri.Baglam();
+        var servis = Servis(db);
+        var idler = await db.Products.Select(p => p.Id).ToListAsync();
+
+        var favoriler = await servis.GetDealsByIdsAsync(idler);
+
+        Assert.True(favoriler.Count >= veri.GorunenUrun, $"{favoriler.Count} ürün döndü");
+        foreach (var f in favoriler)
+        {
+            var urun = await servis.GetProductByIdAsync(f.ProductId);
+            Assert.NotNull(urun);
+            Assert.Equal((urun.CurrentPrice, urun.ScrapedAt, urun.ReferencePrice, urun.DiscountPercent),
+                (f.CurrentPrice, f.ScrapedAt, f.ReferencePrice, f.DiscountPercent));
+        }
+    }
+
     // Olağan fiyatı olmayan ürün listede kalıyor, indirimi 0: referans güncel
     // fiyat. Referans NULL olsaydı liste sorgusu ürünü tamamen düşürürdü.
     [VeritabaniFact]
