@@ -47,9 +47,9 @@ public class ShopifyTuneliTests
         return (new HttpMessageInvoker(isleyici), dogrudan, tunel, saat, durum);
     }
 
-    private static Task<HttpResponseMessage> Gonder(HttpMessageInvoker istemci)
+    private static Task<HttpResponseMessage> Gonder(HttpMessageInvoker istemci, string adres = Adres)
     {
-        var istek = new HttpRequestMessage(HttpMethod.Get, Adres);
+        var istek = new HttpRequestMessage(HttpMethod.Get, adres);
         istek.Headers.UserAgent.ParseAdd("Deneme/1.0");
         return istemci.SendAsync(istek, CancellationToken.None);
     }
@@ -143,6 +143,76 @@ public class ShopifyTuneliTests
 
         Assert.Equal(HttpStatusCode.OK, yanit.StatusCode);
         Assert.Single(dogrudan.Istekler);
+    }
+
+    // 5 Ekim 18:34 (UK turu): tünelden 10 mağazanın 10'u 403 aldı ve yapışkan mod bütün istekleri
+    // ev IP'sine yolladı. Artık ev IP'si de reddederse çekici tünelden önceki 429'u görüyor.
+    [Fact]
+    public async Task Tunel_de_reddederse_dogrudan_429_donuyor_ve_yapiskan_mod_kapaniyor()
+    {
+        var (istemci, _, tunel, _, durum) = Kur(HttpStatusCode.TooManyRequests, _ => Yanit(HttpStatusCode.Forbidden));
+
+        var yanit = await Gonder(istemci);
+
+        Assert.Equal(HttpStatusCode.TooManyRequests, yanit.StatusCode);
+        Assert.Single(tunel!.Istekler);
+        Assert.False(durum.TuneldenGitmeli);
+        Assert.True(durum.Kullanilabilir); // tek ret tüneli kapatmaz
+    }
+
+    [Fact]
+    public async Task Uc_farkli_magaza_reddedince_tunel_iki_saat_kullanilmiyor()
+    {
+        var (istemci, _, tunel, saat, durum) = Kur(HttpStatusCode.TooManyRequests, _ => Yanit(HttpStatusCode.Forbidden));
+
+        foreach (var magaza in new[] { "a.com", "b.com", "c.com" })
+            await Gonder(istemci, $"https://{magaza}/products.json");
+        Assert.False(durum.Kullanilabilir);
+
+        await Gonder(istemci, "https://d.com/products.json");
+        Assert.Equal(3, tunel!.Istekler.Count); // kapalıyken ev IP'sine istek gitmiyor
+
+        saat.Simdi += ShopifyTuneli.KapaliSure + TimeSpan.FromMinutes(1);
+        await Gonder(istemci, "https://d.com/products.json");
+        Assert.Equal(4, tunel.Istekler.Count); // süre dolunca yeniden deneniyor
+    }
+
+    [Fact]
+    public async Task Ayni_magazanin_tekrar_reddi_bir_kez_sayiliyor()
+    {
+        var (istemci, _, _, _, durum) = Kur(HttpStatusCode.TooManyRequests, _ => Yanit(HttpStatusCode.Forbidden));
+
+        await Gonder(istemci, "https://a.com/products.json");
+        await Gonder(istemci, "https://a.com/products.json");
+        await Gonder(istemci, "https://b.com/products.json");
+
+        Assert.True(durum.Kullanilabilir);
+    }
+
+    // Türkiye'yi engelleyen tek bir mağaza tüneli herkese kapatmasın: arada başarı varsa sayaç baştan.
+    [Fact]
+    public async Task Tunelden_basarili_yanit_ret_sayacini_sifirliyor()
+    {
+        var (istemci, _, _, _, durum) = Kur(HttpStatusCode.TooManyRequests,
+            istek => Yanit(istek.RequestUri!.Host == "ok.com" ? HttpStatusCode.OK : HttpStatusCode.Forbidden));
+
+        foreach (var magaza in new[] { "a.com", "b.com", "ok.com", "c.com", "d.com" })
+            await Gonder(istemci, $"https://{magaza}/products.json");
+
+        Assert.True(durum.Kullanilabilir);
+    }
+
+    [Fact]
+    public async Task Yapiskan_modda_tunel_reddederse_istek_dogrudan_gidiyor()
+    {
+        var (istemci, dogrudan, _, _, durum) = Kur(HttpStatusCode.OK, _ => Yanit(HttpStatusCode.Forbidden));
+        durum.EngelGoruldu();
+
+        var yanit = await Gonder(istemci);
+
+        Assert.Equal(HttpStatusCode.OK, yanit.StatusCode);
+        Assert.Single(dogrudan.Istekler);
+        Assert.False(durum.TuneldenGitmeli);
     }
 
     [Fact]

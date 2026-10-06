@@ -18,8 +18,9 @@ public sealed class ShopifyTunelIsleyicisi(ShopifyTuneli tunel, ILogger<ShopifyT
     protected override async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        // Gövdeli istek kopyalanamıyor; Shopify istekleri zaten GET.
-        if (!tunel.Etkin || request.Content is not null)
+        // Gövdeli istek kopyalanamıyor; Shopify istekleri zaten GET. Ev IP'si de reddettiği için tünel
+        // bir süre kapalıysa da (bkz. ShopifyTuneli.RetEsigi) yalnız doğrudan yol.
+        if (!tunel.Kullanilabilir || request.Content is not null)
             return await base.SendAsync(request, cancellationToken);
 
         if (tunel.TuneldenGitmeli)
@@ -42,12 +43,16 @@ public sealed class ShopifyTunelIsleyicisi(ShopifyTuneli tunel, ILogger<ShopifyT
         return tuneldenGelen;
     }
 
-    /// <summary>Tünelden gelen yanıt; tünel çalışmadıysa null (çağıran doğrudan yola döner).</summary>
+    /// <summary>
+    /// Tünelden gelen yanıt; tünel çalışmadıysa ya da ev IP'si de reddettiyse (403/429) null: çağıran
+    /// doğrudan yola döner ve çekici tünelden önceki davranışı görür (429'da 0 ürün, hata değil).
+    /// </summary>
     private async Task<HttpResponseMessage?> TuneldenAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
+        HttpResponseMessage yanit;
         try
         {
-            return await tunel.GonderAsync(Kopyala(request), cancellationToken);
+            yanit = await tunel.GonderAsync(Kopyala(request), cancellationToken);
         }
         catch (Exception ex) when ((ex is HttpRequestException or OperationCanceledException)
                                    && !cancellationToken.IsCancellationRequested)
@@ -58,6 +63,21 @@ public sealed class ShopifyTunelIsleyicisi(ShopifyTuneli tunel, ILogger<ShopifyT
                 request.RequestUri?.Host);
             return null;
         }
+
+        if (yanit.StatusCode is HttpStatusCode.Forbidden or HttpStatusCode.TooManyRequests)
+        {
+            var magaza = request.RequestUri?.Host ?? "";
+            logger.LogWarning("Shopify {Host} ev tünelinden de {Kod} verdi; istek doğrudan yoldan sürüyor.",
+                magaza, (int)yanit.StatusCode);
+            if (tunel.Reddetti(magaza))
+                logger.LogWarning("Ev tüneli art arda {Esik} farklı mağazada reddedildi; {Saat} saat kullanılmayacak.",
+                    ShopifyTuneli.RetEsigi, ShopifyTuneli.KapaliSure.TotalHours);
+            yanit.Dispose();
+            return null;
+        }
+
+        tunel.Basarili();
+        return yanit;
     }
 
     // Bir istek iki kez gönderilemiyor; tünele kopyası gidiyor. Başlıklar (User-Agent dahil)

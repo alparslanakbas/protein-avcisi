@@ -36,11 +36,23 @@ public sealed class ShopifyTuneli : IDisposable
 {
     internal static readonly TimeSpan YapiskanSure = TimeSpan.FromMinutes(30);
 
+    // Ev IP'si de reddederse (5 Ekim 18:34, UK turu: tünelden 10 mağazanın 10'u 403) tünel bir süre
+    // hiç kullanılmıyor; yoksa yapışkan mod her isteği ev IP'sine yollar ve engeli uzatırdı. Eşik tek
+    // mağaza değil ÜÇ FARKLI mağaza: Türkiye'yi engelleyen tek bir mağaza tüneli herkese kapatmasın.
+    // Arada tünelden tek başarılı yanıt sayacı sıfırlıyor.
+    internal const int RetEsigi = 3;
+    internal static readonly TimeSpan KapaliSure = TimeSpan.FromHours(2);
+
     private readonly HttpMessageInvoker? tunel;
     private readonly TimeProvider saat;
+    private readonly Lock kilit = new();
+    private readonly HashSet<string> retEdenler = new(StringComparer.OrdinalIgnoreCase);
 
     // Bu ana kadar (UTC tick) istekler doğrudan denenmeden tünelden gidiyor.
     private long tunelSonu;
+
+    // Bu ana kadar (UTC tick) tünel hiç kullanılmıyor (ev IP'si de reddetti).
+    private long kapaliSonu;
 
     public ShopifyTuneli(HttpMessageHandler? tunelIsleyicisi, TimeProvider saat)
     {
@@ -54,8 +66,11 @@ public sealed class ShopifyTuneli : IDisposable
 
     public bool Etkin => tunel is not null;
 
+    /// <summary>Tünel ayarlı ve ev IP'si yüzünden kapatılmamış.</summary>
+    public bool Kullanilabilir => Etkin && saat.GetUtcNow().UtcTicks >= Interlocked.Read(ref kapaliSonu);
+
     /// <summary>Son 429'un üzerinden <see cref="YapiskanSure"/> geçmediyse istek doğrudan tünelden gider.</summary>
-    public bool TuneldenGitmeli => Etkin && saat.GetUtcNow().UtcTicks < Interlocked.Read(ref tunelSonu);
+    public bool TuneldenGitmeli => Kullanilabilir && saat.GetUtcNow().UtcTicks < Interlocked.Read(ref tunelSonu);
 
     /// <summary>Doğrudan istek 429 aldı. Tünel o anda zaten kullanılmıyorsa true (günlüğe bir kez yazılsın).</summary>
     public bool EngelGoruldu()
@@ -67,6 +82,32 @@ public sealed class ShopifyTuneli : IDisposable
 
     /// <summary>Tünel çalışmadı: sonraki istekler yine önce doğrudan denensin.</summary>
     public void Sifirla() => Interlocked.Exchange(ref tunelSonu, 0);
+
+    /// <summary>
+    /// Ev IP'si de reddetti (403/429). Yapışkan mod kapanıyor; art arda <see cref="RetEsigi"/> farklı
+    /// mağaza reddettiyse tünel <see cref="KapaliSure"/> boyunca kullanılmıyor (true: şimdi kapandı).
+    /// </summary>
+    public bool Reddetti(string magaza)
+    {
+        Sifirla();
+        lock (kilit)
+        {
+            retEdenler.Add(magaza);
+            if (retEdenler.Count < RetEsigi)
+                return false;
+
+            retEdenler.Clear();
+            Interlocked.Exchange(ref kapaliSonu, (saat.GetUtcNow() + KapaliSure).UtcTicks);
+            return true;
+        }
+    }
+
+    /// <summary>Tünelden başarılı yanıt geldi: ev IP'si çalışıyor, ret sayacı sıfırlanıyor.</summary>
+    public void Basarili()
+    {
+        lock (kilit)
+            retEdenler.Clear();
+    }
 
     public Task<HttpResponseMessage> GonderAsync(HttpRequestMessage istek, CancellationToken cancellationToken) =>
         (tunel ?? throw new InvalidOperationException("Shopify tüneli kapalı.")).SendAsync(istek, cancellationToken);
