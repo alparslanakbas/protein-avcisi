@@ -97,11 +97,21 @@ function extractIntro(raw: string | null | undefined, productName: string): stri
  * 118 karakterdi (uzun ürün adları yüzünden).
  *
  * Öncelik sırası: (1) ürün adı tam sığıyorsa marka kuyruğuyla birlikte
- * kullan, (2) sığmıyorsa marka kuyruğunu at, (3) ürün adı tek başına bile
- * uzunsa kelime sınırından kırp. Ürün adı her zaman başta kalıyor çünkü
- * aramada görünen ve tıklamayı belirleyen kısım orası.
+ * kullan, (2) sığmıyorsa marka kuyruğunu at, (3) ad kısaltma markasının
+ * açılımını tekrarlıyorsa açılımı at, (4) kısa eke geç ("Fiyatı ve Fiyat
+ * Geçmişi" yerine "Fiyatı"), (5) o da sığmazsa adı kelime sınırından kırp.
+ * Ürün adı her zaman başta kalıyor çünkü aramada görünen ve tıklamayı
+ * belirleyen kısım orası.
+ *
+ * Kısa ek neden var (6 Ekim): uzun ek ada 41 karakter bırakıyordu ve kırpılan
+ * şey gramaj/aroma/adet kuyruğuydu, yani aynı ürünün varyantları aynı başlığı
+ * alıyordu. Canlıdaki 5.649 ürünün %45,6'sının başlığı kırpılıyor, %20,6'sı
+ * başka bir ürünle aynı başlığı taşıyordu; bu sırayla %13,1 ve %1,5. Adı
+ * birebir aynı satıcı kayıtları sayılmadı, onları canonical zaten birleştiriyor.
+ * Kırparken parantezleri atmak da denendi: çakışmayı %2,6'ya çıkardı, çünkü
+ * bazı varyantları ayıran tek bilgi parantezin içinde.
  */
-export function buildPageTitle(subject: string, suffix: string, tail: string): string {
+export function buildPageTitle(subject: string, suffix: string, tail: string, shortSuffix = suffix): string {
   const MAX = 65;
   const full = `${subject} ${suffix} | ${tail}`;
   if (full.length <= MAX) return full;
@@ -109,8 +119,38 @@ export function buildPageTitle(subject: string, suffix: string, tail: string): s
   const withoutTail = `${subject} ${suffix}`;
   if (withoutTail.length <= MAX) return withoutTail;
 
-  const room = MAX - suffix.length - 2;
-  return `${kelimeSinirindaKirp(subject, Math.max(20, room))} ${suffix}`;
+  const sade = kisaltmaAciliminiAt(subject, tail);
+  if (sade !== subject && `${sade} ${suffix}`.length <= MAX) return `${sade} ${suffix}`;
+
+  const kisa = `${sade} ${shortSuffix}`;
+  if (kisa.length <= MAX) return kisa;
+
+  const room = MAX - shortSuffix.length - 2;
+  return `${kelimeSinirindaKirp(sade, Math.max(20, room))} ${shortSuffix}`;
+}
+
+/**
+ * Marka bir kısaltmaysa ve ad markadan hemen sonra açılımını tekrarlıyorsa
+ * açılımı atar: "SSN Sports Style Nutrition Command Quadro Whey" → "SSN Command
+ * Quadro Whey". Aranan kısaltma ("ssn protein tozu"); açılım yalnızca yer
+ * kaplıyor ve kırpılan başlıklarda varyant kuyruğunu o yiyordu: kısa ekten
+ * sonra kalan 122 çakışmanın 38'i bu kuralla ayrıştı (6 Ekim). Yalnızca başlık
+ * sığmadığında çağrılıyor; sığan başlık olduğu gibi kalıyor.
+ */
+function kisaltmaAciliminiAt(subject: string, brand: string): string {
+  const harfler = brand.replace(/[^\p{L}]/gu, '');
+  if (harfler.length < 2 || harfler.length > 5 || harfler !== harfler.toLocaleUpperCase('tr')) return subject;
+
+  const kelimeler = subject.split(/\s+/);
+  const acilim = kelimeler.slice(1, 1 + harfler.length);
+  if (
+    kelimeler.length <= 1 + harfler.length ||
+    kelimeler[0].toLocaleUpperCase('tr') !== harfler ||
+    acilim.map((k) => k[0]).join('').toLocaleUpperCase('tr') !== harfler
+  ) {
+    return subject;
+  }
+  return [kelimeler[0], ...kelimeler.slice(1 + harfler.length)].join(' ');
 }
 
 /**

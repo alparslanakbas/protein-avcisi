@@ -379,7 +379,8 @@ export class DealsList implements OnInit {
       // ogTitle ayrı tutuluyor.
       // Uzun ürün adlarında başlık 118 karaktere kadar çıkıyordu; Google o
       // uzunlukta başlığı tamamen kendi yeniden yazıyor (bkz. buildPageTitle).
-      const title = buildPageTitle(displayedName, 'Fiyatı ve Fiyat Geçmişi', deal.brandName);
+      // Ad uzunsa ek "Fiyatı"ya kısalıyor ki gramaj/aroma kuyruğu kırpılmasın.
+      const title = buildPageTitle(displayedName, 'Fiyatı ve Fiyat Geçmişi', deal.brandName, 'Fiyatı');
       const ogTitle = `${displayedName} Fiyatı: ${priceText} | ${deal.brandName} — Protein Avcısı`;
       // Açıklama artık markanın kendi ürün metninden besleniyor (bkz.
       // core/meta-description.ts) — arama sonucunda ürünün ne olduğunu

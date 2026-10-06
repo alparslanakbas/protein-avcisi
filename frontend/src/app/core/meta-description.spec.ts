@@ -143,15 +143,50 @@ describe('buildPageTitle', () => {
     );
   });
 
-  // Canlıdan gerçek örnekler: sayı biriminden koparak yetim kalıyordu.
+  // Canlıdan gerçek örnekler: sayı biriminden koparak yetim kalıyordu. (İlk
+  // örnek SSN'in Quadro Whey'iydi; açılım kuralından beri o ad kırpılmıyor.)
   it('sonda yetim kalan sayıyı bırakmaz', () => {
     const sonuc = buildPageTitle(
-      'SSN Sports Style Nutrition Command Quadro Whey 366 gr Çikolata',
+      'Muscle Station Fit Snack Protein Bar Coconut 40 Gr 1 Adet',
       'İncelemesi',
-      'SSN',
+      'Musclestation',
     );
-    expect(sonuc).not.toContain('366…');
-    expect(sonuc).toContain('İncelemesi');
+    expect(sonuc).toBe('Muscle Station Fit Snack Protein Bar Coconut 40 Gr… İncelemesi');
+  });
+
+  // 6 Ekim: uzun ek ada 41 karakter bırakıyordu; aroması farklı iki ürün
+  // "Big Joy Big Mass +GH Factors… Fiyatı ve Fiyat Geçmişi" başlığını paylaşıyordu.
+  it('ad uzun ekle sığmıyorsa kısa eke geçer, varyant kuyruğu kalır', () => {
+    const cilek = buildPageTitle('Big Joy Big Mass +GH Factors 5000 Gr (Çilek)', 'Fiyatı ve Fiyat Geçmişi', 'BigJoy', 'Fiyatı');
+    const cikolata = buildPageTitle('Big Joy Big Mass +GH Factors 5000 Gr (Çikolata)', 'Fiyatı ve Fiyat Geçmişi', 'BigJoy', 'Fiyatı');
+    expect(cilek).toBe('Big Joy Big Mass +GH Factors 5000 Gr (Çilek) Fiyatı');
+    expect(cikolata).toBe('Big Joy Big Mass +GH Factors 5000 Gr (Çikolata) Fiyatı');
+  });
+
+  it('kısa ek de sığmazsa adı kısa ekle kırpar', () => {
+    const sonuc = buildPageTitle(
+      'Trio Move Protein Bar 9 Adet X 50 Gr Sütlü Çikolatalı & Matcha Protein Bar',
+      'Fiyatı ve Fiyat Geçmişi',
+      'Trio',
+      'Fiyatı',
+    );
+    expect(sonuc).toBe('Trio Move Protein Bar 9 Adet X 50 Gr Sütlü Çikolatalı… Fiyatı');
+  });
+
+  it('kısaltma markasının açılımını yalnız başlık sığmadığında atar', () => {
+    expect(
+      buildPageTitle('SSN Sports Style Nutrition Command Quadro Whey 366 gr Çikolata', 'Fiyatı ve Fiyat Geçmişi', 'SSN', 'Fiyatı'),
+    ).toBe('SSN Command Quadro Whey 366 gr Çikolata Fiyatı ve Fiyat Geçmişi');
+    expect(buildPageTitle('SSN Sports Style Nutrition Bcaa', 'İncelemesi', 'SSN')).toBe(
+      'SSN Sports Style Nutrition Bcaa İncelemesi | SSN',
+    );
+  });
+
+  it('açılım olmayan kelimeleri atmaz', () => {
+    // "Pro Performance 100%" GNC'nin açılımı değil.
+    expect(
+      buildPageTitle('GNC Pro Performance 100% Whey Protein 2268 gr Çikolata', 'Fiyatı ve Fiyat Geçmişi', 'GNC', 'Fiyatı'),
+    ).toBe('GNC Pro Performance 100% Whey Protein 2268 gr Çikolata Fiyatı');
   });
 
   it('sonda yetim kalan tek harfi bırakmaz', () => {
