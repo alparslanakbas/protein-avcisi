@@ -456,7 +456,8 @@ export class DealsList implements OnInit {
         buildBreadcrumbJsonLd(this.document, [
           { name: 'Ana Sayfa', path: '/' },
           ...(categoryLabel && deal.category ? [{ name: categoryLabel, path: `/kategori/${deal.category}` }] : []),
-          { name: deal.productName, path: canonicalProductPath },
+          // Ürün şemasıyla aynı (görünen) ad; ham ad bazı kaynaklarda büyük harf (SEO denetimi, 11. madde).
+          { name: displayedName, path: canonicalProductPath },
         ]),
       );
     });

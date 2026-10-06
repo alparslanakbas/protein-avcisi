@@ -315,6 +315,13 @@ app.get('/go/:id', async (req, res) => {
   }
 });
 
+// /marka/{slug} kökünde sayfa yok, marka sayfası /marka/{slug}/indirim-kodu; adresi kısaltan
+// ziyaretçi 404 görüyordu (SEO denetimi, 6. madde). Markanın varlığına bakılmıyor: yoksa hedef
+// adres zaten 404 veriyor. Yalnız tek segment eşleşiyor, /marka/{slug}/{kategori} etkilenmez.
+app.get('/marka/:slug', (req, res) => {
+  res.redirect(301, `/marka/${encodeURIComponent(req.params.slug)}/indirim-kodu`);
+});
+
 app.get('/robots.txt', (req, res) => {
   res.set('Content-Type', 'text/plain');
   // Canonical host DIŞINDaki bir adresten (onrender.com vb.) istek gelirse

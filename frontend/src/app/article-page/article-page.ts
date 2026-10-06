@@ -68,7 +68,13 @@ export class ArticlePage implements OnInit {
       datePublished: article.publishedAt,
       ...(article.coverImageUrl ? { image: article.coverImageUrl } : {}),
       author: { '@type': 'Person', name: FOUNDER.name, url: FOUNDER.blogUrl },
-      publisher: { '@type': 'Organization', name: SITE_NAME },
+      // Logo: Organization şemasıyla aynı 512 px ikon (Google önerilen alan sayıyor; SEO denetimi, 9. madde).
+      // dateModified yok: yazılarda güncellenme tarihi tutulmuyor, uydurulmuyor.
+      publisher: {
+        '@type': 'Organization',
+        name: SITE_NAME,
+        logo: { '@type': 'ImageObject', url: `${canonicalOrigin(this.document)}/icons/icon-512x512.png` },
+      },
       mainEntityOfPage: `${canonicalOrigin(this.document)}/rehber/${article.slug}`,
     };
 

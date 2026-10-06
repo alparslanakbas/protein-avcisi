@@ -1,9 +1,11 @@
+import { DOCUMENT } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { ArticleSummary } from '../core/article.model';
 import { ArticlesService } from '../core/articles.service';
-import { PageMetaService } from '../core/page-meta.service';
+import { buildBreadcrumbJsonLd } from '../core/breadcrumb';
+import { PageMetaService, upsertJsonLdScript } from '../core/page-meta.service';
 import { SiteHeader } from '../site-header/site-header';
 
 type GuideTone = 'violet' | 'blue' | 'mint' | 'rose' | 'orange';
@@ -52,6 +54,7 @@ const LEARNING_PATH_CONFIGS: LearningPathConfig[] = [
 export class ArticleListPage implements OnInit {
   private readonly articlesService = inject(ArticlesService);
   private readonly pageMeta = inject(PageMetaService);
+  private readonly document = inject(DOCUMENT);
 
   protected readonly articles = signal<ArticleSummary[]>([]);
   protected readonly loading = signal(true);
@@ -92,6 +95,16 @@ export class ArticleListPage implements OnInit {
       description: 'Protein tozu, kreatin, pre-workout ve diğer spor takviyeleri hakkında bilgi amaçlı rehberler — hangi ürünü nasıl seçeceğine dair gerçek, tarafsız içerik.',
       canonicalPath: '/rehber',
     });
+
+    // Sayfaya özgü yapılandırılmış veri yoktu (SEO denetimi, 10. madde).
+    upsertJsonLdScript(
+      this.document,
+      null,
+      buildBreadcrumbJsonLd(this.document, [
+        { name: 'Ana Sayfa', path: '/' },
+        { name: 'Rehber', path: '/rehber' },
+      ]),
+    );
 
     this.articlesService.getArticles().subscribe({
       next: (articles) => {

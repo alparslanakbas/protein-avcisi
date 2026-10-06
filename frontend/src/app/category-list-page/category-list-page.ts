@@ -1,3 +1,4 @@
+import { DOCUMENT } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { of } from 'rxjs';
@@ -5,7 +6,8 @@ import { catchError } from 'rxjs/operators';
 
 import { CATEGORY_INTROS, CATEGORY_LABELS } from '../core/category-labels';
 import { DealsService } from '../core/deals.service';
-import { PageMetaService } from '../core/page-meta.service';
+import { buildBreadcrumbJsonLd } from '../core/breadcrumb';
+import { PageMetaService, upsertJsonLdScript } from '../core/page-meta.service';
 import { categoryPhosphorIcon } from '../core/nav-icons';
 import { SiteHeader } from '../site-header/site-header';
 
@@ -57,6 +59,7 @@ const CATEGORY_TONES: Record<string, CategoryTone> = {
 export class CategoryListPage implements OnInit {
   private readonly dealsService = inject(DealsService);
   private readonly pageMeta = inject(PageMetaService);
+  private readonly document = inject(DOCUMENT);
 
   protected readonly loading = signal(true);
   protected readonly loadError = signal(false);
@@ -90,6 +93,16 @@ export class CategoryListPage implements OnInit {
       description: 'Protein tozu, kreatin, amino asitler, pre-workout ve daha fazlası — takip ettiğimiz tüm spor takviyesi kategorilerini gerçek ürün sayılarıyla keşfet.',
       canonicalPath: '/kategoriler',
     });
+
+    // Sayfaya özgü yapılandırılmış veri yoktu (SEO denetimi, 10. madde).
+    upsertJsonLdScript(
+      this.document,
+      null,
+      buildBreadcrumbJsonLd(this.document, [
+        { name: 'Ana Sayfa', path: '/' },
+        { name: 'Kategoriler', path: '/kategoriler' },
+      ]),
+    );
 
     this.dealsService.getFilterOptions().subscribe({
       next: (options) => {

@@ -1,3 +1,4 @@
+import { DOCUMENT } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
@@ -11,7 +12,8 @@ import {
 import { brandSlug } from '../core/brand-slug';
 import { CATEGORY_LABELS } from '../core/category-labels';
 import { BrandCategoryPair, BrandProductCount, DealsService } from '../core/deals.service';
-import { PageMetaService } from '../core/page-meta.service';
+import { buildBreadcrumbJsonLd } from '../core/breadcrumb';
+import { PageMetaService, upsertJsonLdScript } from '../core/page-meta.service';
 import { matchesSearch } from '../core/search-normalize';
 import { SiteHeader } from '../site-header/site-header';
 
@@ -45,6 +47,7 @@ const PAGE_SIZE = 12;
 export class BrandListPage implements OnInit {
   private readonly dealsService = inject(DealsService);
   private readonly pageMeta = inject(PageMetaService);
+  private readonly document = inject(DOCUMENT);
 
   protected readonly loading = signal(true);
   protected readonly loadError = signal(false);
@@ -97,6 +100,16 @@ export class BrandListPage implements OnInit {
         'Protein tozu, kreatin ve sporcu gıdası markalarını gerçek ürün sayıları, güncel fiyatları ve fiyat geçmişleriyle keşfet.',
       canonicalPath: '/markalar',
     });
+
+    // Sayfaya özgü yapılandırılmış veri yoktu (SEO denetimi, 10. madde).
+    upsertJsonLdScript(
+      this.document,
+      null,
+      buildBreadcrumbJsonLd(this.document, [
+        { name: 'Ana Sayfa', path: '/' },
+        { name: 'Markalar', path: '/markalar' },
+      ]),
+    );
 
     forkJoin({
       filters: this.dealsService.getFilterOptions(),

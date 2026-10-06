@@ -4,7 +4,8 @@ import { RouterLink } from '@angular/router';
 
 import { BODY_CALCULATORS } from '../core/body-calculators';
 import { calculatorPhosphorIcon } from '../core/nav-icons';
-import { PageMetaService } from '../core/page-meta.service';
+import { buildBreadcrumbJsonLd } from '../core/breadcrumb';
+import { PageMetaService, upsertJsonLdScript } from '../core/page-meta.service';
 import { SUPPLEMENT_DOSAGES } from '../core/supplement-dosages';
 import { SiteHeader } from '../site-header/site-header';
 
@@ -68,6 +69,16 @@ export class CalculatorListPage implements OnInit {
         'Protein ihtiyacı, kreatin, beta-alanine, sitrülin, betain ve EAA dozu hesaplama araçları — sonuçlar güncel ürün fiyatlarına bağlı.',
       canonicalPath: '/hesaplama',
     });
+
+    // Sayfaya özgü yapılandırılmış veri yoktu (SEO denetimi, 10. madde).
+    upsertJsonLdScript(
+      this.document,
+      null,
+      buildBreadcrumbJsonLd(this.document, [
+        { name: 'Ana Sayfa', path: '/' },
+        { name: 'Hesaplama Araçları', path: '/hesaplama' },
+      ]),
+    );
   }
 
   protected selectSection(section: CalculatorSection): void {

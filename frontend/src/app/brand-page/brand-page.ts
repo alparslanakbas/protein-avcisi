@@ -148,6 +148,8 @@ export class BrandPage implements OnInit {
   private readonly sparklineRequest = new LatestRequest();
   protected readonly totalCount = signal(0);
   protected readonly totalPages = signal(0);
+  // Bu bileşende ilk liste yüklendi mi (aralık dışı sayfada 404 yalnızca ilk yüklemede).
+  private ilkListeYuklendi = false;
   protected readonly currentPage = signal(1);
   // Sayfalama çubuğunda gösterilecek numaralar (null = "…").
   protected readonly sayfaOgeleri = computed(() => sayfaPenceresi(this.currentPage(), this.totalPages()));
@@ -405,8 +407,16 @@ export class BrandPage implements OnInit {
         // besler. Toplam sayfa ancak burada biliniyor, setMeta'nın ilk
         // çağrısında değil — bu yüzden gerekince tekrar çağrılıyor.
         if (result.totalPages > 0 && this.currentPage() > result.totalPages) {
+          // Adresle doğrudan gelinen aralık dışı sayfa (ilk yükleme: arama motoru, eski bağlantı)
+          // gerçek 404 (SEO denetimi, 7. madde; boş liste yumuşak 404 sayılabiliyordu). Sayfa
+          // içinde filtre değişince eski davranış: ziyaretçi birden 404 görmesin.
+          if (!this.ilkListeYuklendi) {
+            showNotFound(this.router);
+            return;
+          }
           this.setMeta(this.brandName());
         }
+        this.ilkListeYuklendi = true;
 
         // Markanın kendi mağazası var mı? Ayrı bir istek atmak yerine gelen
         // listeden okunuyor: `preferBrandStore` açıkken kendi ürünü olan

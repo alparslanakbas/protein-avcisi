@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { DecimalPipe } from '@angular/common';
+import { DOCUMENT, DecimalPipe } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
@@ -8,7 +8,8 @@ import { BrandComparisonService } from '../core/brand-comparison.service';
 import { brandSlug, resolveBrandFromSlug } from '../core/brand-slug';
 import { DealsService } from '../core/deals.service';
 import { CATEGORY_LABELS } from '../core/category-labels';
-import { PageMetaService } from '../core/page-meta.service';
+import { buildBreadcrumbJsonLd } from '../core/breadcrumb';
+import { PageMetaService, upsertJsonLdScript } from '../core/page-meta.service';
 import { SiteHeader } from '../site-header/site-header';
 import { showNotFound } from '../core/not-found-navigation';
 
@@ -27,6 +28,8 @@ export class BrandComparisonPage implements OnInit {
   private readonly comparisonService = inject(BrandComparisonService);
   private readonly dealsService = inject(DealsService);
   private readonly pageMeta = inject(PageMetaService);
+  private readonly document = inject(DOCUMENT);
+  private breadcrumbEl: HTMLScriptElement | null = null;
 
   protected readonly comparison = signal<BrandComparison | null>(null);
   protected readonly loading = signal(true);
@@ -92,6 +95,18 @@ export class BrandComparisonPage implements OnInit {
       description,
       canonicalPath: `/karsilastir/${this.pairSlug()}`,
     });
+
+    // Sitenin en yüksek TO'lu sayfa türü (6 Ekim GSC: %6,5) sayfaya özgü
+    // hiçbir yapılandırılmış veri taşımıyordu (SEO denetimi, 10. madde).
+    this.breadcrumbEl = upsertJsonLdScript(
+      this.document,
+      this.breadcrumbEl,
+      buildBreadcrumbJsonLd(this.document, [
+        { name: 'Ana Sayfa', path: '/' },
+        { name: 'Markalar', path: '/markalar' },
+        { name: `${comparison.brand1} vs ${comparison.brand2}`, path: `/karsilastir/${this.pairSlug()}` },
+      ]),
+    );
   }
 
   protected categoryLabel(category: string): string {
