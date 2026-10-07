@@ -247,6 +247,15 @@ export function formatDiscountPercent(percent: number): string {
   return String(Math.round(percent));
 }
 
+/**
+ * Metne giren yüzde: Türkçe ondalık virgül, en fazla bir hane ("%44,4"). Ham değer şablonlara ve cümlelere doğrudan
+ * konuyordu ve "%44.4" çıkıyordu (7 Ekim, ana sayfanın öne çıkan fırsatında görüldü). Arama sonucu parçacığı için
+ * yukarıdaki tam sayı biçimi duruyor.
+ */
+export function formatPercent(percent: number): string {
+  return percent.toLocaleString('tr-TR', { maximumFractionDigits: 1 });
+}
+
 export function formatPriceText(price: number): string {
   return `${price.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TL`;
 }

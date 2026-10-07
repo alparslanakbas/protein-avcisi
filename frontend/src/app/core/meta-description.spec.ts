@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildPageTitle, buildProductDescription, buildReviewDescription, clampTitle } from './meta-description';
+import { buildPageTitle, buildProductDescription, buildReviewDescription, clampTitle, formatPercent } from './meta-description';
 
 // Örnek metinler gerçek üretim verisinden alındı — üç markanın da kendine
 // özgü bir baş kalıbı var ve regex'ler bu kalıplara göre yazıldı.
@@ -297,5 +297,14 @@ describe('clampTitle — marka kuyrukta olmalı', () => {
     const dogru = 'Gerçek Protein ve Takviye İndirimleri | Protein Avcısı';
     expect(dogru.length).toBeLessThanOrEqual(60);
     expect(clampTitle(dogru)).toBe(dogru);
+  });
+});
+
+describe('formatPercent', () => {
+  // Ana sayfanın öne çıkan fırsatı "%44.4" gösteriyordu (7 Ekim): ham değer nokta ayraçla basılıyordu.
+  it('Türkçe ondalık virgül ve en fazla bir hane', () => {
+    expect(formatPercent(44.4)).toBe('44,4');
+    expect(formatPercent(15)).toBe('15');
+    expect(formatPercent(12.04)).toBe('12');
   });
 });

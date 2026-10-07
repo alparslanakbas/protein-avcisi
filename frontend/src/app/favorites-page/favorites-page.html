@@ -116,7 +116,7 @@
                 <div class="pa-favorites-price">
                   <strong>{{ deal.currentPrice | number: '1.2-2' }} ₺</strong>
                   @if (deal.discountPercent > 0) {
-                    <span>-%{{ deal.discountPercent }}</span>
+                    <span>-%{{ deal.discountPercent | number: '1.0-1' }}</span>
                   } @else {
                     <span class="pa-favorites-price-neutral">Güncel fiyat</span>
                   }

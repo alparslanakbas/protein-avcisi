@@ -10,6 +10,7 @@ import { CATEGORY_FAQS, FaqItem } from '../core/category-faqs';
 import { CATEGORY_GUIDES, CategoryGuide } from '../core/category-guides';
 import { CATEGORY_INTROS, CATEGORY_LABELS } from '../core/category-labels';
 import { Deal } from '../core/deal.model';
+import { formatPercent } from '../core/meta-description';
 import { productPath, shouldHandleInApp } from '../core/product-link';
 import { DealsService } from '../core/deals.service';
 import { displayName } from '../core/display-name';
@@ -396,11 +397,11 @@ export class CategoryPage implements OnInit {
   }
 
   protected discountBadge(deal: Deal): string {
-    return `-%${deal.discountPercent}`;
+    return `-%${formatPercent(deal.discountPercent)}`;
   }
 
   protected storeDiscountBadge(deal: Deal): string {
-    return `Mağaza -%${deal.storeDiscountPercent}`;
+    return `Mağaza -%${formatPercent(deal.storeDiscountPercent ?? 0)}`;
   }
 
   // Kart/satır bağlantıları gerçek <a href> olmak zorunda (bkz.

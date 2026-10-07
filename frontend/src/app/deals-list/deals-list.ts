@@ -30,7 +30,7 @@ import { PwaInstallService } from '../core/pwa-install.service';
 import { formatRelativeTime } from '../core/relative-time';
 import { slugify } from '../core/slugify';
 import { productPath, shouldHandleInApp } from '../core/product-link';
-import { buildPageTitle, buildProductDescription, formatPriceText } from '../core/meta-description';
+import { buildPageTitle, buildProductDescription, formatPercent, formatPriceText } from '../core/meta-description';
 import { buildAreaPath, buildLinePath, toCoordinates } from '../core/spark-chart';
 import { SubscribeService } from '../core/subscribe.service';
 import { takipDibiAciklamasi, takipDibiEtiketi } from '../core/takip-dibi';
@@ -908,11 +908,11 @@ export class DealsList implements OnInit {
   }
 
   protected discountBadge(deal: Deal): string {
-    return `-%${deal.discountPercent}`;
+    return `-%${formatPercent(deal.discountPercent)}`;
   }
 
   protected storeDiscountBadge(deal: Deal): string {
-    return `Mağaza -%${deal.storeDiscountPercent}`;
+    return `Mağaza -%${formatPercent(deal.storeDiscountPercent ?? 0)}`;
   }
 
   // Hero kartı: gerçek indirim varsa onu, yoksa mağaza kampanyasını gösterir.

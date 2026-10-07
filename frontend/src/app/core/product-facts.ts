@@ -1,6 +1,7 @@
 import { Deal } from './deal.model';
 import { takipBaslangici } from './takip-dibi';
 import { CATEGORY_LABELS } from './category-labels';
+import { formatPercent } from './meta-description';
 import {
   PROTEIN_REFERENCE_GRAMS,
   pricePerServing,
@@ -112,7 +113,7 @@ export function buildProductFacts(deal: Deal, discountEventCount?: number): Prod
     label: 'Bizim ölçtüğümüz referans fiyat',
     value:
       deal.referencePrice > deal.currentPrice
-        ? `${formatPrice(deal.referencePrice)} — güncel fiyat bunun %${deal.discountPercent} altında`
+        ? `${formatPrice(deal.referencePrice)} — güncel fiyat bunun %${formatPercent(deal.discountPercent)} altında`
         : `${formatPrice(deal.referencePrice)} — güncel fiyat referansla aynı seviyede`,
   });
 
@@ -148,7 +149,7 @@ export function buildProductFacts(deal: Deal, discountEventCount?: number): Prod
   if (deal.storeOldPrice !== null && deal.storeDiscountPercent !== null) {
     facts.push({
       label: `${deal.brandName} kendi sitesinde ne diyor`,
-      value: `Eski fiyat ${formatPrice(deal.storeOldPrice)}, %${deal.storeDiscountPercent} indirim (markanın beyanı, bizim doğrulamamız değil)`,
+      value: `Eski fiyat ${formatPrice(deal.storeOldPrice)}, %${formatPercent(deal.storeDiscountPercent ?? 0)} indirim (markanın beyanı, bizim doğrulamamız değil)`,
     });
   }
 

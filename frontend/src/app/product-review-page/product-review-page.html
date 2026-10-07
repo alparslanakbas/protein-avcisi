@@ -37,7 +37,7 @@
             @if (d.discountPercent > 0) {
               <span class="text-sm text-[var(--noc-neutral-500)] line-through">{{ d.referencePrice | number: '1.2-2' }} ₺</span>
               <span class="rounded-[4px] px-1.5 py-0.5 text-[11px] font-medium text-[var(--noc-accent-100)]" style="background: var(--noc-accent-800)">
-                Doğrulanmış -%{{ d.discountPercent }}
+                Doğrulanmış -%{{ d.discountPercent | number: '1.0-1' }}
               </span>
             }
           </div>

@@ -106,9 +106,9 @@
             } @else if (hero.isAtThirtyDayLow) { <span class="pa-positive-badge">Son 30 günün en düşüğü</span> }
             <div class="mt-2 text-[28px] font-bold tracking-[-0.035em] text-white">{{ hero.currentPrice | number: '1.2-2' }} ₺</div>
             @if (hero.discountPercent > 0) {
-              <div class="mt-2 flex items-center gap-2"><span class="rounded-[6px] bg-[#2d8b5b]/25 px-2 py-1 text-xs font-bold text-[#85dfa9]">%{{ hero.discountPercent }}</span><span class="text-xs text-[#aeb4ce]">{{ hero.referencePrice - hero.currentPrice | number: '1.2-2' }} ₺ kazanç</span></div>
+              <div class="mt-2 flex items-center gap-2"><span class="rounded-[6px] bg-[#2d8b5b]/25 px-2 py-1 text-xs font-bold text-[#85dfa9]">%{{ hero.discountPercent | number: '1.0-1' }}</span><span class="text-xs text-[#aeb4ce]">{{ hero.referencePrice - hero.currentPrice | number: '1.2-2' }} ₺ kazanç</span></div>
             } @else if (hero.storeDiscountPercent && hero.storeDiscountPercent > 0) {
-              <div class="mt-2"><span class="pa-campaign-badge">Mağaza kampanyası %{{ hero.storeDiscountPercent }}</span></div>
+              <div class="mt-2"><span class="pa-campaign-badge">Mağaza kampanyası %{{ hero.storeDiscountPercent | number: '1.0-1' }}</span></div>
             }
           </div>
 
@@ -281,10 +281,10 @@
                 <div class="text-[24px] font-bold tracking-[-0.035em]">{{ deal.currentPrice | number: '1.2-2' }} ₺</div>
                 @if (deal.discountPercent > 0) {
                   <div class="mt-1 text-xs text-[var(--noc-neutral-500)]"><span class="line-through">{{ deal.referencePrice | number: '1.2-2' }} ₺</span></div>
-                  <div class="mt-2 flex items-center gap-2"><span class="rounded-[6px] bg-[var(--pa-positive-bg)] px-2 py-1 text-xs font-bold text-[var(--pa-positive)]">%{{ deal.discountPercent }}</span><span class="text-xs text-[var(--noc-neutral-600)]">{{ deal.referencePrice - deal.currentPrice | number: '1.2-2' }} ₺ kazanç</span></div>
+                  <div class="mt-2 flex items-center gap-2"><span class="rounded-[6px] bg-[var(--pa-positive-bg)] px-2 py-1 text-xs font-bold text-[var(--pa-positive)]">%{{ deal.discountPercent | number: '1.0-1' }}</span><span class="text-xs text-[var(--noc-neutral-600)]">{{ deal.referencePrice - deal.currentPrice | number: '1.2-2' }} ₺ kazanç</span></div>
                 } @else if (deal.storeDiscountPercent && deal.storeDiscountPercent > 0) {
                   <div class="mt-1 text-xs text-[var(--noc-neutral-500)]"><span class="line-through">{{ deal.storeOldPrice | number: '1.2-2' }} ₺</span></div>
-                  <div class="mt-2"><span class="pa-campaign-badge">%{{ deal.storeDiscountPercent }} mağaza indirimi</span></div>
+                  <div class="mt-2"><span class="pa-campaign-badge">%{{ deal.storeDiscountPercent | number: '1.0-1' }} mağaza indirimi</span></div>
                 }
                 @if (pricePerServing(deal); as perServing) { <div class="mt-2 text-[11px] text-[var(--noc-neutral-500)]">{{ perServing | number: '1.2-2' }} ₺ / servis</div> }
               </div>

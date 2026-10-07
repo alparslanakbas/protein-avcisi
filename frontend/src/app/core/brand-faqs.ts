@@ -1,4 +1,5 @@
 import { FaqItem } from './category-faqs';
+import { formatPercent } from './meta-description';
 
 export interface BrandFaqInput {
   brandName: string;
@@ -66,7 +67,7 @@ export function buildBrandCategoryFaqs(input: BrandCategoryFaqInput): FaqItem[] 
   faqs.push({
     question: `${brandName} ${lower} ürünlerinde indirim ne sıklıkla oluyor?`,
     answer: averageDiscountPercent
-      ? `Şu an bu kategoride doğruladığımız indirimlerin ortalama derinliği %${averageDiscountPercent}. Bu oran sabit bir kampanya vaadi değil, her taramada yeniden hesaplanan anlık durum — fiyatlar değiştikçe değişiyor.`
+      ? `Şu an bu kategoride doğruladığımız indirimlerin ortalama derinliği %${formatPercent(averageDiscountPercent)}. Bu oran sabit bir kampanya vaadi değil, her taramada yeniden hesaplanan anlık durum — fiyatlar değiştikçe değişiyor.`
       : `Şu anda bu kategoride doğrulanmış bir fiyat düşüşü görünmüyor. Bu, markanın kampanya yapmadığı anlamına gelmiyor; yalnızca bizim topladığımız fiyat geçmişinde henüz gerçek bir düşüş oluşmadı demek. Sayfayı takip listene ekleyerek fiyat düştüğünde haberdar olabilirsin.`,
   });
 
@@ -92,7 +93,7 @@ export function buildBrandFaqs(input: BrandFaqInput): FaqItem[] {
     : `${brandName} ürünlerini günde dört kez tarıyor ve her taramada fiyatı kaydediyoruz. Bir ürünün fiyatı düştüğünde bunu markanın duyurmasını beklemeden görüyoruz.`;
 
   const depthAnswer = averageDiscountPercent
-    ? `Şu an ${brandName} tarafında doğruladığımız indirimlerin ortalama derinliği %${averageDiscountPercent}. ${topCategoryLabel ? `Markanın bizde en çok ürünü olan kategorisi ${topCategoryLabel}.` : ''} Bu oran her taramada yeniden hesaplanıyor; sabit bir kampanya vaadi değil, o anki gerçek durum.`.trim()
+    ? `Şu an ${brandName} tarafında doğruladığımız indirimlerin ortalama derinliği %${formatPercent(averageDiscountPercent)}. ${topCategoryLabel ? `Markanın bizde en çok ürünü olan kategorisi ${topCategoryLabel}.` : ''} Bu oran her taramada yeniden hesaplanıyor; sabit bir kampanya vaadi değil, o anki gerçek durum.`.trim()
     : `Şu anda ${brandName} tarafında doğrulanmış bir fiyat düşüşü görünmüyor. Bu, markanın kampanya yapmadığı anlamına gelmiyor — yalnızca bizim topladığımız fiyat geçmişinde henüz gerçek bir düşüş oluşmadı demek. ${topCategoryLabel ? `Markanın bizde en çok ürünü olan kategorisi ${topCategoryLabel}.` : ''}`.trim();
 
   return [

@@ -150,11 +150,11 @@
                 <td class="px-3 py-3 sm:px-4">
                   @if (item.deal.discountPercent > 0) {
                     <span class="rounded-[4px] px-1.5 py-0.5 text-[11px] font-medium text-[var(--noc-accent-100)]" style="background: var(--noc-accent-800)">
-                      Doğrulanmış -%{{ item.deal.discountPercent }}
+                      Doğrulanmış -%{{ item.deal.discountPercent | number: '1.0-1' }}
                     </span>
                   } @else if (item.deal.storeDiscountPercent) {
                     <span class="rounded-[4px] border border-[var(--noc-divider)] px-1.5 py-0.5 text-[11px] text-[var(--noc-neutral-500)]" title="Markanın kendi beyanı, tarafımızdan doğrulanmadı">
-                      Mağaza -%{{ item.deal.storeDiscountPercent }}
+                      Mağaza -%{{ item.deal.storeDiscountPercent | number: '1.0-1' }}
                     </span>
                   } @else {
                     <span class="text-[var(--noc-neutral-500)]">—</span>

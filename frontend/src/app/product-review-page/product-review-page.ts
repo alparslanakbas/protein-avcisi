@@ -6,7 +6,7 @@ import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
 import { dedupeSameDaySamePrice, hoverAlign, nearestPointIndex, tooltipDateLabel } from '../core/chart-hover';
-import { buildPageTitle, buildReviewDescription, formatPriceText } from '../core/meta-description';
+import { buildPageTitle, buildReviewDescription, formatPercent, formatPriceText } from '../core/meta-description';
 import { buildProductFacts, buildProductJsonLdDescription } from '../core/product-facts';
 import { buildBreadcrumbJsonLd } from '../core/breadcrumb';
 import { canonicalOrigin } from '../core/canonical-link';
@@ -278,7 +278,7 @@ export class ProductReviewPage implements OnInit {
     }
 
     if (alt.discountPercent > 0 && current.discountPercent === 0) {
-      parts.push(`şu an %${alt.discountPercent} indirimde`);
+      parts.push(`şu an %${formatPercent(alt.discountPercent)} indirimde`);
     }
 
     return parts.length > 0 ? parts.join(', ') : 'fiyatı neredeyse aynı';

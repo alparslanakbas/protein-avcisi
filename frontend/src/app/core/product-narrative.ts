@@ -1,5 +1,6 @@
 import { Deal } from './deal.model';
 import { displayName } from './display-name';
+import { formatPercent } from './meta-description';
 import { takipBaslangici } from './takip-dibi';
 import {
   PROTEIN_REFERENCE_GRAMS,
@@ -53,11 +54,11 @@ function priceParagraph(deal: Deal, discountEventCount?: number): string {
         : `${name}, şu anda ${price(deal.currentPrice)} ile son 30 günde ölçtüğümüz en düşük seviyede.`,
     );
     sentences.push(
-      `Aynı dönemde en az bir hafta boyunca ${price(deal.referencePrice)} seviyesini gördük; bugünkü fiyat bunun %${deal.discountPercent} altında.`,
+      `Aynı dönemde en az bir hafta boyunca ${price(deal.referencePrice)} seviyesini gördük; bugünkü fiyat bunun %${formatPercent(deal.discountPercent)} altında.`,
     );
   } else if (deal.discountPercent > 0) {
     sentences.push(
-      `${name} şu anda ${price(deal.currentPrice)}. Son 30 günde en az bir hafta boyunca ${price(deal.referencePrice)} seviyesini gördük; bugünkü fiyat bunun %${deal.discountPercent} altında.`,
+      `${name} şu anda ${price(deal.currentPrice)}. Son 30 günde en az bir hafta boyunca ${price(deal.referencePrice)} seviyesini gördük; bugünkü fiyat bunun %${formatPercent(deal.discountPercent)} altında.`,
     );
   } else {
     sentences.push(
@@ -77,7 +78,7 @@ function priceParagraph(deal: Deal, discountEventCount?: number): string {
   // sitenin bütün değer önerisi bu ayrımın üstüne kurulu.
   if (deal.storeOldPrice !== null && deal.storeDiscountPercent !== null) {
     sentences.push(
-      `${deal.brandName} kendi sitesinde eski fiyatı ${price(deal.storeOldPrice)} olarak gösteriyor (%${deal.storeDiscountPercent} indirim); bu markanın beyanı, bizim doğruladığımız düşüş yukarıdaki referansa dayanıyor.`,
+      `${deal.brandName} kendi sitesinde eski fiyatı ${price(deal.storeOldPrice)} olarak gösteriyor (%${formatPercent(deal.storeDiscountPercent ?? 0)} indirim); bu markanın beyanı, bizim doğruladığımız düşüş yukarıdaki referansa dayanıyor.`,
     );
   }
 
