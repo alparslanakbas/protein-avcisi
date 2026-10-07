@@ -122,157 +122,205 @@ const MIN_PRODUCTS_FOR_COMPARISON = 40;
 // backend'den (/api/products/sitemap) çekip burada XML'e çeviriyoruz. Bu
 // sunucu zaten kendi public origin'ini (req üzerinden) bildiği için domain'i
 // ayrıca config'lemeye gerek yok.
+//
+// SAYFA TÜRÜNE GÖRE PARÇALI (7 Ekim). Search Console dizine girme oranını
+// site haritası başına gösteriyor; her şey tek dosyadayken "Google hangi
+// türü almıyor?" sorusu cevapsızdı (6 Ekim: 3.735 adres "keşfedildi,
+// eklenmedi", türü bilinmiyor). /sitemap.xml artık parçaları listeleyen
+// dizin: adres aynı kaldığı için Search Console/Bing/Yandex kayıtları ve
+// robots.txt değişmeden çalışıyor, parçalardaki adresler de birebir aynı.
+// Marka indirim kodu ile marka × kategori ayrı parça: performansları çok
+// farklı (6 Ekim GSC: TO %2,3'e karşı %0,4).
+const SITEMAP_PARCALARI = ['urunler', 'incelemeler', 'markalar', 'marka-kategori', 'kategoriler', 'karsilastirma', 'rehber', 'sayfalar'] as const;
+type SitemapParcasi = (typeof SITEMAP_PARCALARI)[number];
+
+interface SitemapParcasiIcerigi {
+  urls: string;
+  // Dizindeki <lastmod>: parçadaki en yeni içerik değişikliği; bilinmiyorsa yok.
+  lastmod: number | null;
+}
+
+function enYeniTarih(tarihler: string[]): number | null {
+  let enYeni: number | null = null;
+  for (const tarih of tarihler) {
+    const ms = new Date(tarih).getTime();
+    if (!Number.isNaN(ms) && (enYeni === null || ms > enYeni)) enYeni = ms;
+  }
+  return enYeni;
+}
+
+async function sitemapParcalari(origin: string): Promise<Record<SitemapParcasi, SitemapParcasiIcerigi>> {
+  const [productsResponse, filtersResponse, articlesResponse, pairsResponse] = await Promise.all([
+    apiFetch('/api/products/sitemap'),
+    apiFetch('/api/filters'),
+    apiFetch('/api/articles'),
+    apiFetch('/api/brand-category-pairs'),
+  ]);
+  const products = (await productsResponse.json()) as SitemapEntry[];
+  const filters = (await filtersResponse.json()) as FilterOptions;
+  const articles = (await articlesResponse.json()) as ArticleSitemapEntry[];
+  const brandCategoryPairs = (await pairsResponse.json()) as BrandCategoryPair[];
+
+  const productUrls = products
+    .map(
+      (p) =>
+        `<url><loc>${origin}/urun/${p.id}/${slugify(p.name)}</loc><lastmod>${new Date(p.lastModifiedAt).toISOString()}</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>`,
+    )
+    .join('');
+
+  // Ürün incelemesi sayfaları — sadece gerçek bir içerik kaynağı (marka
+  // açıklaması veya besin değeri tablosu) olan ürünler için (bkz. backend
+  // HasReviewContent). Sayfa veri olmayan ürünler için de açık ama
+  // sitemap'e "ince içerik" olarak sunulmuyor.
+  const reviewUrls = products
+    .filter((p) => p.hasReviewContent)
+    .map(
+      (p) =>
+        `<url><loc>${origin}/urun-inceleme/${p.id}/${slugify(p.name)}</loc><lastmod>${new Date(p.lastModifiedAt).toISOString()}</lastmod><changefreq>weekly</changefreq><priority>0.6</priority></url>`,
+    )
+    .join('');
+
+  // Marka indirim kodu sayfaları — "[Marka] indirim kodu" araması için
+  // hedeflenen SEO içerik sayfaları.
+  const brandUrls = filters.brands
+    .map(
+      (brand) =>
+        `<url><loc>${origin}/marka/${brandSlug(brand)}/indirim-kodu</loc><changefreq>daily</changefreq><priority>0.9</priority></url>`,
+    )
+    .join('');
+
+  // Marka × kategori kesişimleri — "hardline protein tozu fiyatları"
+  // tarzı aramalar için. Yalnızca ürünü olan (ve yeterince ürünü olan)
+  // çiftler; liste backend'den geliyor, elle bakım gerektirmiyor.
+  const brandCategoryUrls = brandCategoryPairs
+    .filter((pair) => pair.productCount >= MIN_PRODUCTS_FOR_SITEMAP)
+    .map(
+      (pair) =>
+        `<url><loc>${origin}/marka/${brandSlug(pair.brandName)}/${pair.category}</loc><changefreq>daily</changefreq><priority>0.7</priority></url>`,
+    )
+    .join('');
+
+  // Kategori sayfaları — "[kategori] fiyatları" gibi aramalar için.
+  // /kategoriler, tüm kategorileri tek bir yerde listeleyen indeks sayfası.
+  const categoryUrls =
+    `<url><loc>${origin}/kategoriler</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>` +
+    filters.categories
+      .map(
+        (category) =>
+          `<url><loc>${origin}/kategori/${category}</loc><changefreq>daily</changefreq><priority>0.8</priority></url>`,
+      )
+      .join('');
+
+  const legalUrls =
+    `<url><loc>${origin}/gizlilik-politikasi</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>` +
+    `<url><loc>${origin}/cerez-politikasi</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>` +
+    `<url><loc>${origin}/nasil-calisiyoruz</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>` +
+    `<url><loc>${origin}/hakkimizda</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>` +
+    `<url><loc>${origin}/iletisim</loc><changefreq>monthly</changefreq><priority>0.4</priority></url>` +
+    `<url><loc>${origin}/sozluk</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>` +
+    // Hesaplama araçları — her biri kendi aramasını hedefliyor
+    // ("kreatin dozu hesaplama" gibi), index sayfası da dahil.
+    `<url><loc>${origin}/hesaplama</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>` +
+    `<url><loc>${origin}/hesaplama/protein-ihtiyaci</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>` +
+    SUPPLEMENT_DOSAGES.map(
+      (s) => `<url><loc>${origin}/hesaplama/${s.slug}</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>`,
+    ).join('') +
+    BODY_CALCULATORS.map(
+      (c) => `<url><loc>${origin}/hesaplama/${c.slug}</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>`,
+    ).join('') +
+    // "Hangi takviye?" testi ve hedef sayfaları. Hedef sayfalarındaki ürün
+    // listesi her taramada değişebildiği için haftalık.
+    `<url><loc>${origin}${FINDER_PATH}</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>` +
+    SUPPLEMENT_GOALS.map(
+      (g) => `<url><loc>${origin}${FINDER_PATH}/${g.slug}</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>`,
+    ).join('');
+
+  // Marka karşılaştırma sayfaları — tüm marka ikilileri, alfabetik
+  // sırayla (brand-comparison-page.ts'teki canonical URL mantığıyla
+  // aynı) tek bir kanonik URL üretiliyor.
+  //
+  // Yalnızca yeterince ürünü olan markalar: bu sayfalar kategori bazında
+  // ORTALAMA fiyat karşılaştırıyor ve bir markanın o kategoride tek ürünü
+  // varsa, o tek ürünün fiyatı "marka ortalaması" diye sunulur — istatistik
+  // gibi görünen ama istatistik olmayan bir sayı. Eşiğin altındaki markanın
+  // sayfası yine çalışıyor, sadece taranmaya sunulmuyor (ürün incelemesi
+  // sayfalarındaki "ince içeriği sitemap'e koyma" kararıyla aynı mantık).
+  const productCountByBrand = new Map<string, number>();
+  for (const pair of brandCategoryPairs) {
+    const key = brandSlug(pair.brandName);
+    productCountByBrand.set(key, (productCountByBrand.get(key) ?? 0) + pair.productCount);
+  }
+
+  const comparisonPairs: string[] = [];
+  const sortedBrands = [...filters.brands]
+    .map((b) => brandSlug(b))
+    .filter((b) => (productCountByBrand.get(b) ?? 0) >= MIN_PRODUCTS_FOR_COMPARISON)
+    .sort();
+  for (let i = 0; i < sortedBrands.length; i++) {
+    for (let j = i + 1; j < sortedBrands.length; j++) {
+      comparisonPairs.push(`${sortedBrands[i]}-vs-${sortedBrands[j]}`);
+    }
+  }
+  const comparisonUrls = comparisonPairs
+    .map((pair) => `<url><loc>${origin}/karsilastir/${pair}</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>`)
+    .join('');
+
+  // Rehber yazıları — bilgi amaçlı SEO içerikleri, ürün/kategori
+  // sayfalarıyla aynı önem seviyesinde (0.7).
+  const articleUrls =
+    `<url><loc>${origin}/rehber</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>` +
+    articles
+      .map(
+        (a) =>
+          `<url><loc>${origin}/rehber/${a.slug}</loc><lastmod>${new Date(a.publishedAt).toISOString()}</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>`,
+      )
+      .join('');
+
+  return {
+    urunler: { urls: productUrls, lastmod: enYeniTarih(products.map((p) => p.lastModifiedAt)) },
+    incelemeler: { urls: reviewUrls, lastmod: enYeniTarih(products.filter((p) => p.hasReviewContent).map((p) => p.lastModifiedAt)) },
+    markalar: { urls: brandUrls, lastmod: null },
+    'marka-kategori': { urls: brandCategoryUrls, lastmod: null },
+    kategoriler: { urls: categoryUrls, lastmod: null },
+    karsilastirma: { urls: comparisonUrls, lastmod: null },
+    rehber: { urls: articleUrls, lastmod: enYeniTarih(articles.map((a) => a.publishedAt)) },
+    sayfalar: { urls: `<url><loc>${origin}/</loc><changefreq>hourly</changefreq><priority>1.0</priority></url>` + legalUrls, lastmod: null },
+  };
+}
+
+const XML_BASI = `<?xml version="1.0" encoding="UTF-8"?>`;
+const SITEMAP_ISIM_ALANI = `xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"`;
+
 app.get('/sitemap.xml', async (req, res) => {
-  const origin = CANONICAL_ORIGIN;
-
   try {
-    const [productsResponse, filtersResponse, articlesResponse, pairsResponse] = await Promise.all([
-      apiFetch('/api/products/sitemap'),
-      apiFetch('/api/filters'),
-      apiFetch('/api/articles'),
-      apiFetch('/api/brand-category-pairs'),
-    ]);
-    const products = (await productsResponse.json()) as SitemapEntry[];
-    const filters = (await filtersResponse.json()) as FilterOptions;
-    const articles = (await articlesResponse.json()) as ArticleSitemapEntry[];
-    const brandCategoryPairs = (await pairsResponse.json()) as BrandCategoryPair[];
-
-    const productUrls = products
-      .map(
-        (p) =>
-          `<url><loc>${origin}/urun/${p.id}/${slugify(p.name)}</loc><lastmod>${new Date(p.lastModifiedAt).toISOString()}</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>`,
-      )
+    const parcalar = await sitemapParcalari(CANONICAL_ORIGIN);
+    const girdiler = SITEMAP_PARCALARI.filter((ad) => parcalar[ad].urls.length > 0)
+      .map((ad) => {
+        const lastmod = parcalar[ad].lastmod;
+        const tarih = lastmod !== null ? `<lastmod>${new Date(lastmod).toISOString()}</lastmod>` : '';
+        return `<sitemap><loc>${CANONICAL_ORIGIN}/sitemap-${ad}.xml</loc>${tarih}</sitemap>`;
+      })
       .join('');
-
-    // Ürün incelemesi sayfaları — sadece gerçek bir içerik kaynağı (marka
-    // açıklaması veya besin değeri tablosu) olan ürünler için (bkz. backend
-    // HasReviewContent). Sayfa veri olmayan ürünler için de açık ama
-    // sitemap'e "ince içerik" olarak sunulmuyor.
-    const reviewUrls = products
-      .filter((p) => p.hasReviewContent)
-      .map(
-        (p) =>
-          `<url><loc>${origin}/urun-inceleme/${p.id}/${slugify(p.name)}</loc><lastmod>${new Date(p.lastModifiedAt).toISOString()}</lastmod><changefreq>weekly</changefreq><priority>0.6</priority></url>`,
-      )
-      .join('');
-
-    // Marka indirim kodu sayfaları — "[Marka] indirim kodu" araması için
-    // hedeflenen SEO içerik sayfaları.
-    const brandUrls = filters.brands
-      .map(
-        (brand) =>
-          `<url><loc>${origin}/marka/${brandSlug(brand)}/indirim-kodu</loc><changefreq>daily</changefreq><priority>0.9</priority></url>`,
-      )
-      .join('');
-
-    // Marka × kategori kesişimleri — "hardline protein tozu fiyatları"
-    // tarzı aramalar için. Yalnızca ürünü olan (ve yeterince ürünü olan)
-    // çiftler; liste backend'den geliyor, elle bakım gerektirmiyor.
-    const brandCategoryUrls = brandCategoryPairs
-      .filter((pair) => pair.productCount >= MIN_PRODUCTS_FOR_SITEMAP)
-      .map(
-        (pair) =>
-          `<url><loc>${origin}/marka/${brandSlug(pair.brandName)}/${pair.category}</loc><changefreq>daily</changefreq><priority>0.7</priority></url>`,
-      )
-      .join('');
-
-    // Kategori sayfaları — "[kategori] fiyatları" gibi aramalar için.
-    // /kategoriler, tüm kategorileri tek bir yerde listeleyen indeks sayfası.
-    const categoryUrls =
-      `<url><loc>${origin}/kategoriler</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>` +
-      filters.categories
-        .map(
-          (category) =>
-            `<url><loc>${origin}/kategori/${category}</loc><changefreq>daily</changefreq><priority>0.8</priority></url>`,
-        )
-        .join('');
-
-    const legalUrls =
-      `<url><loc>${origin}/gizlilik-politikasi</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>` +
-      `<url><loc>${origin}/cerez-politikasi</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>` +
-      `<url><loc>${origin}/nasil-calisiyoruz</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>` +
-      `<url><loc>${origin}/hakkimizda</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>` +
-      `<url><loc>${origin}/iletisim</loc><changefreq>monthly</changefreq><priority>0.4</priority></url>` +
-      `<url><loc>${origin}/sozluk</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>` +
-      // Hesaplama araçları — her biri kendi aramasını hedefliyor
-      // ("kreatin dozu hesaplama" gibi), index sayfası da dahil.
-      `<url><loc>${origin}/hesaplama</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>` +
-      `<url><loc>${origin}/hesaplama/protein-ihtiyaci</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>` +
-      SUPPLEMENT_DOSAGES.map(
-        (s) => `<url><loc>${origin}/hesaplama/${s.slug}</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>`,
-      ).join('') +
-      BODY_CALCULATORS.map(
-        (c) => `<url><loc>${origin}/hesaplama/${c.slug}</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>`,
-      ).join('') +
-      // "Hangi takviye?" testi ve hedef sayfaları. Hedef sayfalarındaki ürün
-      // listesi her taramada değişebildiği için haftalık.
-      `<url><loc>${origin}${FINDER_PATH}</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>` +
-      SUPPLEMENT_GOALS.map(
-        (g) => `<url><loc>${origin}${FINDER_PATH}/${g.slug}</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>`,
-      ).join('');
-
-    // Marka karşılaştırma sayfaları — tüm marka ikilileri, alfabetik
-    // sırayla (brand-comparison-page.ts'teki canonical URL mantığıyla
-    // aynı) tek bir kanonik URL üretiliyor.
-    //
-    // Yalnızca yeterince ürünü olan markalar: bu sayfalar kategori bazında
-    // ORTALAMA fiyat karşılaştırıyor ve bir markanın o kategoride tek ürünü
-    // varsa, o tek ürünün fiyatı "marka ortalaması" diye sunulur — istatistik
-    // gibi görünen ama istatistik olmayan bir sayı. Eşiğin altındaki markanın
-    // sayfası yine çalışıyor, sadece taranmaya sunulmuyor (ürün incelemesi
-    // sayfalarındaki "ince içeriği sitemap'e koyma" kararıyla aynı mantık).
-    const productCountByBrand = new Map<string, number>();
-    for (const pair of brandCategoryPairs) {
-      const key = brandSlug(pair.brandName);
-      productCountByBrand.set(key, (productCountByBrand.get(key) ?? 0) + pair.productCount);
-    }
-
-    const comparisonPairs: string[] = [];
-    const sortedBrands = [...filters.brands]
-      .map((b) => brandSlug(b))
-      .filter((b) => (productCountByBrand.get(b) ?? 0) >= MIN_PRODUCTS_FOR_COMPARISON)
-      .sort();
-    for (let i = 0; i < sortedBrands.length; i++) {
-      for (let j = i + 1; j < sortedBrands.length; j++) {
-        comparisonPairs.push(`${sortedBrands[i]}-vs-${sortedBrands[j]}`);
-      }
-    }
-    const comparisonUrls = comparisonPairs
-      .map((pair) => `<url><loc>${origin}/karsilastir/${pair}</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>`)
-      .join('');
-
-    // Rehber yazıları — bilgi amaçlı SEO içerikleri, ürün/kategori
-    // sayfalarıyla aynı önem seviyesinde (0.7).
-    const articleUrls =
-      `<url><loc>${origin}/rehber</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>` +
-      articles
-        .map(
-          (a) =>
-            `<url><loc>${origin}/rehber/${a.slug}</loc><lastmod>${new Date(a.publishedAt).toISOString()}</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>`,
-        )
-        .join('');
-
-    const xml =
-      `<?xml version="1.0" encoding="UTF-8"?>` +
-      `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">` +
-      `<url><loc>${origin}/</loc><changefreq>hourly</changefreq><priority>1.0</priority></url>` +
-      brandUrls +
-      brandCategoryUrls +
-      categoryUrls +
-      productUrls +
-      reviewUrls +
-      legalUrls +
-      articleUrls +
-      comparisonUrls +
-      `</urlset>`;
-
     res.set('Content-Type', 'application/xml');
-    res.send(xml);
+    res.send(`${XML_BASI}<sitemapindex ${SITEMAP_ISIM_ALANI}>${girdiler}</sitemapindex>`);
   } catch (error) {
     console.error('sitemap.xml üretilemedi:', error);
     res.status(502).send('Sitemap şu anda üretilemiyor.');
   }
 });
+
+for (const ad of SITEMAP_PARCALARI) {
+  app.get(`/sitemap-${ad}.xml`, async (req, res) => {
+    try {
+      const parca = (await sitemapParcalari(CANONICAL_ORIGIN))[ad];
+      res.set('Content-Type', 'application/xml');
+      res.send(`${XML_BASI}<urlset ${SITEMAP_ISIM_ALANI}>${parca.urls}</urlset>`);
+    } catch (error) {
+      console.error(`sitemap-${ad}.xml üretilemedi:`, error);
+      res.status(502).send('Sitemap şu anda üretilemiyor.');
+    }
+  });
+}
 
 // "Mağazaya Git" linki artık göreceli (/go/:id) — ziyaretçi bilinmeyen bir
 // "api.protein-avcisi..." adresine değil, kendi gördüğü domain'e tıklıyor
