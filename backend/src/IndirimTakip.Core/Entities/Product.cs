@@ -144,7 +144,7 @@ public class Product
 
     // ---- Fiyat özeti (önceden hesaplanmış) --------------------------------
     //
-    // Bu beş alan PriceHistories'ten TÜRETİLİR, kaynak veri değildir; fiyat
+    // Bu alanlar PriceHistories'ten TÜRETİLİR, kaynak veri değildir; fiyat
     // geçmişi tek doğru kaynak olmaya devam ediyor. Her taramadan sonra tek
     // bir küme sorgusuyla yeniden hesaplanıyorlar
     // (PriceSummaryRefresher).
@@ -172,6 +172,15 @@ public class Product
 
     /// <summary>Son 30 günün EN DÜŞÜK fiyatı — "30 günün en düşüğü" rozeti.</summary>
     public decimal? LowestPrice30 { get; set; }
+
+    /// <summary>
+    /// Takip başlangıcı: ürünün ilk fiyat noktası. Son 30 günde 72 saatten uzun bir ara varsa ürün yeniden
+    /// başlamış sayılıyor ve başlangıç aradan sonraki ilk tarama (olağan fiyattaki boşluk kuralıyla aynı).
+    /// </summary>
+    public DateTimeOffset? TrackedSince { get; set; }
+
+    /// <summary>Takip başlangıcından beri görülen en düşük fiyat — "… beri en düşük" rozeti.</summary>
+    public decimal? LowestTrackedPrice { get; set; }
 
     /// <summary>
     /// Özetin en son ne zaman hesaplandığı. Taramadan sonra güncelleniyor;

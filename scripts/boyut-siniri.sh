@@ -18,9 +18,9 @@ cd "$(dirname "$0")/.."
 SINIR=800
 declare -A TAVAN=(
   [frontend/src/app/yonetim-page/yonetim-page.html]=1561
-  [frontend/src/app/deals-list/deals-list.ts]=1107
+  [frontend/src/app/deals-list/deals-list.ts]=1104
   [frontend/src/app/yonetim-page/yonetim-page.ts]=921
-  [backend/src/IndirimTakip.Infrastructure/Deals/DealsQueryService.cs]=865
+  [backend/src/IndirimTakip.Infrastructure/Deals/DealsQueryService.cs]=829
 )
 
 # Liste ÖNCE değişkene alınıyor: süreç ikamesinin (< <(...)) çıkış kodunu

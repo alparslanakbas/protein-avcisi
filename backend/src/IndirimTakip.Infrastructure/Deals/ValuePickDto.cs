@@ -18,7 +18,9 @@ public sealed record ValuePickDto(
     // Stokta olmayanlar listeye hiç girmiyor; null = kaynak stok bilgisi vermiyor.
     bool? InStock,
     // Ortaklık kodu eklenmiş mağaza adresi (bkz. DealDto.StoreUrl).
-    string StoreUrl);
+    string StoreUrl,
+    // Takip başladığından beri en düşük fiyattaysa takibin başladığı an (bkz. DealDto.LowestSince, TakipDibi).
+    DateTimeOffset? LowestSince = null);
 
 /// <param name="EligibleCount">Kilogram fiyatı hesaplanabilen, korumalardan geçen ürün sayısı (her markadan bir ürün seçilmeden önce).</param>
 public sealed record ValuePicksDto(IReadOnlyList<ValuePickDto> Items, int EligibleCount);

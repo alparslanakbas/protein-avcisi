@@ -230,7 +230,9 @@
                 } @else if (deal.storeDiscountPercent && deal.storeDiscountPercent > 0) {
                   <span title="Markanın kendi beyan ettiği indirim, bizim tarafımızdan doğrulanmamıştır" class="absolute left-2 top-2 rounded-[6px] px-2 py-0.5 text-xs font-medium" style="background: var(--noc-neutral-800); color: var(--noc-neutral-100)">{{ storeDiscountBadge(deal) }}</span>
                 }
-                @if (deal.isAtThirtyDayLow) {
+                @if (deal.lowestSince) {
+                  <span [title]="takipDibiAciklamasi(deal.lowestSince)" class="absolute left-2 top-[34px] rounded-[6px] border border-[var(--noc-accent)] bg-[var(--noc-card)] px-2 py-0.5 text-[10px] text-[var(--noc-accent)]">{{ takipDibiEtiketi(deal.lowestSince) }}</span>
+                } @else if (deal.isAtThirtyDayLow) {
                   <span class="absolute left-2 top-[34px] rounded-[6px] border border-[var(--noc-accent)] bg-[var(--noc-card)] px-2 py-0.5 text-[10px] text-[var(--noc-accent)]">30 günün en düşüğü</span>
                 }
 

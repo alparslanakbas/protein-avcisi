@@ -15,6 +15,8 @@ export interface ValuePick {
   // Bizim fiyat geçmişimize dayanan indirim; yoksa 0.
   discountPercent: number;
   isAtThirtyDayLow: boolean;
+  // Takip başladığından beri en düşük fiyattaysa takibin başladığı an (bkz. Deal.lowestSince).
+  lowestSince?: string | null;
   inStock: boolean | null;
   storeUrl: string;
 }

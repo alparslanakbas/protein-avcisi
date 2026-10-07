@@ -165,9 +165,25 @@ public sealed class UrunListesiVeritabani : IAsyncLifetime
         EskiFiyat(Urun(kampanya, "Kampanya Kısa Geçmiş", "kilo-hacim", null, 600m, 600m, 600m), 900m);
         Urun(kampanya, "Kampanya Beyansız", "kilo-hacim", null, 500m, 500m);
 
+        // "… beri en düşük" rozeti (TakipDibi): kırk günlük geçmişler. Dördü de otuz günün dibinde, rozeti yalnız ilki
+        // almalı. Ayrı marka ve kategori, başka testlerin sayılarına karışmasın diye.
+        var dip = new Brand { Name = "Dip Markası", BaseUrl = "https://dip.example" };
+        db.Brands.Add(dip);
+        Urun(dip, "Dip Gerçek", "l-carnitine-cla", null, [.. Enumerable.Repeat(1000m, 35), .. Enumerable.Repeat(900m, 5)]);
+        // 35-39 gün önce 800'e satılmış: otuz günün dibi, takibin dibi değil.
+        Urun(dip, "Dip Eskiden Daha Ucuz", "l-carnitine-cla", null,
+            [.. Enumerable.Repeat(800m, 5), .. Enumerable.Repeat(1000m, 30), .. Enumerable.Repeat(900m, 5)]);
+        Urun(dip, "Dip Geçmişi Kısa", "l-carnitine-cla", null, Hafta(1000m, 900m));
+        // Pencerede altı günlük ara: ürün aradan sonra yeniden başlamış sayılıyor, başlangıç aradan sonraki ilk tarama.
+        var aradanSonra = Urun(dip, "Dip Aradan Sonra", "l-carnitine-cla", null,
+            [.. Enumerable.Repeat(1000m, 38), 900m, 900m]);
+        foreach (var f in aradanSonra.PriceHistories.Take(30))
+            f.ScrapedAt = f.ScrapedAt.AddDays(-5);
+
         GorunenUrun = sira;
-        // whey'ler, D3, Olimp'ler, magnezyum, kısa aralı düşüş; kampanyadan gerçek ve tek gün hatalı (olağan fiyat 1000)
-        IndirimliUrun = 8 + 1 + 8 + 1 + 1 + 2;
+        // whey'ler, D3, Olimp'ler, magnezyum, kısa aralı düşüş; kampanyadan gerçek ve tek gün hatalı (olağan fiyat 1000);
+        // dip markasının dördü
+        IndirimliUrun = 8 + 1 + 8 + 1 + 1 + 2 + 4;
 
         // GÖRÜNMEMESİ gerekenler.
         var bayat = Urun(hardline, "Bayat Ürün", "protein-tozu", null, 999m);
@@ -300,6 +316,39 @@ public class UrunListesiVeritabaniTests(UrunListesiVeritabani veri) : IClassFixt
             Assert.Equal((urun.CurrentPrice, urun.ScrapedAt, urun.ReferencePrice, urun.DiscountPercent),
                 (f.CurrentPrice, f.ScrapedAt, f.ReferencePrice, f.DiscountPercent));
         }
+    }
+
+    // "… beri en düşük" rozeti (7 Ekim). Fiyat özeti takip başlangıcını ve o günden beri en düşük fiyatı yazıyor;
+    // rozet yalnızca otuz günün dibindeki, en az 30 günlük geçmişi olan ve bütün geçmişin en düşüğündeki ürüne.
+    // Liste, favoriler ve ürün sayfası aynı eşlemeden geçiyor; üçü de aynı rozeti vermeli.
+    [VeritabaniFact]
+    public async Task Takip_dibi_rozeti_yalnizca_butun_gecmisin_en_dusugundeki_urune_veriliyor()
+    {
+        await using var db = veri.Baglam();
+        var servis = Servis(db);
+        var urunler = await db.Products.Include(p => p.PriceHistories)
+            .Where(p => p.Brand!.Name == "Dip Markası")
+            .ToDictionaryAsync(p => p.Name);
+        var gercek = urunler["Dip Gerçek"];
+        var ilkTarama = gercek.PriceHistories.Min(f => f.ScrapedAt);
+        var aradanSonraIlk = urunler["Dip Aradan Sonra"].PriceHistories
+            .Where(f => f.ScrapedAt > DateTimeOffset.UtcNow.AddDays(-12))
+            .Min(f => f.ScrapedAt);
+
+        Assert.Equal((ilkTarama, 900m), (gercek.TrackedSince, gercek.LowestTrackedPrice));
+        Assert.Equal(800m, urunler["Dip Eskiden Daha Ucuz"].LowestTrackedPrice);
+        Assert.Equal((aradanSonraIlk, 900m),
+            (urunler["Dip Aradan Sonra"].TrackedSince, urunler["Dip Aradan Sonra"].LowestTrackedPrice));
+
+        var liste = (await Getir(servis, null, null, null, false, 1, 100)).Items;
+        Assert.All(liste.Where(d => d.BrandName == "Dip Markası"), d => Assert.True(d.IsAtThirtyDayLow, d.ProductName));
+        var rozetli = Assert.Single(liste, d => d.LowestSince is not null);
+        Assert.Equal(("Dip Gerçek", ilkTarama), (rozetli.ProductName, rozetli.LowestSince!.Value));
+
+        var favori = Assert.Single(await servis.GetDealsByIdsAsync([gercek.Id]));
+        var sayfa = await servis.GetProductByIdAsync(gercek.Id);
+        Assert.Equal(ilkTarama, favori.LowestSince);
+        Assert.Equal(ilkTarama, sayfa!.LowestSince);
     }
 
     // Sezon sayfası ve rapor yazısı (7 Ekim): mağazanın indirim dediği ürünler yönetmelik ölçütüyle. Tek günlük

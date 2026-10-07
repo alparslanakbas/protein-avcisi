@@ -87,6 +87,8 @@ public sealed class PriceSummaryRefresher(AppDbContext db, ILogger<PriceSummaryR
         // `pencere` : son 30 günün (ara varsa aradan sonrasının) en yüksek/en düşük fiyatı
         // `gunluk` : her fiyatın aynı aralıkta görüldüğü farklı gün sayısı
         // `olagan` : en az OlaganGunSayisi gün görülmüş fiyatların en yükseği
+        // `tum`    : bütün geçmişin en düşük fiyatı ve ilk taraması (takip dibi rozeti, bkz. TakipDibi).
+        //            Tablonun tamamını okuyor: canlıda 915 bin satır 0,18 sn (7 Ekim).
         //
         // Penceresi boş ürünlerde (30 gündür taranmayan) referans eskisi gibi
         // NULL kalıyor; fiyat geçmişi HİÇ olmayan ürünlerde de alanlar NULL.
@@ -132,15 +134,26 @@ public sealed class PriceSummaryRefresher(AppDbContext db, ILogger<PriceSummaryR
                 WHERE g.gun >= @olaganGun
                 GROUP BY g."ProductId"
             ),
+            tum AS (
+                SELECT ph."ProductId", MIN(ph."Price") AS en_dusuk, MIN(ph."ScrapedAt") AS ilk
+                FROM "PriceHistories" ph
+                GROUP BY ph."ProductId"
+            ),
             yeni AS (
                 SELECT son."ProductId", son."Price", son."StoreOldPrice", son."ScrapedAt",
                        pencere.en_dusuk,
                        -- GREATEST NULL'u atlıyor: olağan fiyat yoksa güncel fiyat.
                        CASE WHEN pencere."ProductId" IS NULL THEN NULL
-                            ELSE GREATEST(olagan.fiyat, son."Price") END AS referans
+                            ELSE GREATEST(olagan.fiyat, son."Price") END AS referans,
+                       -- Pencerede ara varsa ürün aradan sonra yeniden başlamış: başlangıç aradan sonraki ilk
+                       -- tarama, en düşük de aradan sonrasınınki (pencereninki).
+                       COALESCE(bolum.baslangic, tum.ilk) AS takip_baslangici,
+                       CASE WHEN bolum.baslangic IS NULL THEN tum.en_dusuk ELSE pencere.en_dusuk END AS takip_en_dusuk
                 FROM son
                 LEFT JOIN pencere ON pencere."ProductId" = son."ProductId"
                 LEFT JOIN olagan ON olagan."ProductId" = son."ProductId"
+                LEFT JOIN bolum ON bolum."ProductId" = son."ProductId"
+                LEFT JOIN tum ON tum."ProductId" = son."ProductId"
             )
             UPDATE "Products" p
             SET "LatestPrice"           = yeni."Price",
@@ -148,6 +161,8 @@ public sealed class PriceSummaryRefresher(AppDbContext db, ILogger<PriceSummaryR
                 "LatestScrapedAt"       = yeni."ScrapedAt",
                 "ReferencePrice30"      = yeni.referans,
                 "LowestPrice30"         = yeni.en_dusuk,
+                "TrackedSince"          = yeni.takip_baslangici,
+                "LowestTrackedPrice"    = yeni.takip_en_dusuk,
                 "PriceSummaryUpdatedAt" = @simdi
             FROM yeni
             WHERE p."Id" = yeni."ProductId"
@@ -157,6 +172,8 @@ public sealed class PriceSummaryRefresher(AppDbContext db, ILogger<PriceSummaryR
                  OR p."LatestScrapedAt" IS DISTINCT FROM yeni."ScrapedAt"
                  OR p."ReferencePrice30" IS DISTINCT FROM yeni.referans
                  OR p."LowestPrice30"   IS DISTINCT FROM yeni.en_dusuk
+                 OR p."TrackedSince"    IS DISTINCT FROM yeni.takip_baslangici
+                 OR p."LowestTrackedPrice" IS DISTINCT FROM yeni.takip_en_dusuk
               );
             """;
 

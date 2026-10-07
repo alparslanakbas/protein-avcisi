@@ -156,7 +156,9 @@
                   </td>
                   <td class="px-[16.8px] py-[11.2px]">
                     <div class="flex flex-wrap items-center gap-1.5">
-                      @if (deal.isAtThirtyDayLow) {
+                      @if (deal.lowestSince) {
+                        <span [title]="takipDibiAciklamasi(deal.lowestSince)" class="rounded-[6px] border border-[var(--noc-accent)] px-1.5 py-0.5 text-[10px] text-[var(--noc-accent)]">{{ takipDibiEtiketi(deal.lowestSince) }}</span>
+                      } @else if (deal.isAtThirtyDayLow) {
                         <span class="rounded-[6px] border border-[var(--noc-accent)] px-1.5 py-0.5 text-[10px] text-[var(--noc-accent)]">30 günün en düşüğü</span>
                       }
                       <span class="text-xs text-[var(--noc-neutral-500)]">{{ lastCheckedText(deal) }}</span>

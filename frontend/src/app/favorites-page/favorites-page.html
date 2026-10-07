@@ -105,7 +105,9 @@
                 <a [href]="productPath(deal)" (click)="onProductClick($event, deal)" class="pa-favorites-product">
                   <h3>{{ displayName(deal.productName) }}</h3>
                   <p>{{ deal.brandName }} · {{ lastCheckedText(deal) }}</p>
-                  @if (deal.isAtThirtyDayLow) {
+                  @if (deal.lowestSince) {
+                    <span [title]="takipDibiAciklamasi(deal.lowestSince)">{{ takipDibiEtiketi(deal.lowestSince) }}</span>
+                  } @else if (deal.isAtThirtyDayLow) {
                     <span>30 günün en düşük fiyatı</span>
                   } @else if (deal.discountPercent > 0) {
                     <span>İndirimde</span>

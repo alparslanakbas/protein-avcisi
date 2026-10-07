@@ -8,6 +8,7 @@ import { LatestRequest } from '../core/latest-request';
 import { PriceHistoryService } from '../core/price-history.service';
 import { productPath } from '../core/product-link';
 import { GoalPickSection } from '../core/supplement-goals';
+import { takipDibiAciklamasi, takipDibiEtiketi } from '../core/takip-dibi';
 import { ValuePick } from '../core/value-pick.model';
 
 // Liste kısa tutuluyor: sayfanın işi karar vermek, katalog gezdirmek değil.
@@ -37,6 +38,8 @@ export class ValuePickList implements OnInit {
   readonly initialType = input<string | null>(null);
 
   protected readonly displayName = displayName;
+  protected readonly takipDibiEtiketi = takipDibiEtiketi;
+  protected readonly takipDibiAciklamasi = takipDibiAciklamasi;
   protected readonly productPath = productPath;
   protected readonly proteinTypes = PROTEIN_TYPES;
 

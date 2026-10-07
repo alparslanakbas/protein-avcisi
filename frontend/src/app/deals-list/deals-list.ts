@@ -33,6 +33,7 @@ import { productPath, shouldHandleInApp } from '../core/product-link';
 import { buildPageTitle, buildProductDescription, formatPriceText } from '../core/meta-description';
 import { buildAreaPath, buildLinePath, toCoordinates } from '../core/spark-chart';
 import { SubscribeService } from '../core/subscribe.service';
+import { takipDibiAciklamasi, takipDibiEtiketi } from '../core/takip-dibi';
 import { ThemePreference, ThemeService } from '../core/theme.service';
 import { ProductCardSparkline } from '../product-card-sparkline/product-card-sparkline';
 import { ProductModal } from '../product-modal/product-modal';
@@ -127,6 +128,8 @@ export class DealsList implements OnInit {
   // Title Case'e çeviren saf fonksiyon — component metodu değil, doğrudan
   // referans veriliyor.
   protected readonly displayName = displayName;
+  protected readonly takipDibiEtiketi = takipDibiEtiketi;
+  protected readonly takipDibiAciklamasi = takipDibiAciklamasi;
   private readonly dealsService = inject(DealsService);
   private readonly couponsService = inject(CouponsService);
   private readonly articlesService = inject(ArticlesService);

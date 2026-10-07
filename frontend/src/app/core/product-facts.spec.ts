@@ -89,3 +89,19 @@ describe('buildProductFacts — satıcı', () => {
     expect(satir!.value).toContain('HIQ');
   });
 });
+
+describe('buildProductFacts — fiyat seyri', () => {
+  const seyir = (d: Deal) => buildProductFacts(d).filter((f) => f.label === '30 günlük seyir' || f.label === 'Takip başlangıcından beri');
+
+  it('takip dibindeki üründe başlangıç tarihini söyler, 30 günlük satırı tekrarlamaz', () => {
+    const satirlar = seyir(deal({ isAtThirtyDayLow: true, lowestSince: '2026-08-10T19:41:35Z' }));
+    expect(satirlar).toHaveLength(1);
+    expect(satirlar[0].label).toBe('Takip başlangıcından beri');
+    expect(satirlar[0].value).toContain('10 Ağustos 2026 tarihinden beri');
+  });
+
+  it('yalnız 30 günün dibindeki üründe 30 günlük satırı gösterir', () => {
+    const satirlar = seyir(deal({ isAtThirtyDayLow: true, lowestSince: null }));
+    expect(satirlar.map((f) => f.label)).toEqual(['30 günlük seyir']);
+  });
+});

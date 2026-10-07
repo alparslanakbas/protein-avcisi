@@ -23,6 +23,7 @@ import { PricePoint } from '../core/price-history.model';
 import { PriceHistoryService } from '../core/price-history.service';
 import { showNotFound } from '../core/not-found-navigation';
 import { formatRelativeTime } from '../core/relative-time';
+import { takipDibiAciklamasi, takipDibiEtiketi } from '../core/takip-dibi';
 import { ProductCardSparkline } from '../product-card-sparkline/product-card-sparkline';
 import { ProductModal } from '../product-modal/product-modal';
 import { SiteHeader } from '../site-header/site-header';
@@ -50,6 +51,8 @@ export class BrandPage implements OnInit {
   protected readonly brandSlug = brandSlug;
 
   protected readonly displayName = displayName;
+  protected readonly takipDibiEtiketi = takipDibiEtiketi;
+  protected readonly takipDibiAciklamasi = takipDibiAciklamasi;
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly dealsService = inject(DealsService);

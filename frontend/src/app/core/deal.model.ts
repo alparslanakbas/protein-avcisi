@@ -46,6 +46,9 @@ export interface Deal {
   storeDiscountPercent: number | null;
   scrapedAt: string;
   isAtThirtyDayLow: boolean;
+  // Güncel fiyat takip başladığından beri gördüğümüz en düşük fiyatsa takibin başladığı an (ISO), değilse null.
+  // "Son 30 günün en düşüğü"nün üst kademesi; bkz. core/takip-dibi.ts ve backend TakipDibi.
+  lowestSince?: string | null;
   // Yalnızca tekil ürün ucundan gelir; listelerde donmuş kayıtlar zaten
   // gizlendiği için orada hep varsayılan değerdedir.
   // Markanın KENDİ sitesindeki müşteri puanı — bizim değerlendirmemiz değil,

@@ -20,6 +20,7 @@ import { formatRelativeTime } from '../core/relative-time';
 import { ProductModal } from '../product-modal/product-modal';
 import { SiteHeader } from '../site-header/site-header';
 import { showNotFound } from '../core/not-found-navigation';
+import { takipDibiAciklamasi, takipDibiEtiketi } from '../core/takip-dibi';
 
 type ViewMode = 'deals' | 'store' | 'all';
 const PAGE_SIZE = 24;
@@ -32,6 +33,8 @@ const SEARCH_DEBOUNCE_MS = 350;
 })
 export class CategoryPage implements OnInit {
   protected readonly displayName = displayName;
+  protected readonly takipDibiEtiketi = takipDibiEtiketi;
+  protected readonly takipDibiAciklamasi = takipDibiAciklamasi;
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly dealsService = inject(DealsService);

@@ -50,6 +50,8 @@ public sealed class ValuePicksQueryService(
                 Price = p.LatestPrice!.Value,
                 ReferencePrice = p.ReferencePrice30!.Value,
                 LowestPrice = p.LowestPrice30!.Value,
+                p.TrackedSince,
+                p.LowestTrackedPrice,
             })
             .AsNoTracking()
             .ToListAsync(cancellationToken);
@@ -59,10 +61,12 @@ public sealed class ValuePicksQueryService(
             category, type, count);
 
         var satirHaritasi = satirlar.ToDictionary(s => s.Id);
+        var simdi = DateTimeOffset.UtcNow;
         var ogeler = siralama.Picks
             .Select(secim =>
             {
                 var s = satirHaritasi[secim.Candidate.ProductId];
+                var otuzGununEnDusugu = s.Price <= s.LowestPrice && s.LowestPrice < s.ReferencePrice;
                 return new ValuePickDto(
                     s.Id,
                     s.Name,
@@ -77,9 +81,10 @@ public sealed class ValuePicksQueryService(
                     // başka yerinde "%12 indirim" diyen ürün burada farklı
                     // bir sayı göstermemeli.
                     s.ReferencePrice > 0 ? Math.Round((s.ReferencePrice - s.Price) / s.ReferencePrice * 100, 1) : 0m,
-                    s.Price <= s.LowestPrice && s.LowestPrice < s.ReferencePrice,
+                    otuzGununEnDusugu,
                     s.InStock,
-                    AffiliateLinkBuilder.Apply(s.Url, s.BrandName, affiliateOptions.Value));
+                    AffiliateLinkBuilder.Apply(s.Url, s.BrandName, affiliateOptions.Value),
+                    TakipDibi.Baslangic(otuzGununEnDusugu, s.Price, s.TrackedSince, s.LowestTrackedPrice, simdi));
             })
             .ToList();
 

@@ -1,5 +1,6 @@
 import { Deal } from './deal.model';
 import { displayName } from './display-name';
+import { takipBaslangici } from './takip-dibi';
 import {
   PROTEIN_REFERENCE_GRAMS,
   pricePerServing,
@@ -47,7 +48,9 @@ function priceParagraph(deal: Deal, discountEventCount?: number): string {
 
   if (deal.isAtThirtyDayLow) {
     sentences.push(
-      `${name}, şu anda ${price(deal.currentPrice)} ile son 30 günde ölçtüğümüz en düşük seviyede.`,
+      deal.lowestSince
+        ? `${name}, şu anda ${price(deal.currentPrice)} ile takibe başladığımız ${takipBaslangici(deal.lowestSince)} tarihinden beri ölçtüğümüz en düşük seviyede.`
+        : `${name}, şu anda ${price(deal.currentPrice)} ile son 30 günde ölçtüğümüz en düşük seviyede.`,
     );
     sentences.push(
       `Aynı dönemde en az bir hafta boyunca ${price(deal.referencePrice)} seviyesini gördük; bugünkü fiyat bunun %${deal.discountPercent} altında.`,

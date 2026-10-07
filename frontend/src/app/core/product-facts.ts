@@ -1,4 +1,5 @@
 import { Deal } from './deal.model';
+import { takipBaslangici } from './takip-dibi';
 import { CATEGORY_LABELS } from './category-labels';
 import {
   PROTEIN_REFERENCE_GRAMS,
@@ -115,7 +116,12 @@ export function buildProductFacts(deal: Deal, discountEventCount?: number): Prod
         : `${formatPrice(deal.referencePrice)} — güncel fiyat referansla aynı seviyede`,
   });
 
-  if (deal.isAtThirtyDayLow) {
+  if (deal.lowestSince) {
+    facts.push({
+      label: 'Takip başlangıcından beri',
+      value: `Güncel fiyat, takibe başladığımız ${takipBaslangici(deal.lowestSince)} tarihinden beri ölçtüğümüz en düşük seviyede`,
+    });
+  } else if (deal.isAtThirtyDayLow) {
     facts.push({
       label: '30 günlük seyir',
       value: 'Güncel fiyat, son 30 günde ölçtüğümüz en düşük seviyede',

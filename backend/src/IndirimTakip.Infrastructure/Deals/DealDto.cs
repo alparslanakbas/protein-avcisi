@@ -90,4 +90,7 @@ public record DealDto(
     //
     // Dolu olduğunda ürün sayfası canonical'ı asıl sayfayı gösteriyor.
     // NULL = bu sayfa zaten asıl sayfa (ya da hiç kopyası yok).
-    int? CanonicalProductId = null);
+    int? CanonicalProductId = null,
+    // Güncel fiyat takip başladığından beri gördüğümüz en düşük fiyatsa takibin başladığı an, değilse NULL.
+    // "Son 30 günün en düşüğü" rozetinin üst kademesi (IsAtThirtyDayLow şartını taşıyor), bkz. TakipDibi.
+    DateTimeOffset? LowestSince = null);

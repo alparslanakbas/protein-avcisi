@@ -14,6 +14,7 @@ import { LoadErrorInfo, describeLoadError, friendlyErrorMessage } from '../core/
 import { PageMetaService } from '../core/page-meta.service';
 import { PriceHistoryService } from '../core/price-history.service';
 import { formatRelativeTime } from '../core/relative-time';
+import { takipDibiAciklamasi, takipDibiEtiketi } from '../core/takip-dibi';
 import { ProductModal } from '../product-modal/product-modal';
 import { SiteHeader } from '../site-header/site-header';
 
@@ -29,6 +30,8 @@ const MAX_AUTO_RETRY = 2;
 })
 export class FavoritesPage implements OnInit, OnDestroy {
   protected readonly displayName = displayName;
+  protected readonly takipDibiEtiketi = takipDibiEtiketi;
+  protected readonly takipDibiAciklamasi = takipDibiAciklamasi;
   private readonly favoritesService = inject(FavoritesService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
