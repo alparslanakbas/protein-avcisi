@@ -319,6 +319,7 @@ app.MapYonetimSession(adminApiKey);
 app.MapCollectorEndpoints(ingestApiKey);
 app.MapHealthEndpoints();
 app.MapDealsEndpoints(PublicDataCachePolicy);
+app.MapKampanyaEndpoints(PublicDataCachePolicy);
 app.MapCouponEndpoints(PublicDataCachePolicy);
 app.MapArticleEndpoints(PublicDataCachePolicy);
 app.MapPriceHistoryEndpoints(PublicDataCachePolicy);

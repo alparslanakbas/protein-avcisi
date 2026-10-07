@@ -464,6 +464,7 @@ public static class DependencyInjection
         services.AddScoped<ScrapeIngestionService>();
         services.AddScoped<ProductDetailBackfillService>();
         services.AddScoped<DealsQueryService>();
+        services.AddScoped<KampanyaIndirimServisi>();
         services.AddScoped<CatalogStatsQueryService>();
         services.AddScoped<ValuePicksQueryService>();
         services.AddScoped<PriceHistoryQueryService>();

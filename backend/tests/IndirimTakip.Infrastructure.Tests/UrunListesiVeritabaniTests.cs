@@ -144,8 +144,28 @@ public sealed class UrunListesiVeritabani : IAsyncLifetime
         Urun(swiss, "Swiss Nutrition Kolajen", null, null, 700m);
         Urun(swiss, "Swiss Nutrition Magnezyum", "vitamin", "swissnutrition.com.tr", Hafta(150m, 120m));
 
+        // Sezon sayfasının yönetmelik ölçütü (KampanyaIndirimServisi): mağaza hepsinde üstü çizili eski fiyat
+        // gösteriyor. Ayrı marka ve kategori, başka testlerin sayılarına karışmasın diye.
+        var kampanya = new Brand { Name = "Kampanya Markası", BaseUrl = "https://kampanya.example" };
+        db.Brands.Add(kampanya);
+        void EskiFiyat(Product urun, decimal eski)
+        {
+            foreach (var f in urun.PriceHistories)
+                f.StoreOldPrice = eski;
+        }
+        EskiFiyat(Urun(kampanya, "Kampanya Gerçek", "kilo-hacim", null, [.. Enumerable.Repeat(1000m, 10), 850m, 850m]), 1000m);
+        // Tek günlük 500 TL okuma hatası karşılaştırma fiyatı sayılmamalı (en az iki günde görülen en düşük: 1000).
+        EskiFiyat(Urun(kampanya, "Kampanya Tek Gün Hatalı", "kilo-hacim", null,
+            [.. Enumerable.Repeat(1000m, 5), 500m, .. Enumerable.Repeat(1000m, 4), 950m, 950m]), 1100m);
+        EskiFiyat(Urun(kampanya, "Kampanya Kalıcı", "kilo-hacim", null, [.. Enumerable.Repeat(800m, 35)]), 1200m);
+        EskiFiyat(Urun(kampanya, "Kampanya Ucuzlamamış", "kilo-hacim", null, [.. Enumerable.Repeat(700m, 10), 900m, 900m, 900m]), 1200m);
+        EskiFiyat(Urun(kampanya, "Kampanya Ürün Değişmiş", "kilo-hacim", null, [.. Enumerable.Repeat(300m, 10), 900m, 900m, 900m]), 1500m);
+        EskiFiyat(Urun(kampanya, "Kampanya Kısa Geçmiş", "kilo-hacim", null, 600m, 600m, 600m), 900m);
+        Urun(kampanya, "Kampanya Beyansız", "kilo-hacim", null, 500m, 500m);
+
         GorunenUrun = sira;
-        IndirimliUrun = 8 + 1 + 8 + 1 + 1; // whey'ler, D3, Olimp'ler, magnezyum, kısa aralı düşüş
+        // whey'ler, D3, Olimp'ler, magnezyum, kısa aralı düşüş; kampanyadan gerçek ve tek gün hatalı (olağan fiyat 1000)
+        IndirimliUrun = 8 + 1 + 8 + 1 + 1 + 2;
 
         // GÖRÜNMEMESİ gerekenler.
         var bayat = Urun(hardline, "Bayat Ürün", "protein-tozu", null, 999m);
@@ -278,6 +298,23 @@ public class UrunListesiVeritabaniTests(UrunListesiVeritabani veri) : IClassFixt
             Assert.Equal((urun.CurrentPrice, urun.ScrapedAt, urun.ReferencePrice, urun.DiscountPercent),
                 (f.CurrentPrice, f.ScrapedAt, f.ReferencePrice, f.DiscountPercent));
         }
+    }
+
+    // Sezon sayfası ve rapor yazısı (7 Ekim): mağazanın indirim dediği ürünler yönetmelik ölçütüyle. Tek günlük
+    // hatalı düşük fiyat karşılaştırma fiyatı sayılmıyor, iki kattan büyük fark ürün değişikliği, bir aydan uzun
+    // aynı fiyat kalıcı; mağaza eski fiyat göstermiyorsa ürün hiç sayılmıyor.
+    [VeritabaniFact]
+    public async Task Kampanya_ozeti_yonetmelik_olcutuyle_siniflandiriyor()
+    {
+        await using var db = veri.Baglam();
+
+        var ozet = await new KampanyaIndirimServisi(db, Servis(db)).OzetAsync();
+
+        Assert.Equal(6, ozet.MagazaIndirimDiyor);
+        Assert.Equal((2, 1, 1, 1, 1), (ozet.Gercek, ozet.Ucuzlamamis, ozet.Kalici, ozet.VeriYetersiz, ozet.UrunDegismisOlabilir));
+        Assert.Equal(
+            [("Kampanya Gerçek", 1000m, 15.0m), ("Kampanya Tek Gün Hatalı", 1000m, 5.0m)],
+            ozet.GercekIndirimler.Select(k => (k.Urun.ProductName, k.OncekiEnDusuk, k.GercekYuzde)));
     }
 
     // Olağan fiyatı olmayan ürün listede kalıyor, indirimi 0: referans güncel
