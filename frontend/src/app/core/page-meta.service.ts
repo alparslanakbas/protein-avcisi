@@ -90,11 +90,19 @@ export class PageMetaService {
 // tutmuyoruz (deals-list gibi kullanıcılar ürün seçimine göre eklenip
 // kaldırılması gerekebiliyor) — çağıran taraf referansı kendi tutup bir
 // sonraki çağrıda geri veriyor.
+//
+// Referans yoksa aynı üst düzey @type'lı blok aranıyor (data-ld). Sebep (7 Ekim, canlıda ölçüldü): hidrasyonda
+// bileşenler istemcide yeniden kuruluyor, referansları boş geliyor ve sunucunun yazdığı bloğun yanına ikincisi
+// ekleniyordu; her sayfada Organization, WebSite, BreadcrumbList ve FAQPage iki kez vardı. Google sayfayı JS
+// çalıştırarak okuduğu için ikilenmiş FAQPage/Product "yinelenen alan" sayılabilir. Bir sayfada her üst düzey türden
+// tek blok var (ölçüldü), bu yüzden türe göre eşleştirmek çağrı yerlerine dokunmadan yetiyor.
 export function upsertJsonLdScript(document: Document, existingEl: HTMLScriptElement | null, data: unknown): HTMLScriptElement {
-  let el = existingEl;
+  const tur = jsonLdTuru(data);
+  let el = existingEl ?? (tur ? document.head.querySelector<HTMLScriptElement>(`script[data-ld="${tur}"]`) : null);
   if (!el) {
     el = document.createElement('script');
     el.type = 'application/ld+json';
+    if (tur) el.setAttribute('data-ld', tur);
     document.head.appendChild(el);
   }
   // "<" kaçırılıyor: JSON.stringify onu olduğu gibi bırakır ve SSR <script>
@@ -104,4 +112,10 @@ export function upsertJsonLdScript(document: Document, existingEl: HTMLScriptEle
   // < JSON olarak aynı karakter, okuyanlar farkı görmez.
   el.textContent = JSON.stringify(data).replace(/</g, '\\u003c');
   return el;
+}
+
+/** Üst düzey "@type" (yalnız harf/rakam; seçiciye güvenle girsin), yoksa null: o blok eskisi gibi her çağrıda yeni. */
+function jsonLdTuru(data: unknown): string | null {
+  const tur = typeof data === 'object' && data !== null ? (data as Record<string, unknown>)['@type'] : null;
+  return typeof tur === 'string' && /^\w+$/.test(tur) ? tur : null;
 }
