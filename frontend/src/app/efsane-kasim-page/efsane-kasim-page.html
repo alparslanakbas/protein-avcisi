@@ -74,6 +74,7 @@
         <h2 id="liste-baslik" class="pa-section-title">Şu an gerçekten ucuzlayanlar</h2>
         <p class="mt-2 max-w-2xl text-sm text-[var(--noc-neutral-300)]">
           İndirimden önceki 30 günün en düşük fiyatının altında olan ürünler, en büyük gerçek düşüşten başlayarak.
+          Fiyat geçmişini açıp ürünü takip listene ekleyebilirsin.
         </p>
         @if (o.gercekIndirimler.length === 0) {
           <div class="mt-4 rounded-[14px] bg-[var(--noc-card)] px-6 py-8 text-center text-[var(--noc-neutral-500)] shadow-[var(--noc-shadow-sm)]">
@@ -101,8 +102,9 @@
                     <span class="pa-campaign-badge">Mağaza %{{ k.urun.storeDiscountPercent | number: '1.0-1' }} diyor</span>
                   }
                 </div>
-                <div class="mt-auto pt-4">
-                  <a [href]="goToStoreUrl(k)" (click)="magazaTiklamasi(k.urun.productId)" target="_blank" rel="nofollow sponsored noopener" class="pa-primary-button h-10 w-full px-4 text-sm">Mağazaya git<i class="ph ph-arrow-square-out ml-2 text-base" aria-hidden="true"></i></a>
+                <div class="mt-auto grid grid-cols-2 gap-2 pt-4">
+                  <a [href]="productPath(k.urun)" class="pa-secondary-button h-10 px-3 text-sm">Fiyat geçmişi</a>
+                  <a [href]="goToStoreUrl(k)" (click)="magazaTiklamasi(k.urun.productId)" target="_blank" rel="nofollow sponsored noopener" class="pa-primary-button h-10 px-3 text-sm">Mağazaya git<i class="ph ph-arrow-square-out ml-2 text-base" aria-hidden="true"></i></a>
                 </div>
               </article>
             }
