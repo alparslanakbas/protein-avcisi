@@ -1,0 +1,145 @@
+<div class="noc-shell min-h-screen bg-[var(--noc-bg)] text-[var(--noc-text)]">
+  <app-site-header />
+
+  <main class="mx-auto max-w-[1280px] px-[28px] py-[22px]">
+    <nav class="mb-2 text-xs text-[var(--noc-neutral-500)]">
+      <a routerLink="/" class="hover:text-[var(--noc-accent)]">Ana Sayfa</a> / Efsane Kasım
+    </nav>
+    <h1 class="text-[38px] font-medium tracking-[-0.03em] sm:text-[42px]">Efsane Kasım'da hangi indirim gerçek?</h1>
+    <p class="mt-2 max-w-2xl text-[15px] text-[var(--noc-neutral-300)]">
+      11.11 ve Efsane Cuma'da üstü çizili fiyatlar her yerde olacak. Biz her indirimi Fiyat Etiketi Yönetmeliği'nin
+      ölçütüyle karşılaştırıyoruz: ürünün indirimden önceki 30 gündeki en düşük fiyatı.
+    </p>
+
+    <section class="mt-[22px] grid gap-3 sm:grid-cols-2" aria-label="Kampanya tarihleri">
+      <div class="flex items-center gap-4 rounded-[14px] bg-[var(--noc-card)] p-5 shadow-[var(--noc-shadow-sm)]">
+        <i class="ph ph-calendar-blank text-2xl text-[var(--noc-accent)]" aria-hidden="true"></i>
+        <div>
+          <div class="text-xs text-[var(--noc-neutral-500)]">11.11 indirimleri</div>
+          <div class="mt-0.5 text-[17px] font-semibold">{{ tarih(onBirTarihi) }}</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-4 rounded-[14px] bg-[var(--noc-card)] p-5 shadow-[var(--noc-shadow-sm)]">
+        <i class="ph ph-calendar-blank text-2xl text-[var(--noc-accent)]" aria-hidden="true"></i>
+        <div>
+          <div class="text-xs text-[var(--noc-neutral-500)]">Efsane Cuma</div>
+          <div class="mt-0.5 text-[17px] font-semibold">{{ tarih(efsaneCumaTarihi) }}</div>
+        </div>
+      </div>
+    </section>
+
+    @if (yukleniyor()) {
+      <div class="mt-[22px] space-y-3" aria-label="Ölçüm yükleniyor">
+        <div class="pa-card pa-skeleton h-[220px]"></div>
+        <div class="pa-card pa-skeleton h-[146px]"></div>
+      </div>
+    } @else if (hata()) {
+      <div class="mx-auto mt-[22px] max-w-md rounded-[14px] bg-[var(--noc-card)] px-6 py-8 text-center shadow-[var(--noc-shadow-sm)]">
+        Ölçüm şu anda yüklenemedi. Lütfen biraz sonra tekrar dene.
+      </div>
+    } @else if (ozet(); as o) {
+      <section class="mt-[22px] rounded-[14px] bg-[var(--noc-card)] p-5 shadow-[var(--noc-shadow-sm)] sm:p-7" aria-labelledby="durum-baslik">
+        <h2 id="durum-baslik" class="pa-section-title">Bugünkü durum</h2>
+        <p class="mt-4 text-[44px] font-semibold leading-none tracking-[-0.04em] sm:text-[56px]">
+          <span class="text-[var(--pa-positive)]">{{ o.gercek }}</span><span class="text-[var(--noc-neutral-500)]"> / {{ degerlendirilen() }}</span>
+        </p>
+        <p class="mt-3 max-w-2xl text-[15px] text-[var(--noc-neutral-300)]">
+          Mağazanın üstü çizili fiyat gösterdiği ve fiyat geçmişini değerlendirebildiğimiz ürünlerden bu kadarı gerçekten
+          ucuz: bugünkü fiyatı, indirimden önceki 30 günün en düşük fiyatının altında.
+        </p>
+        <dl class="mt-5 grid gap-3 sm:grid-cols-3">
+          <div class="rounded-[12px] border border-[var(--noc-divider)] p-4">
+            <dt class="text-xs text-[var(--noc-neutral-500)]">Bir aydır aynı fiyatta</dt>
+            <dd class="mt-1 text-2xl font-semibold">{{ o.kalici }}</dd>
+            <dd class="mt-1 text-xs text-[var(--noc-neutral-500)]">Fiyat 30 günden uzun süredir değişmemiş, üstü çizili fiyat yine de gösteriliyor.</dd>
+          </div>
+          <div class="rounded-[12px] border border-[var(--noc-divider)] p-4">
+            <dt class="text-xs text-[var(--noc-neutral-500)]">Ucuzlamamış</dt>
+            <dd class="mt-1 text-2xl font-semibold">{{ o.ucuzlamamis }}</dd>
+            <dd class="mt-1 text-xs text-[var(--noc-neutral-500)]">İndirimden önceki 30 günde bugünkü fiyata ya da daha ucuza satılmış.</dd>
+          </div>
+          <div class="rounded-[12px] border border-[var(--noc-divider)] p-4">
+            <dt class="text-xs text-[var(--noc-neutral-500)]">Saymadıklarımız</dt>
+            <dd class="mt-1 text-2xl font-semibold">{{ o.veriYetersiz + o.urunDegismisOlabilir }}</dd>
+            <dd class="mt-1 text-xs text-[var(--noc-neutral-500)]">Fiyat geçmişi yetersiz ya da aynı sayfada başka bir boyutun fiyatını okumuş olabiliriz.</dd>
+          </div>
+        </dl>
+        <p class="mt-4 text-xs text-[var(--noc-neutral-500)]">
+          Son ölçüm {{ olcumZamani(o.olcum) }}. Yöntemi ve ilk ölçümün sonuçlarını
+          <a routerLink="/rehber/takviye-indirimleri-gercek-mi" class="text-[var(--noc-accent)] hover:underline">rapor yazımızda</a> anlattık.
+        </p>
+      </section>
+
+      <section class="mt-[45px]" aria-labelledby="liste-baslik">
+        <h2 id="liste-baslik" class="pa-section-title">Şu an gerçekten ucuzlayanlar</h2>
+        <p class="mt-2 max-w-2xl text-sm text-[var(--noc-neutral-300)]">
+          İndirimden önceki 30 günün en düşük fiyatının altında olan ürünler, en büyük gerçek düşüşten başlayarak.
+        </p>
+        @if (o.gercekIndirimler.length === 0) {
+          <div class="mt-4 rounded-[14px] bg-[var(--noc-card)] px-6 py-8 text-center text-[var(--noc-neutral-500)] shadow-[var(--noc-shadow-sm)]">
+            Şu an bu ölçütle gerçek indirimde olan ürün yok. Kasım yaklaştıkça liste dolacak; bültene katılırsan haber veririz.
+          </div>
+        } @else {
+          <p class="mb-2 mt-4 text-[11px] text-[var(--noc-neutral-500)]">Bazı mağaza bağlantıları satış ortaklığıdır: komisyon alabiliriz, ödediğin fiyat değişmez.</p>
+          <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            @for (k of o.gercekIndirimler; track k.urun.productId) {
+              <article class="flex flex-col rounded-[14px] bg-[var(--noc-card)] p-4 shadow-[var(--noc-shadow-sm)]">
+                <div class="flex gap-3">
+                  @if (k.urun.imageUrl) {
+                    <img [src]="k.urun.imageUrl" [alt]="displayName(k.urun.productName)" loading="lazy" class="h-16 w-16 shrink-0 rounded-[10px] bg-[var(--noc-neutral-100)] object-contain p-1.5" />
+                  }
+                  <div class="min-w-0">
+                    <div class="text-[11px] text-[var(--noc-neutral-500)]">{{ k.urun.brandName }}</div>
+                    <a [href]="productPath(k.urun)" class="line-clamp-2 text-sm font-semibold leading-snug hover:text-[var(--noc-accent)]">{{ displayName(k.urun.productName) }}</a>
+                  </div>
+                </div>
+                <div class="mt-3 text-xl font-bold tracking-[-0.02em]">{{ k.urun.currentPrice | number: '1.2-2' }} ₺</div>
+                <div class="mt-1 text-xs text-[var(--noc-neutral-500)]">İndirimden önceki 30 günün en düşüğü: {{ k.oncekiEnDusuk | number: '1.2-2' }} ₺</div>
+                <div class="mt-2 flex flex-wrap gap-2">
+                  <span class="pa-positive-badge">%{{ k.gercekYuzde | number: '1.0-1' }} gerçek düşüş</span>
+                  @if (k.urun.storeDiscountPercent && k.urun.storeDiscountPercent > 0) {
+                    <span class="pa-campaign-badge">Mağaza %{{ k.urun.storeDiscountPercent }} diyor</span>
+                  }
+                </div>
+                <div class="mt-auto pt-4">
+                  <a [href]="goToStoreUrl(k)" (click)="magazaTiklamasi(k.urun.productId)" target="_blank" rel="nofollow sponsored noopener" class="pa-primary-button h-10 w-full px-4 text-sm">Mağazaya git<i class="ph ph-arrow-square-out ml-2 text-base" aria-hidden="true"></i></a>
+                </div>
+              </article>
+            }
+          </div>
+        }
+      </section>
+    }
+
+    <section class="mt-[45px] rounded-[14px] bg-[var(--noc-card)] p-5 shadow-[var(--noc-shadow-sm)] sm:flex sm:items-center sm:justify-between sm:gap-8 sm:p-7" aria-labelledby="bulten-baslik">
+      <div class="max-w-xl">
+        <h2 id="bulten-baslik" class="text-lg font-semibold">Kasım'da haber verelim</h2>
+        <p class="mt-1 text-sm text-[var(--noc-neutral-300)]">Gerçek indirimler başlayınca haftalık e-postamızda göreceksin. İstediğin zaman abonelikten çıkabilirsin.</p>
+      </div>
+      <div class="mt-4 sm:mt-0 sm:min-w-[320px]"><app-newsletter-signup /></div>
+    </section>
+
+    <section class="mt-[45px] max-w-3xl" aria-labelledby="sss-baslik">
+      <h2 id="sss-baslik" class="pa-section-title">Sık sorulanlar</h2>
+      <h3 class="mt-5 text-[15px] font-semibold">Efsane Cuma ne zaman?</h3>
+      <p class="mt-1 text-sm leading-6 text-[var(--noc-neutral-300)]">
+        {{ yil }} yılında {{ tarih(efsaneCumaTarihi) }}: Kasım'ın son cuması, Black Friday ile aynı gün. Pek çok mağaza
+        indirimleri birkaç gün önce başlatıp hafta sonu boyunca sürdürüyor.
+      </p>
+      <h3 class="mt-5 text-[15px] font-semibold">Bir indirimin gerçek olduğunu nasıl anlarım?</h3>
+      <p class="mt-1 text-sm leading-6 text-[var(--noc-neutral-300)]">
+        Üstü çizili fiyata değil, ürünün son 30 gündeki fiyatına bak. Fiyat Etiketi Yönetmeliği'ne göre indirimli satışta
+        "indirimden önceki fiyat", indirimden önceki 30 günün en düşük fiyatıdır. Ürün sayfalarımızdaki fiyat geçmişi grafiği bunu gösteriyor.
+      </p>
+      <h3 class="mt-5 text-[15px] font-semibold">Sepette uygulanan kodlar sayılıyor mu?</h3>
+      <p class="mt-1 text-sm leading-6 text-[var(--noc-neutral-300)]">
+        Hayır. Ölçüm mağaza sayfasında görünen fiyata dayanıyor; kupon kodları ve sepet kampanyaları ayrıca indirim sağlayabilir.
+      </p>
+      <h3 class="mt-5 text-[15px] font-semibold">Sitedeki "gerçek indirim" etiketiyle farkı ne?</h3>
+      <p class="mt-1 text-sm leading-6 text-[var(--noc-neutral-300)]">
+        Ürün kartlarındaki etiket daha esnek bir kuralla çalışıyor: fiyatı, son 30 günde en az 7 farklı günde görülen olağan
+        fiyatla karşılaştırıyor. Bu sayfada yönetmeliğin daha katı ölçütünü kullanıyoruz.
+      </p>
+    </section>
+  </main>
+</div>

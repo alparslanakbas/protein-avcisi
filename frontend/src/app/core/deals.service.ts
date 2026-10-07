@@ -7,6 +7,7 @@ import { BrandStats } from './brand-stats.model';
 import { CategoryPriceStats } from './category-price-stats.model';
 import { Deal } from './deal.model';
 import { HomepageStats } from './homepage-stats.model';
+import { KampanyaOzeti } from './kampanya';
 import { FilterOptions, PagedResult } from './paged-result.model';
 import { ProductSparkline } from './product-sparkline.model';
 import { ValuePicks } from './value-pick.model';
@@ -59,6 +60,11 @@ export class DealsService {
 
   getAllProducts(query: DealsQuery): Observable<PagedResult<Deal>> {
     return this.http.get<PagedResult<Deal>>(`${API_BASE_URL}/api/products`, { params: this.buildParams(query) });
+  }
+
+  // Sezon sayfası: mağazanın indirim dediği ürünler yönetmelik ölçütüyle (backend KampanyaIndirimServisi).
+  getKampanyaOzeti(): Observable<KampanyaOzeti> {
+    return this.http.get<KampanyaOzeti>(`${API_BASE_URL}/api/kampanya/ozet`);
   }
 
   getStoreDeals(query: DealsQuery): Observable<PagedResult<Deal>> {

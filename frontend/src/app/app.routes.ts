@@ -50,6 +50,11 @@ export const routes: Routes = [
     loadComponent: () => import('./article-list-page/article-list-page').then((m) => m.ArticleListPage),
   },
   {
+    // Sezon sayfası (11.11 ve Efsane Cuma); adres yılsız ve kalıcı.
+    path: 'efsane-kasim',
+    loadComponent: () => import('./efsane-kasim-page/efsane-kasim-page').then((m) => m.EfsaneKasimPage),
+  },
+  {
     path: 'rehber/:slug',
     loadComponent: () => import('./article-page/article-page').then((m) => m.ArticlePage),
   },
