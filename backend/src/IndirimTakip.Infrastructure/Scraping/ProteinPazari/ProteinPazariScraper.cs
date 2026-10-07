@@ -29,6 +29,9 @@ namespace IndirimTakip.Infrastructure.Scraping.ProteinPazari;
 /// <c>OrdinalIgnoreCase</c> olduğu ve bu karşılaştırma Türkçe İ'yi katlamadığı
 /// için o yazımlar takma ad listesine TEK TEK eklendi — eklenmeseydi katalogda
 /// "BigJoy" varken ikinci bir "BİG JOY SPORTS" markası oluşurdu.
+/// Kartında marka satırı hiç olmayan ürünlerde (7 Ekim: 54) marka adın başından
+/// okunuyor, ama yalnızca bu taramanın kartlarında görülen marka adlarıyla
+/// birebir kelime eşleşmesi varsa (bkz. <see cref="MarkayiAdindanBul"/>).
 ///
 /// <b>AKSESUAR İKİ SÜZGEÇTEN GEÇİYOR, ikisi de gerekli (ölçüldü, 4 Eylül):</b>
 /// <list type="number">
@@ -44,8 +47,8 @@ namespace IndirimTakip.Infrastructure.Scraping.ProteinPazari;
 public sealed partial class ProteinPazariScraper(HttpClient httpClient, ILogger<ProteinPazariScraper> logger)
     : IBrandScraper
 {
-    // Ürünün kendi markası okunamazsa kullanılacak ad. Pratikte 792 üründen
-    // 4'ünde marka boş — sitede de boş, tahmin edilmiyor.
+    // Ürünün markası ne kartta ne adında bulunamazsa kullanılacak ad (bkz.
+    // MarkayiAdindanBul). 7 Ekim'de 54 ürün buradaydı, eşleştirmeden sonra 2.
     public string BrandName => "Protein Pazarı";
     public string BaseUrl => "https://proteinpazari.com.tr";
 
@@ -116,9 +119,25 @@ public sealed partial class ProteinPazariScraper(HttpClient httpClient, ILogger<
         if (products.Count == 0)
             throw new InvalidOperationException("proteinpazari: hiç ürün alınamadı.");
 
+        // Kartında marka olmayan ürün: marka adının başından, yalnız bu taramada başka kartlarda görülen adlarla.
+        var markalar = products.Values.Select(p => p.BrandName).OfType<string>().Distinct(StringComparer.Ordinal).ToList();
+        var markasiz = 0;
+        var adindan = 0;
+        foreach (var (url, urun) in products.ToList())
+        {
+            if (urun.BrandName is not null)
+                continue;
+            markasiz++;
+            if (MarkayiAdindanBul(urun.Name, markalar) is { } marka)
+            {
+                products[url] = urun with { BrandName = marka };
+                adindan++;
+            }
+        }
+
         logger.LogInformation(
-            "proteinpazari: {Categories} kategori gezildi, {Found} ürün alındı, {Filtered} takviye dışı süzüldü, {Failures} sayfa hatası.",
-            categories.Count, products.Count, filtered.Count, failures);
+            "proteinpazari: {Categories} kategori gezildi, {Found} ürün alındı, {Filtered} takviye dışı süzüldü, {Failures} sayfa hatası; markasız {Markasiz} kartın {Adindan}'i markayı adından aldı.",
+            categories.Count, products.Count, filtered.Count, failures, markasiz, adindan);
 
         return [.. products.Values];
     }
@@ -257,6 +276,88 @@ public sealed partial class ProteinPazariScraper(HttpClient httpClient, ILogger<
 
         return result;
     }
+
+    /// <summary>
+    /// Kartında marka olmayan ürünün markasını adının başından bulur; yalnızca <paramref name="markalar"/> içinden
+    /// (aynı taramada başka kartların "Marka:" satırında görülen adlar). Bulamazsa null.
+    /// </summary>
+    /// <remarks>
+    /// <b>Neden (7 Ekim):</b> 54 ürünün kartında "stats" bloğu hiç yok, kaynak bu ürünlere marka atamamış (ürün
+    /// sayfasında da yok). Marka bilinmeyince kazıyıcının kendi adı ("Protein Pazarı") yazılıyordu: bayi adıyla sahte
+    /// bir marka sayfası oluşmuştu ve "her markadan bir ürün" listelerinde aynı Kingsize kreatini iki sırada çıkıyordu.
+    /// Ama marka adın içinde açıkça yazıyor ("KİNGSİZE NUTRİTİON CREATINE POWDER…").
+    /// <b>Neden yalnızca bu taramanın marka adları:</b> bu bayinin gerçekten taşıdığı markalar ve yutma servisinde
+    /// zaten mevcut kayıtlara çözülüyorlar; serbest bir ad kopya marka yaratırdı (bkz. ResolveBrand). Ad tahmini YOK:
+    /// adın ilk kelimeleri bir marka adının kelimeleriyle birebir aynı olmalı ("BİG JOY" = "BigJoy" gibi bitişik
+    /// yazım da sayılıyor); en uzun eşleşme kazanıyor, bu yüzden "PRIME HYDRATION" Prime Nutrition'a değil Prime
+    /// Hydration'a gidiyor. 54 gerçek adın 52'si eşleşti; eşleşmeyen ikisinin (Danvita, Flava) markası bu bayinin
+    /// hiçbir kartında yok ve boş kalıyor.
+    /// </remarks>
+    internal static string? MarkayiAdindanBul(string ad, IReadOnlyCollection<string> markalar)
+    {
+        var adParcalari = Kelimeler(ad);
+        string? bulunan = null;
+        var bulunanUzunluk = 0;
+
+        foreach (var marka in markalar)
+        {
+            var markaParcalari = Kelimeler(marka);
+            if (markaParcalari.Count == 0)
+                continue;
+
+            var tuketilen = OnekEslesmesi(adParcalari, markaParcalari);
+            if (tuketilen == 0)
+                continue;
+
+            // Eşit uzunlukta iki eşleşme aynı ilk kelimelere dayandığı için aynı markadır; çakışma olamıyor.
+            var uzunluk = adParcalari.Take(tuketilen).Sum(k => k.Length);
+            if (uzunluk > bulunanUzunluk)
+                (bulunan, bulunanUzunluk) = (marka, uzunluk);
+        }
+
+        return bulunan;
+    }
+
+    // Kaç ad kelimesinin markaya karşılık geldiği; eşleşme yoksa 0. Kelime kelime ya da bitişik yazım (en çok 3 kelime).
+    private static int OnekEslesmesi(List<string> ad, List<string> marka)
+    {
+        if (marka.Count <= ad.Count && ad.Take(marka.Count).SequenceEqual(marka, StringComparer.Ordinal))
+            return marka.Count;
+
+        var bitisik = string.Concat(marka);
+        for (var j = 1; j <= Math.Min(3, ad.Count); j++)
+        {
+            if (string.Equals(string.Concat(ad.Take(j)), bitisik, StringComparison.Ordinal))
+                return j;
+        }
+
+        return 0;
+    }
+
+    // Türkçe harfler katlanmış, küçük harf kelimeler; tire kelimenin parçası ("Z-Konzept"), diğer işaretler ayırıcı
+    // ("Bite & More" = "BİTE MORE").
+    private static List<string> Kelimeler(string metin)
+    {
+        var katli = new System.Text.StringBuilder(metin.Length);
+        foreach (var ch in metin)
+        {
+            katli.Append(ch switch
+            {
+                'ç' or 'Ç' => 'c',
+                'ğ' or 'Ğ' => 'g',
+                'ı' or 'İ' or 'I' => 'i',
+                'ö' or 'Ö' => 'o',
+                'ş' or 'Ş' => 's',
+                'ü' or 'Ü' => 'u',
+                _ => char.ToLowerInvariant(ch),
+            });
+        }
+
+        return KelimeAyiriciRegex().Split(katli.ToString()).Where(k => k.Length > 0).ToList();
+    }
+
+    [GeneratedRegex(@"[^\p{L}\p{N}-]+")]
+    private static partial Regex KelimeAyiriciRegex();
 
     /// <summary>
     /// "1.299,00TL" → 1299.00. Fiyat Türkçe biçimde yazılıyor; invariant

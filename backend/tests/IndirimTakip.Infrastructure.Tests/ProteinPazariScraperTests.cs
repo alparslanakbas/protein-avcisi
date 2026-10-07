@@ -122,4 +122,116 @@ public class ProteinPazariScraperTests
         // çıkmadığı için kendiliğinden düşüyorlar.
         Assert.Contains("https://proteinpazari.com.tr/kargo-ve-teslimat", kategoriler);
     }
+
+    // Kartında marka olmayan ürünler (7 Ekim): marka adın başından, yalnız aynı taramanın marka adlarıyla.
+    // Sözlük ve adlar canlıdan: bu bayinin 49 marka adı ve "Protein Pazarı"na düşmüş 54 ürün.
+    private static readonly string[] BayininMarkalari =
+    [
+        "Aegis", "Animal Joy", "Applied Nutrition", "Army of One", "Bad Ass", "Basix",
+        "BigJoy", "BioTech USA", "Bioxlab", "Bite & More", "Cellucor", "Clean Powders",
+        "DY Nutrition", "Dex Supports", "Dymatize", "Effive Nutrition", "Enervit", "Fa Nutrition",
+        "GPN", "Grenade", "Hardline", "Herbina", "Jnx Sports", "Kevin Levrone",
+        "Kingsize", "Mealjoy", "Monster Energy", "Multipower", "Nuclear Nutrition", "Nutrend",
+        "Nutrever", "Olimp", "On The Go", "Optimum Nutrition", "Prime Hydration", "Prime Nutrition",
+        "ProteinOcean", "QNT", "Rule One", "S4U Nutrition", "SNCK", "SiS",
+        "TNT", "Trec", "Universal", "Vitargo", "Z-Konzept", "ZeroShot",
+        "Zoomad Labs",
+    ];
+
+    private static readonly string[] MarkasizAdlar =
+    [
+        "APPLİED NUTRİTİON CRİTİCAL WHEY PROTEİN 900 GR",
+        "BIG JOY VITAMINS-OMEGA 3 60 SOFTGELS",
+        "BİG JOY ARGİNİNE 120 KAPSÜL",
+        "BİG JOY BCAA + GLUTAMINE + CREATINE 480 GR",
+        "BİG JOY BEEF&WHEY PROTEİN 1088 GR",
+        "BİG JOY BEEF&WHEY PROTEİN 2176 GR",
+        "BİG JOY BETA ALANİNE POWDER 300 GR",
+        "BİG JOY BİG WHEY GO 2244 GR - 68 PAKET ÇİKOLATA",
+        "BİG JOY BİG WHEY GO 495 GR - 15 PAKET",
+        "BİG JOY CLABİG 1000 MG 99 KAPSÜL",
+        "BİG JOY CİTRULLİNE MALATE 150 GR",
+        "BİG JOY CİTRULLİNE MALATE 300 GR",
+        "BİG JOY GLUTABİG 150 GR",
+        "BİG JOY HYDRO WHEY PROTEIN ÇİKOLATA 476 GR",
+        "BİG JOY ISOPRO WHEY İSOLATE 1098 GR",
+        "BİG JOY L-CARNİTİNE 1000 ML",
+        "BİG JOY PREDATOR 1000 ML",
+        "BİG JOY VITAMINS DETOX PLUS 60 KAPSÜL",
+        "BİG JOY VİTAMİNS BROMELAIN 60 TABLET",
+        "BİG JOY VİTAMİNS MULTIFORM MAGNESIUM COMPLEX 60 TABLET",
+        "BİG JOY VİTAMİNS WOMENS BİGBİOTİC 30 KAPSÜL",
+        "BİTE MORE PROTEİN PANCAKE (50 GR) - 12 ADET",
+        "BİTE MORE PROTEİN PANCAKE (50 GR) - 12 ADET",
+        "BİTE MORE PROTEİN PANCAKE (50 GR) - 12 ADET",
+        "DANVİTA CRISP BREAD WHEAT CHEESE GARLIC 130 GR",
+        "FLAVA L-THEANINE 45 KAPSÜL",
+        "HARDLİNE BCAA 4:1:1 ATB6 120 TABLET",
+        "HARDLİNE CAFFEİNE 200 MG LİQUİD 20 ADET (30 Ml)",
+        "HARDLİNE CREATİNE %100 MİCRONİZED 300 GR",
+        "HARDLİNE HİPRO İSOWHEY 1800 GR",
+        "HARDLİNE NATURALS COLLAGEN FLEX VİŞNE 330 GR",
+        "HARDLİNE NATURALS VİTAMİN D3 K2 60 JEL KAPSÜL",
+        "HARDLİNE PROGAİNER 3000 GR",
+        "HARDLİNE TRİBULUS TERRESTRİS 100 KAPSÜL",
+        "HARDLİNE WHEY 3 MATRİX 4000 GR",
+        "KEVIN LEVRONE GOLD CREATINE 120 TABLET",
+        "KİNGSİZE NUTRİTİON CREATINE POWDER 1000 GR AROMASIZ",
+        "OLİMP ROCKY ATHELETES CREATINE 200 GR LİMONATA",
+        "ON THE GO MAGNESIUM NIGHTTIME FORMULA 60 KAPS",
+        "ON THE GO PROGEL + CAFFEİNE 60 ML - 24 ADET",
+        "PRIME HYDRATION BLUE CHİLL 500 ML TEKLİ",
+        "PROTEINOCEAN CREATINE CREAPURE 500 GR",
+        "PROTEİNOCEAN CITRULLINE MALATE 300 GR",
+        "PROTEİNOCEAN PRE-WORKOUT 12 SHOT",
+        "PROTEİNOCEAN PRE-WORKOUT SUPREME GAME DAY 300 GR",
+        "PROTEİNOCEAN PSYLLİUM HUSK 180 GR",
+        "PROTEİNOCEAN PUMP STIM FREE 300 GR",
+        "PROTEİNOCEAN SPREY ZEYTİNYAĞI 150 ML",
+        "PROTEİNOCEAN WHEY PROTEİN KARMA KUTU 6X25 GR",
+        "PRİME NUTRİTİON CREATİNE 144 GR (6 GR) - 24 ADET",
+        "SNCK PROTEİN BAR 55 GR TEKLİ",
+        "SNCK PROTEİN BAR 55 GR TEKLİ KARAMEL",
+        "TREC CREATİNE %100 CREATİNE MONOHYDRATE 300 GR",
+        "Z-KONZEPT ULTİMATE RECOVERY FORMULA PRO 700 GR",
+    ];
+
+    [Theory]
+    [InlineData("KİNGSİZE NUTRİTİON CREATINE POWDER 1000 GR AROMASIZ", "Kingsize")]
+    [InlineData("BİG JOY BEEF&WHEY PROTEİN 1088 GR", "BigJoy")]
+    [InlineData("BIG JOY VITAMINS-OMEGA 3 60 SOFTGELS", "BigJoy")]
+    [InlineData("PRIME HYDRATION BLUE CHİLL 500 ML TEKLİ", "Prime Hydration")]
+    [InlineData("PRİME NUTRİTİON CREATİNE 144 GR (6 GR) - 24 ADET", "Prime Nutrition")]
+    [InlineData("BİTE MORE PROTEİN PANCAKE (50 GR) - 12 ADET", "Bite & More")]
+    [InlineData("Z-KONZEPT ULTİMATE RECOVERY FORMULA PRO 700 GR", "Z-Konzept")]
+    [InlineData("TREC CREATİNE %100 CREATİNE MONOHYDRATE 300 GR", "Trec")]
+    [InlineData("HARDLİNE NATURALS VİTAMİN D3 K2 60 JEL KAPSÜL", "Hardline")]
+    [InlineData("PROTEINOCEAN CREATINE CREAPURE 500 GR", "ProteinOcean")]
+    public void Markasiz_kartta_marka_adin_basindan_bayinin_marka_adlariyla_bulunuyor(string ad, string beklenen) =>
+        Assert.Equal(beklenen, ProteinPazariScraper.MarkayiAdindanBul(ad, BayininMarkalari));
+
+    // Tahmin yok: bayinin hiçbir kartında geçmeyen marka, kelimenin yalnız başı ("HARD" ≠ Hardline) ya da adın
+    // ortasında geçen marka eşleşmiyor.
+    [Theory]
+    [InlineData("DANVİTA CRISP BREAD WHEAT CHEESE GARLIC 130 GR")]
+    [InlineData("FLAVA L-THEANINE 45 KAPSÜL")]
+    [InlineData("HARDCORE WHEY 900 GR")]
+    [InlineData("SHAKER HARDLİNE 700 ML")]
+    [InlineData("BIGJOYFUL GAINER")]
+    public void Bayinin_marka_adlariyla_birebir_baslamayan_ad_markasiz_kaliyor(string ad) =>
+        Assert.Null(ProteinPazariScraper.MarkayiAdindanBul(ad, BayininMarkalari));
+
+    [Fact]
+    public void Canlidaki_54_markasiz_urunun_52si_eslesiyor_kalan_ikisi_bayinin_tasimadigi_markalar()
+    {
+        var sonuc = MarkasizAdlar.Select(a => (Ad: a, Marka: ProteinPazariScraper.MarkayiAdindanBul(a, BayininMarkalari))).ToList();
+
+        Assert.Equal(54, sonuc.Count);
+        Assert.Equal(["DANVİTA CRISP BREAD WHEAT CHEESE GARLIC 130 GR", "FLAVA L-THEANINE 45 KAPSÜL"],
+            sonuc.Where(s => s.Marka is null).Select(s => s.Ad).Order(StringComparer.Ordinal));
+        Assert.Equal(20, sonuc.Count(s => s.Marka == "BigJoy"));
+        Assert.Equal(9, sonuc.Count(s => s.Marka == "Hardline"));
+        Assert.Equal(8, sonuc.Count(s => s.Marka == "ProteinOcean"));
+        Assert.Equal(3, sonuc.Count(s => s.Marka == "Bite & More"));
+    }
 }
