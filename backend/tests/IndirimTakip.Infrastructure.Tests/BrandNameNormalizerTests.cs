@@ -24,6 +24,7 @@ public class BrandNameNormalizerTests
     [InlineData("Swiss", "Swiss Nutrition")]
     [InlineData("Zero Shot", "ZeroShot")]
     [InlineData("Trec Nutrition", "Trec")]
+    [InlineData("DYMATIZE NUTRITION", "Dymatize")]
     public void BilinenTakmaAdlarKanonigeCevrilir(string ham, string beklenen)
     {
         Assert.Equal(beklenen, BrandNameNormalizer.Normalize(ham));

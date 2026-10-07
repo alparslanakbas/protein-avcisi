@@ -54,6 +54,11 @@ public static class BrandNameNormalizer
             ["Synergy"] = "Synergy Nutrition",
             ["JUST"] = "Just",
             ["FA Nutrition"] = "Fa Nutrition",
+            // 29 Eylül'de Provitamin "DYMATIZE NUTRITION" yazımıyla ikinci bir
+            // marka kaydı yarattı (2 ürün); asıl kayıt "Dymatize" (beş bayide
+            // ~1.300 fiyat noktası). Standart kopya marka sorgusu bunu
+            // yakalamıyordu: fark boşluk/nokta değil "Nutrition" eki.
+            ["Dymatize Nutrition"] = "Dymatize",
             ["Hiq"] = "HIQ",
             ["Ssn"] = "SSN",
 
