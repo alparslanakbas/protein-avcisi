@@ -98,7 +98,7 @@
                 <div class="mt-2 flex flex-wrap gap-2">
                   <span class="pa-positive-badge">%{{ k.gercekYuzde | number: '1.0-1' }} gerçek düşüş</span>
                   @if (k.urun.storeDiscountPercent && k.urun.storeDiscountPercent > 0) {
-                    <span class="pa-campaign-badge">Mağaza %{{ k.urun.storeDiscountPercent }} diyor</span>
+                    <span class="pa-campaign-badge">Mağaza %{{ k.urun.storeDiscountPercent | number: '1.0-1' }} diyor</span>
                   }
                 </div>
                 <div class="mt-auto pt-4">
