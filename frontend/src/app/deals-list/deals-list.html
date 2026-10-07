@@ -125,6 +125,7 @@
             <a [href]="goToStoreUrl(hero)" (click)="magazaTiklamasi(hero.productId)" target="_blank" rel="nofollow sponsored noopener" class="pa-primary-button h-11 w-full whitespace-nowrap px-4 text-sm">Mağazaya git<i class="ph ph-arrow-square-out ml-2 shrink-0 text-base" aria-hidden="true"></i></a>
             <a [href]="productPath(hero)" (click)="onProductClick($event, hero)" class="flex h-10 w-full items-center justify-center whitespace-nowrap rounded-[9px] border border-white/15 px-3 text-xs font-semibold text-[#e2e4ef] hover:border-[#8f80ff]/70">Fiyat geçmişini aç</a>
           </div>
+          <p class="text-center text-[10px] leading-4 text-[#9ea4c0] col-span-full lg:text-right">Bazı mağaza bağlantıları satış ortaklığıdır: komisyon alabiliriz, ödediğin fiyat değişmez.</p>
         </article>
       }
     </section>
@@ -243,6 +244,7 @@
           <button type="button" class="pa-primary-button mt-4 px-4 py-2 text-sm" (click)="clearFilters()">Filtreleri temizle</button>
         </div>
       } @else {
+        <p class="mb-2 text-[11px] text-[var(--noc-neutral-500)]">Bazı mağaza bağlantıları satış ortaklığıdır: komisyon alabiliriz, ödediğin fiyat değişmez.</p>
         <section aria-label="Ürün fırsatları" class="pa-product-list">
           @for (deal of deals(); track deal.productId) {
             <article class="pa-product-row">

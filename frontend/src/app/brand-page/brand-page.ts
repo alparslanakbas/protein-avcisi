@@ -554,14 +554,17 @@ export class BrandPage implements OnInit {
     // ürünleri yine taranmazdı — bu görünümün var olma sebebi tam da o.
     const sorguParcalari = [bayi ? 'satici=bayi' : '', sayfa > 1 ? `page=${sayfa}` : ''].filter(Boolean);
     const sayfaSorgusu = sorguParcalari.length > 0 ? `?${sorguParcalari.join('&')}` : '';
+    // Yıl elle yazılıydı: Ocak'ta bütün marka başlıkları geçen yılın sayfası gibi görünürdü. SSR her
+    // istekte hesaplıyor; "hardline indirim kodu 2026" gibi aramalar yılı aradığı için başlıkta duruyor.
+    const yil = new Date().getFullYear();
 
     if (category) {
       const label = this.fixedCategoryLabel();
       this.pageMeta.set({
         title: sayfaliBaslik(
           bayi
-            ? `${brand} ${label} Bayi Fiyatları 2026 | Protein Avcısı`
-            : `${brand} ${label} Fiyatları ve İndirimleri 2026 | Protein Avcısı`,
+            ? `${brand} ${label} Bayi Fiyatları ${yil} | Protein Avcısı`
+            : `${brand} ${label} Fiyatları ve İndirimleri ${yil} | Protein Avcısı`,
           sayfa,
         ),
         description: bayi
@@ -583,8 +586,8 @@ export class BrandPage implements OnInit {
 
     const title = sayfaliBaslik(
       bayi
-        ? `${brand} Bayi Fiyatları ve Satıcıları 2026 | Protein Avcısı`
-        : `${brand} İndirim Kodu ve Kampanyaları 2026 | Protein Avcısı`,
+        ? `${brand} Bayi Fiyatları ve Satıcıları ${yil} | Protein Avcısı`
+        : `${brand} İndirim Kodu ve Kampanyaları ${yil} | Protein Avcısı`,
       sayfa,
     );
     const description = bayi

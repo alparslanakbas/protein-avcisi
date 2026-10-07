@@ -19,9 +19,10 @@ export interface PageMetaOptions {
   // Sayfa arama motoru dizinine girmemeli (kişiye özel içerik, ya da markanın
   // artık taramada döndürmediği bir ürün kaydı).
   //
-  // Değer verilmediğinde servis etiketi KALDIRIYOR — bu şart: tek sayfa
-  // uygulamasında bir sayfada eklenen robots etiketi, sonraki sayfaya
-  // geçildiğinde geride kalsaydı normal sayfalar da dizinden düşerdi.
+  // Değer verilmediğinde servis etiketi `max-image-preview:large` ile YENİDEN
+  // YAZIYOR — bu şart: tek sayfa uygulamasında bir sayfada eklenen noindex,
+  // sonraki sayfaya geçildiğinde geride kalsaydı normal sayfalar da dizinden
+  // düşerdi.
   noIndex?: boolean;
 }
 
@@ -75,12 +76,10 @@ export class PageMetaService {
     this.metaService.updateTag({ name: 'twitter:description', content: description });
     this.metaService.updateTag({ name: 'twitter:image', content: ogImage });
 
-    if (options.noIndex) {
-      this.metaService.updateTag({ name: 'robots', content: 'noindex, follow' });
-    } else {
-      // Kaldırmak, eklemek kadar önemli — bkz. noIndex alanının açıklaması.
-      this.metaService.removeTag("name='robots'");
-    }
+    // Dizine açık sayfada etiket silinmiyor, izin yazılıyor (7 Ekim): Google büyük görsel
+    // önizlemesini (arama ve Discover) yalnızca max-image-preview:large ile gösteriyor. Tek
+    // etiket iki durumu da yazdığı için önceki sayfanın noindex'i geride kalamıyor.
+    this.metaService.updateTag({ name: 'robots', content: options.noIndex ? 'noindex, follow' : 'max-image-preview:large' });
 
     setCanonicalLink(this.document, options.canonicalPath);
   }

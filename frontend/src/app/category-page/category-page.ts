@@ -356,7 +356,8 @@ export class CategoryPage implements OnInit {
     // kalır. Başlık da ayrışmalı, yoksa 200+ adres aynı başlığı taşır.
     const toplam = this.totalPages();
     const sayfa = toplam > 0 && this.currentPage() > toplam ? 1 : this.currentPage();
-    const title = sayfaliBaslik(`${label} Fiyatları ve İndirimleri 2026 | Protein Avcısı`, sayfa);
+    // Yıl elle yazılıydı ve Ocak'ta eskiyecekti; SSR her istekte hesaplıyor (marka sayfası da öyle).
+    const title = sayfaliBaslik(`${label} Fiyatları ve İndirimleri ${new Date().getFullYear()} | Protein Avcısı`, sayfa);
     const description = `${label} kategorisindeki güncel fiyatlar, gerçek fiyat geçmişine dayanan doğrulanmış indirimler ve mağaza kampanyaları. Protein Avcısı, fiyatları düzenli olarak takip ediyor.`;
 
     this.pageMeta.set({
