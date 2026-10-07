@@ -14,7 +14,6 @@ public sealed record KampanyaOzeti(
     int Ucuzlamamis,
     int Kalici,
     int VeriYetersiz,
-    int UrunDegismisOlabilir,
     IReadOnlyList<KampanyaIndirimi> GercekIndirimler);
 
 /// <summary>
@@ -32,17 +31,21 @@ public sealed record KampanyaOzeti(
 /// - Karşılaştırma fiyatı: o başlangıçtan önceki 30 günde EN AZ İKİ FARKLI GÜNDE görülen en düşük fiyat. Tek
 ///   gözlemlik düşük fiyat çoğu zaman okuma hatası; 78 üründe en düşük fiyat yalnız bir günde görülmüştü.
 /// - Yeterli veri: o 30 günün en az 7 farklı gününde gözlem.
-/// - Bugünkü fiyat karşılaştırma fiyatının iki katından fazlaysa "ürün değişmiş olabilir": 49 ürün, hepsi aynı
-///   adreste farklı boyutların fiyatı okunan tek kaynaktan (399 ↔ 1.399 TL). Emin olmadığımız şey sayılmıyor.
 /// - Bugünkü fiyat 30 günden uzun süredir aynıysa "kalıcı": üstü çizili fiyat bir aydır indirim değil.
 /// - Gerçek: bugünkü fiyat karşılaştırma fiyatından en az %0,5 düşük.
+///
+/// <b>Büyük fark veri hatası sayılmıyor.</b> İlk sürümde "fiyat karşılaştırma fiyatının iki katından fazlaysa ürün
+/// değişmiş olabilir" diye 49 ürün dışarıda bırakılmıştı (hepsi tek kaynak, ör. 399 ↔ 1.399 TL). İncelenince gerçek
+/// bir mağaza kampanyası çıktı: 6 Eylül'de 56 ürün aynı anda %53-60 düşmüş, 14 Eylül'de 53'ü eski fiyata dönmüş,
+/// kampanya fiyatları 9'la biten elle konmuş fiyatlar, o günlerde kodda fiyatı etkileyen değişiklik yok. Bu ürünler
+/// bir ay içinde bugünkünden çok daha ucuza satılmış; yönetmelik ölçütüyle "ucuzlamamış". Kanıtı olmayan bir
+/// "hata" varsayımı, mağazanın beyanını haksız yere korumuştu.
 /// </remarks>
 public sealed class KampanyaIndirimServisi(AppDbContext db, DealsQueryService deals)
 {
     public const int PencereGun = 30;
     public const int EnAzVeriGunu = 7;
     public const int EnDusukIcinEnAzGun = 2;
-    public const decimal UrunDegisimKati = 2m;
     public const decimal GercekEsigi = 0.995m;
     private static readonly TimeSpan TazelikSiniri = TimeSpan.FromHours(48);
 
@@ -79,7 +82,6 @@ public sealed class KampanyaIndirimServisi(AppDbContext db, DealsQueryService de
                CASE
                    WHEN o.kosu_bas <= now() - @pencere THEN 'kalici'
                    WHEN o.once_gun < @enAzVeri OR o.once_min IS NULL THEN 'yetersiz'
-                   WHEN o.fiyat > o.once_min * @kat THEN 'urun-degismis'
                    WHEN o.fiyat < o.once_min * @esik THEN 'gercek'
                    ELSE 'ucuzlamamis'
                END AS "Sinif"
@@ -94,7 +96,6 @@ public sealed class KampanyaIndirimServisi(AppDbContext db, DealsQueryService de
                 new NpgsqlParameter("pencere", TimeSpan.FromDays(PencereGun)),
                 new NpgsqlParameter("enAzGun", EnDusukIcinEnAzGun),
                 new NpgsqlParameter("enAzVeri", EnAzVeriGunu),
-                new NpgsqlParameter("kat", UrunDegisimKati),
                 new NpgsqlParameter("esik", GercekEsigi))
             .ToListAsync(cancellationToken);
 
@@ -114,8 +115,7 @@ public sealed class KampanyaIndirimServisi(AppDbContext db, DealsQueryService de
 
         int Say(string sinif) => satirlar.Count(s => s.Sinif == sinif);
         return new KampanyaOzeti(
-            DateTimeOffset.UtcNow, satirlar.Count, gercek.Count, Say("ucuzlamamis"), Say("kalici"), Say("yetersiz"),
-            Say("urun-degismis"), liste);
+            DateTimeOffset.UtcNow, satirlar.Count, gercek.Count, Say("ucuzlamamis"), Say("kalici"), Say("yetersiz"), liste);
     }
 
     // SqlQueryRaw sütunları özellik adına bağlıyor; adlar SQL'deki tırnaklı takma adlarla aynı.

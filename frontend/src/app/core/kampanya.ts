@@ -19,7 +19,6 @@ export interface KampanyaOzeti {
   ucuzlamamis: number;
   kalici: number;
   veriYetersiz: number;
-  urunDegismisOlabilir: number;
   gercekIndirimler: KampanyaIndirimi[];
 }
 

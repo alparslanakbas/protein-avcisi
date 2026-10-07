@@ -159,7 +159,9 @@ public sealed class UrunListesiVeritabani : IAsyncLifetime
             [.. Enumerable.Repeat(1000m, 5), 500m, .. Enumerable.Repeat(1000m, 4), 950m, 950m]), 1100m);
         EskiFiyat(Urun(kampanya, "Kampanya Kalıcı", "kilo-hacim", null, [.. Enumerable.Repeat(800m, 35)]), 1200m);
         EskiFiyat(Urun(kampanya, "Kampanya Ucuzlamamış", "kilo-hacim", null, [.. Enumerable.Repeat(700m, 10), 900m, 900m, 900m]), 1200m);
-        EskiFiyat(Urun(kampanya, "Kampanya Ürün Değişmiş", "kilo-hacim", null, [.. Enumerable.Repeat(300m, 10), 900m, 900m, 900m]), 1500m);
+        // Mağazanın kendi kampanyası bitmiş: 10 gün 300, şimdi 900 ve "1500'den indirimli". Fark üç kat ama veri hatası
+        // değil (7 Ekim'de gerçek bir 8 günlük kampanyada görüldü); bir ay içinde daha ucuza satıldığı için ucuzlamamış.
+        EskiFiyat(Urun(kampanya, "Kampanya Kampanyadan Dönen", "kilo-hacim", null, [.. Enumerable.Repeat(300m, 10), 900m, 900m, 900m]), 1500m);
         EskiFiyat(Urun(kampanya, "Kampanya Kısa Geçmiş", "kilo-hacim", null, 600m, 600m, 600m), 900m);
         Urun(kampanya, "Kampanya Beyansız", "kilo-hacim", null, 500m, 500m);
 
@@ -301,8 +303,8 @@ public class UrunListesiVeritabaniTests(UrunListesiVeritabani veri) : IClassFixt
     }
 
     // Sezon sayfası ve rapor yazısı (7 Ekim): mağazanın indirim dediği ürünler yönetmelik ölçütüyle. Tek günlük
-    // hatalı düşük fiyat karşılaştırma fiyatı sayılmıyor, iki kattan büyük fark ürün değişikliği, bir aydan uzun
-    // aynı fiyat kalıcı; mağaza eski fiyat göstermiyorsa ürün hiç sayılmıyor.
+    // hatalı düşük fiyat karşılaştırma fiyatı sayılmıyor, biten bir kampanya (üç kat fark) ucuzlamamış sayılıyor,
+    // bir aydan uzun aynı fiyat kalıcı; mağaza eski fiyat göstermiyorsa ürün hiç sayılmıyor.
     [VeritabaniFact]
     public async Task Kampanya_ozeti_yonetmelik_olcutuyle_siniflandiriyor()
     {
@@ -311,7 +313,7 @@ public class UrunListesiVeritabaniTests(UrunListesiVeritabani veri) : IClassFixt
         var ozet = await new KampanyaIndirimServisi(db, Servis(db)).OzetAsync();
 
         Assert.Equal(6, ozet.MagazaIndirimDiyor);
-        Assert.Equal((2, 1, 1, 1, 1), (ozet.Gercek, ozet.Ucuzlamamis, ozet.Kalici, ozet.VeriYetersiz, ozet.UrunDegismisOlabilir));
+        Assert.Equal((2, 2, 1, 1), (ozet.Gercek, ozet.Ucuzlamamis, ozet.Kalici, ozet.VeriYetersiz));
         Assert.Equal(
             [("Kampanya Gerçek", 1000m, 15.0m), ("Kampanya Tek Gün Hatalı", 1000m, 5.0m)],
             ozet.GercekIndirimler.Select(k => (k.Urun.ProductName, k.OncekiEnDusuk, k.GercekYuzde)));

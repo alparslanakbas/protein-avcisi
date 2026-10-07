@@ -39,7 +39,7 @@ export class EfsaneKasimPage implements OnInit {
   protected readonly yukleniyor = signal(true);
   protected readonly hata = signal(false);
 
-  /** Fiyat geçmişini değerlendirebildiğimiz ürünler: veri yetersiz ve olası ürün değişikliği sayılmıyor. */
+  /** Fiyat geçmişini değerlendirebildiğimiz ürünler: indirim öncesi verisi yetersiz olanlar sayılmıyor. */
   protected readonly degerlendirilen = computed(() => {
     const o = this.ozet();
     return o ? o.gercek + o.ucuzlamamis + o.kalici : 0;
