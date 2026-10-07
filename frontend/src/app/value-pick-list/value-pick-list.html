@@ -1,7 +1,11 @@
 @let s = section();
 <section [id]="s.id" class="scroll-mt-24">
   <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-    <h3 class="text-[19px] font-semibold tracking-[-0.02em]">{{ s.title }}</h3>
+    @if (headingLevel() === 'h2') {
+      <h2 class="pa-section-title">{{ s.title }}</h2>
+    } @else {
+      <h3 class="text-[19px] font-semibold tracking-[-0.02em]">{{ s.title }}</h3>
+    }
     <a [routerLink]="s.allLink.path" class="text-sm font-medium text-[var(--noc-accent)] hover:underline">{{ s.allLink.label }}</a>
   </div>
   @if (s.note) {
@@ -90,6 +94,7 @@
           }
         </ol>
         <p class="mt-2 text-xs text-[var(--noc-neutral-500)]">{{ eligibleCount() }} uygun ürün arasından, her markanın kilogram fiyatı en düşük ürünü.</p>
+        <p class="mt-1 text-[11px] text-[var(--noc-neutral-500)]">Bazı mağaza bağlantıları satış ortaklığıdır: komisyon alabiliriz, ödediğin fiyat değişmez.</p>
       }
     }
   }

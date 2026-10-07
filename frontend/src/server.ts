@@ -214,6 +214,7 @@ async function sitemapParcalari(origin: string): Promise<Record<SitemapParcasi, 
   const legalUrls =
     // Sezon sayfası: listesi her taramada değişiyor.
     `<url><loc>${origin}/efsane-kasim</loc><changefreq>daily</changefreq><priority>0.8</priority></url>` +
+    `<url><loc>${origin}/en-ucuz-kreatin</loc><changefreq>daily</changefreq><priority>0.8</priority></url>` +
     `<url><loc>${origin}/gizlilik-politikasi</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>` +
     `<url><loc>${origin}/cerez-politikasi</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>` +
     `<url><loc>${origin}/nasil-calisiyoruz</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>` +

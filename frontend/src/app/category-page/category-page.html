@@ -19,6 +19,11 @@
       <p class="mt-2 max-w-2xl text-[15px] text-[var(--noc-neutral-300)]">
         {{ totalCount() }} ürün takipte. {{ categoryIntro() }}
       </p>
+      @if (categorySlug() === 'kreatin') {
+        <p class="mt-2 text-sm">
+          <a routerLink="/en-ucuz-kreatin" class="font-medium text-[var(--noc-accent)] hover:underline">Kilogram fiyatına göre en ucuz kreatinler</a>
+        </p>
+      }
 
       <div class="mt-[22px] flex flex-wrap items-center gap-3">
         <div class="inline-flex overflow-hidden rounded-[8px] border border-[var(--noc-divider)]">

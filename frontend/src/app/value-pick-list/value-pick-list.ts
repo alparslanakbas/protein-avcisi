@@ -36,6 +36,10 @@ export class ValuePickList implements OnInit {
   readonly section = input.required<GoalPickSection>();
   /** Testin süt tercihinden gelen başlangıç türü (yalnızca protein listesinde). */
   readonly initialType = input<string | null>(null);
+  /** Gösterilecek ürün sayısı; uç en çok 12 veriyor (ValuePickRanker.MaxCount). */
+  readonly count = input(PICK_COUNT);
+  /** Hedef sayfalarında liste bir h2'nin altında (h3); listenin kendi sayfasında başlık h2. */
+  readonly headingLevel = input<'h2' | 'h3'>('h3');
 
   protected readonly displayName = displayName;
   protected readonly takipDibiEtiketi = takipDibiEtiketi;
@@ -67,7 +71,7 @@ export class ValuePickList implements OnInit {
 
   private load(): void {
     this.state.set('loading');
-    this.request.run(this.dealsService.getValuePicks(this.section().category, this.type(), PICK_COUNT), {
+    this.request.run(this.dealsService.getValuePicks(this.section().category, this.type(), this.count()), {
       next: (result) => {
         this.picks.set(result.items);
         this.eligibleCount.set(result.eligibleCount);

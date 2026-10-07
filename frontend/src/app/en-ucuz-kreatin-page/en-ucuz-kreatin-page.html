@@ -1,0 +1,44 @@
+<div class="noc-shell min-h-screen bg-[var(--noc-bg)] text-[var(--noc-text)]">
+  <app-site-header />
+
+  <main class="mx-auto max-w-[1280px] px-[28px] py-[22px]">
+    <nav class="mb-2 text-xs text-[var(--noc-neutral-500)]">
+      <a routerLink="/" class="hover:text-[var(--noc-accent)]">Ana Sayfa</a> /
+      <a routerLink="/kategori/kreatin" class="hover:text-[var(--noc-accent)]">Kreatin</a> / En ucuz kreatin
+    </nav>
+    <h1 class="text-[38px] font-medium tracking-[-0.03em] sm:text-[42px]">En ucuz kreatin: kilogram fiyatına göre</h1>
+    <p class="mt-2 max-w-2xl text-[15px] text-[var(--noc-neutral-300)]">
+      Kreatin farklı boyutlarda satılıyor; paket fiyatı tek başına hangisinin ucuz olduğunu söylemiyor. Her paketin
+      fiyatını gramajına bölüp 1 kilogram fiyatını hesaplıyor, en ucuzdan başlayarak sıralıyoruz.
+    </p>
+
+    <div class="mt-[22px]">
+      <app-value-pick-list [section]="liste" [count]="12" headingLevel="h2" />
+    </div>
+
+    <section class="mt-[45px] max-w-3xl" aria-labelledby="yontem-baslik">
+      <h2 id="yontem-baslik" class="pa-section-title">Nasıl sıraladık?</h2>
+      <ul class="mt-4 list-disc space-y-2 pl-5 text-sm leading-6 text-[var(--noc-neutral-300)]">
+        <li>Kilogram fiyatı, paket fiyatının paketteki gram miktarına bölünüp 1.000 ile çarpılmasıyla bulunuyor: 300 gramı 600 TL olan paketin kilogramı 2.000 TL.</li>
+        <li>Paket ağırlığı 100 gram ile 2 kilogram arasında olan kreatinler giriyor. Kapsül ve tablet paketleri adetle satıldığı için listede yok.</li>
+        <li>Protein, karbonhidrat, glutamin ya da amino asitle karıştırılmış ürünler ve çok ürünlü paketler dışarıda: bunlarda paketin ne kadarının kreatin olduğunu bilmiyoruz.</li>
+        <li>Stokta olmadığını bildiğimiz ürünler ve son 48 saatte fiyatını doğrulayamadığımız ürünler listede yok.</li>
+        <li>Aynı kreatin birkaç bayide ve farklı boylarda satılıyor; her markadan kilogram fiyatı en düşük tek ürünü gösteriyoruz.</li>
+      </ul>
+    </section>
+
+    <section class="mt-[45px] max-w-3xl" aria-labelledby="sss-baslik">
+      <h2 id="sss-baslik" class="pa-section-title">Sık sorulanlar</h2>
+      @for (soru of sorular; track soru.question) {
+        <h3 class="mt-5 text-[15px] font-semibold">{{ soru.question }}</h3>
+        <p class="mt-1 text-sm leading-6 text-[var(--noc-neutral-300)]">{{ soru.answer }}</p>
+      }
+    </section>
+
+    <nav class="mt-[45px] flex flex-wrap gap-2" aria-label="İlgili sayfalar">
+      <a routerLink="/hesaplama/kreatin-dozu" class="rounded-[6px] border border-[var(--noc-accent)] px-3 py-1.5 text-xs text-[var(--noc-accent)]">Kreatin dozunu hesapla</a>
+      <a routerLink="/kategori/kreatin" class="rounded-[6px] border border-[var(--noc-divider)] px-3 py-1.5 text-xs text-[var(--noc-neutral-300)] hover:text-[var(--noc-accent)]">Tüm kreatin fiyatları</a>
+      <a routerLink="/hangi-takviye/kas-kazanimi" class="rounded-[6px] border border-[var(--noc-divider)] px-3 py-1.5 text-xs text-[var(--noc-neutral-300)] hover:text-[var(--noc-accent)]">Kas kazanımı için hangi takviye?</a>
+    </nav>
+  </main>
+</div>
