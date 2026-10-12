@@ -489,6 +489,15 @@ app.use((req, res, next) => {
     if (hit) ssrCache.delete(key);
   }
 
+  // Angular, vekil başlıklarını (Forwarded, X-Forwarded-*) trustProxyHeaders
+  // verilmedikçe zaten kullanmıyor ama her istekte uyarı yazıyordu (canlıda
+  // 2 saatte 3×506 satır, 12 Ekim). Express'in onlarla işi yukarıda bitti;
+  // burada silinince render değişmiyor, yalnızca uyarı kesiliyor. Güven
+  // bilerek genişletilmedi: kanonik adres istekten değil ortam ayarından.
+  for (const ad of Object.keys(req.headers)) {
+    if (ad === 'forwarded' || ad.startsWith('x-forwarded-')) delete req.headers[ad];
+  }
+
   angularApp
     .handle(req)
     .then(async (response) => {
