@@ -132,9 +132,9 @@ public sealed class ProductImageStore(
         // Bayt sınırı yetmiyor: birkaç kB'lık bir dosya başlığında 30000x30000
         // yazabilir ve kod çözücü o kadar pikseli bellekte açmaya kalkar
         // (~3,6 GB; dilimin tavanı 4 GB). Başlık okunup boyut kontrol ediliyor,
-        // görüntü ancak sonra açılıyor.
-        var bilgi = await Image.IdentifyAsync(girdi, cancellationToken)
-            ?? throw new InvalidOperationException("Görsel biçimi tanınmadı.");
+        // görüntü ancak sonra açılıyor. Tanınmayan biçimde IdentifyAsync
+        // kendisi UnknownImageFormatException atıyor (ImageSharp 3+), null dönmüyor.
+        var bilgi = await Image.IdentifyAsync(girdi, cancellationToken);
         if ((long)bilgi.Width * bilgi.Height > EnFazlaPiksel)
             throw new InvalidOperationException(
                 $"Görsel piksel sınırını aştı ({bilgi.Width}x{bilgi.Height}).");

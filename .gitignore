@@ -41,3 +41,8 @@ design-audit-*/
 design-qa-directory/
 indirim-takip-sistemi.sln
 caddy-log/
+
+# Six Labors (ImageSharp 4.x) lisans anahtarı. Release derlemesi onu
+# backend/src/IndirimTakip.Infrastructure/ altında arıyor; yalnızca sunucuda durur.
+# Depo public: bu dosya ASLA commit'e girmemeli.
+sixlabors.lic
