@@ -216,6 +216,9 @@ public sealed class ProductImageOptions
 
     public int AralikDakika { get; set; } = 10;
 
+    /// <summary>İndirilemeyen görsel en erken bu kadar saat sonra yeniden deneniyor.</summary>
+    public int BasarisizBeklemeSaat { get; set; } = 24;
+
     public int Kalite { get; set; } = 78;
 
     /// <summary>İndirilecek en büyük kaynak dosya (bayt).</summary>

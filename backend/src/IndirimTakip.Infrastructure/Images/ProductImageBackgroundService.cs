@@ -13,7 +13,9 @@ namespace IndirimTakip.Infrastructure.Images;
 /// etkisiz-tekrarlanabilir: kaçırılan bir tur bir sonrakinde telafi oluyor,
 /// tamamlanan iş tekrar yapılmıyor. Bu yüzden bülten ve detay tamamlamada
 /// iki kez yaşanan "periyodu timer tutunca her deploy sıfırlıyor" tuzağı
-/// burada hiç doğmuyor ve ayrı bir damga kaydına gerek yok.
+/// burada hiç doğmuyor ve ayrı bir damga kaydına gerek yok. Tek istisna
+/// başarısız görsellerin beklemesi (<see cref="BasarisizGorselBeklemesi"/>):
+/// bellekte duruyor, deploy sıfırlarsa ölü adres bir kez daha deneniyor.
 ///
 /// <b>NEDEN KOTALI.</b> İlk turda ~4.900 görsel var. Hepsini tek seferde
 /// çekmek 36 kaynağa aynı anda yüklenmek demek; tur başına sınır hem karşı
@@ -29,6 +31,8 @@ public sealed class ProductImageBackgroundService(
     ProductImageOptions options,
     ILogger<ProductImageBackgroundService> logger) : BackgroundService
 {
+    private readonly BasarisizGorselBeklemesi bekleme = new();
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         if (!options.Enabled)
@@ -80,14 +84,23 @@ public sealed class ProductImageBackgroundService(
         // Gizlenen ürünler de alınıyor (IgnoreQueryFilters): görünürlük
         // geri açıldığında görselin hazır olması gerekiyor, o an indirmeye
         // başlamak kartı bir tur boş bırakırdı.
-        var adaylar = await db.Products
+        //
+        // Beklemedeki başarısız görseller SQL'de değil bellekte eleniyor:
+        // sorgu aynı kalıyor, yalnızca bekleyen sayısı kadar fazla satır
+        // geliyor, yani kotanın tamamı yine denenebilir adaylara gidiyor.
+        var bekleyenler = bekleme.Bekleyenler(
+            DateTimeOffset.UtcNow, TimeSpan.FromHours(options.BasarisizBeklemeSaat));
+        var adaylar = (await db.Products
             .IgnoreQueryFilters()
             .Where(p => p.ImageUrl != null && p.ImageUrl != "" && p.LocalImagePath == null)
             .OrderByDescending(p => p.ClickCount)
             .ThenByDescending(p => p.Id)
             .Select(p => new { p.Id, p.ImageUrl })
+            .Take(options.TurBasinaAdet + bekleyenler.Count)
+            .ToListAsync(cancellationToken))
+            .Where(a => !bekleyenler.Contains(a.Id))
             .Take(options.TurBasinaAdet)
-            .ToListAsync(cancellationToken);
+            .ToList();
 
         if (adaylar.Count == 0)
             return 0;
@@ -97,7 +110,10 @@ public sealed class ProductImageBackgroundService(
         {
             var dosyaAdi = await store.IndirAsync(aday.ImageUrl!, cancellationToken);
             if (dosyaAdi is null)
+            {
+                bekleme.BasarisizOldu(aday.Id, DateTimeOffset.UtcNow);
                 continue;
+            }
 
             // Tek tek yazılıyor: tur yarıda kesilirse o ana kadarki iş
             // kaydedilmiş oluyor. Toplu kayıt, kesilen turda indirilmiş
