@@ -275,6 +275,8 @@ public class ShopifyTuneliTests
         using var isleyici = ShopifyTuneli.IsleyiciOlustur(vekil);
         Assert.True(isleyici.UseProxy);
         Assert.NotNull(isleyici.ConnectCallback);
+        // Ev tünelinde Accept-Encoding, Cloudflare'in 403 doğrulamasını tetikledi (13 Ekim).
+        Assert.Equal(DecompressionMethods.None, isleyici.AutomaticDecompression);
     }
 
     // Üretim ayarındaki adres geçerli olmalı; bozuksa Shopify çekicileri her turda hata verirdi.

@@ -132,9 +132,12 @@ public sealed class ShopifyTuneli : IDisposable
     {
         Proxy = new WebProxy(vekil),
         UseProxy = true,
-        // Ev hattında sıkıştırma ~10 kat küçültüyor: 250 ürünlük bir katalog sayfası 1,2 MB yerine
-        // 115 KB (5 Ekim, ölçüldü).
-        AutomaticDecompression = DecompressionMethods.All,
+        // Sıkıştırma KAPALI, ev hattında trafiği ~10 kat küçültse de (sayfa başına 1,2 MB yerine 115 KB,
+        // 5 Ekim). "Accept-Encoding: gzip, deflate, br" ile Cloudflare ev IP'sine 403 doğrulaması
+        // (cf-mitigated: challenge) verdi: Transparent Labs, Momentous, RAW; aynı istek başlıksız 200
+        // (13 Ekim, ölçüldü). 10-11 Ekim'de WP'nin ABD turlarında devre kesiciyi tetikleyen 403'ler buydu;
+        // elle yapılan curl kontrolleri bunu göremedi çünkü curl varsayılan olarak bu başlığı göndermiyor.
+        AutomaticDecompression = DecompressionMethods.None,
         // Tünel düşükse istek asılı kalmasın; o zaman çekici doğrudan yanıtı (429) görüyor.
         ConnectTimeout = TimeSpan.FromSeconds(10),
         PooledConnectionLifetime = TimeSpan.FromMinutes(5),
