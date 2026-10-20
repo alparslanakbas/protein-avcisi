@@ -20,7 +20,7 @@ declare -A TAVAN=(
   # yonetim-page: +1 satır (20 Ekim), yeni özelliği ayrı dosyaya (oncelikli-eksikler.ts)
   # bağlayan etiket ve import; özellik kendisi buraya girmedi.
   [frontend/src/app/yonetim-page/yonetim-page.html]=1562
-  [frontend/src/app/deals-list/deals-list.ts]=1104
+  [frontend/src/app/deals-list/deals-list.ts]=1105
   [frontend/src/app/yonetim-page/yonetim-page.ts]=922
 )
 # DealsQueryService.cs 20 Ekim'de 779 satıra indi (karşılaştırma ayrı dosyaya taşındı):

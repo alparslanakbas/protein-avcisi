@@ -1,0 +1,26 @@
+@if (geriSayim; as parcalar) {
+  <section class="pa-container pb-7" aria-labelledby="sezon-seridi-baslik">
+    <div class="flex flex-col gap-3 rounded-[14px] border border-white/10 bg-white/[0.04] px-4 py-3.5 md:flex-row md:items-center md:gap-5 md:px-5">
+      <div class="flex items-center gap-3">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-[#6556e8]/25 text-[#b9b0ff]"><i class="ph ph-calendar-star text-[19px]" aria-hidden="true"></i></span>
+        <div>
+          <h2 id="sezon-seridi-baslik" class="text-sm font-semibold text-white">Efsane Kasım</h2>
+          <div class="mt-1 flex flex-wrap gap-1.5">
+            @for (parca of parcalar; track parca) {
+              <span class="rounded-full bg-white/[0.07] px-2.5 py-0.5 text-[11px] font-medium text-[#d7daea]">{{ parca }}</span>
+            }
+          </div>
+        </div>
+      </div>
+      @if (ozet(); as o) {
+        <p class="text-xs leading-5 text-[#c6cadc] md:border-l md:border-white/10 md:pl-5">
+          Üstü çizili {{ o.magazaIndirimDiyor | number }} fiyattan gerçekten ucuz olan:
+          <span class="text-sm font-semibold text-[#85dfa9]">{{ o.gercek | number }}</span>
+        </p>
+      }
+      <a routerLink="/efsane-kasim" class="inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-[9px] border border-white/15 px-3.5 text-xs font-semibold text-[#e3e5f0] hover:border-[#8879f6]/70 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8f80ff] md:ml-auto">
+        Hangi indirim gerçek?<i class="ph ph-arrow-right text-[14px]" aria-hidden="true"></i>
+      </a>
+    </div>
+  </section>
+}
