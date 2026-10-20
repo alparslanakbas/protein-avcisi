@@ -4,6 +4,7 @@ import { Observable, catchError, of, shareReplay, throwError } from 'rxjs';
 
 import { API_BASE_URL } from './api.config';
 import { BrandStats } from './brand-stats.model';
+import { BrandInsights } from './brand-insights.model';
 import { CategoryPriceStats } from './category-price-stats.model';
 import { Deal } from './deal.model';
 import { HomepageStats } from './homepage-stats.model';
@@ -94,6 +95,12 @@ export class DealsService {
   // yerine (bkz. CLAUDE.md "marka sayfaları" tartışması).
   // category verilirse istatistikler markanın yalnızca o kategorideki
   // ürünlerinden hesaplanır — marka × kategori sayfalarının kendi verisi.
+  // Marka sayfasına özgün veri: 30 günlük fiyat hareketi ve toz kategorilerde kilogram
+  // fiyatının sitedeki bütün markalara göre konumu (backend GetBrandInsightsAsync).
+  getBrandInsights(brand: string): Observable<BrandInsights> {
+    return this.http.get<BrandInsights>(`${API_BASE_URL}/api/brand-insights`, { params: new HttpParams().set('brand', brand) });
+  }
+
   getBrandStats(brand: string, category?: string): Observable<BrandStats> {
     let params = new HttpParams().set('brand', brand);
     if (category) params = params.set('category', category);

@@ -66,6 +66,17 @@ internal static class DealsEndpoints
         // kontrol olmadan GetBrandComparisonAsync içindeki .ToLower() çağrısı
         // NullReferenceException'a düşüp 500 dönüyordu — TestSprite'ın otomatik
         // testinde yakalandı (bkz. CLAUDE.md).
+        // Marka sayfasına özgün veri: 30 günlük fiyat hareketi ve toz kategorilerde kilogram
+        // fiyatının sitedeki bütün markalara göre konumu (bkz. GetBrandInsightsAsync).
+        app.MapGet("/api/brand-insights", async (string? brand, DealsQueryService deals, CancellationToken ct) =>
+        {
+            if (string.IsNullOrWhiteSpace(brand))
+                return Results.BadRequest(new { message = "brand parametresi gerekli." });
+
+            var result = await deals.GetBrandInsightsAsync(brand, ct);
+            return result is null ? Results.NotFound() : Results.Ok(result);
+        }).CacheOutput(cachePolicy);
+
         app.MapGet("/api/brand-comparison", async (
             string? brand1, string? brand2, DealsQueryService deals, CatalogStatsQueryService katalog, CancellationToken ct) =>
         {

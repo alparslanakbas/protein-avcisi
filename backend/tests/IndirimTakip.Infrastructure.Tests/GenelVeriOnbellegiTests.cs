@@ -152,6 +152,7 @@ public class GenelVeriOnbellegiTests
             "/api/best-value-per-serving -> category,brands,search,page,pageSize",
             "/api/brand-category-pairs -> ",
             "/api/brand-comparison -> brand1,brand2",
+            "/api/brand-insights -> brand",
             "/api/brand-product-counts -> ",
             "/api/brand-stats -> brand,category",
             "/api/category-price-stats -> category",

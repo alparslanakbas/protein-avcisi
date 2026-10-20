@@ -7,6 +7,9 @@ import { LatestRequest } from '../core/latest-request';
 import { buildBrandCategoryFaqs, buildBrandFaqs } from '../core/brand-faqs';
 import { buildBreadcrumbJsonLd } from '../core/breadcrumb';
 import { BrandStats } from '../core/brand-stats.model';
+import { ComparisonPick } from '../core/brand-comparison.model';
+import { BrandInsights } from '../core/brand-insights.model';
+import { brandActivitySentence, kgPositionText } from '../core/brand-insights-text';
 import { CategoryPriceStats } from '../core/category-price-stats.model';
 import { brandSlug, resolveBrandFromSlug } from '../core/brand-slug';
 import { CATEGORY_LABELS } from '../core/category-labels';
@@ -124,6 +127,17 @@ export class BrandPage implements OnInit {
   // Bu markaya özgün, kendi verimize dayanan istatistik bölümü — sadece
   // markanın kendi (kesişim değil) sayfasında gösteriliyor.
   protected readonly brandStats = signal<BrandStats | null>(null);
+  protected readonly brandInsights = signal<BrandInsights | null>(null);
+  protected readonly kgPositionText = kgPositionText;
+  /** Kesişim sayfasında yalnız o kategorinin satırı; marka sayfasında hepsi. */
+  protected readonly insightRows = computed(() => {
+    const cat = this.fixedCategory();
+    return (this.brandInsights()?.categories ?? []).filter((c) => !cat || c.category === cat);
+  });
+  protected readonly insightActivity = computed(() => {
+    const i = this.brandInsights();
+    return i && !this.fixedCategory() ? brandActivitySentence(i.brand, i.activity) : null;
+  });
   protected readonly topCategoryLabel = computed(() => {
     const cats = this.brandCategories();
     if (cats.length === 0) return null;
@@ -264,6 +278,7 @@ export class BrandPage implements OnInit {
     this.fixedCategory.set(null);
     this.fixedCategoryLabel.set('');
     this.brandStats.set(null);
+    this.brandInsights.set(null);
     this.categoryPriceStats.set(null);
 
     this.dealsService.getFilterOptions().subscribe({
@@ -345,6 +360,10 @@ export class BrandPage implements OnInit {
         this.dealsService.getBrandStats(match, categorySlug ?? undefined).subscribe({
           next: (stats) => this.brandStats.set(stats),
           error: () => this.brandStats.set(null),
+        });
+        this.dealsService.getBrandInsights(match).subscribe({
+          next: (insights) => this.brandInsights.set(insights),
+          error: () => this.brandInsights.set(null),
         });
 
         // Kesişimde markanın kategori içindeki fiyat konumunu söyleyebilmek
@@ -653,6 +672,11 @@ export class BrandPage implements OnInit {
   // ?urun= parametresiyle açılıyor — bu yüzden RouterLink yerine gerçek bir
   // href + kontrollü tıklama kullanılıyor: bot kanonik ürün adresini görüyor,
   // kullanıcı ise sayfadan ayrılmadan modalı açıyor.
+  /** "En uygun ürün" bağlantısı: yalnız kimlik ve ad taşıyor, Deal değil. */
+  protected pickPath(pick: ComparisonPick): string {
+    return productPath(pick);
+  }
+
   protected productPath(deal: Deal): string {
     return productPath(deal);
   }

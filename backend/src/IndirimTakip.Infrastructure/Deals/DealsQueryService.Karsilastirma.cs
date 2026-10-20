@@ -68,17 +68,8 @@ public partial class DealsQueryService
         var total1 = await db.Products.CountAsync(p => p.BrandId == b1.Id, cancellationToken);
         var total2 = await db.Products.CountAsync(p => p.BrandId == b2.Id, cancellationToken);
 
-        var hareket = await db.Database.SqlQueryRaw<FiyatHareketiSatiri>(
-                FiyatHareketiSorgusu,
-                new NpgsqlParameter("marka1", b1.Id),
-                new NpgsqlParameter("marka2", b2.Id),
-                new NpgsqlParameter("baslangic", DateTimeOffset.UtcNow.AddDays(-FiyatHareketiGun)))
-            .ToListAsync(cancellationToken);
-
-        PriceActivityDto Hareket(int markaId) =>
-            hareket.FirstOrDefault(h => h.BrandId == markaId) is { } h
-                ? new PriceActivityDto(h.Drops, h.Rises, h.ChangedProducts)
-                : new PriceActivityDto(0, 0, 0);
+        var hareket = await FiyatHareketiAsync([b1.Id, b2.Id], cancellationToken);
+        PriceActivityDto Hareket(int markaId) => hareket.GetValueOrDefault(markaId, new PriceActivityDto(0, 0, 0));
 
         return new BrandComparisonDto(
             b1.Name, b2.Name, total1, total2, categories, Hareket(b1.Id), Hareket(b2.Id));
@@ -103,6 +94,68 @@ public partial class DealsQueryService
             return (Math.Round(urunler.Average(r => r.Price), 2), urunler.Count,
                 Medyan(kg.Select(k => k.PricePerKg).ToList()), kg.Count, enUygun);
         }
+    }
+
+    private async Task<Dictionary<int, PriceActivityDto>> FiyatHareketiAsync(int[] markaIdleri, CancellationToken cancellationToken)
+    {
+        var satirlar = await db.Database.SqlQueryRaw<FiyatHareketiSatiri>(
+                FiyatHareketiSorgusu,
+                new NpgsqlParameter("markalar", markaIdleri),
+                new NpgsqlParameter("baslangic", DateTimeOffset.UtcNow.AddDays(-FiyatHareketiGun)))
+            .ToListAsync(cancellationToken);
+        return satirlar.ToDictionary(h => h.BrandId, h => new PriceActivityDto(h.Drops, h.Rises, h.ChangedProducts));
+    }
+
+    /// <summary>
+    /// Marka sayfası (/marka/x/indirim-kodu ve marka × kategori) için yalnız bizde olan veri:
+    /// son 30 günün fiyat hareketi ve her toz kategoride markanın kilogram fiyatı medyanının
+    /// sitedeki bütün markaların medyanına göre konumu. "Bütün markalar" aynı kurallarla
+    /// (ValuePickRanker.Eligible) hesaplanıyor; bayi kopyaları da içinde, liste sorgularıyla aynı taban.
+    /// </summary>
+    public async Task<BrandInsightsDto?> GetBrandInsightsAsync(string brand, CancellationToken cancellationToken = default)
+    {
+        var marka = await db.Brands.AsNoTracking()
+            .FirstOrDefaultAsync(b => b.IsActive && b.Name.ToLower() == brand.ToLowerInvariant(), cancellationToken);
+        if (marka is null)
+            return null;
+
+        var bayatlikSiniri = DateTimeOffset.UtcNow.Subtract(StaleThreshold);
+        var kategoriler = KgKarsilastirilabilir.ToArray();
+        var satirlar = await (
+                from p in db.Products
+                join b in db.Brands on p.BrandId equals b.Id
+                where b.IsActive
+                      && p.Category != null && kategoriler.Contains(p.Category)
+                      && p.LatestPrice != null && p.LatestPrice > 0
+                      && p.LatestScrapedAt != null && p.LatestScrapedAt >= bayatlikSiniri
+                select new { p.Id, p.BrandId, BrandName = b.Name, Category = p.Category!, p.Name, p.Size, Price = p.LatestPrice!.Value, p.InStock })
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+        var konumlar = new List<BrandKgPositionDto>();
+        foreach (var kategori in kategoriler.Order(StringComparer.Ordinal))
+        {
+            var adaylar = satirlar
+                .Where(r => r.Category == kategori)
+                .Select(r => new ValuePickCandidate(r.Id, r.BrandId, r.BrandName, r.Name, r.Size, r.Price, r.InStock))
+                .ToList();
+            var piyasa = ValuePickRanker.Eligible(adaylar, kategori);
+            var markaninki = piyasa.Where(x => x.Candidate.BrandId == marka.Id).ToList();
+            if (markaninki.Count == 0)
+                continue;
+
+            var enUygun = markaninki[0];
+            konumlar.Add(new BrandKgPositionDto(
+                kategori,
+                Medyan(markaninki.Select(x => x.PricePerKg).ToList()), markaninki.Count,
+                Medyan(piyasa.Select(x => x.PricePerKg).ToList()), piyasa.Count,
+                piyasa.Select(x => x.Candidate.BrandId).Distinct().Count(),
+                new ComparisonPickDto(enUygun.Candidate.ProductId, enUygun.Candidate.ProductName, enUygun.Candidate.Size,
+                    enUygun.Candidate.Price, enUygun.PricePerKg)));
+        }
+
+        var hareket = await FiyatHareketiAsync([marka.Id], cancellationToken);
+        return new BrandInsightsDto(marka.Name, hareket.GetValueOrDefault(marka.Id, new PriceActivityDto(0, 0, 0)), konumlar);
     }
 
     /// <summary>Sıralı ya da sırasız listenin medyanı (çift sayıda ise ortadaki ikisinin ortalaması).</summary>
@@ -130,7 +183,7 @@ public partial class DealsQueryService
                    lag(ph."Price") OVER (PARTITION BY ph."ProductId" ORDER BY ph."ScrapedAt") AS onceki
             FROM "PriceHistories" ph
             JOIN "Products" p ON p."Id" = ph."ProductId"
-            WHERE p."BrandId" IN (@marka1, @marka2) AND p."IsActive" AND ph."ScrapedAt" >= @baslangic
+            WHERE p."BrandId" = ANY(@markalar) AND p."IsActive" AND ph."ScrapedAt" >= @baslangic
         ) h
         GROUP BY h."BrandId"
         """;

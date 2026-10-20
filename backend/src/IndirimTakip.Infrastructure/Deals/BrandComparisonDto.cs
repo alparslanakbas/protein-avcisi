@@ -28,3 +28,15 @@ public record BrandComparisonDto(
     IReadOnlyList<CategoryComparisonDto> Categories,
     PriceActivityDto? Brand1Activity = null, PriceActivityDto? Brand2Activity = null,
     BrandStatsDto? Brand1Stats = null, BrandStatsDto? Brand2Stats = null);
+
+/// <summary>
+/// Markanın bir toz kategorideki kilogram fiyatı konumu: markanın medyanı ile sitedeki bütün
+/// markaların medyanı (aynı korumalarla), ve markanın kilogram başına en uygun ürünü.
+/// </summary>
+public record BrandKgPositionDto(
+    string Category,
+    decimal? BrandMedianPerKg, int BrandKgCount,
+    decimal? MarketMedianPerKg, int MarketKgCount, int MarketBrandCount,
+    ComparisonPickDto BestPick);
+
+public record BrandInsightsDto(string Brand, PriceActivityDto Activity, IReadOnlyList<BrandKgPositionDto> Categories);
