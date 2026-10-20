@@ -162,6 +162,41 @@
   line-height: 1.6;
 }
 
+.pa-about-story {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 26px 40px;
+  margin-top: 42px;
+  padding: 30px;
+  border: 1px solid var(--noc-divider);
+  border-radius: 16px;
+  background: var(--noc-card);
+  box-shadow: var(--noc-shadow-sm);
+}
+
+.pa-about-story h2 {
+  margin: 0 0 8px;
+  color: var(--noc-text);
+  font-size: 17px;
+  font-weight: 720;
+}
+
+.pa-about-story p {
+  max-width: 68ch;
+  margin: 0;
+  color: var(--noc-neutral-500);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.pa-about-story a {
+  color: var(--noc-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.pa-about-story a:focus-visible { outline: 2px solid var(--noc-accent); outline-offset: 2px; }
+
 .pa-about-cta { display: flex; justify-content: center; margin-top: 28px; }
 
 .pa-about-cta a {
@@ -184,6 +219,7 @@
 
 @media (max-width: 900px) {
   .pa-about-hero { grid-template-columns: 1fr; }
+  .pa-about-story { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 640px) {
@@ -195,5 +231,6 @@
   .pa-about-founder h2 { margin-top: 20px; }
   .pa-about-principles { grid-template-columns: 1fr; gap: 12px; margin-top: 28px; }
   .pa-about-principles article { min-height: 0; padding: 20px; }
+  .pa-about-story { margin-top: 28px; padding: 22px; gap: 22px; }
   .pa-about-cta a { width: 100%; justify-content: center; }
 }
