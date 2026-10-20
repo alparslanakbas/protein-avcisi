@@ -11,7 +11,7 @@
              kalıbını hiç içermiyordu, oysa insanlar tam öyle arıyor. -->
         <h1 class="text-[38px] font-medium tracking-[-0.03em] sm:text-[42px]">{{ c.brand1 }} vs {{ c.brand2 }} Fiyat Karşılaştırması</h1>
         <p class="mx-auto mt-2 max-w-xl text-[15px] text-[var(--noc-neutral-300)]">
-          Kategori bazında güncel ortalama fiyatlar — canlı veriden hesaplanır, elle yazılmış bir içerik değildir.
+          Kilogram fiyatı, bugünkü gerçek indirimler ve son 30 günün fiyat hareketi; hepsi kendi fiyat kayıtlarımızdan, her istekte canlı hesaplanır.
         </p>
       </div>
 
@@ -42,18 +42,24 @@
               @for (cat of c.categories; track cat.category) {
                 <tr class="border-t border-[var(--noc-divider)]">
                   <td class="px-4 py-3 font-medium">{{ categoryLabel(cat.category) }}</td>
-                  <td class="px-4 py-3 text-right" [class]="cheaperBrand(cat) === 1 ? 'font-medium text-[var(--noc-accent)]' : 'text-[var(--noc-neutral-500)]'">
-                    @if (cat.brand1AvgPrice !== null) {
+                  <td class="px-4 py-3 text-right" [class]="cheaperByKg(cat) === 1 ? 'font-medium text-[var(--noc-accent)]' : 'text-[var(--noc-neutral-500)]'">
+                    @if (cat.brand1MedianPerKg !== null) {
+                      {{ cat.brand1MedianPerKg | number:'1.0-0' }} ₺/kg
+                      <span class="block text-[10px] font-normal text-[var(--noc-neutral-500)]">{{ cat.brand1KgCount }} ürünün ortası</span>
+                    } @else if (cat.brand1AvgPrice !== null) {
                       {{ cat.brand1AvgPrice | number:'1.2-2' }} ₺
-                      <span class="block text-[10px] font-normal text-[var(--noc-neutral-500)]">{{ cat.brand1Count }} ürün</span>
+                      <span class="block text-[10px] font-normal text-[var(--noc-neutral-500)]">{{ cat.brand1Count }} ürünün ortalaması</span>
                     } @else {
                       <span class="text-[var(--noc-neutral-500)]">—</span>
                     }
                   </td>
-                  <td class="px-4 py-3 text-right" [class]="cheaperBrand(cat) === 2 ? 'font-medium text-[var(--noc-accent)]' : 'text-[var(--noc-neutral-500)]'">
-                    @if (cat.brand2AvgPrice !== null) {
+                  <td class="px-4 py-3 text-right" [class]="cheaperByKg(cat) === 2 ? 'font-medium text-[var(--noc-accent)]' : 'text-[var(--noc-neutral-500)]'">
+                    @if (cat.brand2MedianPerKg !== null) {
+                      {{ cat.brand2MedianPerKg | number:'1.0-0' }} ₺/kg
+                      <span class="block text-[10px] font-normal text-[var(--noc-neutral-500)]">{{ cat.brand2KgCount }} ürünün ortası</span>
+                    } @else if (cat.brand2AvgPrice !== null) {
                       {{ cat.brand2AvgPrice | number:'1.2-2' }} ₺
-                      <span class="block text-[10px] font-normal text-[var(--noc-neutral-500)]">{{ cat.brand2Count }} ürün</span>
+                      <span class="block text-[10px] font-normal text-[var(--noc-neutral-500)]">{{ cat.brand2Count }} ürünün ortalaması</span>
                     } @else {
                       <span class="text-[var(--noc-neutral-500)]">—</span>
                     }
@@ -63,26 +69,66 @@
             </tbody>
           </table>
         </div>
-        <p class="mt-4 text-center text-xs text-[var(--noc-neutral-500)]">
-          Fiyatlar, o kategorideki tüm ürünlerin güncel fiyatlarının ortalamasıdır — vurgulu taraf o kategoride ortalama olarak daha uygun fiyatlı.
+        <p class="mt-4 text-center text-xs leading-relaxed text-[var(--noc-neutral-500)]">
+          Kilogram fiyatı, gramajı bilinen ve stokta olan ürünlerin kilogram başına fiyatlarının ortasıdır (medyan); vurgulu
+          taraf o kategoride kilogram başına daha uygun. Kapsül ve tablet gibi gramajla ölçülemeyen kategorilerde ortalama fiyat
+          gösteriliyor, orada kazanan seçmiyoruz: paket boyutları farklı olduğu için ortalama yanıltır.
         </p>
 
         @if (summary(); as s) {
           <p class="mx-auto mt-4 max-w-xl text-center text-sm leading-relaxed text-[var(--noc-neutral-300)]">
-            @if (s.leader; as leader) {
-              {{ c.categories.length }} ortak kategoriden {{ s.leaderWins }} tanesinde {{ leader === 1 ? c.brand1 : c.brand2 }} ortalama daha ucuz
-              @if (s.ties > 0) {
-                ({{ s.ties }} kategori eşit)
-              }.
+            @if (s.comparable === 0) {
+              İki markada da kilogram fiyatı hesaplanabilen ortak bir kategori yok; bu yüzden hangisinin daha uygun olduğunu söylemiyoruz.
+            } @else if (s.leader; as leader) {
+              Kilogram fiyatı karşılaştırılabilen {{ s.comparable }} ortak kategoriden {{ s.leaderWins }} tanesinde {{ leader === 1 ? c.brand1 : c.brand2 }} daha uygun{{ s.ties > 0 ? ' (' + s.ties + ' kategoride fark yok)' : '' }}.
               @if (s.biggestDiff; as d) {
-                En belirgin fark {{ categoryLabel(d.category) }} kategorisinde:
-                {{ d.cheaper === 1 ? c.brand1 : c.brand2 }} yaklaşık %{{ d.percent }} daha uygun.
+                En belirgin fark {{ categoryLabel(d.category) }} kategorisinde: {{ d.cheaper === 1 ? c.brand1 : c.brand2 }} kilogram başına yaklaşık %{{ d.percent }} daha ucuz.
               }
             } @else {
-              Ortak kategorilerde ortalama fiyatlar neredeyse eşit.
+              Kilogram fiyatı karşılaştırılabilen {{ s.comparable }} ortak kategoride iki marka başa baş.
             }
           </p>
         }
+      }
+
+      @if (discountText() || activityText()) {
+        <section class="mt-8 rounded-[14px] bg-[var(--noc-card)] p-5 shadow-[var(--noc-shadow-sm)]" aria-labelledby="fiyat-davranisi">
+          <h2 id="fiyat-davranisi" class="text-[17px] font-medium">Fiyat davranışı</h2>
+          @if (discountText(); as t) {
+            <p class="mt-2 text-sm leading-relaxed text-[var(--noc-neutral-300)]">{{ t }}</p>
+          }
+          @if (activityText(); as t) {
+            <p class="mt-2 text-sm leading-relaxed text-[var(--noc-neutral-300)]">{{ t }}</p>
+          }
+          <p class="mt-3 text-xs leading-relaxed text-[var(--noc-neutral-500)]">
+            Gerçek indirim: güncel fiyatın, son 30 günde ölçtüğümüz olağan fiyatın altında olması; mağazanın yazdığı "eski fiyat"
+            hesaba girmiyor. <a routerLink="/nasil-calisiyoruz" class="text-[var(--noc-accent)] underline underline-offset-2">Yöntemi oku</a>
+          </p>
+        </section>
+      }
+
+      @if (bestPicks().length > 0) {
+        <section class="mt-6 rounded-[14px] bg-[var(--noc-card)] p-5 shadow-[var(--noc-shadow-sm)]" aria-labelledby="en-uygun-urunler">
+          <h2 id="en-uygun-urunler" class="text-[17px] font-medium">Kilogram başına en uygun ürünler</h2>
+          <p class="mt-1 text-xs text-[var(--noc-neutral-500)]">Her markanın o kategorideki, stokta olan ürünleri arasında kilogram fiyatı en düşük olanı.</p>
+          <div class="mt-4 space-y-4">
+            @for (cat of bestPicks(); track cat.category) {
+              <div>
+                <h3 class="text-[13px] font-medium text-[var(--noc-neutral-300)]">{{ categoryLabel(cat.category) }}</h3>
+                <ul class="mt-2 grid gap-2 sm:grid-cols-2">
+                  @for (pick of [cat.brand1BestPick!, cat.brand2BestPick!]; track pick.productId) {
+                    <li class="rounded-[10px] border border-[var(--noc-divider)] px-3 py-2">
+                      <a [routerLink]="productPath(pick)" class="text-sm font-medium hover:text-[var(--noc-accent)]">{{ pick.productName }}</a>
+                      <span class="mt-0.5 block text-xs text-[var(--noc-neutral-500)]">
+                        {{ pick.price | number:'1.2-2' }} ₺, kilogramı {{ pick.pricePerKg | number:'1.0-0' }} ₺
+                      </span>
+                    </li>
+                  }
+                </ul>
+              </div>
+            }
+          </div>
+        </section>
       }
 
       <div class="mt-6 text-center">

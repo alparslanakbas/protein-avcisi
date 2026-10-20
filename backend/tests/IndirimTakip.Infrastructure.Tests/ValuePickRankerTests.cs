@@ -15,6 +15,36 @@ public class ValuePickRankerTests
     private static List<string> Adlar(ValuePickRanking sonuc) =>
         sonuc.Picks.Select(p => p.Candidate.ProductName).ToList();
 
+    // Marka karşılaştırması Eligible'ı kullanıyor: Rank'in uygun sayısıyla aynı listeyi,
+    // kilogram fiyatına göre artan sırada vermeli.
+    [Fact]
+    public void EligibleRankinSaydigiListeyiKgFiyatinaGoreSiralar()
+    {
+        var adaylar = new[]
+        {
+            Aday("Hardline Whey 3 Matrix 2300 Gr", "2300 Gr", 2999m, markaId: 1),
+            Aday("Hardline Whey 3 Matrix 908 Gr", "908 Gr", 1399m, markaId: 1),
+            Aday("PROTEİNOCEAN CREAM OF RICE 1000 GR ÇİKOLATA", "1000 Gr", 399m, markaId: 1),
+            Aday("Hardline Whey 3 Matrix 5000 Gr", "5000 Gr", 5499m, markaId: 1),
+        };
+
+        var uygunlar = ValuePickRanker.Eligible(adaylar, "protein-tozu");
+
+        Assert.Equal(ValuePickRanker.Rank(adaylar, "protein-tozu", null, 6).EligibleCount, uygunlar.Count);
+        Assert.Equal([1099.80m, 1303.91m, 1540.75m], uygunlar.Select(u => u.PricePerKg).ToArray());
+    }
+
+    [Theory]
+    [InlineData(new double[] { }, null)]
+    [InlineData(new double[] { 5 }, 5.0)]
+    [InlineData(new double[] { 9, 1, 5 }, 5.0)]
+    [InlineData(new double[] { 4, 1, 3, 2 }, 2.5)]
+    public void MedyanTekVeCiftSayidaDogru(double[] degerler, double? beklenen)
+    {
+        var sonuc = DealsQueryService.Medyan(degerler.Select(d => (decimal)d).ToList());
+        Assert.Equal(beklenen is null ? null : (decimal)beklenen.Value, sonuc);
+    }
+
     [Fact]
     public void ProteinTozundaBaskaBicimdekiUrunleriDislar()
     {

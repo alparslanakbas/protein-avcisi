@@ -3,7 +3,8 @@ import { DOCUMENT, DecimalPipe } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
-import { BrandComparison } from '../core/brand-comparison.model';
+import { BrandComparison, CategoryComparison } from '../core/brand-comparison.model';
+import { activitySentence, cheaperByKg, discountSentence, kgSummary } from '../core/brand-comparison-text';
 import { BrandComparisonService } from '../core/brand-comparison.service';
 import { brandSlug, resolveBrandFromSlug } from '../core/brand-slug';
 import { DealsService } from '../core/deals.service';
@@ -12,6 +13,7 @@ import { buildBreadcrumbJsonLd } from '../core/breadcrumb';
 import { PageMetaService, upsertJsonLdScript } from '../core/page-meta.service';
 import { SiteHeader } from '../site-header/site-header';
 import { showNotFound } from '../core/not-found-navigation';
+import { productPath } from '../core/product-link';
 
 @Component({
   selector: 'app-brand-comparison-page',
@@ -22,6 +24,8 @@ export class BrandComparisonPage implements OnInit {
   // Adres üretimi tek yerden: toLowerCase() marka adındaki boşluğu ve
   // Türkçe harfi adrese taşıyıp kanonikten sapan bir kopya üretiyordu.
   protected readonly brandSlug = brandSlug;
+  protected readonly productPath = productPath;
+  protected readonly cheaperByKg = cheaperByKg;
 
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -88,7 +92,7 @@ export class BrandComparisonPage implements OnInit {
 
   private setMeta(comparison: BrandComparison): void {
     const title = `${comparison.brand1} vs ${comparison.brand2} Fiyat Karşılaştırması | Protein Avcısı`;
-    const description = `${comparison.brand1} ve ${comparison.brand2} markalarının kategori bazında güncel ortalama fiyatlarını karşılaştır — gerçek fiyat verisine dayanır.`;
+    const description = `${comparison.brand1} ve ${comparison.brand2}: kategori bazında kilogram fiyatı, bugünkü gerçek indirimler ve son 30 günün fiyat hareketi — kendi fiyat kayıtlarımızdan.`;
 
     this.pageMeta.set({
       title,
@@ -113,53 +117,30 @@ export class BrandComparisonPage implements OnInit {
     return CATEGORY_LABELS[category] ?? category;
   }
 
-  protected cheaperBrand(cat: { brand1AvgPrice: number | null; brand2AvgPrice: number | null }): 1 | 2 | null {
-    if (cat.brand1AvgPrice === null || cat.brand2AvgPrice === null) return null;
-    if (cat.brand1AvgPrice === cat.brand2AvgPrice) return null;
-    return cat.brand1AvgPrice < cat.brand2AvgPrice ? 1 : 2;
-  }
-
-  // Tablonun altına kısa bir özet paragrafı — kaç kategoride hangi markanın
-  // daha ucuz olduğu + en belirgin farkın hangi kategoride olduğu. Tamamen
-  // mevcut kategori verisinden türetiliyor, ekstra bir backend çağrısı
-  // gerekmiyor (dış bir kod incelemesinde önerildi: "sadece tablo, hiç
-  // yorum yok" eleştirisine cevap).
-  //
-  // "leader" alanı BİLİNÇLİ OLARAK eklendi (2026-08-24, ikinci bir dış
-  // inceleme bulgusu) — önceki şablon "daha ucuz olan taraf: {brand1}
-  // (Nwins), {brand2} (Mwins)" şeklinde brand1'i (alfabetik ilk marka,
-  // kazanan olsun olmasın) HER ZAMAN önce yazıyordu; "Hardline (0
-  // kategori), HIQ (7 kategori)" gibi Hardline'ı "daha ucuz taraf" diye
-  // açıp sonra 0 diyen kafa karıştırıcı cümleler üretiyordu. Artık kazanan
-  // marka ayrıca hesaplanıp şablonda TEK ve NET bir özne olarak kullanılıyor.
+  // Yorumlar core/brand-comparison-text.ts'te, saf ve test edilebilir. "Daha ucuz"
+  // kararı yalnız kilogram fiyatıyla (20 Ekim): ham ortalama paket boyutuna bakmıyordu.
+  // Önceki sürümün "leader" ilkesi korunuyor: kazanan marka cümlede tek ve net özne.
   protected readonly summary = computed(() => {
     const c = this.comparison();
-    if (!c || c.categories.length === 0) return null;
-
-    let brand1Wins = 0;
-    let brand2Wins = 0;
-    let biggestDiff: { category: string; percent: number; cheaper: 1 | 2 } | null = null;
-
-    for (const cat of c.categories) {
-      const winner = this.cheaperBrand(cat);
-      if (winner === 1) brand1Wins++;
-      else if (winner === 2) brand2Wins++;
-
-      if (winner !== null && cat.brand1AvgPrice !== null && cat.brand2AvgPrice !== null) {
-        const higher = winner === 1 ? cat.brand2AvgPrice : cat.brand1AvgPrice;
-        const lower = winner === 1 ? cat.brand1AvgPrice : cat.brand2AvgPrice;
-        const percent = Math.round(((higher - lower) / higher) * 100);
-        if (!biggestDiff || percent > biggestDiff.percent) {
-          biggestDiff = { category: cat.category, percent, cheaper: winner };
-        }
-      }
-    }
-
-    const ties = c.categories.length - brand1Wins - brand2Wins;
-    const leader: 1 | 2 | null = brand1Wins === brand2Wins ? null : brand1Wins > brand2Wins ? 1 : 2;
-    const leaderWins = leader === 1 ? brand1Wins : leader === 2 ? brand2Wins : 0;
-    const otherWins = leader === 1 ? brand2Wins : leader === 2 ? brand1Wins : 0;
-
-    return { brand1Wins, brand2Wins, ties, leader, leaderWins, otherWins, biggestDiff };
+    return c && c.categories.length > 0 ? kgSummary(c.categories) : null;
   });
+
+  protected readonly activityText = computed(() => {
+    const c = this.comparison();
+    return c ? activitySentence(c) : null;
+  });
+
+  protected readonly discountText = computed(() => {
+    const c = this.comparison();
+    return c ? discountSentence(c) : null;
+  });
+
+  /** İki markada da kilogram başına en uygun ürünü olan kategoriler. */
+  protected readonly bestPicks = computed(() =>
+    (this.comparison()?.categories ?? []).filter((cat) => cat.brand1BestPick && cat.brand2BestPick),
+  );
+
+  protected hasKg(cat: CategoryComparison): boolean {
+    return cat.brand1MedianPerKg !== null || cat.brand2MedianPerKg !== null;
+  }
 }

@@ -66,13 +66,23 @@ internal static class DealsEndpoints
         // kontrol olmadan GetBrandComparisonAsync içindeki .ToLower() çağrısı
         // NullReferenceException'a düşüp 500 dönüyordu — TestSprite'ın otomatik
         // testinde yakalandı (bkz. CLAUDE.md).
-        app.MapGet("/api/brand-comparison", async (string? brand1, string? brand2, DealsQueryService deals, CancellationToken ct) =>
+        app.MapGet("/api/brand-comparison", async (
+            string? brand1, string? brand2, DealsQueryService deals, CatalogStatsQueryService katalog, CancellationToken ct) =>
         {
             if (string.IsNullOrWhiteSpace(brand1) || string.IsNullOrWhiteSpace(brand2))
                 return Results.BadRequest(new { message = "brand1 ve brand2 parametreleri gerekli." });
 
             var result = await deals.GetBrandComparisonAsync(brand1, brand2, ct);
-            return result is null ? Results.NotFound() : Results.Ok(result);
+            if (result is null)
+                return Results.NotFound();
+
+            // Gerçek indirim sayısı ve derinliği marka sayfasıyla AYNI hesap: iki sayfa
+            // aynı marka için farklı sayı göstermesin.
+            return Results.Ok(result with
+            {
+                Brand1Stats = await katalog.GetBrandStatsAsync(result.Brand1, cancellationToken: ct),
+                Brand2Stats = await katalog.GetBrandStatsAsync(result.Brand2, cancellationToken: ct),
+            });
         }).CacheOutput(cachePolicy);
 
         // Protein ihtiyacı hesaplayıcısının "servis başı en uygun ürünler" tablosu —

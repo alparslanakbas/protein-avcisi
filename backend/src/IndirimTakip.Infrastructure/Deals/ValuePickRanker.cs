@@ -94,12 +94,31 @@ public static partial class ValuePickRanker
     public static ValuePickRanking Rank(
         IEnumerable<ValuePickCandidate> candidates, string category, string? type, int count)
     {
+        var uygunlar = Eligible(candidates, category, type);
+
+        var secilenler = uygunlar
+            .DistinctBy(x => x.Candidate.BrandId)
+            .Take(Math.Clamp(count, 1, MaxCount))
+            .ToList();
+
+        return new ValuePickRanking(secilenler, uygunlar.Count);
+    }
+
+    /// <summary>
+    /// Korumalardan geçen bütün adaylar, kilogram fiyatına göre artan sırada.
+    /// Marka karşılaştırması da bunu kullanıyor: "kilogram fiyatı" iki sayfada
+    /// aynı kurallarla hesaplansın (pirinç unu, tek porsiyonluk paket, "3000 Kg"
+    /// gibi birim hataları karşılaştırmaya da girmesin).
+    /// </summary>
+    public static IReadOnlyList<RankedValuePick> Eligible(
+        IEnumerable<ValuePickCandidate> candidates, string category, string? type = null)
+    {
         var kural = Kurallar.GetValueOrDefault(category, VarsayilanKural);
         Func<string, bool> tureUyar = type is null
             ? _ => true
             : Turler.GetValueOrDefault(category)?.GetValueOrDefault(type) ?? (_ => false);
 
-        var uygunlar = candidates
+        return candidates
             // Stok bilgisi vermeyen kaynak (null) listede kalıyor: bilinmeyeni
             // "stokta yok" saymak da uydurma olurdu.
             .Where(c => c.InStock != false && c.Price > 0)
@@ -115,13 +134,6 @@ public static partial class ValuePickRanker
             .OrderBy(x => x.PricePerKg)
             .ThenBy(x => x.Candidate.ProductId)
             .ToList();
-
-        var secilenler = uygunlar
-            .DistinctBy(x => x.Candidate.BrandId)
-            .Take(Math.Clamp(count, 1, MaxCount))
-            .ToList();
-
-        return new ValuePickRanking(secilenler, uygunlar.Count);
     }
 
     // Çok ürünlü setler: "... Paketi" / "... Seti" (BundleProductFilter) ve
