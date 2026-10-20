@@ -17,6 +17,7 @@ import {
 import { AboneYonetimi } from './abone-yonetimi';
 import { YonetimDuzenleyiciOdagi } from './duzenleyici-odagi';
 import { YonetimHataSebebi } from './hata-sebebi';
+import { YonetimOncelikliEksikler } from './oncelikli-eksikler';
 import { Sayfalama, gorunenSayfalar } from './sayfalama';
 import { KaydedilenVeri, UrunVeriFormu, VeriTaslaklari, besinIstegi } from './veri-formu';
 import {
@@ -53,7 +54,7 @@ const GORUNURLUK_KILIT_BITISI = Date.parse('2026-09-19T00:00:00+03:00');
  */
 @Component({
   selector: 'app-yonetim-page',
-  imports: [FormsModule, NgTemplateOutlet, YonetimDuzenleyiciOdagi, YonetimHataSebebi],
+  imports: [FormsModule, NgTemplateOutlet, YonetimDuzenleyiciOdagi, YonetimHataSebebi, YonetimOncelikliEksikler],
   templateUrl: './yonetim-page.html',
   styleUrls: [
     './yonetim-page.css',

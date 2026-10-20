@@ -798,6 +798,7 @@
                 </p>
               }
             } @else {
+              <app-oncelikli-eksikler (duzenle)="veriDuzenleyiciAc($event)" />
               <form class="product-search-form" (ngSubmit)="urunAra()">
                 <label class="search-field">
                   <i class="ph ph-magnifying-glass" aria-hidden="true"></i>

@@ -330,6 +330,48 @@ internal static class AdminKatalogEndpoints
             return Results.Ok(new { urunler, toplam, sayfa = gecerliSayfa, sayfaBoyutu = boyut });
         }).RequireAdminKey(adminApiKey);
 
+        // ONCELIKLI EKSIKLER (20 Ekim): elle girilecek ~9.500 alanin cogu kimsenin acmadigi
+        // urunlerde. Ziyaretcinin tikladigi urunler once: 20 Ekim olcumu, tiklanan 772 urunun
+        // 492'sinde kategori ya da besin eksikti, kategorisiz yalniz 162. Besinde "elle
+        // girilmeli" ile ayni kural: detay tamamlamanin hala dolduracagi satir ve "tablosu yok"
+        // diye kapatilan satir listeye girmiyor. Gizli urun (global filtre) de girmiyor.
+        app.MapGet("/api/dev/urunler/oncelikli-eksikler", async (
+            AppDbContext db, IEnumerable<IBrandScraper> kaziyicilar, int? adet, CancellationToken ct) =>
+        {
+            var detayMarkalari = kaziyicilar.OfType<IProductDetailFetcher>()
+                .Select(k => ((IBrandScraper)k).BrandName)
+                .ToArray();
+            var sorgu = db.Products.AsNoTracking().Where(p => p.ClickCount > 0
+                && (p.Category == null
+                    || (p.NutritionJson == null && !p.NutritionIsManual
+                        && !(p.Seller == null && p.NutritionCheckedAt == null && detayMarkalari.Contains(p.Brand!.Name)))));
+
+            var toplam = await sorgu.CountAsync(ct);
+            var urunler = await sorgu
+                .OrderByDescending(p => p.ClickCount)
+                .ThenBy(p => p.Id)
+                .Take(Math.Clamp(adet ?? 25, 5, 100))
+                .Select(p => new
+                {
+                    p.Id,
+                    p.Name,
+                    marka = p.Brand!.Name,
+                    p.Seller,
+                    p.IsActive,
+                    p.LatestPrice,
+                    p.Category,
+                    p.CategoryIsManual,
+                    p.NutritionJson,
+                    p.NutritionIsManual,
+                    p.ServingSizeGrams,
+                    p.ServingsPerPackage,
+                    tiklanma = p.ClickCount,
+                })
+                .ToListAsync(ct);
+
+            return Results.Ok(new { urunler, toplam });
+        }).RequireAdminKey(adminApiKey);
+
         // --- Elle girilen kategori ve besin değeri (bkz. ManualProductDataService) ---
         app.MapPut("/api/dev/urunler/{id:int}/kategori", async (
             int id, KategoriIstegi istek, ManualProductDataService veri, IPublicCacheRefresher cache, CancellationToken ct) =>

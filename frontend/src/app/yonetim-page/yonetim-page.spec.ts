@@ -12,6 +12,7 @@ describe('YonetimPage görünürlük güvenliği', () => {
     markaDurumuGuncelle: vi.fn(() => of({ id: 12, name: 'Örnek marka', isActive: false })),
     urunDurumuGuncelle: vi.fn(() => of({ id: 34, name: 'Örnek ürün', isActive: false })),
     markalar: vi.fn(() => of([])),
+    oncelikliEksikler: vi.fn(() => of({ urunler: [], toplam: 0 })),
     urunler: vi.fn((..._args: unknown[]) =>
       of({ urunler: [] as unknown[], toplam: 0, sayfa: 1, sayfaBoyutu: 50 }),
     ),

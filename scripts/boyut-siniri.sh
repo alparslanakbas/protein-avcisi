@@ -17,11 +17,14 @@ cd "$(dirname "$0")/.."
 
 SINIR=800
 declare -A TAVAN=(
-  [frontend/src/app/yonetim-page/yonetim-page.html]=1561
+  # yonetim-page: +1 satır (20 Ekim), yeni özelliği ayrı dosyaya (oncelikli-eksikler.ts)
+  # bağlayan etiket ve import; özellik kendisi buraya girmedi.
+  [frontend/src/app/yonetim-page/yonetim-page.html]=1562
   [frontend/src/app/deals-list/deals-list.ts]=1104
-  [frontend/src/app/yonetim-page/yonetim-page.ts]=921
-  [backend/src/IndirimTakip.Infrastructure/Deals/DealsQueryService.cs]=829
+  [frontend/src/app/yonetim-page/yonetim-page.ts]=922
 )
+# DealsQueryService.cs 20 Ekim'de 779 satıra indi (karşılaştırma ayrı dosyaya taşındı):
+# sınırın altında, tavan listesinden çıktı.
 
 # Liste ÖNCE değişkene alınıyor: süreç ikamesinin (< <(...)) çıkış kodunu
 # set -e görmüyor; git hata verince döngü sıfır dosya okuyup "tamam" diyordu

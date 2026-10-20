@@ -87,6 +87,11 @@ export class YonetimService {
     return this.http.get<YonetimUrunSayfasi>(`${this.base}/urunler${sorgu ? `?${sorgu}` : ''}`);
   }
 
+  /** Ziyaretçinin tıkladığı, kategorisi ya da besin değeri eksik ürünler; tıklanmaya göre sıralı. */
+  oncelikliEksikler(adet = 25): Observable<YonetimOncelikliEksikler> {
+    return this.http.get<YonetimOncelikliEksikler>(`${this.base}/urunler/oncelikli-eksikler?adet=${adet}`);
+  }
+
   urunDurumuGuncelle(id: number, isActive: boolean): Observable<YonetimDurumGuncelleme> {
     return this.http.put<YonetimDurumGuncelleme>(`${this.base}/urunler/${id}`, { isActive });
   }
@@ -281,6 +286,17 @@ export interface YonetimUrunSayfasi {
   toplam: number;
   sayfa: number;
   sayfaBoyutu: number;
+}
+
+export interface YonetimOncelikliUrun extends YonetimUrun {
+  /** Mağazaya gitme tıklaması (sitenin tek ziyaretçi sinyali). */
+  tiklanma: number;
+}
+
+export interface YonetimOncelikliEksikler {
+  urunler: YonetimOncelikliUrun[];
+  /** Listeye giren toplam ürün (gösterilenden fazla olabilir). */
+  toplam: number;
 }
 
 /** Ürün listesinin boolean filtreleri; adlar backend parametre adlarıyla aynı. */
