@@ -1,6 +1,7 @@
 import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { Component, OnInit, PLATFORM_ID, computed, inject, signal } from '@angular/core';
 import { ActivatedRouteSnapshot, NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
+import { ensureAdsenseScript } from './core/adsense-script';
 import { showFooterBrandLinks } from './core/footer-brand-links';
 import { NavigationSnapshot, routePath, shouldResetScroll } from './core/scroll-reset';
 import { filter } from 'rxjs';
@@ -158,6 +159,7 @@ export class App implements OnInit {
       };
 
       this.footerMarkaListesi.set(showFooterBrandLinks(next.path));
+      ensureAdsenseScript(this.document, next.path);
       this.yonetimSayfasi.set(next.path === '/yonetim' || next.path.startsWith('/yonetim/'));
 
       if (this.isBrowser && shouldResetScroll(this.lastNavigation, next)) {
