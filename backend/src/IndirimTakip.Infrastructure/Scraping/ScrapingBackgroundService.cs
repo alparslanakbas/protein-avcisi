@@ -69,6 +69,17 @@ public class ScrapingBackgroundService(
         await services.GetRequiredService<PriceSummaryRefresher>()
             .RefreshAsync(cancellationToken);
 
+        // Aylık fiyat endeksi: yalnız son iki ayın fiyatlarını okuyor (kesinleşen ay bir daha hesaplanmıyor). Önbellek
+        // temizliğinden ÖNCE ki sayfa yeni değeri görsün; hata turun geri kalanını durdurmasın.
+        try
+        {
+            await services.GetRequiredService<FiyatEndeksiServisi>().TazeleAsync(DateTimeOffset.UtcNow, cancellationToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogError(ex, "Fiyat endeksi hesaplanamadı.");
+        }
+
         await services.GetRequiredService<IPublicCacheRefresher>()
             .RefreshAsync(cancellationToken);
 

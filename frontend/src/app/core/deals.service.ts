@@ -8,6 +8,7 @@ import { BrandInsights } from './brand-insights.model';
 import { CategoryPriceStats } from './category-price-stats.model';
 import { Deal } from './deal.model';
 import { HomepageStats } from './homepage-stats.model';
+import { FiyatEndeksi } from './fiyat-endeksi';
 import { KampanyaOzeti } from './kampanya';
 import { FilterOptions, PagedResult } from './paged-result.model';
 import { ProductSparkline } from './product-sparkline.model';
@@ -66,6 +67,11 @@ export class DealsService {
   // Sezon sayfası: mağazanın indirim dediği ürünler yönetmelik ölçütüyle (backend KampanyaIndirimServisi).
   getKampanyaOzeti(): Observable<KampanyaOzeti> {
     return this.http.get<KampanyaOzeti>(`${API_BASE_URL}/api/kampanya/ozet`);
+  }
+
+  // Aylık fiyat endeksi (backend FiyatEndeksiServisi).
+  getFiyatEndeksi(): Observable<FiyatEndeksi> {
+    return this.http.get<FiyatEndeksi>(`${API_BASE_URL}/api/fiyat-endeksi`);
   }
 
   getStoreDeals(query: DealsQuery): Observable<PagedResult<Deal>> {

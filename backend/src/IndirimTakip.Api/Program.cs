@@ -320,6 +320,7 @@ app.MapCollectorEndpoints(ingestApiKey);
 app.MapHealthEndpoints();
 app.MapDealsEndpoints(PublicDataCachePolicy);
 app.MapKampanyaEndpoints(PublicDataCachePolicy);
+app.MapFiyatEndeksiEndpoints(PublicDataCachePolicy, adminApiKey);
 app.MapCouponEndpoints(PublicDataCachePolicy);
 app.MapArticleEndpoints(PublicDataCachePolicy);
 app.MapPriceHistoryEndpoints(PublicDataCachePolicy);

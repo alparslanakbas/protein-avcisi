@@ -16,6 +16,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<SecurityEvent> SecurityEvents => Set<SecurityEvent>();
     public DbSet<BackgroundJobRun> BackgroundJobRuns => Set<BackgroundJobRun>();
     public DbSet<AdminOperationFailure> AdminOperationFailures => Set<AdminOperationFailure>();
+    public DbSet<PriceIndexMonth> PriceIndexMonths => Set<PriceIndexMonth>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -168,6 +169,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             // Is basina TEK satir olmali: iki satir olusursa "sirasi geldi mi"
             // sorusu hangisine bakildigina gore farkli cevap verirdi.
             j.HasIndex(x => x.JobName).IsUnique();
+        });
+
+        modelBuilder.Entity<PriceIndexMonth>(e =>
+        {
+            e.Property(x => x.Category).HasMaxLength(64);
+            // Ay × kategori başına tek satır: geçici ay her taramada silinip yeniden yazılıyor, iki satır kalırsa
+            // sayfa hangisini göstereceğini bilemezdi.
+            e.HasIndex(x => new { x.Month, x.Category }).IsUnique();
         });
     }
 }

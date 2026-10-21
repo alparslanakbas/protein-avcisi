@@ -55,6 +55,10 @@ export const routes: Routes = [
     loadComponent: () => import('./efsane-kasim-page/efsane-kasim-page').then((m) => m.EfsaneKasimPage),
   },
   {
+    path: 'fiyat-endeksi',
+    loadComponent: () => import('./fiyat-endeksi-page/fiyat-endeksi-page').then((m) => m.FiyatEndeksiPage),
+  },
+  {
     // Kalıcı liste: kilogram fiyatına göre en ucuz kreatin.
     path: 'en-ucuz-kreatin',
     loadComponent: () => import('./en-ucuz-kreatin-page/en-ucuz-kreatin-page').then((m) => m.EnUcuzKreatinPage),

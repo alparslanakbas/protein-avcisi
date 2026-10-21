@@ -1,0 +1,142 @@
+<div class="noc-shell min-h-screen bg-[var(--noc-bg)] text-[var(--noc-text)]">
+  <app-site-header />
+
+  <main class="mx-auto max-w-[1280px] px-[28px] py-[22px]">
+    <nav class="mb-2 text-xs text-[var(--noc-neutral-500)]">
+      <a routerLink="/" class="hover:text-[var(--noc-accent)]">Ana Sayfa</a> / Fiyat Endeksi
+    </nav>
+    <h1 class="text-[38px] font-medium tracking-[-0.03em] sm:text-[42px]">Takviye fiyat endeksi</h1>
+    <p class="mt-2 max-w-2xl text-[15px] text-[var(--noc-neutral-300)]">
+      Takviye fiyatları ay ay ne kadar değişti? Her ay aynı ürünlerin fiyatını bir önceki ayla karşılaştırıyoruz; zam ya
+      da indirim, kataloğa giren ve çıkan ürünler sonucu oynatmıyor. Veri mağazaların kendi sitelerinden, günde
+      birkaç kez topladığımız fiyatlar.
+    </p>
+
+    @if (yukleniyor()) {
+      <div class="mt-[22px] space-y-3" aria-label="Endeks yükleniyor">
+        <div class="pa-card pa-skeleton h-[200px]"></div>
+        <div class="pa-card pa-skeleton h-[320px]"></div>
+      </div>
+    } @else if (hata()) {
+      <div class="mx-auto mt-[22px] max-w-md rounded-[14px] bg-[var(--noc-card)] px-6 py-8 text-center shadow-[var(--noc-shadow-sm)]">
+        Endeks şu anda yüklenemedi. Lütfen biraz sonra tekrar dene.
+      </div>
+    } @else if (sonAy(); as ay) {
+      <section class="mt-[22px] rounded-[14px] bg-[var(--noc-card)] p-5 shadow-[var(--noc-shadow-sm)] sm:p-7" aria-labelledby="ozet-baslik">
+        <h2 id="ozet-baslik" class="pa-section-title">{{ ayAdi(ay.ay) }}</h2>
+        @if (protein(); as p) {
+          <p class="mt-4 text-[44px] font-semibold leading-none tracking-[-0.04em] sm:text-[56px]">{{ degisimMetni(p.aylikDegisimYuzde) }}</p>
+          <p class="mt-3 max-w-2xl text-[15px] text-[var(--noc-neutral-300)]">
+            Protein tozu fiyatları {{ oncekiAyaGore(ay.ay) }} göre. {{ p.markaSayisi | number }} markadan
+            {{ p.urunSayisi | number }} ürünün fiyatı karşılaştırıldı; ürünlerin %{{ p.artanPayi | number: '1.0-1' }} kadarı
+            zamlandı, %{{ p.azalanPayi | number: '1.0-1' }} kadarı ucuzladı, gerisi aynı kaldı.
+          </p>
+        }
+        @if (tum(); as t) {
+          <p class="mt-2 max-w-2xl text-sm text-[var(--noc-neutral-500)]">
+            Bütün kategoriler birlikte: {{ degisimMetni(t.aylikDegisimYuzde) }} ({{ t.markaSayisi | number }} markada
+            {{ t.urunSayisi | number }} ürün).
+          </p>
+        }
+        @if (ay.gecici) {
+          <p class="mt-4 inline-flex items-center gap-2 rounded-full bg-[color-mix(in_srgb,var(--noc-text)_6%,transparent)] px-3 py-1 text-xs text-[var(--noc-neutral-300)]">
+            <i class="ph ph-clock text-sm" aria-hidden="true"></i>Ay bitmediği için geçici. Son hesap: {{ tarih(ay.hesaplandi) }}.
+          </p>
+        }
+      </section>
+
+      <section class="mt-[45px]" aria-labelledby="kategori-baslik">
+        <h2 id="kategori-baslik" class="pa-section-title">Kategori kategori</h2>
+        <p class="mt-2 max-w-2xl text-sm text-[var(--noc-neutral-300)]">
+          {{ ayAdi(ay.ay) }}, {{ oncekiAyaGore(ay.ay) }} göre. Endeks Eylül 2026'yı 100 kabul ediyor.
+        </p>
+        <div class="mt-4 overflow-x-auto rounded-[14px] bg-[var(--noc-card)] shadow-[var(--noc-shadow-sm)]">
+          <table class="w-full min-w-[620px] text-left text-sm">
+            <thead class="text-xs text-[var(--noc-neutral-500)]">
+              <tr class="border-b border-[var(--noc-divider)]">
+                <th scope="col" class="px-4 py-3 font-medium">Kategori</th>
+                <th scope="col" class="px-4 py-3 text-right font-medium">Aylık değişim</th>
+                <th scope="col" class="px-4 py-3 text-right font-medium">Endeks</th>
+                <th scope="col" class="px-4 py-3 text-right font-medium">Zamlanan / ucuzlayan</th>
+                <th scope="col" class="px-4 py-3 text-right font-medium">Ürün (marka)</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (k of ay.kategoriler; track k.kategori) {
+                <tr class="border-b border-[var(--noc-divider)] last:border-0" [class.font-semibold]="k.kategori === 'tum'">
+                  <th scope="row" class="px-4 py-3 font-[inherit]">{{ kategoriAdi(k.kategori) }}</th>
+                  <td class="px-4 py-3 text-right tabular-nums">{{ degisimMetni(k.aylikDegisimYuzde) }}</td>
+                  <td class="px-4 py-3 text-right tabular-nums">{{ k.endeks !== null ? (k.endeks | number: '1.1-1') : '—' }}</td>
+                  <td class="px-4 py-3 text-right tabular-nums text-[var(--noc-neutral-300)]">%{{ k.artanPayi | number: '1.0-1' }} / %{{ k.azalanPayi | number: '1.0-1' }}</td>
+                  <td class="px-4 py-3 text-right tabular-nums text-[var(--noc-neutral-300)]">{{ k.urunSayisi | number }} ({{ k.markaSayisi | number }})</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="mt-[45px] max-w-xl" aria-labelledby="gecmis-baslik">
+        <h2 id="gecmis-baslik" class="pa-section-title">Aydan aya</h2>
+        <div class="mt-4 overflow-hidden rounded-[14px] bg-[var(--noc-card)] shadow-[var(--noc-shadow-sm)]">
+          <table class="w-full text-left text-sm">
+            <thead class="text-xs text-[var(--noc-neutral-500)]">
+              <tr class="border-b border-[var(--noc-divider)]">
+                <th scope="col" class="px-4 py-3 font-medium">Ay</th>
+                <th scope="col" class="px-4 py-3 text-right font-medium">Bütün kategoriler</th>
+                <th scope="col" class="px-4 py-3 text-right font-medium">Protein tozu</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (g of gecmis(); track g.ay) {
+                <tr class="border-b border-[var(--noc-divider)]">
+                  <th scope="row" class="px-4 py-3 font-normal">{{ ayAdi(g.ay) }}@if (g.gecici) { <span class="text-xs text-[var(--noc-neutral-500)]"> (geçici)</span> }</th>
+                  <td class="px-4 py-3 text-right tabular-nums">{{ g.tum !== null ? (g.tum | number: '1.1-1') : '—' }}</td>
+                  <td class="px-4 py-3 text-right tabular-nums">{{ g.protein !== null ? (g.protein | number: '1.1-1') : '—' }}</td>
+                </tr>
+              }
+              <tr>
+                <th scope="row" class="px-4 py-3 font-normal">{{ ayAdi(endeks()!.tabanAy) }} <span class="text-xs text-[var(--noc-neutral-500)]">(taban)</span></th>
+                <td class="px-4 py-3 text-right tabular-nums">100,0</td>
+                <td class="px-4 py-3 text-right tabular-nums">100,0</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    } @else {
+      <div class="mx-auto mt-[22px] max-w-md rounded-[14px] bg-[var(--noc-card)] px-6 py-8 text-center shadow-[var(--noc-shadow-sm)]">
+        İlk ayın endeksi hesaplanıyor. Fiyatlar her taramadan sonra güncelleniyor; birkaç saat içinde burada olacak.
+      </div>
+    }
+
+    <section class="mt-[45px] max-w-3xl" aria-labelledby="yontem-baslik">
+      <h2 id="yontem-baslik" class="pa-section-title">Nasıl hesaplıyoruz?</h2>
+      <ul class="mt-4 list-disc space-y-2 pl-5 text-sm leading-6 text-[var(--noc-neutral-300)]">
+        <li>Bir ürünün günlük fiyatı, o gün mağazasında gördüğümüz en düşük fiyat. Aylık fiyatı, o ayki günlük fiyatlarının ortancası: tek günlük bir kampanya ayın fiyatını değiştirmiyor, ay boyu süren bir indirim değiştiriyor.</li>
+        <li>Bir ürün, iki ayın da en az 7 farklı gününde görüldüyse karşılaştırmaya giriyor. Böylece her ay aynı ürünler karşılaştırılıyor; kataloğa yeni giren ya da satıştan kalkan ürün sonucu oynatmıyor.</li>
+        <li>Kategorinin aylık değişimi, ürünlerin fiyat oranlarının geometrik ortalaması (TÜİK'in de temel fiyat endekslerinde kullandığı Jevons yöntemi). Her ürünün ağırlığı eşit; satış adedini bilmiyoruz.</li>
+        <li>Fiyatı bir ayda üç kattan fazla değişen ürün dışarıda kalıyor (paket boyu değişmiş ya da fiyat yanlış okunmuş olabilir). Bunların sayısını CSV'de veriyoruz.</li>
+        <li>Bir kategori en az 30 ürün ve 5 markayla yayımlanıyor. Kategorisi belli olmayan ürünler hiçbir satıra girmiyor.</li>
+        <li>Taban Eylül 2026 = 100. Ağustos'ta kategori başına yalnız 4 marka vardı; kaynakların çoğunu Eylül'de ekledik.</li>
+        <li>İçinde bulunulan ay "geçici": her taramadan sonra yeniden hesaplanıyor, ay bitince kesinleşiyor ve bir daha değişmiyor.</li>
+        <li>Fiyatlar mağazanın sitesindeki raf fiyatı; sepette uygulanan kupon kodları dahil değil.</li>
+      </ul>
+      <p class="mt-4 text-sm text-[var(--noc-neutral-300)]">
+        Fiyatları nasıl topladığımız:
+        <a routerLink="/nasil-calisiyoruz" class="text-[var(--noc-accent)] hover:underline">nasıl çalışıyoruz</a>.
+      </p>
+    </section>
+
+    <section class="mt-[45px] max-w-3xl rounded-[14px] bg-[var(--noc-card)] p-5 shadow-[var(--noc-shadow-sm)] sm:flex sm:items-center sm:justify-between sm:gap-8 sm:p-7" aria-labelledby="veri-baslik">
+      <div class="max-w-xl">
+        <h2 id="veri-baslik" class="text-lg font-semibold">Veriyi indir</h2>
+        <p class="mt-1 text-sm text-[var(--noc-neutral-300)]">
+          Bütün aylar ve kategoriler tek CSV dosyasında. CC BY 4.0: "Protein Avcısı" diye kaynak göstererek haberde,
+          yazıda ya da araştırmada serbestçe kullanabilirsin.
+        </p>
+      </div>
+      <a [href]="csvAdresi" download class="pa-primary-button mt-4 h-11 shrink-0 px-5 text-sm sm:mt-0">CSV indir<i class="ph ph-download-simple ml-2 text-base" aria-hidden="true"></i></a>
+    </section>
+  </main>
+</div>
