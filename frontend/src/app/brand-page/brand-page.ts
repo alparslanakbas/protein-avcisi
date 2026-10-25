@@ -351,6 +351,8 @@ export class BrandPage implements OnInit {
 
         this.couponsService.getCoupons().subscribe((coupons) => {
           this.coupons.set(coupons.filter((c) => c.brandName === match));
+          // Açıklama kodun olup olmamasına göre değişiyor; kuponlar meta yazıldıktan sonra geliyor.
+          this.setMeta(match);
         });
 
         // Marka ana sayfasında marka geneli, kesişimde ise YALNIZCA o
@@ -615,7 +617,11 @@ export class BrandPage implements OnInit {
     );
     const description = bayi
       ? `${brand} ürünlerini satan bayiler ve güncel bayi fiyatları. Aynı ürün için satıcılar arasındaki fiyat farkını tek sayfada karşılaştır.`
-      : `${brand} için güncel kupon kodları ve gerçek fiyat geçmişine dayanan doğrulanmış indirimler. Protein Avcısı, ${brand} markasının fiyatlarını düzenli olarak takip ediyor.`;
+      : this.coupons().length > 0
+        ? `${brand} için doğruladığımız güncel indirim kodları ve gerçek fiyat geçmişine dayanan indirimler. Protein Avcısı, ${brand} markasının fiyatlarını düzenli olarak takip ediyor.`
+        : // 130 marka sayfasının 119'unda geçerli kod yok (25 Ekim): arama sonucunda "güncel kupon kodları" demek, sayfanın
+          // ilk cümlesiyle çelişen bir vaatti. Başlık arama niyetini karşıladığı için "İndirim Kodu" olarak kalıyor.
+          `${brand} için şu an doğrulanmış bir indirim kodu yok; gerçek fiyat geçmişine göre indirimdeki ürünler ve fiyatların piyasadaki yeri. Protein Avcısı, ${brand} fiyatlarını düzenli olarak takip ediyor.`;
 
     this.pageMeta.set({
       title,
