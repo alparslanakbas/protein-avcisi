@@ -159,6 +159,17 @@ builder.Services.Configure<AffiliateOptions>(builder.Configuration.GetSection("A
 
 var app = builder.Build();
 
+// Web Bot Auth (bkz. WebBotImzasi): yalnız açık anahtarın parmak izi yazılıyor. Ayarlı ama
+// kullanılamayan anahtar da yazılıyor, çünkü o zaman imza sessizce kapalı kalıyor.
+{
+    var imza = app.Services.GetRequiredService<WebBotImzasi>();
+    if (imza.AnahtarVar)
+        app.Logger.LogInformation("Web Bot Auth: anahtar var, istek imzalama {Durum} (Signature-Agent {Ajan}, keyid {Kimlik})",
+            imza.Imzala ? "açık" : "kapalı", imza.ImzaAjani, imza.AnahtarKimligi);
+    else if (imza.Sorun is not null)
+        app.Logger.LogWarning("Web Bot Auth: kapalı, ayarlı anahtar kullanılamıyor: {Sorun}", imza.Sorun);
+}
+
 // Geçici /api/dev/* endpoint'leri (elle tarama tetikleme, kupon ekleme) canlıya
 // çıktıktan sonra da korumasız kaldı — herkes bu uçlara istek atıp taramayı
 // tetikleyebilir ya da sahte kupon ekleyebilirdi. Tam bir kullanıcı/auth sistemi

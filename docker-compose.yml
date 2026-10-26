@@ -81,6 +81,9 @@ services:
       # AYRI anahtar: bu değer geliştirme makinesinde de duruyor, sızarsa
       # admin uçlarına erişim vermemeli. Tanımlı değilse uç tamamen kapalı.
       - IngestApiKey=${INGEST_API_KEY}
+      # Shopify istekleri için Web Bot Auth imza anahtarı (bkz. WebBotImzasi): WheyProof'un
+      # .env'indekiyle AYNI Ed25519 tohumu, yalnız .env'de. Boşsa istekler eskisi gibi imzasız.
+      - WebBotAuth__PrivateKey=${WEB_BOT_AUTH_KEY:-}
       # Kaynak tazeliği alarmının eşiği (saat). Tanımlanmazsa 26.
       # Deploy yapmadan ayarlanabilsin diye burada: bir alarmın eşiği,
       # yanlış ayarlandığında kod değişikliği beklemeden düzeltilebilmeli.
