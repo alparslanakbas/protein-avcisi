@@ -11,8 +11,15 @@ namespace IndirimTakip.Infrastructure.Scraping;
 /// Tünel çalışmazsa çekici doğrudan yanıtı (429) görür; yani en kötü durumda davranış tünelden
 /// önceki gibi. HttpClient günlüğünde tünelin izi: iç satır "Received ... - 429", dış satır
 /// "End processing ... - 200".
+///
+/// <paramref name="engelKodu"/> Shopify dışında tek bir kaynak için: protein7 26 Ekim'den beri
+/// sunucunun IP'sine 403 veriyor (kendi nginx'i; ev IP'sine 200, robots.txt taramaya açık). Onun
+/// istemcisi kendi tünel örneğiyle 403'te tünele geçiyor; 429'u (gerçek hız sınırı) evden aşılmıyor.
 /// </remarks>
-public sealed class ShopifyTunelIsleyicisi(ShopifyTuneli tunel, ILogger<ShopifyTunelIsleyicisi> logger)
+public sealed class ShopifyTunelIsleyicisi(
+    ShopifyTuneli tunel,
+    ILogger<ShopifyTunelIsleyicisi> logger,
+    HttpStatusCode engelKodu = HttpStatusCode.TooManyRequests)
     : DelegatingHandler
 {
     protected override async Task<HttpResponseMessage> SendAsync(
@@ -28,12 +35,12 @@ public sealed class ShopifyTunelIsleyicisi(ShopifyTuneli tunel, ILogger<ShopifyT
                 ?? await base.SendAsync(request, cancellationToken);
 
         var dogrudan = await base.SendAsync(request, cancellationToken);
-        if (dogrudan.StatusCode != HttpStatusCode.TooManyRequests)
+        if (dogrudan.StatusCode != engelKodu)
             return dogrudan;
 
         if (tunel.EngelGoruldu())
-            logger.LogInformation("Shopify {Host} 429 verdi; Shopify istekleri {Dakika} dakika ev tünelinden gidecek.",
-                request.RequestUri?.Host, ShopifyTuneli.YapiskanSure.TotalMinutes);
+            logger.LogInformation("{Host} {Kod} verdi; bu tünelin istekleri {Dakika} dakika ev tünelinden gidecek.",
+                request.RequestUri?.Host, (int)engelKodu, ShopifyTuneli.YapiskanSure.TotalMinutes);
 
         var tuneldenGelen = await TuneldenAsync(request, cancellationToken);
         if (tuneldenGelen is null)
@@ -59,7 +66,7 @@ public sealed class ShopifyTunelIsleyicisi(ShopifyTuneli tunel, ILogger<ShopifyT
         {
             // Sonraki istekler yine önce doğrudan denensin; tünel dönünce bir sonraki 429 onu yeniden açar.
             tunel.Sifirla();
-            logger.LogWarning(ex, "Shopify tüneli çalışmadı ({Host}); istek doğrudan yoldan sürüyor.",
+            logger.LogWarning(ex, "Ev tüneli çalışmadı ({Host}); istek doğrudan yoldan sürüyor.",
                 request.RequestUri?.Host);
             return null;
         }
@@ -67,7 +74,7 @@ public sealed class ShopifyTunelIsleyicisi(ShopifyTuneli tunel, ILogger<ShopifyT
         if (yanit.StatusCode is HttpStatusCode.Forbidden or HttpStatusCode.TooManyRequests)
         {
             var magaza = request.RequestUri?.Host ?? "";
-            logger.LogWarning("Shopify {Host} ev tünelinden de {Kod} verdi; istek doğrudan yoldan sürüyor.",
+            logger.LogWarning("{Host} ev tünelinden de {Kod} verdi; istek doğrudan yoldan sürüyor.",
                 magaza, (int)yanit.StatusCode);
             if (tunel.Reddetti(magaza))
                 logger.LogWarning("Ev tüneli art arda {Esik} farklı mağazada reddedildi; {Saat} saat kullanılmayacak.",

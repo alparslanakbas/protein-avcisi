@@ -147,7 +147,14 @@ public static class DependencyInjection
             // ~900 ürün sayfası tek tek geziliyor; tek sayfa için varsayılan
             // timeout yeterli ama yavaş yanıtlarda takılıp kalmasın.
             client.Timeout = TimeSpan.FromSeconds(30);
-        });
+        }).AddHttpMessageHandler(sp => new ShopifyTunelIsleyicisi(
+            sp.GetRequiredKeyedService<ShopifyTuneli>(nameof(Protein7Scraper)),
+            sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<ShopifyTunelIsleyicisi>>(),
+            System.Net.HttpStatusCode.Forbidden));
+        // 26 Ekim'den beri sunucunun IP'sine 403 (bkz. ShopifyTunelIsleyicisi): doğrudan 403'te ev
+        // tünelinden. Kendi tünel örneği var: Shopify'ın "engel görüldü" durumu buna, bununki Shopify'a geçmesin.
+        services.AddKeyedSingleton(nameof(Protein7Scraper),
+            (_, _) => ShopifyTuneli.Olustur(configuration["Shopify:Tunel"], TimeProvider.System));
         services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<Protein7Scraper>());
 
         // Provitamin — Wix tabanlı çok markalı bayi. Ürün detayları sitemap

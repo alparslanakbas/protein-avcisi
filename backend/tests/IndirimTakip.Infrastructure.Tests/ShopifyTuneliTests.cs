@@ -37,13 +37,16 @@ public class ShopifyTuneliTests
     private static HttpResponseMessage Yanit(HttpStatusCode kod) => new(kod);
 
     private static (HttpMessageInvoker Istemci, SahteIsleyici Dogrudan, SahteIsleyici? Tunel, SahteSaat Saat, ShopifyTuneli Durum)
-        Kur(HttpStatusCode dogrudanKod, Func<HttpRequestMessage, HttpResponseMessage>? tunelYaniti, bool tunelVar = true)
+        Kur(HttpStatusCode dogrudanKod, Func<HttpRequestMessage, HttpResponseMessage>? tunelYaniti, bool tunelVar = true,
+            HttpStatusCode? engelKodu = null)
     {
         var saat = new SahteSaat(new DateTimeOffset(2026, 10, 5, 20, 0, 0, TimeSpan.Zero));
         var dogrudan = new SahteIsleyici(_ => Yanit(dogrudanKod));
         var tunel = tunelVar ? new SahteIsleyici(tunelYaniti ?? (_ => Yanit(HttpStatusCode.OK))) : null;
         var durum = new ShopifyTuneli(tunel, saat);
-        var isleyici = new ShopifyTunelIsleyicisi(durum, NullLogger<ShopifyTunelIsleyicisi>.Instance) { InnerHandler = dogrudan };
+        var isleyici = engelKodu is { } kod
+            ? new ShopifyTunelIsleyicisi(durum, NullLogger<ShopifyTunelIsleyicisi>.Instance, kod) { InnerHandler = dogrudan }
+            : new ShopifyTunelIsleyicisi(durum, NullLogger<ShopifyTunelIsleyicisi>.Instance) { InnerHandler = dogrudan };
         return (new HttpMessageInvoker(isleyici), dogrudan, tunel, saat, durum);
     }
 
@@ -95,6 +98,23 @@ public class ShopifyTuneliTests
         Assert.Equal("Deneme/1.0", tuneldeki.Headers.UserAgent.ToString());
         // Aynı istek nesnesi iki kez gönderilemez; tünele kopyası gitmeli.
         Assert.NotSame(dogrudan.Istekler[0], tuneldeki);
+    }
+
+    // Varsayılan (Shopify) yalnız 429'da tünele geçiyor; protein7'nin örneği yalnız 403'te.
+    [Theory]
+    [InlineData(null, HttpStatusCode.Forbidden, false)]
+    [InlineData(HttpStatusCode.Forbidden, HttpStatusCode.Forbidden, true)]
+    [InlineData(HttpStatusCode.Forbidden, HttpStatusCode.TooManyRequests, false)]
+    public async Task Tunele_yalniz_engel_kodunda_geciliyor(HttpStatusCode? engelKodu, HttpStatusCode dogrudanKod, bool tuneldenMi)
+    {
+        var (istemci, dogrudan, tunel, _, durum) = Kur(dogrudanKod, null, engelKodu: engelKodu);
+
+        var yanit = await Gonder(istemci, "https://protein7.com/xml/sitemap/product.xml");
+
+        Assert.Single(dogrudan.Istekler);
+        Assert.Equal(tuneldenMi ? 1 : 0, tunel!.Istekler.Count);
+        Assert.Equal(tuneldenMi ? HttpStatusCode.OK : dogrudanKod, yanit.StatusCode);
+        Assert.Equal(tuneldenMi, durum.TuneldenGitmeli);
     }
 
     [Fact]
@@ -294,11 +314,11 @@ public class ShopifyTuneliTests
         Assert.True(tunel.Etkin);
     }
 
-    // Tünel yalnızca Shopify çekicilerinde olmalı: başka bir kaynağın 429'unu (ör. Provitamin'in
-    // gerçek hız sınırı) ev bağlantısından aşmak istemiyoruz. Kayıt eksikse (AddTransient
-    // unutulursa) CreateHandler burada patlar.
+    // Tünel yalnızca Shopify çekicilerinde ve protein7'de (yalnız 403'te, kendi örneğiyle) olmalı:
+    // başka bir kaynağın 429'unu (ör. Provitamin'in gerçek hız sınırı) ev bağlantısından aşmak
+    // istemiyoruz. Kayıt eksikse (AddTransient unutulursa) CreateHandler burada patlar.
     [Fact]
-    public void Tunel_isleyicisi_tam_olarak_shopify_cekicilerinin_istemcilerinde()
+    public void Tunel_isleyicisi_tam_olarak_shopify_cekicilerinin_ve_protein7_istemcilerinde()
     {
         var services = new ServiceCollection();
         services.AddLogging();
@@ -329,7 +349,7 @@ public class ShopifyTuneliTests
             new[]
             {
                 "BahsScraper", "CommanderNutritionScraper", "FellasScraper", "GigisScraper", "HiqScraper",
-                "SupplementFactoryScraper", "SupraProteinScraper",
+                "Protein7Scraper", "SupplementFactoryScraper", "SupraProteinScraper",
             },
             tunelli.Order(StringComparer.Ordinal).ToArray());
     }
