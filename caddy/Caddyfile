@@ -204,6 +204,19 @@
 	}
 }
 
+# Deploy anında 502 dönmesin: konteyner yeniden kurulurken (eski kapanıyor, yeni
+# açılıyor; DNS adı da bir an yok) Caddy bağlanamadığı isteği 30 sn boyunca
+# yeniden deniyor. 27 Ekim'de ölçüldü: deploy başına 1-2 sn'lik 502/503 penceresi
+# (www 503'leri SSR'ın, backend'e ulaşamayınca verdiği), Googlebot'a ayda 4 kez
+# denk geldi ve GSC "Sunucu hatası (5xx)" bildirdi. Ayrı konteynerde denendi:
+# yukarı akış silinmişken ayarsız 0 sn'de 502, ayarlıyken dönünce 200; hiç
+# dönmezse 30 sn sonra yine 502 (gerçek arıza gizlenmiyor). Yalnız bağlantı
+# kurulamayan istek tekrarlanıyor, gönderilmiş POST tekrarlanmıyor.
+(yeniden-dene) {
+	lb_try_duration 30s
+	lb_try_interval 250ms
+}
+
 # Kök domain kanonik adrese kalıcı olarak yönlendiriliyor.
 # Önceden ikisi de doğrudan frontend'e proxy'leniyordu; bu, server.ts'teki
 # "kanonik host dışı isteklere noindex" korumasının kök domaine de
@@ -236,17 +249,23 @@ www.proteinavcisi.com.tr {
 	# rewrite ise backend'in bekledigi yola geri koyuyor: /api/dev/security-events
 	handle_path /yonetim/api/* {
 		rewrite * /api/dev{uri}
-		reverse_proxy backend:8080
+		reverse_proxy backend:8080 {
+			import yeniden-dene
+		}
 	}
 
 	handle {
-		reverse_proxy frontend:4000
+		reverse_proxy frontend:4000 {
+			import yeniden-dene
+		}
 	}
 }
 
 api.proteinavcisi.com.tr {
 	import erisim-logu
-	reverse_proxy backend:8080
+	reverse_proxy backend:8080 {
+		import yeniden-dene
+	}
 }
 
 # WheyProof (ABD sitesi) aynı VM'de çalışıyor; alan adlarını bu Caddy
