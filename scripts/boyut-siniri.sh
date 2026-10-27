@@ -20,7 +20,8 @@ declare -A TAVAN=(
   # yonetim-page: +1 satır (20 Ekim), yeni özelliği ayrı dosyaya (oncelikli-eksikler.ts)
   # bağlayan etiket ve import; özellik kendisi buraya girmedi.
   [frontend/src/app/yonetim-page/yonetim-page.html]=1562
-  [frontend/src/app/deals-list/deals-list.ts]=1105
+  # deals-list: +2 satır (27 Ekim), liste yüklenemeyince SSR 503 (200'lü boş sayfa önbelleğe giriyordu).
+  [frontend/src/app/deals-list/deals-list.ts]=1107
   [frontend/src/app/yonetim-page/yonetim-page.ts]=922
 )
 # DealsQueryService.cs 20 Ekim'de 779 satıra indi (karşılaştırma ayrı dosyaya taşındı):

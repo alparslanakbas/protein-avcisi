@@ -1,5 +1,6 @@
-import { HttpInterceptorFn } from '@angular/common/http';
+import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { InjectionToken, inject } from '@angular/core';
+import { MonoTypeOperatorFunction, retry, throwError, timer } from 'rxjs';
 
 import { API_BASE_URL } from './api.config';
 
@@ -34,9 +35,45 @@ export function toInternalApiUrl(url: string, internalBase: string | null | unde
   return url;
 }
 
+// DEPLOY ANINDA BAĞLANTI HATASINDA YENİDEN DENEME (27 Ekim).
+//
+// Deploy backend'i yeniden kuruyor; o birkaç saniye backend:8080 bağlantı
+// kabul etmiyor ve SSR sayfayı bilerek 503 veriyordu. Caddy'nin beklemesi
+// (lb_try_duration) bu yolu kapsamıyor, çünkü SSR backend'e Caddy'siz gidiyor:
+// 27 Ekim deploy'unda ±60 sn'de 91 istekten 1'i 38 ms'de 503 aldı.
+//
+// Yalnız BAĞLANTI hatası (status 0, yanıt hiç gelmedi) ve yalnız GET tekrar
+// deneniyor; backend'in verdiği 4xx/5xx gerçek bir yanıt, tekrarlanmıyor.
+// Üst sınır 15 sn: Docker eski konteyneri en geç 10 sn'de durduruyor, backend
+// 2,3 sn'de dinlemeye başlıyor (ölçüldü). Backend gerçekten düşükse sayfa 15 sn
+// geç ama yine 503 alıyor; arıza gizlenmiyor. server.ts'teki apiFetch de aynı
+// sınırı kullanıyor.
+export const BAGLANTI_YENIDEN_DENEME = { adet: 30, araMs: 500 } as const;
+
+export function baglantiHatasindaYenidenDene<T>(
+  adet: number = BAGLANTI_YENIDEN_DENEME.adet,
+  araMs: number = BAGLANTI_YENIDEN_DENEME.araMs,
+): MonoTypeOperatorFunction<T> {
+  return retry({
+    count: adet,
+    delay: (hata) => (hata instanceof HttpErrorResponse && hata.status === 0 ? timer(araMs) : throwError(() => hata)),
+  });
+}
+
+// server.ts'teki apiFetch (Node fetch) için daha dar ölçüt: yalnız bağlantının
+// HİÇ kurulamadığı hatalar, yani istek backend'e ulaşmamış. /go tıklama
+// sayacını artırıyor; yarıda kopan bir istek tekrarlanırsa tıklama iki kez
+// sayılırdı. Konteyner silinmişken Docker DNS'i adı çözemiyor (ENOTFOUND).
+const BAGLANTI_KURULAMADI = new Set(['ECONNREFUSED', 'ENOTFOUND', 'EAI_AGAIN']);
+
+export function baglantiKurulamadi(hata: unknown): boolean {
+  return BAGLANTI_KURULAMADI.has((hata as { cause?: { code?: string } } | null)?.cause?.code ?? '');
+}
+
 export const internalApiInterceptor: HttpInterceptorFn = (req, next) => {
   const internalBase = inject(INTERNAL_API_BASE_URL);
   const url = toInternalApiUrl(req.url, internalBase);
   if (url === req.url) return next(req);
-  return next(req.clone({ url, setHeaders: INTERNAL_API_HEADERS }));
+  const yanit = next(req.clone({ url, setHeaders: INTERNAL_API_HEADERS }));
+  return req.method === 'GET' ? yanit.pipe(baglantiHatasindaYenidenDene()) : yanit;
 };

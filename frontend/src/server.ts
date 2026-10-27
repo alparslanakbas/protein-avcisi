@@ -9,7 +9,12 @@ import { join } from 'node:path';
 
 import { brandSlug } from './app/core/brand-slug';
 import { API_BASE_URL } from './app/core/api.config';
-import { INTERNAL_API_HEADERS, toInternalApiUrl } from './app/core/internal-api';
+import {
+  BAGLANTI_YENIDEN_DENEME,
+  INTERNAL_API_HEADERS,
+  baglantiKurulamadi,
+  toInternalApiUrl,
+} from './app/core/internal-api';
 import { slugify } from './app/core/slugify';
 import { ssrOnbellekAnahtari } from './app/core/ssr-cache-key';
 import { BODY_CALCULATORS } from './app/core/body-calculators';
@@ -20,11 +25,24 @@ const browserDistFolder = join(import.meta.dirname, '../browser');
 
 // Sitemap ve /go da API'ye iç ağdan gidiyor (bkz. core/internal-api.ts).
 const INTERNAL_API_BASE = process.env['API_INTERNAL_URL'] || null;
-const apiFetch = (path: string, init: RequestInit = {}) =>
-  fetch(toInternalApiUrl(`${API_BASE_URL}${path}`, INTERNAL_API_BASE), {
+
+// Deploy anında backend birkaç saniye bağlantı kabul etmiyor; yalnız istek
+// backend'e hiç ulaşmadıysa tekrar deneniyor (bkz. core/internal-api.ts).
+const apiFetch = async (path: string, init: RequestInit = {}): Promise<Response> => {
+  const url = toInternalApiUrl(`${API_BASE_URL}${path}`, INTERNAL_API_BASE);
+  const secenekler: RequestInit = {
     ...init,
     headers: { ...(INTERNAL_API_BASE ? INTERNAL_API_HEADERS : {}), ...(init.headers as Record<string, string> | undefined) },
-  });
+  };
+  for (let deneme = 0; ; deneme++) {
+    try {
+      return await fetch(url, secenekler);
+    } catch (hata) {
+      if (deneme >= BAGLANTI_YENIDEN_DENEME.adet || !baglantiKurulamadi(hata)) throw hata;
+      await new Promise((bitti) => setTimeout(bitti, BAGLANTI_YENIDEN_DENEME.araMs));
+    }
+  }
+};
 
 // Site iki host'ta erişilebilir: gerçek domain (canonical) + eski
 // protein-avcisi.onrender.com (geriye dönük uyumluluk için bilinçli açık

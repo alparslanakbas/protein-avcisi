@@ -892,6 +892,8 @@ export class DealsList implements OnInit {
       error: () => {
         this.error.set('Veriler yüklenemedi. API çalışıyor mu kontrol et.');
         this.loading.set(false);
+        // Liste rotasında geçici hata 503: 200'ü SSR önbelleği saklayıp herkese sunuyordu (27 Ekim). Ürün rotasında liste gizli.
+        if (this.responseInit && !this.route.snapshot.paramMap.has('id')) this.responseInit.status = 503;
       },
     });
   }
