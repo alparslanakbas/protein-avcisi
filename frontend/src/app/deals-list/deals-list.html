@@ -309,11 +309,16 @@
              sunucudan gelen HTML'de hiçbir sayfa adresi yoktu ve tarayıcılar
              ana sayfada yalnızca ilk 24 ürünü görebiliyordu. Filtreler de
              adreste yaşadığı için bağlantılar "merge" ile mevcut sorguyu
-             koruyor — aksi halde 2. sayfaya geçmek filtreleri silerdi. -->
+             koruyor — aksi halde 2. sayfaya geçmek filtreleri silerdi.
+             Hedef ['/'], göreli [] DEĞİL: bu bileşen /urun/:id/:slug rotasında
+             da çiziliyor ve [] orada /urun/676/...?page=2 üretiyordu. Her ürün
+             sayfası kendi ?page kopyalarına, her kopya komşularına bağlantı
+             veriyordu; 19-25 Ekim'de Googlebot 3.134 farklı kopya taradı (ürün
+             taramasının %61'i). SSR'da çizilmediği için curl ile görünmüyordu. -->
         @if (totalPages() > 1) {
           <nav class="mt-8 flex flex-wrap items-center justify-center gap-2" aria-label="Sayfalama">
             @if (currentPage() > 1) {
-              <a [routerLink]="[]" [queryParams]="{ page: currentPage() - 1 === 1 ? null : currentPage() - 1 }" queryParamsHandling="merge" (click)="sayfayaKaydir()" rel="prev" class="pa-secondary-button h-10 w-10" aria-label="Önceki sayfa"><i class="ph ph-caret-left" aria-hidden="true"></i></a>
+              <a [routerLink]="['/']" [queryParams]="{ page: currentPage() - 1 === 1 ? null : currentPage() - 1 }" queryParamsHandling="merge" (click)="sayfayaKaydir()" rel="prev" class="pa-secondary-button h-10 w-10" aria-label="Önceki sayfa"><i class="ph ph-caret-left" aria-hidden="true"></i></a>
             } @else {
               <span class="pa-secondary-button h-10 w-10 opacity-40" aria-hidden="true"><i class="ph ph-caret-left"></i></span>
             }
@@ -324,12 +329,12 @@
               } @else if (oge === currentPage()) {
                 <span aria-current="page" class="pa-secondary-button h-10 min-w-10 px-2 border-[var(--noc-accent)] text-[var(--noc-accent)]">{{ oge }}</span>
               } @else {
-                <a [routerLink]="[]" [queryParams]="{ page: oge === 1 ? null : oge }" queryParamsHandling="merge" (click)="sayfayaKaydir()" [attr.aria-label]="'Sayfa ' + oge" class="pa-secondary-button h-10 min-w-10 px-2">{{ oge }}</a>
+                <a [routerLink]="['/']" [queryParams]="{ page: oge === 1 ? null : oge }" queryParamsHandling="merge" (click)="sayfayaKaydir()" [attr.aria-label]="'Sayfa ' + oge" class="pa-secondary-button h-10 min-w-10 px-2">{{ oge }}</a>
               }
             }
 
             @if (currentPage() < totalPages()) {
-              <a [routerLink]="[]" [queryParams]="{ page: currentPage() + 1 }" queryParamsHandling="merge" (click)="sayfayaKaydir()" rel="next" class="pa-secondary-button h-10 w-10" aria-label="Sonraki sayfa"><i class="ph ph-caret-right" aria-hidden="true"></i></a>
+              <a [routerLink]="['/']" [queryParams]="{ page: currentPage() + 1 }" queryParamsHandling="merge" (click)="sayfayaKaydir()" rel="next" class="pa-secondary-button h-10 w-10" aria-label="Sonraki sayfa"><i class="ph ph-caret-right" aria-hidden="true"></i></a>
             } @else {
               <span class="pa-secondary-button h-10 w-10 opacity-40" aria-hidden="true"><i class="ph ph-caret-right"></i></span>
             }
