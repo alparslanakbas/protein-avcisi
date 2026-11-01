@@ -1,5 +1,5 @@
+using Microsoft.Extensions.Logging;
 using System.Globalization;
-using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
@@ -8,7 +8,7 @@ using IndirimTakip.Core.Scraping;
 
 namespace IndirimTakip.Infrastructure.Scraping.Hiq;
 
-public partial class HiqScraper(HttpClient httpClient) : IBrandScraper
+public partial class HiqScraper(HttpClient httpClient, ILogger<HiqScraper>? logger = null) : IBrandScraper
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -24,8 +24,7 @@ public partial class HiqScraper(HttpClient httpClient) : IBrandScraper
 
         for (var page = 1; ; page++)
         {
-            var response = await httpClient.GetFromJsonAsync<ShopifyProductsResponse>(
-                $"products.json?limit=250&page={page}", JsonOptions, cancellationToken);
+            var response = await ShopifyKatalog.SayfaGetirAsync(httpClient, page, JsonOptions, BrandName, logger, cancellationToken);
 
             if (response is null || response.Products.Count == 0)
                 break;

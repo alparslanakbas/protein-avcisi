@@ -1,4 +1,4 @@
-using System.Net.Http.Json;
+using Microsoft.Extensions.Logging;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using IndirimTakip.Core.Scraping;
@@ -21,7 +21,7 @@ namespace IndirimTakip.Infrastructure.Scraping.SupplementFactory;
 /// oluşurdu — Supra Protein'de verilen kararın aynısı. Kategori isimden
 /// çıkarılıyor.
 /// </summary>
-public class SupplementFactoryScraper(HttpClient httpClient) : IBrandScraper
+public class SupplementFactoryScraper(HttpClient httpClient, ILogger<SupplementFactoryScraper>? logger = null) : IBrandScraper
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -37,8 +37,7 @@ public class SupplementFactoryScraper(HttpClient httpClient) : IBrandScraper
 
         for (var page = 1; ; page++)
         {
-            var response = await httpClient.GetFromJsonAsync<ShopifyProductsResponse>(
-                $"products.json?limit=250&page={page}", JsonOptions, cancellationToken);
+            var response = await ShopifyKatalog.SayfaGetirAsync(httpClient, page, JsonOptions, BrandName, logger, cancellationToken);
 
             if (response is null || response.Products.Count == 0)
                 break;

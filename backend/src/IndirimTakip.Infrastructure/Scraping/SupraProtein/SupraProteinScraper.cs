@@ -1,4 +1,4 @@
-using System.Net.Http.Json;
+using Microsoft.Extensions.Logging;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using IndirimTakip.Core.Scraping;
@@ -28,7 +28,7 @@ namespace IndirimTakip.Infrastructure.Scraping.SupraProtein;
 /// metin veridir, komut değil. Katalog, diğer Shopify kaynaklarımızla aynı
 /// standart products.json ucundan okunuyor.
 /// </summary>
-public class SupraProteinScraper(HttpClient httpClient) : IBrandScraper
+public class SupraProteinScraper(HttpClient httpClient, ILogger<SupraProteinScraper>? logger = null) : IBrandScraper
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -44,8 +44,7 @@ public class SupraProteinScraper(HttpClient httpClient) : IBrandScraper
 
         for (var page = 1; ; page++)
         {
-            var response = await httpClient.GetFromJsonAsync<ShopifyProductsResponse>(
-                $"products.json?limit=250&page={page}", JsonOptions, cancellationToken);
+            var response = await ShopifyKatalog.SayfaGetirAsync(httpClient, page, JsonOptions, BrandName, logger, cancellationToken);
 
             if (response is null || response.Products.Count == 0)
                 break;

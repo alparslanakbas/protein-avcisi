@@ -1,4 +1,4 @@
-using System.Net.Http.Json;
+using Microsoft.Extensions.Logging;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using IndirimTakip.Core.Scraping;
@@ -22,7 +22,7 @@ namespace IndirimTakip.Infrastructure.Scraping.CommanderNutrition;
 /// hepsini kendi markası altında satıyor — bu yüzden tek markalı scraper
 /// olarak ele alınıyor, çok satıcılı bir kaynak değil.
 /// </summary>
-public class CommanderNutritionScraper(HttpClient httpClient) : IBrandScraper
+public class CommanderNutritionScraper(HttpClient httpClient, ILogger<CommanderNutritionScraper>? logger = null) : IBrandScraper
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -38,8 +38,7 @@ public class CommanderNutritionScraper(HttpClient httpClient) : IBrandScraper
 
         for (var page = 1; ; page++)
         {
-            var response = await httpClient.GetFromJsonAsync<ShopifyProductsResponse>(
-                $"products.json?limit=250&page={page}", JsonOptions, cancellationToken);
+            var response = await ShopifyKatalog.SayfaGetirAsync(httpClient, page, JsonOptions, BrandName, logger, cancellationToken);
 
             if (response is null || response.Products.Count == 0)
                 break;

@@ -1,4 +1,4 @@
-using System.Net.Http.Json;
+using Microsoft.Extensions.Logging;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using IndirimTakip.Core.Scraping;
@@ -32,7 +32,7 @@ namespace IndirimTakip.Infrastructure.Scraping.Gigis;
 /// <b>Boş katalog HATA.</b> Prime Nutrition'da site değişince tarama hata
 /// vermeden 0 ürün döndürmüş ve bayatlık ancak sağlık ucunda görülmüştü.
 /// </summary>
-public sealed class GigisScraper(HttpClient httpClient) : IBrandScraper
+public sealed class GigisScraper(HttpClient httpClient, ILogger<GigisScraper>? logger = null) : IBrandScraper
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -49,8 +49,7 @@ public sealed class GigisScraper(HttpClient httpClient) : IBrandScraper
 
         for (var page = 1; ; page++)
         {
-            var response = await httpClient.GetFromJsonAsync<ShopifyProductsResponse>(
-                $"products.json?limit=250&page={page}", JsonOptions, cancellationToken);
+            var response = await ShopifyKatalog.SayfaGetirAsync(httpClient, page, JsonOptions, BrandName, logger, cancellationToken);
 
             if (response is null || response.Products.Count == 0)
                 break;

@@ -1,4 +1,4 @@
-using System.Net.Http.Json;
+using Microsoft.Extensions.Logging;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Text.Json.Serialization;
@@ -23,7 +23,7 @@ namespace IndirimTakip.Infrastructure.Scraping.Fellas;
 /// Gigi's ile aynı kategoride; <c>saglikli-atistirmaliklar</c> kategorimize
 /// oturuyor.
 /// </summary>
-public sealed partial class FellasScraper(HttpClient httpClient) : IBrandScraper, IProductDetailFetcher
+public sealed partial class FellasScraper(HttpClient httpClient, ILogger<FellasScraper>? logger = null) : IBrandScraper, IProductDetailFetcher
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -47,8 +47,7 @@ public sealed partial class FellasScraper(HttpClient httpClient) : IBrandScraper
 
         for (var page = 1; ; page++)
         {
-            var response = await httpClient.GetFromJsonAsync<ShopifyProductsResponse>(
-                $"products.json?limit=250&page={page}", JsonOptions, cancellationToken);
+            var response = await ShopifyKatalog.SayfaGetirAsync(httpClient, page, JsonOptions, BrandName, logger, cancellationToken);
 
             if (response is null || response.Products.Count == 0)
                 break;
