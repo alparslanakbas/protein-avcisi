@@ -7,6 +7,7 @@ describe('allowsAdsenseScript', () => {
     for (const path of [
       '/',
       '/efsane-kasim',
+      '/fiyat-endeksi',
       '/sozluk',
       '/rehber',
       '/rehber/kreatin-nasil-kullanilir',
@@ -19,14 +20,22 @@ describe('allowsAdsenseScript', () => {
     }
   });
 
-  it('şablondan üretilen sayfalara izin vermez', () => {
+  it('kendi verimizle zenginleşen, arama trafiği alan marka sayfalarına izin verir', () => {
+    for (const path of [
+      '/karsilastir/bigjoy-vs-bite-more',
+      '/marka/aegis',
+      '/marka/aegis/indirim-kodu',
+      '/marka/aegis/protein-tozu',
+    ]) {
+      expect(allowsAdsenseScript(path), path).toBe(true);
+    }
+  });
+
+  it('ürün ve inceleme gibi şablon sayfalarına izin vermez', () => {
     for (const path of [
       '/urun/15/hiq-high-pro-protein-bar-12-55g',
       '/urun-inceleme/15/hiq-high-pro-protein-bar-12-55g',
-      '/karsilastir/bigjoy-vs-bite-more',
       '/karsilastir-urun/80-vs-467',
-      '/marka/aegis/indirim-kodu',
-      '/marka/aegis/protein-tozu',
       '/kategori/amino-asitler',
       '/en-ucuz-kreatin',
       '/hakkimizda',
@@ -39,6 +48,8 @@ describe('allowsAdsenseScript', () => {
   it('önek benzeşmesini yakalamaz', () => {
     expect(allowsAdsenseScript('/rehberler')).toBe(false);
     expect(allowsAdsenseScript('/hesaplamalar')).toBe(false);
+    expect(allowsAdsenseScript('/karsilastir-urun')).toBe(false);
+    expect(allowsAdsenseScript('/markalar')).toBe(false);
   });
 });
 
