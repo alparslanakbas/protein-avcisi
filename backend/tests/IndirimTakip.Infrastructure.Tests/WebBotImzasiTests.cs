@@ -114,9 +114,9 @@ public class WebBotImzasiTests
     public void Yetki_kucuk_harfli_host_varsayilan_olmayan_portla(string adres, string beklenen) =>
         Assert.Equal(beklenen, WebBotImzasi.Yetki(new Uri(adres)));
 
-    // Canlıdaki durum (Shopify kaydı onaylanana kadar): istekler eskisi gibi çıkıyor.
+    // İmza kapalıyken imza yok ama tarayıcı User-Agent'ı da yok (Shopify'ın incelemesi, 2 Kasım).
     [Fact]
-    public void Imzalama_kapaliyken_istek_degismiyor()
+    public void Imzalama_kapaliyken_istek_imzasiz_ama_bot_kimligiyle_gidiyor()
     {
         var imza = Imza(imzala: false);
         var istek = new HttpRequestMessage(HttpMethod.Get, "https://www.bahsbar.com/products.json");
@@ -126,8 +126,22 @@ public class WebBotImzasiTests
 
         Assert.False(istek.Headers.Contains("Signature"));
         Assert.False(istek.Headers.Contains("Signature-Agent"));
-        Assert.Contains("Chrome/128.0", istek.Headers.UserAgent.ToString());
+        Assert.Equal(Ua, istek.Headers.UserAgent.ToString());
         Assert.True(imza.AnahtarVar);
+    }
+
+    [Fact]
+    public async Task Anahtar_yoksa_da_isleyici_bot_kimligini_koyuyor()
+    {
+        var ic = new KaydedenIsleyici();
+        var istemci = new HttpMessageInvoker(new WebBotImzaIsleyicisi(WebBotImzasi.Olustur(null, Ajan, Ua, Saat)) { InnerHandler = ic });
+        var istek = new HttpRequestMessage(HttpMethod.Get, "https://www.bahsbar.com/products.json");
+        istek.Headers.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/128.0");
+
+        await istemci.SendAsync(istek, CancellationToken.None);
+
+        Assert.Equal(Ua, ic.Istekler[0].Headers.UserAgent.ToString());
+        Assert.False(ic.Istekler[0].Headers.Contains("Signature"));
     }
 
     [Fact]

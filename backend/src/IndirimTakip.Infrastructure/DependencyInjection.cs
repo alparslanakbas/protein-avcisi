@@ -59,6 +59,10 @@ public static class DependencyInjection
     private const string BrowserUserAgent =
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36";
 
+    // Shopify'a kayıtlı bot (WheyProof ile ortak); WebBotAuth:UserAgent ayarı bunu geçersiz kılar.
+    // Shopify'ın incelemesi (2 Kasım) hiçbir isteğin Shopify mağazasına tarayıcı kimliğiyle gitmemesini istedi.
+    private const string BotKullaniciAjani = "Mozilla/5.0 (compatible; wheyproofbot/1.0; +https://www.wheyproof.com/bot)";
+
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddDbContext<AppDbContext>(options =>
@@ -81,25 +85,24 @@ public static class DependencyInjection
         // taramadan sonra tek küme sorgusuyla tazeleniyor.
         services.AddScoped<PriceSummaryRefresher>();
 
-        // Shopify sunucunun IP'sine günün belli saatlerinde 429 veriyor; o zaman Shopify istekleri ev
-        // tünelinden tekrarlanıyor (bkz. ShopifyTuneli). Ayar boşsa tünel kapalı. Yalnızca Shopify
-        // çekicilerinin istemcilerine takılı (aşağıda AddHttpMessageHandler<ShopifyTunelIsleyicisi>).
-        services.AddSingleton(_ => ShopifyTuneli.Olustur(configuration["Shopify:Tunel"], TimeProvider.System));
-        services.AddTransient<ShopifyTunelIsleyicisi>();
-        // Shopify istekleri kayıtlı bot olarak imzalanıyor (bkz. WebBotImzasi; WheyProof ile aynı
-        // kimlik). Anahtar .env'den, boşsa kapalı; imzalama ayrıca WebBotAuth:SignRequests ile açılıyor.
+        // Shopify mağazalarına ev tüneli YOK (3 Kasım 2026): 429'u hemen başka bir adresten tekrarlıyordu,
+        // Shopify'ın incelemesinin istediğinin (Retry-After kadar bekle, bkz. ShopifyKatalog) tam tersi.
+        // Tünel yalnız protein7'de kaldı (aşağıda, kendi örneğiyle).
+        // Shopify istekleri kayıtlı botun User-Agent'ıyla gidiyor ve imzalanıyor (bkz. WebBotImzasi;
+        // WheyProof ile aynı kimlik). Anahtar .env'den; yoksa imzasız ama yine aynı User-Agent'la.
+        var botKimligi = configuration["WebBotAuth:UserAgent"] is { Length: > 0 } ayarli ? ayarli.Trim() : BotKullaniciAjani;
         services.AddSingleton(_ => WebBotImzasi.Olustur(configuration["WebBotAuth:PrivateKey"],
-            configuration["WebBotAuth:SignatureAgent"], configuration["WebBotAuth:UserAgent"], TimeProvider.System,
+            configuration["WebBotAuth:SignatureAgent"], botKimligi, TimeProvider.System,
             configuration.GetValue("WebBotAuth:SignRequests", false)));
         // Her Shopify adresinin robots.txt'si günde bir kez okunup her istekten önce bakılıyor (bkz.
-        // RobotsKurallari); işleyici tünelin önünde, izin verilmeyen istek hiç gönderilmiyor.
+        // RobotsKurallari); izin verilmeyen istek hiç gönderilmiyor, Crawl-delay'e uyuluyor.
         services.AddSingleton(new RobotsTxtOnbellegi(TimeProvider.System));
 
         services.AddHttpClient<HiqScraper>(client =>
         {
             client.BaseAddress = new Uri("https://takehiq.com/");
-            client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
-        }).AddHttpMessageHandler(RobotsIsleyicisi).AddHttpMessageHandler(ImzaIsleyicisi).AddHttpMessageHandler<ShopifyTunelIsleyicisi>();
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(botKimligi);
+        }).AddHttpMessageHandler(RobotsIsleyicisi).AddHttpMessageHandler(ImzaIsleyicisi);
         services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<HiqScraper>());
 
         // Commander Nutrition — HIQ ile aynı Shopify products.json deseni.
@@ -107,24 +110,24 @@ public static class DependencyInjection
         services.AddHttpClient<CommanderNutritionScraper>(client =>
         {
             client.BaseAddress = new Uri("https://www.commandernutrition.com/");
-            client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
-        }).AddHttpMessageHandler(RobotsIsleyicisi).AddHttpMessageHandler(ImzaIsleyicisi).AddHttpMessageHandler<ShopifyTunelIsleyicisi>();
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(botKimligi);
+        }).AddHttpMessageHandler(RobotsIsleyicisi).AddHttpMessageHandler(ImzaIsleyicisi);
         services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<CommanderNutritionScraper>());
 
         // Supra Protein — Commander/HIQ ile aynı Shopify products.json deseni.
         services.AddHttpClient<SupraProteinScraper>(client =>
         {
             client.BaseAddress = new Uri("https://www.supraprotein.com/");
-            client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
-        }).AddHttpMessageHandler(RobotsIsleyicisi).AddHttpMessageHandler(ImzaIsleyicisi).AddHttpMessageHandler<ShopifyTunelIsleyicisi>();
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(botKimligi);
+        }).AddHttpMessageHandler(RobotsIsleyicisi).AddHttpMessageHandler(ImzaIsleyicisi);
         services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<SupraProteinScraper>());
 
         // Supplement Factory — Supra/Commander ile aynı Shopify deseni.
         services.AddHttpClient<SupplementFactoryScraper>(client =>
         {
             client.BaseAddress = new Uri("https://supplementfactory.com.tr/");
-            client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
-        }).AddHttpMessageHandler(RobotsIsleyicisi).AddHttpMessageHandler(ImzaIsleyicisi).AddHttpMessageHandler<ShopifyTunelIsleyicisi>();
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(botKimligi);
+        }).AddHttpMessageHandler(RobotsIsleyicisi).AddHttpMessageHandler(ImzaIsleyicisi);
         services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<SupplementFactoryScraper>());
 
         // Space Supplements — custom Laravel mağaza; sitemap + ürün
@@ -213,9 +216,9 @@ public static class DependencyInjection
         services.AddHttpClient<GigisScraper>(client =>
         {
             client.BaseAddress = new Uri("https://gigis.com.tr/");
-            client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(botKimligi);
             client.Timeout = TimeSpan.FromSeconds(30);
-        }).AddHttpMessageHandler(RobotsIsleyicisi).AddHttpMessageHandler(ImzaIsleyicisi).AddHttpMessageHandler<ShopifyTunelIsleyicisi>();
+        }).AddHttpMessageHandler(RobotsIsleyicisi).AddHttpMessageHandler(ImzaIsleyicisi);
         services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<GigisScraper>());
 
         // MLA Protein — Gigi's ile aynı desen, farkı ÇOK MARKALI olması:
@@ -262,17 +265,17 @@ public static class DependencyInjection
         services.AddHttpClient<FellasScraper>(client =>
         {
             client.BaseAddress = new Uri("https://fellasfoods.com.tr/");
-            client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(botKimligi);
             client.Timeout = TimeSpan.FromSeconds(30);
-        }).AddHttpMessageHandler(RobotsIsleyicisi).AddHttpMessageHandler(ImzaIsleyicisi).AddHttpMessageHandler<ShopifyTunelIsleyicisi>();
+        }).AddHttpMessageHandler(RobotsIsleyicisi).AddHttpMessageHandler(ImzaIsleyicisi);
         services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<FellasScraper>());
 
         services.AddHttpClient<BahsScraper>(client =>
         {
             client.BaseAddress = new Uri("https://www.bahsbar.com/");
-            client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(botKimligi);
             client.Timeout = TimeSpan.FromSeconds(30);
-        }).AddHttpMessageHandler(RobotsIsleyicisi).AddHttpMessageHandler(ImzaIsleyicisi).AddHttpMessageHandler<ShopifyTunelIsleyicisi>();
+        }).AddHttpMessageHandler(RobotsIsleyicisi).AddHttpMessageHandler(ImzaIsleyicisi);
         services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<BahsScraper>());
 
         services.AddHttpClient<ProteinimScraper>(client =>
@@ -514,15 +517,15 @@ public static class DependencyInjection
         services.AddSingleton<ProductImageStore>();
         services.AddHostedService<ProductImageBackgroundService>();
 
-        // Kaynakların CDN'lerinden indiriyor. Tarayıcı benzeri bir kimlik
-        // veriliyor: bazı kaynaklar UA'sız isteklere görsel vermiyor
-        // (Supplementler ve Renovafood'da ölçülmüş bir davranış).
+        // Kaynakların CDN'lerinden indiriyor. Bir kimlik veriliyor: bazı kaynaklar UA'sız isteklere
+        // görsel vermiyor (Supplementler ve Renovafood'da ölçülmüş bir davranış). Shopify'ınkiler
+        // (mağaza adresleri ve cdn.shopify.com) kayıtlı botun kimliğiyle ve imzalı gidiyor.
         services.AddHttpClient(ProductImageStore.HttpClientAdi, client =>
         {
             client.Timeout = TimeSpan.FromSeconds(30);
             client.DefaultRequestHeaders.UserAgent.ParseAdd(
                 "Mozilla/5.0 (compatible; ProteinAvcisiBot/1.0; +https://www.proteinavcisi.com.tr)");
-        });
+        }).AddHttpMessageHandler(sp => new WebBotImzaIsleyicisi(sp.GetRequiredService<WebBotImzasi>(), ShopifyGorselAdresleri));
         services.AddHostedService<SecurityEventRetentionService>();
 
         services.AddHttpClient<IEmailSender, BrevoEmailSender>(client =>
@@ -543,8 +546,11 @@ public static class DependencyInjection
     private static RobotsTxtIsleyicisi RobotsIsleyicisi(IServiceProvider sp) =>
         new(sp.GetRequiredService<RobotsTxtOnbellegi>(), sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<RobotsTxtIsleyicisi>>());
 
-    // Robots'tan sonra (izin verilmeyen istek imzalanmıyor), tünelden önce (tünelden tekrarlanan
-    // istek aynı imzayı taşıyor).
+    // Robots'tan sonra: izin verilmeyen istek imzalanmıyor.
     private static WebBotImzaIsleyicisi ImzaIsleyicisi(IServiceProvider sp) =>
         new(sp.GetRequiredService<WebBotImzasi>());
+
+    // Shopify görselleri: mağazaların kendi adresleri ve Shopify'ın CDN'i.
+    private static readonly IReadOnlySet<string> ShopifyGorselAdresleri =
+        new HashSet<string>(RobotsTxtIsleyicisi.ShopifyAdresleri.Append("cdn.shopify.com"), StringComparer.OrdinalIgnoreCase);
 }

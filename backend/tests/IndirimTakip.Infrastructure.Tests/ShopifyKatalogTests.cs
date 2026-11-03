@@ -31,16 +31,62 @@ public class ShopifyKatalogTests
     private sealed class SahteIsleyici(params HttpStatusCode[] kodlar) : HttpMessageHandler
     {
         public int IstekSayisi { get; private set; }
+        public TimeSpan? RetryAfter { get; init; }
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             var kod = kodlar[Math.Min(IstekSayisi, kodlar.Length - 1)];
             IstekSayisi++;
-            return Task.FromResult(new HttpResponseMessage(kod)
+            var yanit = new HttpResponseMessage(kod)
             {
                 Content = new StringContent("""{"products":[]}""", Encoding.UTF8, "application/json"),
-            });
+            };
+            if (kod == HttpStatusCode.TooManyRequests && RetryAfter is { } sure)
+                yanit.Headers.RetryAfter = new System.Net.Http.Headers.RetryConditionHeaderValue(sure);
+            return Task.FromResult(yanit);
         }
+    }
+
+    // Shopify'ın incelemesi (2 Kasım): sabit süre değil, Retry-After kadar bekle.
+    [Fact]
+    public async Task Retry_After_kadar_bekleyip_yeniden_deniyor()
+    {
+        var sahte = new SahteIsleyici(HttpStatusCode.TooManyRequests, HttpStatusCode.OK) { RetryAfter = TimeSpan.Zero };
+
+        var sayfa = await ShopifyKatalog.SayfaGetirAsync(Istemci(sahte), 1, Secenekler, "Deneme", null, CancellationToken.None,
+            TimeSpan.FromMinutes(10));   // başlık varken bu varsayılan kullanılmamalı, kullanılsa test 10 dk sürerdi
+
+        Assert.NotNull(sayfa);
+        Assert.Equal(2, sahte.IstekSayisi);
+    }
+
+    [Fact]
+    public async Task En_uzun_beklemeyi_asan_Retry_After_denenmiyor()
+    {
+        var sahte = new SahteIsleyici(HttpStatusCode.TooManyRequests) { RetryAfter = ShopifyKatalog.EnUzunBekleme + TimeSpan.FromSeconds(1) };
+
+        var hata = await Assert.ThrowsAsync<HttpRequestException>(() => Getir(Istemci(sahte)));
+
+        Assert.Equal(HttpStatusCode.TooManyRequests, hata.StatusCode);
+        Assert.Equal(1, sahte.IstekSayisi);
+    }
+
+    [Fact]
+    public void Bekleme_suresi_saniyeden_tarihten_ya_da_varsayilandan()
+    {
+        var simdi = new DateTimeOffset(2026, 11, 3, 18, 0, 0, TimeSpan.Zero);
+        var varsayilan = TimeSpan.FromMinutes(1);
+        var saniye = new HttpResponseMessage(HttpStatusCode.TooManyRequests);
+        saniye.Headers.RetryAfter = new System.Net.Http.Headers.RetryConditionHeaderValue(TimeSpan.FromSeconds(7));
+        var tarih = new HttpResponseMessage(HttpStatusCode.TooManyRequests);
+        tarih.Headers.RetryAfter = new System.Net.Http.Headers.RetryConditionHeaderValue(simdi.AddSeconds(30));
+        var gecmis = new HttpResponseMessage(HttpStatusCode.TooManyRequests);
+        gecmis.Headers.RetryAfter = new System.Net.Http.Headers.RetryConditionHeaderValue(simdi.AddSeconds(-30));
+
+        Assert.Equal(TimeSpan.FromSeconds(7), ShopifyKatalog.BeklemeSuresi(saniye, varsayilan, simdi));
+        Assert.Equal(TimeSpan.FromSeconds(30), ShopifyKatalog.BeklemeSuresi(tarih, varsayilan, simdi));
+        Assert.Equal(TimeSpan.Zero, ShopifyKatalog.BeklemeSuresi(gecmis, varsayilan, simdi));
+        Assert.Equal(varsayilan, ShopifyKatalog.BeklemeSuresi(new HttpResponseMessage(HttpStatusCode.TooManyRequests), varsayilan, simdi));
     }
 
     private static HttpClient Istemci(HttpMessageHandler isleyici) => new(isleyici) { BaseAddress = new Uri("https://ornek.test/") };

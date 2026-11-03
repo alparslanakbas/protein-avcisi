@@ -87,7 +87,10 @@ public sealed class WebBotImzasi
     /// <summary>Kullanılabilir bir anahtar ayarlı.</summary>
     public bool AnahtarVar => anahtar is not null;
 
-    /// <summary>İstekler imzalanıyor (ve botun User-Agent'ıyla gidiyor).</summary>
+    /// <summary>
+    /// İstekler imzalanıyor. 3 Kasım 2026'dan beri açık: Shopify'ın inceleme ekibi onay için imzalı trafik
+    /// gerektiğini, onaya kadarki 429'ların beklendiğini yazdı (destek bileti 71441774).
+    /// </summary>
     public bool Imzala { get; }
 
     /// <summary>Ayarlı bir anahtarın neden kullanılmadığı; açıkken ya da hiç ayarlanmamışken null.</summary>
@@ -105,9 +108,22 @@ public sealed class WebBotImzasi
     /// <summary>Açık anahtarın JWK SHA-256 parmak izi (RFC 8037 A.3), yani "keyid".</summary>
     public string? AnahtarKimligi { get; }
 
-    /// <summary>Signature-Agent, Signature-Input ve Signature başlıklarını ekler, botun User-Agent'ını koyar.</summary>
+    /// <summary>
+    /// Botun User-Agent'ını koyar; imza açıksa Signature-Agent, Signature-Input ve Signature başlıklarını ekler.
+    /// </summary>
+    /// <remarks>
+    /// User-Agent imza kapalıyken de konuyor: Shopify'ın incelemesi (2 Kasım) hiçbir isteğin mağazaya
+    /// tarayıcı User-Agent'ıyla, imzalı ya da imzasız, gitmemesini istedi.
+    /// </remarks>
     public void Uygula(HttpRequestMessage istek)
     {
+        var basliklar = istek.Headers;
+        if (KullaniciAjani.Length > 0)
+        {
+            basliklar.UserAgent.Clear();
+            basliklar.TryAddWithoutValidation("User-Agent", KullaniciAjani);
+        }
+
         if (anahtar is null || !Imzala || istek.RequestUri is null)
             return;
 
@@ -118,15 +134,12 @@ public sealed class WebBotImzasi
                            + $";expires={bitis};nonce=\"{Nonce()}\";tag=\"web-bot-auth\"";
         var imza = TabaniImzala(anahtar, ImzaTabani([("@authority", Yetki(istek.RequestUri)), ("signature-agent", ajan)], parametreler));
 
-        var basliklar = istek.Headers;
         basliklar.Remove("Signature-Agent");
         basliklar.Remove("Signature-Input");
         basliklar.Remove("Signature");
         basliklar.TryAddWithoutValidation("Signature-Agent", ajan);
         basliklar.TryAddWithoutValidation("Signature-Input", $"sig1={parametreler}");
         basliklar.TryAddWithoutValidation("Signature", $"sig1=:{imza}:");
-        basliklar.UserAgent.Clear();
-        basliklar.TryAddWithoutValidation("User-Agent", KullaniciAjani);
     }
 
     /// <summary>RFC 9421 bölüm 2.5: kapsanan her bileşen bir satır, sonra parametreler; sonda satır sonu yok.</summary>
@@ -160,19 +173,19 @@ public sealed class WebBotImzasi
 }
 
 /// <summary>
-/// Giden istekleri <see cref="WebBotImzasi"/> ile imzalar; istenirse yalnız belli adreslerde.
+/// Giden isteklere <see cref="WebBotImzasi"/> ile botun kimliğini verir (User-Agent, imza açıksa imza);
+/// istenirse yalnız belli adreslerde.
 /// </summary>
 /// <remarks>
-/// Shopify çekicilerinde robots.txt işleyicisinden SONRA (izin verilmeyen istek imzalanmıyor) ve
-/// tünel işleyicisinden ÖNCE takılı: tünelden tekrarlanan istek aynı imzayı taşıyor (imza hostu
-/// kapsıyor, o değişmiyor). Puan tazelemesi her mağazaya gidiyor; orada yalnız Shopify adresleri
-/// imzalanıyor, diğer mağazalar bazılarının istediği tarayıcı User-Agent'ıyla kalıyor.
+/// Shopify çekicilerinde robots.txt işleyicisinden SONRA takılı: izin verilmeyen istek imzalanmıyor.
+/// Puan tazelemesi ve görsel indirme her mağazaya gidiyor; orada yalnız Shopify adresleri bu kimliği
+/// alıyor, diğer mağazalar kendi User-Agent'larıyla kalıyor.
 /// </remarks>
 public sealed class WebBotImzaIsleyicisi(WebBotImzasi imza, IReadOnlySet<string>? yalnizcaAdresler = null) : DelegatingHandler
 {
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        if (imza.AnahtarVar && request.RequestUri is { } adres && (yalnizcaAdresler is null || yalnizcaAdresler.Contains(adres.Host)))
+        if (request.RequestUri is { } adres && (yalnizcaAdresler is null || yalnizcaAdresler.Contains(adres.Host)))
             imza.Uygula(request);
         return base.SendAsync(request, cancellationToken);
     }

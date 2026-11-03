@@ -314,11 +314,11 @@ public class ShopifyTuneliTests
         Assert.True(tunel.Etkin);
     }
 
-    // Tünel yalnızca Shopify çekicilerinde ve protein7'de (yalnız 403'te, kendi örneğiyle) olmalı:
-    // başka bir kaynağın 429'unu (ör. Provitamin'in gerçek hız sınırı) ev bağlantısından aşmak
-    // istemiyoruz. Kayıt eksikse (AddTransient unutulursa) CreateHandler burada patlar.
+    // Tünel yalnızca protein7'de (yalnız 403'te, kendi örneğiyle) olmalı. Shopify çekicilerinden 3 Kasım'da
+    // kalktı: 429'u hemen başka adresten tekrarlamak, Shopify'ın incelemesinin istediği "Retry-After kadar
+    // bekle"nin tersi. Başka bir kaynağın 429'unu da ev bağlantısından aşmak istemiyoruz.
     [Fact]
-    public void Tunel_isleyicisi_tam_olarak_shopify_cekicilerinin_ve_protein7_istemcilerinde()
+    public void Tunel_isleyicisi_yalniz_protein7_istemcisinde()
     {
         var services = new ServiceCollection();
         services.AddLogging();
@@ -345,12 +345,37 @@ public class ShopifyTuneliTests
             }
         }
 
-        Assert.Equal(
-            new[]
-            {
-                "BahsScraper", "CommanderNutritionScraper", "FellasScraper", "GigisScraper", "HiqScraper",
-                "Protein7Scraper", "SupplementFactoryScraper", "SupraProteinScraper",
-            },
-            tunelli.Order(StringComparer.Ordinal).ToArray());
+        Assert.Equal(new[] { "Protein7Scraper" }, tunelli.ToArray());
+    }
+
+    // Shopify'ın incelemesi (2 Kasım): mağazalara tarayıcı kimliğiyle istek gitmesin.
+    [Fact]
+    public void Shopify_cekicileri_bot_kimligiyle_gidiyor()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddInfrastructure(new ConfigurationBuilder().Build());
+        using var sp = services.BuildServiceProvider();
+        var fabrika = sp.GetRequiredService<IHttpClientFactory>();
+
+        foreach (var ad in new[] { "BahsScraper", "CommanderNutritionScraper", "FellasScraper", "GigisScraper", "HiqScraper",
+                     "SupplementFactoryScraper", "SupraProteinScraper" })
+        {
+            var ua = fabrika.CreateClient(ad).DefaultRequestHeaders.UserAgent.ToString();
+            Assert.Contains("wheyproofbot/1.0", ua);
+            Assert.DoesNotContain("Chrome", ua);
+        }
+    }
+
+    [Fact]
+    public void Uretimde_shopify_istekleri_imzalaniyor()
+    {
+        var ayarlar = new ConfigurationBuilder()
+            .SetBasePath(AppContext.BaseDirectory)
+            .AddJsonFile("appsettings.json")
+            .AddJsonFile("appsettings.Production.json")
+            .Build();
+
+        Assert.True(ayarlar.GetValue<bool>("WebBotAuth:SignRequests"));
     }
 }

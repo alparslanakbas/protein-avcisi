@@ -161,4 +161,54 @@ public class RobotsKurallariTests
         Assert.Equal(HttpStatusCode.OK, (await Iste(istemci, "https://www.ssnsports.com.tr/urun")).StatusCode);
         Assert.DoesNotContain("/robots.txt", magaza.Yollar);
     }
+
+    // ---- Crawl-delay (Shopify'ın bot incelemesi nasıl uyduğumuzu sordu, 2 Kasım) ------------------
+
+    [Theory]
+    [InlineData("User-agent: *\nCrawl-delay: 10\n", 10.0)]
+    [InlineData("User-agent: wheyproofbot\nCrawl-delay: 2.5\n\nUser-agent: *\nCrawl-delay: 30\n", 2.5)]
+    [InlineData("User-agent: wheyproofbot\nDisallow: /cart\n\nUser-agent: *\nCrawl-delay: 30\n", null)]
+    [InlineData("User-agent: *\nCrawl-delay: yakinda\n", null)]
+    [InlineData("User-agent: *\nCrawl-delay: -5\n", null)]
+    [InlineData("User-agent: *\nDisallow: /cart\n", null)]
+    public void Crawl_delay_bizim_ya_da_yildiz_grubundan_geliyor(string metin, double? saniye) =>
+        Assert.Equal(saniye is { } s ? TimeSpan.FromSeconds(s) : null, RobotsKurallari.Ayristir(metin, Ad).TaramaGecikmesi);
+
+    [Fact]
+    public async Task Crawl_delay_ayni_adrese_istekleri_araliyor()
+    {
+        var (istemci, magaza, _) = Kur(() => Robots("User-agent: *\nCrawl-delay: 0.4\n"));
+
+        await Iste(istemci, "https://takehiq.com/products.json?page=1");
+        var sayac = System.Diagnostics.Stopwatch.StartNew();
+        await Iste(istemci, "https://takehiq.com/products.json?page=2");
+
+        Assert.True(sayac.Elapsed >= TimeSpan.FromMilliseconds(350), $"yalnız {sayac.Elapsed} beklendi");
+        Assert.Equal(["/robots.txt", "/products.json?page=1", "/products.json?page=2"], magaza.Yollar);
+    }
+
+    [Fact]
+    public async Task Crawl_delay_gectiyse_beklenmiyor()
+    {
+        var (istemci, _, zaman) = Kur(() => Robots("User-agent: *\nCrawl-delay: 30\n"));
+
+        await Iste(istemci, "https://takehiq.com/products.json?page=1");
+        zaman.Simdi += TimeSpan.FromSeconds(31);
+        var sayac = System.Diagnostics.Stopwatch.StartNew();
+        await Iste(istemci, "https://takehiq.com/products.json?page=2");
+
+        Assert.True(sayac.Elapsed < TimeSpan.FromSeconds(5), $"{sayac.Elapsed} beklendi");
+    }
+
+    [Fact]
+    public async Task Bekledigimizden_uzun_crawl_delay_adresi_okutmuyor()
+    {
+        var (istemci, magaza, _) = Kur(() => Robots("User-agent: *\nCrawl-delay: 3600\n"));
+
+        var yanit = await Iste(istemci, "https://takehiq.com/products.json?page=1");
+
+        Assert.Equal(HttpStatusCode.Forbidden, yanit.StatusCode);
+        Assert.Equal(RobotsTxtIsleyicisi.GecikmeGerekcesi, yanit.ReasonPhrase);
+        Assert.Equal(["/robots.txt"], magaza.Yollar);
+    }
 }

@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Globalization;
 using System.Net;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
@@ -19,21 +20,39 @@ namespace IndirimTakip.Infrastructure.Scraping;
 /// etmez), yoksa <c>*</c> grubu; birden çok eşleşen grup birleşir. En uzun eşleşen desen kazanır,
 /// eşitlikte izin kazanır. <c>*</c> herhangi bir diziyi, sondaki <c>$</c> sonu sabitler. Desenler
 /// sorgusuyla birlikte yola karşı denenir.
+///
+/// <b>Crawl-delay (3 Kasım 2026).</b> RFC'de yok ama Shopify'ın bot incelemesi buna nasıl uyduğumuzu
+/// sordu; o güne kadar okunup geçiliyordu. Artık bizim grubumuzdaki (yoksa <c>*</c> grubundaki) saniye,
+/// aynı adrese iki istek arasındaki en kısa süre (bkz. <see cref="RobotsTxtOnbellegi.AralikBekleAsync"/>);
+/// birden çok grup eşleşirse en uzunu. Pozitif sayı olmayan değer yok sayılır.
 /// </remarks>
 public sealed class RobotsKurallari
 {
     private readonly List<(bool Izin, string Desen, Regex Ifade)> kurallar;
 
-    private RobotsKurallari(List<(bool, string, Regex)> kurallar) => this.kurallar = kurallar;
+    private RobotsKurallari(List<(bool, string, Regex)> kurallar, TimeSpan? taramaGecikmesi)
+    {
+        this.kurallar = kurallar;
+        TaramaGecikmesi = taramaGecikmesi;
+    }
 
     /// <summary>Kural yok: her şey serbest (robots.txt bulunmadığında da anlamı bu, RFC 9309 2.3.1.3).</summary>
-    public static readonly RobotsKurallari HepsiSerbest = new([]);
+    public static readonly RobotsKurallari HepsiSerbest = new([], null);
+
+    /// <summary>robots.txt bize bir Crawl-delay veriyorsa aynı adrese iki istek arasındaki en kısa süre.</summary>
+    public TimeSpan? TaramaGecikmesi { get; }
+
+    private sealed class Grup
+    {
+        public List<string> Ajanlar { get; } = [];
+        public List<(bool Izin, string Desen)> Kurallar { get; } = [];
+        public double? GecikmeSaniye { get; set; }
+    }
 
     public static RobotsKurallari Ayristir(string metin, string urunAdi)
     {
-        var gruplar = new List<(List<string> Ajanlar, List<(bool Izin, string Desen)> Kurallar)>();
-        List<string>? ajanlar = null;
-        List<(bool, string)>? gecerli = null;
+        var gruplar = new List<Grup>();
+        Grup? gecerli = null;
         var oncekiAjan = false;
 
         foreach (var ham in metin.Split('\n'))
@@ -47,13 +66,12 @@ public sealed class RobotsKurallari
             var deger = satir[(iki + 1)..].Trim();
             if (ad == "user-agent")
             {
-                if (!oncekiAjan || ajanlar is null)
+                if (!oncekiAjan || gecerli is null)
                 {
-                    ajanlar = [];
-                    gecerli = [];
-                    gruplar.Add((ajanlar, gecerli));
+                    gecerli = new Grup();
+                    gruplar.Add(gecerli);
                 }
-                ajanlar.Add(deger);
+                gecerli.Ajanlar.Add(deger);
                 oncekiAjan = true;
             }
             else if (ad is "allow" or "disallow")
@@ -61,7 +79,15 @@ public sealed class RobotsKurallari
                 oncekiAjan = false;
                 // Ajan satırından önceki kurallar hiçbir gruba ait değil; boş disallow her şeye izin verir.
                 if (gecerli is not null && deger.Length > 0)
-                    gecerli.Add((ad == "allow", deger));
+                    gecerli.Kurallar.Add((ad == "allow", deger));
+            }
+            else if (ad == "crawl-delay")
+            {
+                oncekiAjan = false;
+                if (gecerli is not null
+                    && double.TryParse(deger, NumberStyles.Float, CultureInfo.InvariantCulture, out var saniye)
+                    && saniye > 0 && double.IsFinite(saniye))
+                    gecerli.GecikmeSaniye = Math.Max(gecerli.GecikmeSaniye ?? 0, saniye);
             }
             else
             {
@@ -73,9 +99,11 @@ public sealed class RobotsKurallari
         if (bizim.Count == 0)
             bizim = gruplar.Where(g => g.Ajanlar.Contains("*")).ToList();
 
+        var gecikme = bizim.Max(g => g.GecikmeSaniye);
         return new RobotsKurallari(bizim.SelectMany(g => g.Kurallar)
             .Select(k => (k.Izin, k.Desen, IfadeyeCevir(k.Desen)))
-            .ToList());
+            // Bir günle sınır yalnız TimeSpan taşmasın diye; o kadar uzun gecikme adresi zaten okutmaz.
+            .ToList(), gecikme is { } s ? TimeSpan.FromSeconds(Math.Min(s, TimeSpan.FromDays(1).TotalSeconds)) : null);
     }
 
     /// <summary><paramref name="yolVeSorgu"/> istenebilir mi.</summary>
@@ -114,10 +142,47 @@ public sealed class RobotsTxtOnbellegi(TimeProvider zaman)
     internal static readonly TimeSpan TazeSure = TimeSpan.FromHours(24);
     internal static readonly TimeSpan UlasilamazsaTekrar = TimeSpan.FromHours(1);
 
+    /// <summary>
+    /// İstekler arasında beklediğimiz en uzun Crawl-delay. Daha fazlasını isteyen adres hiç okunmuyor
+    /// (turu saatlerce tutardı); bu da onu istenenden hızlı okumamak demek.
+    /// </summary>
+    internal static readonly TimeSpan EnUzunTaramaGecikmesi = TimeSpan.FromMinutes(5);
+
     private sealed record Kayit(RobotsKurallari? Kurallar, DateTimeOffset SonrakiOkuma);
 
     private readonly ConcurrentDictionary<string, Kayit> kayitlar = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, SemaphoreSlim> kapilar = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, DateTimeOffset> sonIstekler = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, SemaphoreSlim> aralikKapilari = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// <paramref name="host"/> adresine son istekten (hangi istemciden olursa) bu yana
+    /// <paramref name="gecikme"/> geçene kadar bekler, sonra bu isteği sayar. Gecikme
+    /// <see cref="EnUzunTaramaGecikmesi"/>'nden uzunsa beklemeden false döner.
+    /// </summary>
+    public async Task<bool> AralikBekleAsync(string host, TimeSpan gecikme, CancellationToken cancellationToken)
+    {
+        if (gecikme > EnUzunTaramaGecikmesi)
+            return false;
+
+        var kapi = aralikKapilari.GetOrAdd(host, _ => new SemaphoreSlim(1, 1));
+        await kapi.WaitAsync(cancellationToken);
+        try
+        {
+            if (sonIstekler.TryGetValue(host, out var son))
+            {
+                var bekle = son + gecikme - zaman.GetUtcNow();
+                if (bekle > TimeSpan.Zero)
+                    await Task.Delay(bekle, zaman, cancellationToken);
+            }
+            sonIstekler[host] = zaman.GetUtcNow();
+            return true;
+        }
+        finally
+        {
+            kapi.Release();
+        }
+    }
 
     /// <summary><paramref name="host"/> için kurallar; okunamadıysa null (istek atlanır).</summary>
     public async Task<RobotsKurallari?> GetirAsync(string host, string urunAdi,
@@ -171,13 +236,13 @@ public sealed class RobotsTxtOnbellegi(TimeProvider zaman)
 }
 
 /// <summary>
-/// İsteği yalnızca adresin robots.txt'si botumuza izin veriyorsa geçirir (bkz. <see cref="RobotsKurallari"/>).
-/// İzin verilmeyen istek gönderilmez: nedenini söyleyen yerel bir 403 döner; çekici bunu başarısız kaynak
-/// sayar ve mağaza okunmak yerine bayatlar.
+/// İsteği yalnızca adresin robots.txt'si botumuza izin veriyorsa ve Crawl-delay'i dolduysa geçirir
+/// (bkz. <see cref="RobotsKurallari"/>). İzin verilmeyen istek gönderilmez: nedenini söyleyen yerel bir
+/// 403 döner; çekici bunu başarısız kaynak sayar ve mağaza okunmak yerine bayatlar.
 /// </summary>
 /// <remarks>
-/// Shopify istemcilerinde tünel işleyicisinin DIŞINDA durur; robots.txt'nin kendisi de zincirin geri
-/// kalanından geçerek okunur, yani Shopify sunucuyu reddettiğinde ev tünelinden.
+/// Shopify istemcilerinde en dışta durur; robots.txt'nin kendisi de zincirin geri kalanından geçerek,
+/// yani botun kimliğiyle ve imzalı okunur.
 /// </remarks>
 public sealed class RobotsTxtIsleyicisi(RobotsTxtOnbellegi onbellek, ILogger<RobotsTxtIsleyicisi> logger,
     IReadOnlySet<string>? yalnizcaAdresler = null) : DelegatingHandler
@@ -186,6 +251,7 @@ public sealed class RobotsTxtIsleyicisi(RobotsTxtOnbellegi onbellek, ILogger<Rob
     public const string UrunAdi = "wheyproofbot";
 
     internal const string RetGerekcesi = "Disallowed by robots.txt";
+    internal const string GecikmeGerekcesi = "Crawl-delay of robots.txt is longer than we wait";
 
     /// <summary>
     /// TR'nin Shopify mağazaları (puan tazelemesi bunlarda robots'a bakar). Yeni bir Shopify mağazası
@@ -213,7 +279,15 @@ public sealed class RobotsTxtIsleyicisi(RobotsTxtOnbellegi onbellek, ILogger<Rob
         }, logger, cancellationToken);
 
         if (kurallar is not null && kurallar.IzinVerir(uri.PathAndQuery))
+        {
+            if (kurallar.TaramaGecikmesi is { } gecikme && !await onbellek.AralikBekleAsync(uri.Host, gecikme, cancellationToken))
+            {
+                logger.LogWarning("{Host} robots.txt {Gecikme} Crawl-delay istiyor, beklediğimizden uzun; istenmedi.",
+                    uri.Host, gecikme);
+                return new HttpResponseMessage(HttpStatusCode.Forbidden) { ReasonPhrase = GecikmeGerekcesi, RequestMessage = request };
+            }
             return await base.SendAsync(request, cancellationToken);
+        }
 
         if (kurallar is not null)
             logger.LogWarning("{Host} robots.txt {Yol} yoluna izin vermiyor; istenmedi.", uri.Host, uri.AbsolutePath);
