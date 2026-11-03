@@ -84,4 +84,16 @@ public class AffiliateLinkBuilderTests
         const string original = "https://www.hardlinenutrition.com/urun";
         Assert.Equal(original, AffiliateLinkBuilder.Apply(original, null, Options()));
     }
+
+    // Location başlığı yalnız ASCII alıyor; "ü"lü mağaza adresinde yönlendirme düşüyordu (3 Kasım).
+    [Theory]
+    [InlineData("https://www.provitamin.com.tr/big-joy-sports-multibig-vitamin-mineral-90-kapsül",
+        "https://www.provitamin.com.tr/big-joy-sports-multibig-vitamin-mineral-90-kaps%C3%BCl")]
+    [InlineData("https://www.bahsbar.com/products/fıstık-ezmeli-bar?variant=1",
+        "https://www.bahsbar.com/products/f%C4%B1st%C4%B1k-ezmeli-bar?variant=1")]
+    [InlineData("https://www.provitamin.com.tr/kaps%C3%BCl", "https://www.provitamin.com.tr/kaps%C3%BCl")]
+    [InlineData("https://www.hardlinenutrition.com/urun?tracking=abc", "https://www.hardlinenutrition.com/urun?tracking=abc")]
+    [InlineData("/urun", "/urun")]
+    public void YonlendirmeAdresiAsciiOluyor(string url, string beklenen) =>
+        Assert.Equal(beklenen, AffiliateLinkBuilder.ToLocation(url));
 }

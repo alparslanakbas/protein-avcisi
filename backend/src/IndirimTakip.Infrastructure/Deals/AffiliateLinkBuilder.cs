@@ -62,4 +62,19 @@ public static class AffiliateLinkBuilder
         var separator = basePart.Contains('?') ? '&' : '?';
         return $"{basePart}{separator}{pair}{fragment}";
     }
+
+    /// <summary>
+    /// Adresi Location başlığının taşıyabileceği hale getirir: yalnız ASCII, dışındaki harfler (ü, ş,
+    /// ı...) UTF-8 yüzde kodlamasıyla. Mutlak http(s) adresi olmayan her şey olduğu gibi döner.
+    /// </summary>
+    /// <remarks>
+    /// Kestrel ASCII dışı karakterli başlığı reddediyor, yönlendirme 500 ile düşüyordu. 3 Kasım 2026'da
+    /// 242 ürünün mağaza adresinde böyle bir harf vardı (209'u Provitamin, ör. "...-90-kapsül"):
+    /// "Mağazaya git" bunların hepsinde çalışmıyordu. Şema kontrolü süs değil: Linux'ta "/urun" mutlak
+    /// bir file:// adresi olarak ayrıştırılıyor (WheyProof'un CI'ı yakaladı; Windows'ta olmuyor).
+    /// </remarks>
+    public static string ToLocation(string url) =>
+        Uri.TryCreate(url, UriKind.Absolute, out var uri) && (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp)
+            ? uri.AbsoluteUri
+            : url;
 }
