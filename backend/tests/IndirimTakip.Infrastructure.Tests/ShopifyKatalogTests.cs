@@ -140,6 +140,39 @@ public class ShopifyKatalogTests
         Assert.Equal(TimeSpan.FromMinutes(1), ShopifyKatalog.VarsayilanBekleme);
     }
 
+    // Bot sayfası "sayfalar arasında bekleyerek" diyor (4 Kasım): ikinci sayfadan önce bekleniyor.
+    [Fact]
+    public async Task Ikinci_sayfadan_once_bekliyor()
+    {
+        var sahte = new SahteIsleyici(HttpStatusCode.OK);
+        var saat = System.Diagnostics.Stopwatch.StartNew();
+
+        await ShopifyKatalog.SayfaGetirAsync(Istemci(sahte), 2, Secenekler, "Deneme", null, CancellationToken.None,
+            TimeSpan.Zero, TimeSpan.FromMilliseconds(200));
+
+        Assert.True(saat.Elapsed >= TimeSpan.FromMilliseconds(150), $"beklemedi: {saat.Elapsed}");
+        Assert.Equal(1, sahte.IstekSayisi);
+    }
+
+    [Fact]
+    public async Task Ilk_sayfa_beklemeden_gidiyor()
+    {
+        var sahte = new SahteIsleyici(HttpStatusCode.OK);
+        var saat = System.Diagnostics.Stopwatch.StartNew();
+
+        // ilk sayfada beklenseydi test 30 sn sürerdi
+        await ShopifyKatalog.SayfaGetirAsync(Istemci(sahte), 1, Secenekler, "Deneme", null, CancellationToken.None,
+            TimeSpan.Zero, TimeSpan.FromSeconds(30));
+
+        Assert.True(saat.Elapsed < TimeSpan.FromSeconds(5), $"bekledi: {saat.Elapsed}");
+    }
+
+    [Fact]
+    public void Uretimdeki_sayfa_arasi_WheyProofla_ayni_bir_saniye()
+    {
+        Assert.Equal(TimeSpan.FromSeconds(1), ShopifyKatalog.SayfaArasi);
+    }
+
     public static TheoryData<string, Func<HttpClient, IBrandScraper>> Cekiciler => new()
     {
         { "Bahs", c => new BahsScraper(c) },

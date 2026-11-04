@@ -21,16 +21,25 @@ namespace IndirimTakip.Infrastructure.Scraping;
 /// Bekleme işleyici zincirinde değil burada: HttpClient.Timeout zincirin tamamını kapsıyor ve Gigi's, Fellas,
 /// Bahs istemcilerinde 30 saniye, bekleme orada isteği düşürürdü. İkinci deneme de 429 verirse hata eskisi
 /// gibi yukarı çıkıyor: mağaza o turu kaybediyor, eldeki fiyatlar yerinde kalıyor.
+///
+/// <b>Sayfa arası (4 Kasım 2026).</b> Bot sayfamız (wheyproof.com/bot, Shopify kaydında belge adresi)
+/// mağazaya tek tek ve sayfalar arasında bekleyerek gittiğimizi söylüyor. WheyProof 1 sn, kahve sitesi 3 sn
+/// bekliyordu, buradaki yedi mağaza robots.txt Crawl-delay istemedikçe beklemiyordu: ikinci sayfadan önce
+/// WheyProof'la aynı süre. Bekleme isteğin dışında, aynı gerekçeyle (HttpClient.Timeout'a sayılmasın).
 /// </remarks>
 internal static class ShopifyKatalog
 {
     internal static readonly TimeSpan VarsayilanBekleme = TimeSpan.FromMinutes(1);
     internal static readonly TimeSpan EnUzunBekleme = TimeSpan.FromMinutes(5);
+    internal static readonly TimeSpan SayfaArasi = TimeSpan.FromSeconds(1);
 
     internal static async Task<ShopifyProductsResponse?> SayfaGetirAsync(
         HttpClient httpClient, int sayfa, JsonSerializerOptions secenekler, string marka, ILogger? logger,
-        CancellationToken iptal, TimeSpan? bekleme = null)
+        CancellationToken iptal, TimeSpan? bekleme = null, TimeSpan? sayfaArasi = null)
     {
+        if (sayfa > 1)
+            await Task.Delay(sayfaArasi ?? SayfaArasi, iptal);
+
         var adres = $"products.json?limit=250&page={sayfa}";
         using (var ilk = await httpClient.GetAsync(adres, iptal))
         {
