@@ -193,6 +193,10 @@ services:
       # Dizin henüz yoksa Docker boş bir dizin oluşturur ve boş import
       # TR sitesini bozmaz (yerelde caddy validate ile ölçüldü).
       - ../wheyproof/caddy/sites:/etc/caddy/sites:ro
+      # CoffeeProof (kahve ve çay sitesi, coffeeproof.org) da aynı nedenle bu
+      # Caddy'den yayında. Site dosyası kendi deposunda (iç adı cupproof),
+      # aynı desen: salt okunur dizin, Caddyfile sonundaki ayrı import.
+      - ../cupproof/caddy/sites:/etc/caddy/sites-cupproof:ro
     # İki ağ: "default" TR servislerine (backend/frontend), "web-edge"
     # WheyProof konteynerlerine ulaşmak için. WheyProof oraya
     # "wheyproof-backend"/"wheyproof-frontend" takma adlarıyla katılıyor;

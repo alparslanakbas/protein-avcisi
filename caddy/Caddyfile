@@ -275,3 +275,10 @@ api.proteinavcisi.com.tr {
 # Dizin boşsa import hiçbir şey eklemiyor ve TR sitesi etkilenmiyor
 # (iki senaryo da yerelde caddy validate ile ölçüldü).
 import sites/*.caddy
+
+# CoffeeProof (kahve ve çay sitesi, coffeeproof.org) da bu Caddy'den yayında.
+# Site dosyası kendi deposunda (../cupproof/caddy/sites, iç adı cupproof) ve
+# compose ile /etc/caddy/sites-cupproof'a salt okunur bağlanıyor. EN SONDA:
+# global ayarlar (trusted_proxies) oraya da uygulanıyor. Snippet adları aynı
+# ad alanını paylaştığı için o dosyadakiler cupproof- önekli.
+import sites-cupproof/*.caddy
