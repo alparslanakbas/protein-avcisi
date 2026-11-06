@@ -56,8 +56,21 @@ export function baglantiHatasindaYenidenDene<T>(
 ): MonoTypeOperatorFunction<T> {
   return retry({
     count: adet,
-    delay: (hata) => (hata instanceof HttpErrorResponse && hata.status === 0 ? timer(araMs) : throwError(() => hata)),
+    delay: (hata) => (yanitGelmedi(hata) ? timer(araMs) : throwError(() => hata)),
   });
+}
+
+/**
+ * status 0 tek başına "yanıt gelmedi" demek değil (6 Kasım). Angular SSR'da 1 MiB'tan büyük yanıt gövdesini
+ * reddederken de status 0'lı hata veriyor; içindeki nesne Angular'ın RuntimeError'ı. Onu tekrar denemek aynı
+ * sonucu 30 kez üretti ve ana sayfa her render'da 15 sn bekledi. Gerçek bağlantı hatasında Node'un fetch'i
+ * TypeError veriyor ("fetch failed"; gövde yarıda koparsa "terminated"). Hata nesnesi taşımayan ya da Error
+ * olmayan (tarayıcıdaki ProgressEvent) hatalar da bağlantı hatası sayılıyor; Angular'ın kendi hatası sayılmıyor.
+ */
+export function yanitGelmedi(hata: unknown): boolean {
+  if (!(hata instanceof HttpErrorResponse) || hata.status !== 0) return false;
+  const ic: unknown = hata.error;
+  return !(ic instanceof Error) || ic instanceof TypeError;
 }
 
 // server.ts'teki apiFetch (Node fetch) için daha dar ölçüt: yalnız bağlantının

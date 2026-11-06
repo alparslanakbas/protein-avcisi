@@ -1,8 +1,17 @@
 import { Deal } from './deal.model';
 
+/**
+ * Sezon sayfası kartının gösterdiği alanlar (backend KampanyaUrunu). Tam Deal gelmiyor: liste 1 MiB'ı geçip SSR'ın
+ * yanıt sınırına takılmıştı (6 Kasım).
+ */
+export type KampanyaUrunu = Pick<
+  Deal,
+  'productId' | 'productName' | 'brandName' | 'imageUrl' | 'currentPrice' | 'storeDiscountPercent' | 'storeUrl'
+>;
+
 /** Yönetmelik ölçütüyle gerçek indirimde olan ürün (backend KampanyaIndirimi). */
 export interface KampanyaIndirimi {
-  urun: Deal;
+  urun: KampanyaUrunu;
   oncekiEnDusuk: number;
   gercekYuzde: number;
   indirimBaslangici: string;
@@ -21,6 +30,9 @@ export interface KampanyaOzeti {
   veriYetersiz: number;
   gercekIndirimler: KampanyaIndirimi[];
 }
+
+/** Ana sayfa şeridinin ucu (/api/kampanya/sayilar): sezon sayfasıyla aynı sayılar, liste yok. */
+export type KampanyaSayilari = Omit<KampanyaOzeti, 'gercekIndirimler'>;
 
 /** Efsane Cuma: Kasım'ın son cuması, Black Friday ile aynı gün (UTC gece yarısı; ay 0'dan başlıyor, Kasım 10). */
 export function efsaneCuma(yil: number): Date {

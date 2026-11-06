@@ -359,13 +359,22 @@ public class UrunListesiVeritabaniTests(UrunListesiVeritabani veri) : IClassFixt
     {
         await using var db = veri.Baglam();
 
-        var ozet = await new KampanyaIndirimServisi(db, Servis(db)).OzetAsync();
+        var servis = new KampanyaIndirimServisi(db, Servis(db));
+        var ozet = await servis.OzetAsync();
 
         Assert.Equal(6, ozet.MagazaIndirimDiyor);
         Assert.Equal((2, 2, 1, 1), (ozet.Gercek, ozet.Ucuzlamamis, ozet.Kalici, ozet.VeriYetersiz));
         Assert.Equal(
             [("Kampanya Gerçek", 1000m, 15.0m), ("Kampanya Tek Gün Hatalı", 1000m, 5.0m)],
             ozet.GercekIndirimler.Select(k => (k.Urun.ProductName, k.OncekiEnDusuk, k.GercekYuzde)));
+        Assert.Equal("Kampanya Markası", ozet.GercekIndirimler[0].Urun.BrandName);
+        Assert.Equal(850m, ozet.GercekIndirimler[0].Urun.CurrentPrice);
+
+        // Ana sayfa şeridi sezon sayfasıyla aynı sayıları göstermeli.
+        var sayilar = await servis.SayilarAsync();
+        Assert.Equal(
+            (ozet.MagazaIndirimDiyor, ozet.Gercek, ozet.Ucuzlamamis, ozet.Kalici, ozet.VeriYetersiz),
+            (sayilar.MagazaIndirimDiyor, sayilar.Gercek, sayilar.Ucuzlamamis, sayilar.Kalici, sayilar.VeriYetersiz));
     }
 
     // Olağan fiyatı olmayan ürün listede kalıyor, indirimi 0: referans güncel

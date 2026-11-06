@@ -4,7 +4,35 @@ using Npgsql;
 namespace IndirimTakip.Infrastructure.Deals;
 
 /// <summary>Yönetmelik ölçütüyle gerçek indirimde olan bir ürün.</summary>
-public sealed record KampanyaIndirimi(DealDto Urun, decimal OncekiEnDusuk, decimal GercekYuzde, DateTimeOffset IndirimBaslangici);
+public sealed record KampanyaIndirimi(KampanyaUrunu Urun, decimal OncekiEnDusuk, decimal GercekYuzde, DateTimeOffset IndirimBaslangici);
+
+/// <summary>
+/// Sezon sayfasındaki kartın gösterdiği alanlar; tam <see cref="DealDto"/> değil (6 Kasım). DealDto'yla liste 387
+/// üründe 1,07 MB'a çıktı, %66'sı kartın göstermediği açıklama ve besin tablosuydu. Angular SSR'da yanıt gövdesini
+/// 1 MiB ile sınırlıyor: sınır aşılınca sayfa da ana sayfa şeridi de 15 sn bekleyip verisiz render ediliyordu. Bu
+/// alanlarla öğe başına ~415 bayt. Adlar DealDto'yla aynı; ön yüzde ürün bağlantısı aynı yardımcıyla kuruluyor.
+/// </summary>
+public sealed record KampanyaUrunu(
+    int ProductId,
+    string ProductName,
+    string BrandName,
+    string? ImageUrl,
+    decimal CurrentPrice,
+    decimal? StoreDiscountPercent,
+    string? StoreUrl)
+{
+    public static KampanyaUrunu From(DealDto d) =>
+        new(d.ProductId, d.ProductName, d.BrandName, d.ImageUrl, d.CurrentPrice, d.StoreDiscountPercent, d.StoreUrl);
+}
+
+/// <summary>Ana sayfa şeridinin ihtiyacı: sezon sayfasıyla aynı sayılar, liste yok.</summary>
+public sealed record KampanyaSayilari(
+    DateTimeOffset Olcum,
+    int MagazaIndirimDiyor,
+    int Gercek,
+    int Ucuzlamamis,
+    int Kalici,
+    int VeriYetersiz);
 
 /// <summary>Mağazanın üstü çizili fiyat gösterdiği ürünlerin yönetmelik ölçütüyle dökümü.</summary>
 public sealed record KampanyaOzeti(
@@ -90,7 +118,37 @@ public sealed class KampanyaIndirimServisi(AppDbContext db, DealsQueryService de
 
     public async Task<KampanyaOzeti> OzetAsync(CancellationToken cancellationToken = default)
     {
-        var satirlar = await db.Database.SqlQueryRaw<KampanyaSatiri>(
+        var satirlar = await SiniflaAsync(cancellationToken);
+
+        var gercek = satirlar.Where(GercekMi).ToList();
+        var urunler = (await deals.GetDealsByIdsAsync(gercek.Select(s => s.UrunId).ToList(), cancellationToken: cancellationToken))
+            .ToDictionary(d => d.ProductId);
+
+        var liste = gercek
+            .Where(s => urunler.ContainsKey(s.UrunId))
+            .Select(s => new KampanyaIndirimi(
+                KampanyaUrunu.From(urunler[s.UrunId]),
+                s.OncekiEnDusuk!.Value,
+                Math.Round(100 * (s.OncekiEnDusuk.Value - s.Fiyat) / s.OncekiEnDusuk.Value, 1),
+                s.KosuBaslangici))
+            .OrderByDescending(k => k.GercekYuzde)
+            .ToList();
+
+        var sayilar = Say(satirlar);
+        return new KampanyaOzeti(
+            sayilar.Olcum, sayilar.MagazaIndirimDiyor, sayilar.Gercek, sayilar.Ucuzlamamis, sayilar.Kalici,
+            sayilar.VeriYetersiz, liste);
+    }
+
+    /// <summary>
+    /// Yalnız sayılar (ana sayfa şeridi). Liste için ürünler hiç çekilmiyor; şeridin istediği iki sayı için sezonda
+    /// yüzlerce ürünlük liste indirilip SSR'ın aktarım durumuyla ana sayfanın HTML'ine gömülüyordu.
+    /// </summary>
+    public async Task<KampanyaSayilari> SayilarAsync(CancellationToken cancellationToken = default) =>
+        Say(await SiniflaAsync(cancellationToken));
+
+    private Task<List<KampanyaSatiri>> SiniflaAsync(CancellationToken cancellationToken) =>
+        db.Database.SqlQueryRaw<KampanyaSatiri>(
                 Sorgu,
                 new NpgsqlParameter("taze", TazelikSiniri),
                 new NpgsqlParameter("pencere", TimeSpan.FromDays(PencereGun)),
@@ -99,24 +157,15 @@ public sealed class KampanyaIndirimServisi(AppDbContext db, DealsQueryService de
                 new NpgsqlParameter("esik", GercekEsigi))
             .ToListAsync(cancellationToken);
 
-        var gercek = satirlar.Where(s => s.Sinif == "gercek" && s.OncekiEnDusuk > 0).ToList();
-        var urunler = (await deals.GetDealsByIdsAsync(gercek.Select(s => s.UrunId).ToList(), cancellationToken: cancellationToken))
-            .ToDictionary(d => d.ProductId);
+    private static bool GercekMi(KampanyaSatiri s) => s.Sinif == "gercek" && s.OncekiEnDusuk > 0;
 
-        var liste = gercek
-            .Where(s => urunler.ContainsKey(s.UrunId))
-            .Select(s => new KampanyaIndirimi(
-                urunler[s.UrunId],
-                s.OncekiEnDusuk!.Value,
-                Math.Round(100 * (s.OncekiEnDusuk.Value - s.Fiyat) / s.OncekiEnDusuk.Value, 1),
-                s.KosuBaslangici))
-            .OrderByDescending(k => k.GercekYuzde)
-            .ToList();
-
-        int Say(string sinif) => satirlar.Count(s => s.Sinif == sinif);
-        return new KampanyaOzeti(
-            DateTimeOffset.UtcNow, satirlar.Count, gercek.Count, Say("ucuzlamamis"), Say("kalici"), Say("yetersiz"), liste);
-    }
+    private static KampanyaSayilari Say(List<KampanyaSatiri> satirlar) => new(
+        DateTimeOffset.UtcNow,
+        satirlar.Count,
+        satirlar.Count(GercekMi),
+        satirlar.Count(s => s.Sinif == "ucuzlamamis"),
+        satirlar.Count(s => s.Sinif == "kalici"),
+        satirlar.Count(s => s.Sinif == "yetersiz"));
 
     // SqlQueryRaw sütunları özellik adına bağlıyor; adlar SQL'deki tırnaklı takma adlarla aynı.
     internal sealed class KampanyaSatiri

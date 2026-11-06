@@ -12,6 +12,7 @@ import {
   baglantiKurulamadi,
   internalApiInterceptor,
   toInternalApiUrl,
+  yanitGelmedi,
 } from './internal-api';
 
 describe('toInternalApiUrl', () => {
@@ -78,6 +79,45 @@ describe('baglantiHatasindaYenidenDene', () => {
 
   it('üretim sınırı ~15 sn (Docker 10 sn durdurma + 2,3 sn açılış)', () => {
     expect(BAGLANTI_YENIDEN_DENEME.adet * BAGLANTI_YENIDEN_DENEME.araMs).toBe(15_000);
+  });
+
+  // 6 Kasım: kampanya özeti 1 MiB'ı geçince Angular'ın SSR gövde sınırı hatası (status 0) 30 kez denendi, ana
+  // sayfa 15 sn bekledi. FetchBackend bu hatayı tam böyle kuruyor: new HttpErrorResponse({ error }).
+  it("Angular yanıtı reddettiyse (SSR gövde sınırı, status 0) tekrar denemiyor", async () => {
+    let deneme = 0;
+    const sinirHatasi = new HttpErrorResponse({ error: Object.assign(new Error('NG02825'), { code: -2825 }) });
+    const kaynak = defer(() => {
+      deneme++;
+      return throwError(() => sinirHatasi);
+    });
+
+    expect(sinirHatasi.status).toBe(0);
+    await expect(firstValueFrom(kaynak.pipe(baglantiHatasindaYenidenDene(5, 500)))).rejects.toBe(sinirHatasi);
+    expect(deneme).toBe(1);
+  });
+
+  it("Node fetch'in bağlantı hatası (TypeError) tekrar deneniyor", async () => {
+    let deneme = 0;
+    const fetchHatasi = new HttpErrorResponse({ error: new TypeError('fetch failed'), status: 0 });
+    const kaynak = defer(() => (++deneme <= 2 ? throwError(() => fetchHatasi) : of('veri')));
+
+    const sonuc = firstValueFrom(kaynak.pipe(baglantiHatasindaYenidenDene(5, 500)));
+    await vi.advanceTimersByTimeAsync(1000);
+
+    await expect(sonuc).resolves.toBe('veri');
+    expect(deneme).toBe(3);
+  });
+});
+
+describe('yanitGelmedi', () => {
+  it('backend yanıtı ve HttpErrorResponse olmayan hatalar bağlantı hatası değil', () => {
+    expect(yanitGelmedi(new HttpErrorResponse({ status: 503 }))).toBe(false);
+    expect(yanitGelmedi(new Error('başka'))).toBe(false);
+  });
+
+  it('hata nesnesi taşımayan ve ProgressEvent taşıyan status 0 bağlantı hatası', () => {
+    expect(yanitGelmedi(new HttpErrorResponse({ status: 0 }))).toBe(true);
+    expect(yanitGelmedi(new HttpErrorResponse({ error: new ProgressEvent('error'), status: 0 }))).toBe(true);
   });
 });
 

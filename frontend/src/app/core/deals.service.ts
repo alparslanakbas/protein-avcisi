@@ -9,7 +9,7 @@ import { CategoryPriceStats } from './category-price-stats.model';
 import { Deal } from './deal.model';
 import { HomepageStats } from './homepage-stats.model';
 import { FiyatEndeksi } from './fiyat-endeksi';
-import { KampanyaOzeti } from './kampanya';
+import { KampanyaOzeti, KampanyaSayilari } from './kampanya';
 import { FilterOptions, PagedResult } from './paged-result.model';
 import { ProductSparkline } from './product-sparkline.model';
 import { ValuePicks } from './value-pick.model';
@@ -67,6 +67,11 @@ export class DealsService {
   // Sezon sayfası: mağazanın indirim dediği ürünler yönetmelik ölçütüyle (backend KampanyaIndirimServisi).
   getKampanyaOzeti(): Observable<KampanyaOzeti> {
     return this.http.get<KampanyaOzeti>(`${API_BASE_URL}/api/kampanya/ozet`);
+  }
+
+  // Ana sayfa şeridi: aynı ölçümün yalnız sayıları. Listeyi indirmiyor ve ana sayfanın HTML'ine gömmüyor.
+  getKampanyaSayilari(): Observable<KampanyaSayilari> {
+    return this.http.get<KampanyaSayilari>(`${API_BASE_URL}/api/kampanya/sayilar`);
   }
 
   // Aylık fiyat endeksi (backend FiyatEndeksiServisi).
