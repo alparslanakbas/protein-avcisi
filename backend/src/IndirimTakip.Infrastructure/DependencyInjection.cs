@@ -254,12 +254,14 @@ public static class DependencyInjection
         });
         services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<GrizzoneScraper>());
 
+        // Kiperin 5 Kasım 2026'da ikas'tan Shopify'a geçti (kiperin.com): öbür Shopify mağazaları gibi
+        // bot kimliği, robots.txt ve imza.
         services.AddHttpClient<KiperinScraper>(client =>
         {
-            client.BaseAddress = new Uri("https://kiperinturkiye.com/");
-            client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
+            client.BaseAddress = new Uri("https://kiperin.com/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(botKimligi);
             client.Timeout = TimeSpan.FromSeconds(30);
-        });
+        }).AddHttpMessageHandler(RobotsIsleyicisi).AddHttpMessageHandler(ImzaIsleyicisi);
         services.AddScoped<IBrandScraper>(sp => sp.GetRequiredService<KiperinScraper>());
 
         services.AddHttpClient<FellasScraper>(client =>

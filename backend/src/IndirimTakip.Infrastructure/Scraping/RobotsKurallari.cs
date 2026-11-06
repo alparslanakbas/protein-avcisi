@@ -261,6 +261,8 @@ public sealed class RobotsTxtIsleyicisi(RobotsTxtOnbellegi onbellek, ILogger<Rob
     {
         "takehiq.com", "www.commandernutrition.com", "www.supraprotein.com", "supplementfactory.com.tr",
         "gigis.com.tr", "fellasfoods.com.tr", "www.bahsbar.com",
+        // 5 Kasım 2026'da ikas'tan Shopify'a geçti.
+        "kiperin.com",
     };
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)

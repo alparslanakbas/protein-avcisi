@@ -1,3 +1,5 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using HtmlAgilityPack;
 using IndirimTakip.Core.Scraping;
 using Microsoft.Extensions.Logging;
@@ -5,20 +7,67 @@ using Microsoft.Extensions.Logging;
 namespace IndirimTakip.Infrastructure.Scraping.Kiperin;
 
 /// <summary>
-/// kiperinturkiye.com — otuz birinci kaynak. ikas; Gigi's/MLA/Grizzone ile
-/// aynı desen.
+/// kiperin.com — otuz birinci kaynak. Shopify; Bahs/Fellas ile aynı desen.
 ///
-/// <b>ÖLÇÜM (3 Eylül):</b> 48 adresin 48'i de veri verdi, hata yok.
+/// <b>ikas'tan Shopify'a geçti (5 Kasım 2026).</b> Eski adres kiperinturkiye.com artık 301 ile
+/// kiperin.com'a gidiyor, ikas'ın <c>products.xml</c>'i 404: 5 Kasım 10:12 UTC'den sonra her tur
+/// boş döndü, sağlık ucu 32 saatte kırmızıya düştü. Shopify mağazası olduğu için öbür yedi Shopify
+/// kaynağı gibi: <c>products.json</c>, bot kimliği, robots.txt, imza, 429'da Retry-After
+/// (bkz. <see cref="ShopifyKatalog"/>). Ürün adresleri <c>/products/&lt;handle&gt;</c>; eski ikas
+/// adresleri geçişte veritabanında bu biçime çevrildi ki fiyat geçmişi kopmasın.
+///
+/// <b>ÖLÇÜM (3 Eylül, ikas):</b> 48 adresin 48'i de veri verdi, hata yok.
 /// Süzgeç HİÇBİR ürünü elemiyor — katalogun tamamı takviye: kolajen, B/D3K2
 /// vitaminleri, B12 sprey, multivitamin. Vitamin ağırlıklı bir marka
 /// (Vitabear ve GNC ile aynı kategori).
 /// </summary>
-public sealed class KiperinScraper(HttpClient httpClient, ILogger<KiperinScraper> logger)
-    : SitemapSchemaOrgScraper(httpClient, logger), IProductDetailFetcher
+public sealed class KiperinScraper(HttpClient httpClient, ILogger<KiperinScraper>? logger = null)
+    : IBrandScraper, IProductDetailFetcher
 {
-    public override string BrandName => "Kiperin";
-    public override string BaseUrl => "https://kiperinturkiye.com";
-    protected override string SitemapUrl => "https://kiperinturkiye.com/products.xml";
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        NumberHandling = JsonNumberHandling.AllowReadingFromString,
+    };
+
+    public string BrandName => "Kiperin";
+    public string BaseUrl => "https://kiperin.com";
+
+    public async Task<IReadOnlyList<ScrapedProduct>> ScrapeAsync(CancellationToken cancellationToken = default)
+    {
+        var result = new List<ScrapedProduct>();
+
+        for (var page = 1; ; page++)
+        {
+            var response = await ShopifyKatalog.SayfaGetirAsync(httpClient, page, JsonOptions, BrandName, logger, cancellationToken);
+
+            if (response is null || response.Products.Count == 0)
+                break;
+
+            foreach (var product in response.Products)
+            {
+                if (NonSupplementProductFilter.IsAccessoryOrApparel(product.Title))
+                    continue;
+
+                var variant = product.Variants.Find(v => v.Available) ?? product.Variants.FirstOrDefault();
+                if (variant is null || variant.Price <= 0)
+                    continue;
+
+                result.Add(new ScrapedProduct(
+                    Name: product.Title,
+                    Url: $"{BaseUrl}/products/{product.Handle}",
+                    ImageUrl: product.Images.Count > 0 ? product.Images[0].Src : null,
+                    Category: null,
+                    Price: variant.Price,
+                    StoreOldPrice: variant.CompareAtPrice > variant.Price ? variant.CompareAtPrice : null,
+                    InStock: product.Variants.Any(v => v.Available)));
+            }
+
+            if (response.Products.Count < 250)
+                break;
+        }
+
+        return result;
+    }
 
     /// <summary>
     /// Porsiyon başına besin/etken madde tablosu — ürünün KENDİ açıklamasından.
@@ -39,10 +88,14 @@ public sealed class KiperinScraper(HttpClient httpClient, ILogger<KiperinScraper
     /// kalıyor, kapsül sayısından uydurulmuyor.
     ///
     /// Açıklama metni döndürülmüyor — normal taramada zaten geliyor.
+    ///
+    /// <b>Shopify'a geçince (5 Kasım):</b> mevcut ürünlerin besin tablosu ikas döneminden duruyor
+    /// (detay bir kez dolduruluyor). Shopify sayfasında ikas açıklaması bulunmadığı için yeni bir
+    /// üründe tablo boş kalır, uydurulmaz; Shopify açıklamasından okumak ayrı bir iş.
     /// </remarks>
     public async Task<ProductDetails> FetchDetailsAsync(string productUrl, CancellationToken cancellationToken = default)
     {
-        var html = await Http.GetStringAsync(productUrl, cancellationToken);
+        var html = await httpClient.GetStringAsync(productUrl, cancellationToken);
         var aciklama = IkasProductAttributes.Description(html);
 
         if (string.IsNullOrWhiteSpace(aciklama) || !aciklama.Contains("<table", StringComparison.OrdinalIgnoreCase))

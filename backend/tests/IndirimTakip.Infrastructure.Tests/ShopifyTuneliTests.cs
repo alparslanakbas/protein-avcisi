@@ -359,7 +359,7 @@ public class ShopifyTuneliTests
         var fabrika = sp.GetRequiredService<IHttpClientFactory>();
 
         foreach (var ad in new[] { "BahsScraper", "CommanderNutritionScraper", "FellasScraper", "GigisScraper", "HiqScraper",
-                     "SupplementFactoryScraper", "SupraProteinScraper" })
+                     "KiperinScraper", "SupplementFactoryScraper", "SupraProteinScraper" })
         {
             var ua = fabrika.CreateClient(ad).DefaultRequestHeaders.UserAgent.ToString();
             Assert.Contains("wheyproofbot/1.0", ua);

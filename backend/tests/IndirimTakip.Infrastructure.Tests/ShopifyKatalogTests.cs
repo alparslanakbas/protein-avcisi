@@ -9,6 +9,7 @@ using IndirimTakip.Infrastructure.Scraping.CommanderNutrition;
 using IndirimTakip.Infrastructure.Scraping.Fellas;
 using IndirimTakip.Infrastructure.Scraping.Gigis;
 using IndirimTakip.Infrastructure.Scraping.Hiq;
+using IndirimTakip.Infrastructure.Scraping.Kiperin;
 using IndirimTakip.Infrastructure.Scraping.SupplementFactory;
 using IndirimTakip.Infrastructure.Scraping.SupraProtein;
 using Microsoft.Extensions.Configuration;
@@ -180,6 +181,7 @@ public class ShopifyKatalogTests
         { "Fellas", c => new FellasScraper(c) },
         { "Gigi's", c => new GigisScraper(c) },
         { "HIQ", c => new HiqScraper(c) },
+        { "Kiperin", c => new KiperinScraper(c) },
         { "Supplement Factory", c => new SupplementFactoryScraper(c) },
         { "Supra", c => new SupraProteinScraper(c) },
     };
@@ -188,7 +190,7 @@ public class ShopifyKatalogTests
     // HttpRequestException atar. Bekleme bitmeden ikinci istek gitmemeli.
     [Theory]
     [MemberData(nameof(Cekiciler))]
-    public async Task Yedi_cekici_de_429da_hata_atmadan_bekliyor(string ad, Func<HttpClient, IBrandScraper> olustur)
+    public async Task Shopify_cekicilerinin_hepsi_429da_hata_atmadan_bekliyor(string ad, Func<HttpClient, IBrandScraper> olustur)
     {
         var sahte = new SahteIsleyici(HttpStatusCode.TooManyRequests);
         using var iptal = new CancellationTokenSource(TimeSpan.FromMilliseconds(300));
@@ -210,5 +212,45 @@ public class ShopifyKatalogTests
         Assert.NotNull(kapsam.ServiceProvider.GetRequiredService<CommanderNutritionScraper>());
         Assert.NotNull(kapsam.ServiceProvider.GetRequiredService<HiqScraper>());
         Assert.NotNull(kapsam.ServiceProvider.GetRequiredService<BahsScraper>());
+        Assert.NotNull(kapsam.ServiceProvider.GetRequiredService<KiperinScraper>());
+    }
+
+    // Kiperin 5 Kasım 2026'da ikas'tan Shopify'a geçti: ürün adresi kiperin.com/products/<handle>,
+    // mağazanın üstü çizili fiyatı yalnız satış fiyatından yüksekse.
+    [Fact]
+    public async Task Kiperin_shopify_katalogundan_okunuyor()
+    {
+        const string katalog = """
+            {"products":[
+              {"title":"Kiperin D3K2","handle":"kiperin-d3k2","images":[{"src":"https://kiperin.com/cdn/shop/files/d3k2.jpg"}],
+               "variants":[{"price":"449.90","compare_at_price":"599.90","available":true}]},
+              {"title":"B12 Sprey","handle":"b12-sprey","images":[],
+               "variants":[{"price":"299.90","compare_at_price":null,"available":false}]}
+            ]}
+            """;
+        var cekici = new KiperinScraper(Istemci(new KatalogIsleyici(katalog)));
+
+        var urunler = await cekici.ScrapeAsync();
+
+        Assert.Equal(2, urunler.Count);
+        Assert.Equal("https://kiperin.com/products/kiperin-d3k2", urunler[0].Url);
+        Assert.Equal(449.90m, urunler[0].Price);
+        Assert.Equal(599.90m, urunler[0].StoreOldPrice);
+        Assert.True(urunler[0].InStock);
+        Assert.Null(urunler[1].StoreOldPrice);
+        Assert.False(urunler[1].InStock);
+    }
+
+    /// <summary>İlk sayfada verilen kataloğu, sonrakilerde boş sayfa döner.</summary>
+    private sealed class KatalogIsleyici(string json) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var ilk = request.RequestUri!.Query.Contains("page=1", StringComparison.Ordinal);
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(ilk ? json : """{"products":[]}""", Encoding.UTF8, "application/json"),
+            });
+        }
     }
 }
