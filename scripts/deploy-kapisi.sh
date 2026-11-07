@@ -8,6 +8,7 @@
 # ve authorized_keys onu bu betiğe bağlıyor:
 #   restrict,command="/usr/local/bin/deploy-kapisi tr" ssh-ed25519 ... github-deploy-tr
 #   restrict,command="/usr/local/bin/deploy-kapisi wheyproof" ssh-ed25519 ... github-deploy-wheyproof
+#   restrict,command="/usr/local/bin/deploy-kapisi cupproof" ssh-ed25519 ... github-deploy-cupproof
 # Sızan bir deploy anahtarı yalnızca "GitHub'daki kodu çek ve deploy et" diyebilir;
 # rastgele komut, kabuk, port yönlendirme yok (restrict). Push yetkisi zaten kod
 # çalıştırma yetkisi demek, yani bu kapı bir yetki eklemiyor, yalnızca kısıyor.
@@ -23,8 +24,10 @@
 set -euo pipefail
 
 case "${1:-}" in
-  tr) dizin=/home/ubuntu/protein-avcisi; proje=protein-avcisi ;;
-  wheyproof) dizin=/home/ubuntu/wheyproof; proje=wheyproof ;;
+  tr) dizin=/home/ubuntu/protein-avcisi; filtre=label=com.docker.compose.project=protein-avcisi ;;
+  wheyproof) dizin=/home/ubuntu/wheyproof; filtre=label=com.docker.compose.project=wheyproof ;;
+  # CoffeeProof compose kullanmıyor: tek konteyner (cupproof-web), kendi deploy.sh'ı docker run ile kuruyor.
+  cupproof) dizin=/home/ubuntu/cupproof; filtre=name=cupproof ;;
   *) echo "deploy-kapisi: bilinmeyen proje" >&2; exit 2 ;;
 esac
 
@@ -45,7 +48,7 @@ case "$istek" in
     exec bash scripts/deploy.sh
     ;;
   durum)
-    exec docker ps --filter "label=com.docker.compose.project=$proje" --format '{{.Names}} | {{.Status}}'
+    exec docker ps --filter "$filtre" --format '{{.Names}} | {{.Status}}'
     ;;
   *)
     logger -t deploy-kapisi "$1: REDDEDILDI: ${istek:0:120}"
