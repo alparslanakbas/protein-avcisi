@@ -37,18 +37,39 @@ fi
 # Tünel düşerse istekler sessizce sunucunun kendi IP'sinden çıkmaya başlar,
 # engele takılır ve tur boşa gider. Bunu her turda ÖNDEN ölçüyoruz: çıkış
 # IP'si sunucunun IP'siyse tünel çalışmıyordur, hiç başlamıyoruz.
-CIKIS=$(curl -s --max-time 20 https://api.ipify.org 2>/dev/null)
+#
+# Ölçüm tutmazsa hemen vazgeçmiyoruz: ev bağlantısı ara ara kopup yeni IP'yle
+# geri geliyor (7-8 Kasım 2026: 31 saatte üç IP). Tek denemelik ölçüm bir
+# kopmada turu 12 saat erteliyordu; Renovafood'un iki turu art arda böyle
+# atlandı ve sağlık ucu 503'e düştü. 7 Kasım akşamki kesinti 2,5 ile 5,5 saat
+# arası sürdü, o yüzden 10 dakikada bir, en çok 6 saat yeniden deniyoruz: aynı
+# kaynağın sıradaki turu 12 saat sonra, çakışmıyor. Denemeler yalnızca ipify'a
+# gidiyor, kaynağa istek atılmıyor. Her deneme günlüğe yazılıyor: kesintilerin
+# ne kadar sürdüğü de böylece görülüyor.
+EN_COK=37   # ilk ölçüm + 36 yeniden deneme = 6 saat
+BEKLE=600   # saniye
+deneme=1
+while :; do
+    CIKIS=$(curl -s --max-time 20 https://api.ipify.org 2>/dev/null)
+    if [ -z "$CIKIS" ]; then
+        SORUN="çıkış IP'si öğrenilemedi (tünel muhtemelen kapalı)"
+    elif [ "$CIKIS" = "$VM_IP" ]; then
+        SORUN="çıkış IP'si sunucunun kendisi ($CIKIS) — tünel devrede DEĞİL"
+    else
+        break
+    fi
+    if [ "$deneme" -ge "$EN_COK" ]; then
+        yaz "HATA: $SORUN; $deneme denemede düzelmedi. Tur atlandı."
+        exit 1
+    fi
+    yaz "Deneme $deneme/$EN_COK: $SORUN. $((BEKLE / 60)) dk sonra yeniden denenecek."
+    sleep "$BEKLE"
+    deneme=$((deneme + 1))
+done
 
-if [ -z "$CIKIS" ]; then
-    yaz "HATA: çıkış IP'si öğrenilemedi (tünel muhtemelen kapalı). Tur atlandı."
-    exit 1
+if [ "$deneme" -gt 1 ]; then
+    yaz "Tünel $deneme. denemede açıldı."
 fi
-
-if [ "$CIKIS" = "$VM_IP" ]; then
-    yaz "HATA: çıkış IP'si sunucunun kendisi ($CIKIS) — tünel devrede DEĞİL. Tur atlandı."
-    exit 1
-fi
-
 yaz "Tünel çalışıyor, çıkış IP'si ev bağlantısı ($CIKIS). Toplama başlıyor: $KAYNAK."
 
 # --- TOPLAMA --------------------------------------------------------------
