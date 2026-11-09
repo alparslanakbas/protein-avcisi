@@ -441,6 +441,19 @@ export class BrandPage implements OnInit {
           }
           this.setMeta(this.brandName());
         }
+        // Markanın o kategoride HİÇ ürünü olmayan marka×kategori sayfası
+        // (eskiden ürünü vardı, adres hâlâ biliniyor) 200 dönen boş bir
+        // sayfaydı; Google bunu yumuşak 404 sayıyor (9 Kasım 2026: WheyProof'ta
+        // GSC bildirdi, burada da ölçüldü: /marka/hiq/enerji-jeli-sporcu-icecekleri,
+        // 0 ürün kartı, indekslenebilir). Adresle gelinince gerçek 404.
+        // hasActiveFilters bunu ayırt edemez: sabit kategori seçili kategori
+        // sayılıyor. İlk yüklemede filtreler loadBrand'in sıfırladıkları; o
+        // yüzden "tümü" görünümünde boş liste = boş kombinasyon. Sonradan
+        // ziyaretçinin sayfa içi filtresiyle boşalan liste 200 kalıyor.
+        if (!this.ilkListeYuklendi && this.fixedCategory() && !bayi && this.viewMode() === 'all' && result.totalCount === 0) {
+          showNotFound(this.router);
+          return;
+        }
         this.ilkListeYuklendi = true;
 
         // Markanın kendi mağazası var mı? Ayrı bir istek atmak yerine gelen
