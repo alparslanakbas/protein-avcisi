@@ -80,6 +80,30 @@ public class SpaceSupplementsScraperTests
         Assert.Equal("Galactic Whey", product.Name);
     }
 
+    // Mağaza schema.org marka adını 10 Kasım 2026'da "Space"ten "Space Supplements"a
+    // çevirdi; birebir "Space" araması 9 ürünün hepsini eledi ve kaynak bayatladı.
+    [Theory]
+    [InlineData("Space")]
+    [InlineData("Space Supplements")]
+    [InlineData("SPACE SUPPLEMENTS")]
+    public void MagazaninKendiMarkaAdlariniKabulEder(string brand)
+    {
+        var html = ProductHtml("Crea Nova", "Kreatin monohydrate.", "638.40", "OutOfStock", 5, brand: brand);
+
+        var product = SpaceSupplementsScraper.ParseProduct(html, "https://spacegymsupplements.com/urunler/crea-nova");
+
+        Assert.NotNull(product);
+        Assert.Equal(638.40m, product.Price);
+    }
+
+    [Fact]
+    public void BaskaMarkaninUrununuAlmaz()
+    {
+        var html = ProductHtml("Gold Standard Whey", "Whey protein.", "3299", "InStock", 30, brand: "Optimum Nutrition");
+
+        Assert.Null(SpaceSupplementsScraper.ParseProduct(html, "https://spacegymsupplements.com/urunler/gold-standard"));
+    }
+
     [Fact]
     public void SitemapYalnizSpaceUrunAdresleriniTekillestirir()
     {
@@ -104,7 +128,8 @@ public class SpaceSupplementsScraperTests
         string price,
         string availability,
         decimal servingSize,
-        bool includeServing = true)
+        bool includeServing = true,
+        string brand = "Space")
     {
         var serving = includeServing
             ? $"<div data-panel=\"care\">SERVİS: 1 Ölçek ( {servingSize} G ) _ 200 ml su</div>"
@@ -115,7 +140,7 @@ public class SpaceSupplementsScraperTests
             {"@context":"https://schema.org","@type":"Product",
              "name":"{{{name}}}","description":"{{{description}}}",
              "image":"https://cdn.spacegymsupplements.com/media/ornek.jpg",
-             "brand":{"@type":"Brand","name":"Space"},
+             "brand":{"@type":"Brand","name":"{{{brand}}}"},
              "offers":{"@type":"Offer","price":"{{{price}}}","priceCurrency":"TRY",
              "availability":"https://schema.org/{{{availability}}}"}}
             </script>

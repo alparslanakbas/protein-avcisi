@@ -186,7 +186,7 @@ public partial class SpaceSupplementsScraper(
             return true;
 
         var brand = ReadBrand(element);
-        if (!string.Equals(brand, "Space", StringComparison.OrdinalIgnoreCase))
+        if (!IsSpaceBrand(brand))
             return true;
 
         if (!element.TryGetProperty("offers", out var offers)
@@ -239,6 +239,17 @@ public partial class SpaceSupplementsScraper(
 
         return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
     }
+
+    // Mağazanın schema.org'daki kendi marka adları. 10 Kasım 2026'ya kadar
+    // "Space" yazıyordu, sonra "Space Supplements" oldu; birebir "Space"
+    // araması 9 ürünün hepsini başka marka sayıp eledi, kaynak 26 saatte
+    // bayatladı (sağlık 503). İkisi de mağazanın kendi markası; sitede başka
+    // bir markanın ürünü çıkarsa yine dışarıda kalıyor.
+    private static readonly string[] SpaceBrandNames = ["Space", "Space Supplements"];
+
+    private static bool IsSpaceBrand(string? brand) =>
+        brand is not null
+        && SpaceBrandNames.Any(name => string.Equals(brand.Trim(), name, StringComparison.OrdinalIgnoreCase));
 
     private static bool TryReadOffer(JsonElement offers, out decimal price, out bool? inStock)
     {
