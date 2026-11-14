@@ -104,6 +104,35 @@ public class SpaceSupplementsScraperTests
         Assert.Null(SpaceSupplementsScraper.ParseProduct(html, "https://spacegymsupplements.com/urunler/gold-standard"));
     }
 
+    // 13 Kasım 2026'da mağaza bütün yapılandırılmış veriyi tek @graph bloğuna topladı: ürünün markası
+    // ad değil Brand düğümüne referans, porsiyon additionalProperty'de, sayfa metnindeki "SERVİS: 1 Ölçek"
+    // kalktı. Fixture o günkü Crea Nova sayfasının alanlarından.
+    [Theory]
+    [InlineData("Servis ölçüsü")]
+    [InlineData("SERVİS ÖLÇÜSÜ")]
+    public void TekGrafikBlogundakiMarkaReferansiniVePorsiyonuOkur(string servingName)
+    {
+        var html = GraphHtml("Space Supplements", servingName);
+
+        var product = SpaceSupplementsScraper.ParseProduct(html, "https://spacegymsupplements.com/urunler/crea-nova");
+
+        Assert.NotNull(product);
+        Assert.Equal("Space Crea Nova", product.Name);
+        Assert.Equal(638.40m, product.Price);
+        Assert.False(product.InStock);
+        Assert.Equal(5m, product.ServingSizeGrams);
+        Assert.Equal("kreatin", product.Category);
+        Assert.Equal("https://spacegymsupplements.com/g/pj/urunler-crea-nova-1.webp.jpg", product.ImageUrl);
+    }
+
+    [Fact]
+    public void ReferansBaskaMarkayaCikarsaUrunuAlmaz()
+    {
+        var html = GraphHtml("Optimum Nutrition", "Servis ölçüsü");
+
+        Assert.Null(SpaceSupplementsScraper.ParseProduct(html, "https://spacegymsupplements.com/urunler/crea-nova"));
+    }
+
     [Fact]
     public void SitemapYalnizSpaceUrunAdresleriniTekillestirir()
     {
@@ -147,4 +176,25 @@ public class SpaceSupplementsScraperTests
             {{{serving}}}
             """;
     }
+
+    private static string GraphHtml(string brandNodeName, string servingName) => $$$"""
+        <script type="application/ld+json">
+        {"@context":"https://schema.org","@graph":[
+         {"@type":"OnlineStore","@id":"https://spacegymsupplements.com/#kurum","name":"Space Supplements",
+          "brand":{"@id":"https://spacegymsupplements.com/#marka"}},
+         {"@type":"Brand","@id":"https://spacegymsupplements.com/#marka","name":"{{{brandNodeName}}}"},
+         {"@type":"Product","@id":"https://spacegymsupplements.com/urunler/crea-nova#urun","name":"Space Crea Nova",
+          "description":"Her ölçekte 3.000 mg kreatin monohidrat var.",
+          "image":["https://spacegymsupplements.com/g/pj/urunler-crea-nova-1.webp.jpg",
+                   "https://spacegymsupplements.com/api/media/file/urunler-crea-nova-1.webp"],
+          "brand":{"@id":"https://spacegymsupplements.com/#marka"},
+          "additionalProperty":[
+            {"@type":"PropertyValue","name":"Servis başına protein","unitText":"g","value":"1"},
+            {"@type":"PropertyValue","name":"{{{servingName}}}","unitText":"g","value":"5"},
+            {"@type":"PropertyValue","name":"Servis sayısı","value":"70"}],
+          "offers":[{"@type":"Offer","availability":"https://schema.org/OutOfStock","price":"638.40",
+            "priceCurrency":"TRY","priceSpecification":{"@type":"UnitPriceSpecification","price":"798.00","priceCurrency":"TRY"}}]},
+         {"@type":"FAQPage","mainEntity":[]}]}
+        </script>
+        """;
 }

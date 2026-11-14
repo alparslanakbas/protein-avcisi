@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 
@@ -44,7 +43,7 @@ internal static class ShopifyKatalog
         using (var ilk = await httpClient.GetAsync(adres, iptal))
         {
             if (ilk.StatusCode != HttpStatusCode.TooManyRequests)
-                return await OkuAsync(ilk, secenekler, iptal);
+                return await OkuAsync(ilk, sayfa, marka, logger, secenekler, iptal);
 
             var sure = BeklemeSuresi(ilk, bekleme ?? VarsayilanBekleme, DateTimeOffset.UtcNow);
             if (sure > EnUzunBekleme)
@@ -60,7 +59,7 @@ internal static class ShopifyKatalog
         }
 
         using var ikinci = await httpClient.GetAsync(adres, iptal);
-        return await OkuAsync(ikinci, secenekler, iptal);
+        return await OkuAsync(ikinci, sayfa, marka, logger, secenekler, iptal);
     }
 
     /// <summary>429'un istediği bekleme (saniye ya da tarih); başlık yoksa <paramref name="yoksa"/>.</summary>
@@ -71,10 +70,46 @@ internal static class ShopifyKatalog
         return sure < TimeSpan.Zero ? TimeSpan.Zero : sure;
     }
 
-    private static async Task<ShopifyProductsResponse?> OkuAsync(HttpResponseMessage yanit,
-        JsonSerializerOptions secenekler, CancellationToken iptal)
+    /// <remarks>
+    /// <b>Boş katalog (14 Kasım 2026).</b> Commander 13 Kasım öğleden beri ilk sayfada 200 ve sıfır ürün
+    /// döndürüyordu; hata olmadığı için günlükte iz yoktu, kaynak 26 saatte bayatladı. Mağazaya tarayıcı
+    /// kimliğiyle teşhis isteği atmıyoruz (Shopify kaydı), bu yüzden imzalı isteğin kendi yanıtı yazılıyor:
+    /// durum, gövdenin boyutu ve başı, mağaza kimliği (alan adı başka mağazaya geçtiyse değişir) ve
+    /// Shopify'ın isteğe atadığı ülke/para birimi çerezi (ürünler bir pazarla sınırlıysa görünür).
+    /// </remarks>
+    private static async Task<ShopifyProductsResponse?> OkuAsync(HttpResponseMessage yanit, int sayfa, string marka,
+        ILogger? logger, JsonSerializerOptions secenekler, CancellationToken iptal)
     {
         yanit.EnsureSuccessStatusCode();
-        return await yanit.Content.ReadFromJsonAsync<ShopifyProductsResponse>(secenekler, iptal);
+        var govde = await yanit.Content.ReadAsStringAsync(iptal);
+        var katalog = JsonSerializer.Deserialize<ShopifyProductsResponse>(govde, secenekler);
+
+        if (sayfa == 1 && katalog?.Products is not { Count: > 0 })
+        {
+            logger?.LogWarning(
+                "{Marka}: katalogun ilk sayfası boş (HTTP {Kod}, {Uzunluk} karakter, mağaza kimliği {MagazaKimligi}, " +
+                "localization {Ulke}, cart_currency {ParaBirimi}): {Bas}",
+                marka, (int)yanit.StatusCode, govde.Length,
+                BaslikDegeri(yanit, "x-shopid") ?? BaslikDegeri(yanit, "x-sorting-hat-shopid"),
+                CerezDegeri(yanit, "localization"), CerezDegeri(yanit, "cart_currency"),
+                govde.Length > 200 ? govde[..200] : govde);
+        }
+
+        return katalog;
+    }
+
+    private static string? BaslikDegeri(HttpResponseMessage yanit, string ad) =>
+        yanit.Headers.TryGetValues(ad, out var degerler) ? string.Join(",", degerler) : null;
+
+    // Yalnız adı verilen çerezin değeri; oturum ve izleme çerezleri günlüğe yazılmıyor.
+    private static string? CerezDegeri(HttpResponseMessage yanit, string ad)
+    {
+        if (!yanit.Headers.TryGetValues("Set-Cookie", out var cerezler))
+            return null;
+
+        var onEk = ad + "=";
+        return cerezler
+            .Select(cerez => cerez.Split(';', 2)[0].Trim())
+            .FirstOrDefault(cerez => cerez.StartsWith(onEk, StringComparison.Ordinal))?[onEk.Length..];
     }
 }

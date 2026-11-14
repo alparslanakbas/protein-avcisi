@@ -19,6 +19,11 @@ namespace IndirimTakip.Infrastructure.Scraping.SpaceSupplements;
 /// dışarıda bırakılır. Kategori, markalı ürün adları tek başına yeterli
 /// olmadığında schema.org açıklamasındaki açık bileşen/type ifadesinden
 /// çıkarılır; paket gramajı SKU'dan tahmin edilmez.
+///
+/// 13 Kasım 2026'dan beri sayfanın bütün yapılandırılmış verisi tek bir
+/// <c>@graph</c> bloğunda: ürünün markası ad değil, aynı bloktaki Brand
+/// düğümüne referans (<c>{"@id": ".../#marka"}</c>), porsiyon da sayfa
+/// metninden kalkıp <c>additionalProperty</c>'ye ("Servis ölçüsü") geçti.
 /// </summary>
 public partial class SpaceSupplementsScraper(
     HttpClient httpClient,
@@ -138,7 +143,8 @@ public partial class SpaceSupplementsScraper(
             try
             {
                 using var parsed = JsonDocument.Parse(json);
-                if (TryParseProductElement(parsed.RootElement, html, url, out var product))
+                var nodesById = BuildNodeIndex(parsed.RootElement);
+                if (TryParseProductElement(parsed.RootElement, nodesById, html, url, out var product))
                     return product;
             }
             catch (JsonException)
@@ -151,8 +157,39 @@ public partial class SpaceSupplementsScraper(
         return null;
     }
 
+    // Bloktaki adlı düğümler kimliklerine göre: ürünün marka alanı yalnız
+    // {"@id": ...} referansı olduğunda ad buradan okunuyor. Yalnız "@id"
+    // taşıyan nesne referanstır, düğümün kendisi değil; adı olmadığı için
+    // dizine girmiyor.
+    private static Dictionary<string, JsonElement> BuildNodeIndex(JsonElement root)
+    {
+        var nodes = new Dictionary<string, JsonElement>(StringComparer.Ordinal);
+        Visit(root);
+        return nodes;
+
+        void Visit(JsonElement element)
+        {
+            if (element.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var child in element.EnumerateArray())
+                    Visit(child);
+                return;
+            }
+
+            if (element.ValueKind != JsonValueKind.Object)
+                return;
+
+            if (ReadString(element, "@id") is { } id && ReadString(element, "name") is not null)
+                nodes.TryAdd(id, element);
+
+            if (element.TryGetProperty("@graph", out var graph))
+                Visit(graph);
+        }
+    }
+
     private static bool TryParseProductElement(
         JsonElement element,
+        IReadOnlyDictionary<string, JsonElement> nodesById,
         string html,
         string url,
         out ScrapedProduct? product)
@@ -163,7 +200,7 @@ public partial class SpaceSupplementsScraper(
         {
             foreach (var child in element.EnumerateArray())
             {
-                if (TryParseProductElement(child, html, url, out product))
+                if (TryParseProductElement(child, nodesById, html, url, out product))
                     return true;
             }
 
@@ -176,7 +213,7 @@ public partial class SpaceSupplementsScraper(
         if (!IsProduct(element))
         {
             if (element.TryGetProperty("@graph", out var graph))
-                return TryParseProductElement(graph, html, url, out product);
+                return TryParseProductElement(graph, nodesById, html, url, out product);
 
             return false;
         }
@@ -185,7 +222,7 @@ public partial class SpaceSupplementsScraper(
         if (string.IsNullOrEmpty(name) || NonSupplementProductFilter.IsAccessoryOrApparel(name))
             return true;
 
-        var brand = ReadBrand(element);
+        var brand = ReadBrand(element, nodesById);
         if (!IsSpaceBrand(brand))
             return true;
 
@@ -205,7 +242,7 @@ public partial class SpaceSupplementsScraper(
             ImageUrl: ReadImage(element),
             Category: ProductAttributeParser.InferCategory(categoryText, "Space"),
             Price: price,
-            ServingSizeGrams: ReadServingSizeGrams(html),
+            ServingSizeGrams: ReadServingSizeFromProperties(element) ?? ReadServingSizeGrams(html),
             Description: description,
             InStock: inStock);
 
@@ -225,7 +262,7 @@ public partial class SpaceSupplementsScraper(
                 && value.GetString()?.Equals("Product", StringComparison.OrdinalIgnoreCase) == true);
     }
 
-    private static string? ReadBrand(JsonElement product)
+    private static string? ReadBrand(JsonElement product, IReadOnlyDictionary<string, JsonElement> nodesById)
     {
         if (!product.TryGetProperty("brand", out var brand))
             return null;
@@ -233,7 +270,10 @@ public partial class SpaceSupplementsScraper(
         var value = brand.ValueKind switch
         {
             JsonValueKind.String => brand.GetString(),
-            JsonValueKind.Object => ReadString(brand, "name"),
+            JsonValueKind.Object => ReadString(brand, "name")
+                ?? (ReadString(brand, "@id") is { } id && nodesById.TryGetValue(id, out var node)
+                    ? ReadString(node, "name")
+                    : null),
             _ => null,
         };
 
@@ -244,7 +284,10 @@ public partial class SpaceSupplementsScraper(
     // "Space" yazıyordu, sonra "Space Supplements" oldu; birebir "Space"
     // araması 9 ürünün hepsini başka marka sayıp eledi, kaynak 26 saatte
     // bayatladı (sağlık 503). İkisi de mağazanın kendi markası; sitede başka
-    // bir markanın ürünü çıkarsa yine dışarıda kalıyor.
+    // bir markanın ürünü çıkarsa yine dışarıda kalıyor. 13 Kasım'dan beri ad
+    // ürünün kendisinde değil, referans verilen Brand düğümünde (yine
+    // "Space Supplements"); çözülemeyen referans adsız sayılıp eleniyor ki
+    // yapı bir daha değişirse sağlık ucu yine haber versin.
     private static readonly string[] SpaceBrandNames = ["Space", "Space Supplements"];
 
     private static bool IsSpaceBrand(string? brand) =>
@@ -299,6 +342,59 @@ public partial class SpaceSupplementsScraper(
         };
     }
 
+    // 13 Kasım 2026'dan beri porsiyon schema.org additionalProperty'de:
+    // {"name": "Servis ölçüsü", "unitText": "g", "value": "5"}. Gram
+    // dışındaki birim tahmin edilmiyor, alan boş kalıyor.
+    private static decimal? ReadServingSizeFromProperties(JsonElement product)
+    {
+        if (!product.TryGetProperty("additionalProperty", out var properties)
+            || properties.ValueKind != JsonValueKind.Array)
+        {
+            return null;
+        }
+
+        foreach (var property in properties.EnumerateArray())
+        {
+            if (property.ValueKind != JsonValueKind.Object
+                || FoldPropertyName(ReadString(property, "name")) != "servis ölçüsü")
+            {
+                continue;
+            }
+
+            var unit = ReadString(property, "unitText")?.Trim();
+            if (unit is not null && !unit.Equals("g", StringComparison.OrdinalIgnoreCase))
+                return null;
+
+            if (!property.TryGetProperty("value", out var value))
+                return null;
+
+            decimal grams;
+            if (value.ValueKind == JsonValueKind.Number)
+            {
+                if (!value.TryGetDecimal(out grams))
+                    return null;
+            }
+            else if (value.ValueKind != JsonValueKind.String
+                || !decimal.TryParse(value.GetString()?.Replace(',', '.'), NumberStyles.Number, CultureInfo.InvariantCulture, out grams))
+            {
+                return null;
+            }
+
+            return grams > 0 ? grams : null;
+        }
+
+        return null;
+    }
+
+    // Özellik adını büyük/küçük harften bağımsız karşılaştırmak için. .NET'in
+    // ToLowerInvariant'ı noktalı "İ"yi "i"ye çevirmiyor ("SERVİS" eşleşmiyordu,
+    // test yakaladı); kültüre bağlı ToLower da sunucunun kültürüne göre değişir.
+    // Bu yüzden i'nin bütün biçimleri (İ, I, ı) önce açıkça "i"ye indiriliyor.
+    private static string? FoldPropertyName(string? name) =>
+        name?.Trim().Replace('İ', 'i').Replace('I', 'i').Replace('ı', 'i').ToLowerInvariant();
+
+    // Eski sayfa metni ("SERVİS: 1 Ölçek ( 30 G )"); mağaza geri dönerse diye
+    // yedek olarak duruyor.
     private static decimal? ReadServingSizeGrams(string html)
     {
         var match = ServingSizeRegex().Match(WebUtility.HtmlDecode(html));
