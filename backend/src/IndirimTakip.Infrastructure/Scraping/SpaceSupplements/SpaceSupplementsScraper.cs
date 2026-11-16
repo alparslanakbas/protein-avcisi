@@ -16,8 +16,8 @@ namespace IndirimTakip.Infrastructure.Scraping.SpaceSupplements;
 /// durumunu sağlıyor.
 ///
 /// Sitemap'teki shaker ve çanta takviye olmadığı için ortak filtreyle
-/// dışarıda bırakılır. Kategori, markalı ürün adları tek başına yeterli
-/// olmadığında schema.org açıklamasındaki açık bileşen/type ifadesinden
+/// dışarıda bırakılır. Kategori önce mağazanın schema.org <c>category</c>
+/// alanından, o yoksa ad ve açıklamadaki açık bileşen/type ifadesinden
 /// çıkarılır; paket gramajı SKU'dan tahmin edilmez.
 ///
 /// 13 Kasım 2026'dan beri sayfanın bütün yapılandırılmış verisi tek bir
@@ -240,7 +240,7 @@ public partial class SpaceSupplementsScraper(
             Name: name,
             Url: url,
             ImageUrl: ReadImage(element),
-            Category: ProductAttributeParser.InferCategory(categoryText, "Space"),
+            Category: InferCategoryFromSchema(element) ?? ProductAttributeParser.InferCategory(categoryText, "Space"),
             Price: price,
             ServingSizeGrams: ReadServingSizeFromProperties(element) ?? ReadServingSizeGrams(html),
             Description: description,
@@ -280,19 +280,21 @@ public partial class SpaceSupplementsScraper(
         return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
     }
 
-    // Mağazanın schema.org'daki kendi marka adları. 10 Kasım 2026'ya kadar
-    // "Space" yazıyordu, sonra "Space Supplements" oldu; birebir "Space"
-    // araması 9 ürünün hepsini başka marka sayıp eledi, kaynak 26 saatte
-    // bayatladı (sağlık 503). İkisi de mağazanın kendi markası; sitede başka
-    // bir markanın ürünü çıkarsa yine dışarıda kalıyor. 13 Kasım'dan beri ad
-    // ürünün kendisinde değil, referans verilen Brand düğümünde (yine
-    // "Space Supplements"); çözülemeyen referans adsız sayılıp eleniyor ki
-    // yapı bir daha değişirse sağlık ucu yine haber versin.
-    private static readonly string[] SpaceBrandNames = ["Space", "Space Supplements"];
-
+    // Mağazanın schema.org'daki kendi marka adı bir haftada üç kez değişti:
+    // "Space" (10 Kasım 2026'ya kadar), "Space Supplements" (13 Kasım),
+    // "Space Gym Supplements" (16 Kasım). Her seferinde birebir ad listesi 9
+    // ürünün hepsini başka marka sayıp eledi ve kaynak 26 saatte bayatladı
+    // (sağlık 503). Artık "space" ile başlayan bir sözcük geçen her ad
+    // mağazanın kendi markası sayılıyor ("SpaceSupplements" dahil, "Aerospace"
+    // hariç). Başka bir markanın ürünü yine dışarıda kalıyor. Adı hiç
+    // okunamayan ürün de dışarıda: yapı bir daha değişirse sağlık ucu haber
+    // versin. 13 Kasım'dan beri ad ürünün kendisinde değil, referans verilen
+    // Brand düğümünde.
     private static bool IsSpaceBrand(string? brand) =>
-        brand is not null
-        && SpaceBrandNames.Any(name => string.Equals(brand.Trim(), name, StringComparison.OrdinalIgnoreCase));
+        brand is not null && SpaceBrandRegex().IsMatch(brand);
+
+    [GeneratedRegex(@"\bspace", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex SpaceBrandRegex();
 
     private static bool TryReadOffer(JsonElement offers, out decimal price, out bool? inStock)
     {
@@ -341,6 +343,17 @@ public partial class SpaceSupplementsScraper(
             _ => null,
         };
     }
+
+    // Mağazanın kendi kategori alanı ("Kreatin") metinden çıkarımdan önce
+    // geliyor. 16 Kasım 2026'da Crea Nova'nın yeni açıklaması "whey'e, suya
+    // ya da meyve suyuna karışır" dedi ve ad + açıklamadan çıkarım kreatini
+    // protein tozu saydı; tarama elle seçilmemiş kategoriyi her seferinde
+    // güncellediği için ürün yanlış kategoriye taşınırdı. Alan yoksa ya da
+    // bilinen bir kategoriye denk gelmiyorsa eski çıkarım sürüyor.
+    private static string? InferCategoryFromSchema(JsonElement product) =>
+        ReadString(product, "category") is { } category && !string.IsNullOrWhiteSpace(category)
+            ? ProductAttributeParser.InferCategory(category, "Space")
+            : null;
 
     // 13 Kasım 2026'dan beri porsiyon schema.org additionalProperty'de:
     // {"name": "Servis ölçüsü", "unitText": "g", "value": "5"}. Gram
