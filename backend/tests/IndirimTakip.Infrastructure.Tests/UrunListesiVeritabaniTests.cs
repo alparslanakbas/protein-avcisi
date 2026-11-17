@@ -224,6 +224,34 @@ public class UrunListesiVeritabaniTests(UrunListesiVeritabani veri) : IClassFixt
             PriceSummaryRefresher.WindowDays, null, null, saticilar, arama, null, null,
             indirimli, magazaIndirimi, siralama, sayfa, boyut);
 
+    // Marka × kategori çiftleri site haritasını ve marka sayfasındaki kategori bağlantılarını besliyor; her
+    // çift tam o kadar ürün listeleyen bir sayfa olmalı. Marka sayfası markanın kendi mağazasını tercih
+    // ediyor, çiftler bütün satıcıları sayıyordu: WheyProof'ta /brand/kaged/vitamins (yalnız
+    // bodybuilding.com) site haritasına 404 veren boş bir sayfa olarak girdi (16 Kasım, Search Console).
+    [VeritabaniFact]
+    public async Task Her_marka_kategori_cifti_marka_sayfasinin_listeledigi_kadar_sayiyor()
+    {
+        await using var db = veri.Baglam();
+        var servis = Servis(db);
+
+        var ciftler = await servis.GetBrandCategoryPairsAsync();
+
+        Assert.NotEmpty(ciftler);
+        foreach (var cift in ciftler)
+        {
+            var sayfa = await servis.GetDealsAsync(
+                PriceSummaryRefresher.WindowDays, [cift.BrandName], [cift.Category], null, null, null, null,
+                false, false, null, 1, 1, preferBrandStore: true);
+            Assert.True(sayfa.TotalCount == cift.ProductCount,
+                $"{cift.BrandName}/{cift.Category}: çift {cift.ProductCount}, marka sayfası {sayfa.TotalCount}");
+        }
+
+        // Swiss Nutrition kendi mağazasından satıyor; bayideki magnezyumu marka sayfasında yok.
+        Assert.DoesNotContain(ciftler, c => c.BrandName == "Swiss Nutrition" && c.Category == "vitamin");
+        // Olimp'in kendi mağazası yok: bayi ürünleri onun marka sayfası.
+        Assert.Contains(ciftler, c => c.BrandName == "Olimp" && c.Category == "protein-tozu" && c.ProductCount == 8);
+    }
+
     [VeritabaniFact]
     public async Task Butun_sayfalar_her_urunu_tam_bir_kez_veriyor()
     {

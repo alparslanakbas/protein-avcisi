@@ -659,10 +659,18 @@ public partial class DealsQueryService(
     // üretmek (ör. bir markanın hiç satmadığı kategori) tam da Google'ın
     // "ince içerik" sayarak indekslemediği şey olurdu; sitemap ve iç
     // linkler bu listeye göre kuruluyor.
+    //
+    // Marka sayfasının listelediği gibi sayılıyor (bkz. preferBrandStore):
+    // kendi mağazasından satan markanın sayfası yalnız onları gösteriyor, bu
+    // yüzden onun için yalnız bayilerde olan bir kategori boş sayfa. Bütün
+    // satıcıları saymak WheyProof'ta /brand/kaged/vitamins'i (yalnız
+    // bodybuilding.com) site haritasına 404 veren boş bir sayfa olarak soktu;
+    // burada 5 çift 1-2 ürünle eşiğin üstünde sayılıyordu (16-17 Kasım).
     public async Task<IReadOnlyList<BrandCategoryPairDto>> GetBrandCategoryPairsAsync(
         CancellationToken cancellationToken = default)
     {
         var staleSince = DateTimeOffset.UtcNow.Subtract(StaleThreshold);
+        var kendiMagazasiOlanMarkalar = db.Products.Where(p => p.Seller == null).Select(p => p.BrandId);
 
         var rows = await (
             from p in db.Products
@@ -670,6 +678,7 @@ public partial class DealsQueryService(
             where b.IsActive
                   && p.Category != null
                   && p.PriceHistories.OrderByDescending(ph => ph.ScrapedAt).Select(ph => ph.ScrapedAt).FirstOrDefault() >= staleSince
+                  && (p.Seller == null || !kendiMagazasiOlanMarkalar.Contains(p.BrandId))
             group p by new { BrandName = b.Name, Category = p.Category! } into g
             select new BrandCategoryPairDto(g.Key.BrandName, g.Key.Category, g.Count()))
             .AsNoTracking()
