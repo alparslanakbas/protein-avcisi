@@ -180,6 +180,13 @@ public sealed class UrunListesiVeritabani : IAsyncLifetime
         foreach (var f in aradanSonra.PriceHistories.Take(30))
             f.ScrapedAt = f.ScrapedAt.AddDays(-5);
 
+        // Kendi mağazası bayatlamış marka (WheyProof'ta Kaged, 17 Kasım): kendi ürünü bayat (aşağıda), bayidekiler
+        // güncel. Ayrı marka ve kategori, başka testlerin sayılarına karışmasın diye.
+        var bayatMagaza = new Brand { Name = "Bayat Mağaza", BaseUrl = "https://bayatmagaza.example" };
+        db.Brands.Add(bayatMagaza);
+        Urun(bayatMagaza, "Bayat Mağaza Elektrolit A", "elektrolit", "provitamin.com.tr", 400m);
+        Urun(bayatMagaza, "Bayat Mağaza Elektrolit B", "elektrolit", "provitamin.com.tr", 450m);
+
         GorunenUrun = sira;
         // whey'ler, D3, Olimp'ler, magnezyum, kısa aralı düşüş; kampanyadan gerçek ve tek gün hatalı (olağan fiyat 1000);
         // dip markasının dördü
@@ -192,6 +199,9 @@ public sealed class UrunListesiVeritabani : IAsyncLifetime
         var pasif = Urun(hardline, "Pasif Ürün", "protein-tozu", null, 999m);
         pasif.IsActive = false;
         Urun(pasifMarka, "Gizli Marka Ürünü", "protein-tozu", null, 999m);
+        var bayatKendi = Urun(bayatMagaza, "Bayat Mağaza Kendi Elektroliti", "elektrolit", null, 500m);
+        foreach (var f in bayatKendi.PriceHistories)
+            f.ScrapedAt = simdi.AddDays(-30);
 
         await db.SaveChangesAsync();
     }
@@ -250,6 +260,21 @@ public class UrunListesiVeritabaniTests(UrunListesiVeritabani veri) : IClassFixt
         Assert.DoesNotContain(ciftler, c => c.BrandName == "Swiss Nutrition" && c.Category == "vitamin");
         // Olimp'in kendi mağazası yok: bayi ürünleri onun marka sayfası.
         Assert.Contains(ciftler, c => c.BrandName == "Olimp" && c.Category == "protein-tozu" && c.ProductCount == 8);
+    }
+
+    // Kendi mağazası bayatlamış marka (WheyProof'ta Kaged, 17 Kasım): bayat kendi ürünleri "kendi mağazası" sayılınca
+    // marka sayfası bayideki ürünleri gizleyip hiçbir şey listelemiyordu. Yalnız güncel kendi ürünleri sayılıyor.
+    [VeritabaniFact]
+    public async Task Magazasi_bayatlamis_marka_bayideki_urunlerini_listeliyor()
+    {
+        await using var db = veri.Baglam();
+
+        var sayfa = await Servis(db).GetDealsAsync(
+            PriceSummaryRefresher.WindowDays, ["Bayat Mağaza"], null, null, null, null, null,
+            false, false, null, 1, 10, preferBrandStore: true);
+
+        Assert.Equal(2, sayfa.TotalCount);
+        Assert.All(sayfa.Items, d => Assert.Equal("provitamin.com.tr", d.Seller));
     }
 
     [VeritabaniFact]

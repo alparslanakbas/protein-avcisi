@@ -103,12 +103,12 @@ public partial class DealsQueryService(
         CancellationToken cancellationToken = default,
         // Marka SAYFALARI için: markanın kendi mağazasını öne al.
         //
-        // Kural şu: bir markanın kendi sitesinden gelen ürünü VARSA marka
+        // Kural şu: bir markanın kendi sitesinden gelen GÜNCEL ürünü varsa marka
         // sayfasında yalnızca onlar gösterilir — bayideki kopyası aynı sayfada
-        // yan yana durup ürünü iki kez listelemez. Ama markanın hiç doğrudan
-        // ürünü YOKSA süzgeç uygulanmaz, yoksa yalnızca bayiden gelen ~25
-        // markanın (Olimp, Multipower, Grenade, Mustang...) sayfaları tamamen
-        // boşalırdı.
+        // yan yana durup ürünü iki kez listelemez. Yoksa süzgeç uygulanmaz:
+        // yalnız bayiden gelen ~25 markanın (Olimp, Multipower, Grenade...) ve
+        // mağazası bayatlamış markanın (WheyProof'ta Kaged, 17 Kasım) sayfası
+        // tamamen boşalırdı.
         //
         // Yalnızca marka sayfası gönderiyor; ana sayfadaki marka filtresi
         // bunu KULLANMIYOR, orada marka ve satıcı filtreleri birbirinden
@@ -187,7 +187,7 @@ public partial class DealsQueryService(
             var hedefMarka = brands[0];
             var kendiUrunuVar = await db.Products
                 .AsNoTracking()
-                .AnyAsync(p => p.Seller == null && p.Brand!.Name == hedefMarka, cancellationToken);
+                .AnyAsync(p => p.Seller == null && p.Brand!.Name == hedefMarka && p.LatestScrapedAt >= staleSince, cancellationToken);
 
             if (kendiUrunuVar)
                 query = query.Where(r => r.Product.Seller == null);
@@ -670,7 +670,7 @@ public partial class DealsQueryService(
         CancellationToken cancellationToken = default)
     {
         var staleSince = DateTimeOffset.UtcNow.Subtract(StaleThreshold);
-        var kendiMagazasiOlanMarkalar = db.Products.Where(p => p.Seller == null).Select(p => p.BrandId);
+        var kendiMagazasiOlanMarkalar = db.Products.Where(p => p.Seller == null && p.LatestScrapedAt >= staleSince).Select(p => p.BrandId);
 
         var rows = await (
             from p in db.Products
