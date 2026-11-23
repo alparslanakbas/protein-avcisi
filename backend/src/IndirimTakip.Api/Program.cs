@@ -69,11 +69,17 @@ builder.Services.AddSingleton<CloudflareAccessValidator>();
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    // E-posta gönderebilen uçlar (abone olma, fiyat alarmı, favori, liste kurtarma;
+    // anahtarla korunan toplayıcı yutma ucu da bunu kullanıyor):
+    // IP başına 5 dakikada 50 (23 Kasım'a kadar 10). Favori ve alarm düğmeleri de
+    // burada sayılıyor, ürün başına iki istek: kardeş sitede 18 Kasım'da ürün
+    // kaydeden gerçek bir ziyaretçi 11. istekte 429 aldı ve 17 dakika sonra
+    // dönebildi. Tek bir adrese yağmuru adres başına bekleme süresi ayrıca önlüyor.
     options.AddPolicy("EmailSensitive", httpContext => RateLimitPartition.GetFixedWindowLimiter(
         partitionKey: RequestLoggingExtensions.GetClientIp(httpContext),
         factory: _ => new FixedWindowRateLimiterOptions
         {
-            PermitLimit = 10,
+            PermitLimit = 50,
             Window = TimeSpan.FromMinutes(5),
             QueueLimit = 0,
         }));
