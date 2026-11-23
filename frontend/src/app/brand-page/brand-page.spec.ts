@@ -5,7 +5,24 @@ import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/route
 import { of } from 'rxjs';
 
 import { ThemeService } from '../core/theme.service';
-import { BrandPage } from './brand-page';
+import { BrandPage, aramaDisiMarka } from './brand-page';
+
+// Ürünü ve kuponu olmayan marka sayfası noindex (24 Kasım, Commander Nutrition'ın boş kataloğu).
+describe('aramaDisiMarka', () => {
+  it('görünür ürün de aktif kupon da yoksa arama dışı', () => {
+    expect(aramaDisiMarka(0, 0)).toBe(true);
+  });
+
+  it('ürünü ya da kuponu olan marka dizinde kalır', () => {
+    expect(aramaDisiMarka(12, 0)).toBe(false);
+    expect(aramaDisiMarka(0, 1)).toBe(false);
+  });
+
+  it('istekler gelmeden karar vermez', () => {
+    expect(aramaDisiMarka(null, 0)).toBe(false);
+    expect(aramaDisiMarka(0, null)).toBe(false);
+  });
+});
 
 // comparisonPairSlug marka karşılaştırma sayfalarının kanonik URL'ini
 // üretiyor — sıra ne olursa olsun aynı çift için aynı URL'e çıkması

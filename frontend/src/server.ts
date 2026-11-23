@@ -168,16 +168,26 @@ function enYeniTarih(tarihler: string[]): number | null {
 }
 
 async function sitemapParcalari(origin: string): Promise<Record<SitemapParcasi, SitemapParcasiIcerigi>> {
-  const [productsResponse, filtersResponse, articlesResponse, pairsResponse] = await Promise.all([
+  const [productsResponse, filtersResponse, articlesResponse, pairsResponse, countsResponse, couponsResponse] = await Promise.all([
     apiFetch('/api/products/sitemap'),
     apiFetch('/api/filters'),
     apiFetch('/api/articles'),
     apiFetch('/api/brand-category-pairs'),
+    apiFetch('/api/brand-product-counts'),
+    apiFetch('/api/coupons'),
   ]);
   const products = (await productsResponse.json()) as SitemapEntry[];
   const filters = (await filtersResponse.json()) as FilterOptions;
   const articles = (await articlesResponse.json()) as ArticleSitemapEntry[];
   const brandCategoryPairs = (await pairsResponse.json()) as BrandCategoryPair[];
+  const brandCounts = (await countsResponse.json()) as { brandName: string; productCount: number }[];
+  const activeCoupons = (await couponsResponse.json()) as { brandName: string }[];
+  // Görünür ürünü ya da aktif kuponu olan markalar. Gerisinin sayfası noindex (brand-page.ts,
+  // aramaDisiMarka); haritada kalsaydı Google'a çelişkili iki sinyal giderdi (24 Kasım).
+  const aramadakiMarkalar = new Set([
+    ...brandCounts.filter((b) => b.productCount > 0).map((b) => b.brandName),
+    ...activeCoupons.map((c) => c.brandName),
+  ]);
 
   const productUrls = products
     .map(
@@ -201,6 +211,7 @@ async function sitemapParcalari(origin: string): Promise<Record<SitemapParcasi, 
   // Marka indirim kodu sayfaları — "[Marka] indirim kodu" araması için
   // hedeflenen SEO içerik sayfaları.
   const brandUrls = filters.brands
+    .filter((brand) => aramadakiMarkalar.has(brand))
     .map(
       (brand) =>
         `<url><loc>${origin}/marka/${brandSlug(brand)}/indirim-kodu</loc><changefreq>daily</changefreq><priority>0.9</priority></url>`,

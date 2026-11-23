@@ -44,6 +44,18 @@ const BAYI_ETIKETI = 'Bayiden satılanlar';
 const BAYI_ORNEK_SAYISI = 6;
 const SEARCH_DEBOUNCE_MS = 350;
 
+/**
+ * Görünür ürünü ve aktif kuponu olmayan marka sayfası arama dışı kalır: noindex, site haritasında
+ * da yok (server.ts, aynı ölçüt). 24 Kasım 2026: Commander Nutrition'ın kataloğu 13 Kasım'dan beri
+ * boş, sayfası "0 ürün, aktif kod yok" diyen, dizine açık bir sayfaydı; Google böyle sayfayı
+ * yumuşak 404 sayıyor (marka×kategori için aynı ders, 9 Kasım). O gün beş marka böyleydi.
+ * Ziyaretçi sayfayı görmeye devam ediyor; ürün ya da kupon gelince sayfa kendiliğinden dizine
+ * döner. null = o istek henüz gelmedi; ikisi de gelmeden karar verilmez.
+ */
+export function aramaDisiMarka(ilkToplam: number | null, kuponSayisi: number | null): boolean {
+  return ilkToplam === 0 && kuponSayisi === 0;
+}
+
 @Component({
   selector: 'app-brand-page',
   imports: [DecimalPipe, FormsModule, RouterLink, ProductCardSparkline, ProductModal, SiteHeader],
@@ -168,6 +180,10 @@ export class BrandPage implements OnInit {
   protected readonly totalPages = signal(0);
   // Bu bileşende ilk liste yüklendi mi (aralık dışı sayfada 404 yalnızca ilk yüklemede).
   private ilkListeYuklendi = false;
+  // Markanın ilk yüklemedeki ürün sayısı ve kuponların gelip gelmediği: aramaDisiMarka kararı
+  // iki istek de gelince veriliyor (null / false = henüz bilinmiyor). Her markada sıfırlanıyor.
+  private markaIlkToplam: number | null = null;
+  private kuponlarGeldi = false;
   protected readonly currentPage = signal(1);
   // Sayfalama çubuğunda gösterilecek numaralar (null = "…").
   protected readonly sayfaOgeleri = computed(() => sayfaPenceresi(this.currentPage(), this.totalPages()));
@@ -263,6 +279,8 @@ export class BrandPage implements OnInit {
   private loadBrand(slug: string, categorySlug: string | null): void {
     this.loading.set(true);
     this.viewMode.set('all');
+    this.markaIlkToplam = null;
+    this.kuponlarGeldi = false;
     // Doğrudan "?page=3" ile gelinmiş olabilir; sabit 1 yazmak o adresi
     // sessizce 1. sayfaya düşürüyordu (5 Eylül'de ölçüldü).
     this.currentPage.set(adrestenSayfa(this.route.snapshot.queryParamMap.get('page')));
@@ -351,6 +369,7 @@ export class BrandPage implements OnInit {
 
         this.couponsService.getCoupons().subscribe((coupons) => {
           this.coupons.set(coupons.filter((c) => c.brandName === match));
+          this.kuponlarGeldi = true;
           // Açıklama kodun olup olmamasına göre değişiyor; kuponlar meta yazıldıktan sonra geliyor.
           this.setMeta(match);
         });
@@ -455,6 +474,14 @@ export class BrandPage implements OnInit {
           return;
         }
         this.ilkListeYuklendi = true;
+
+        // Marka sayfasının (kesişim değil, bayi görünümü değil) filtresiz ilk listesi: hiç ürün
+        // yoksa ve kupon da yoksa sayfa arama dışı kalır (aramaDisiMarka). Kuponlar önce geldiyse
+        // meta yazılmış olabilir; yeniden yazılıyor.
+        if (this.markaIlkToplam === null && !this.fixedCategory() && !bayi && this.viewMode() === 'all' && !this.hasActiveFilters()) {
+          this.markaIlkToplam = result.totalCount;
+          if (result.totalCount === 0) this.setMeta(this.brandName());
+        }
 
         // Markanın kendi mağazası var mı? Ayrı bir istek atmak yerine gelen
         // listeden okunuyor: `preferBrandStore` açıkken kendi ürünü olan
@@ -640,6 +667,7 @@ export class BrandPage implements OnInit {
       title,
       description,
       canonicalPath: `/marka/${brandSlugValue}/indirim-kodu${sayfaSorgusu}`,
+      noIndex: !bayi && aramaDisiMarka(this.markaIlkToplam, this.kuponlarGeldi ? this.coupons().length : null),
     });
     this.breadcrumbEl = upsertJsonLdScript(
       this.document,
