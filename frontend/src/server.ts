@@ -17,6 +17,7 @@ import {
 } from './app/core/internal-api';
 import { slugify } from './app/core/slugify';
 import { ssrOnbellekAnahtari } from './app/core/ssr-cache-key';
+import { pageKopyasiHedefi } from './app/core/page-kopyasi';
 import { BODY_CALCULATORS } from './app/core/body-calculators';
 import { SUPPLEMENT_DOSAGES } from './app/core/supplement-dosages';
 import { FINDER_PATH, SUPPLEMENT_GOALS } from './app/core/supplement-goals';
@@ -402,6 +403,14 @@ app.get('/go/:id', async (req, res) => {
 // adres zaten 404 veriyor. Yalnız tek segment eşleşiyor, /marka/{slug}/{kategori} etkilenmez.
 app.get('/marka/:slug', (req, res) => {
   res.redirect(301, `/marka/${encodeURIComponent(req.params.slug)}/indirim-kodu`);
+});
+
+// Ürün ve inceleme sayfasının ?page= kopyaları temiz adrese 301 (gerekçe: core/page-kopyasi.ts).
+app.use((req, res, next) => {
+  if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+  const hedef = pageKopyasiHedefi(req.path, req.originalUrl);
+  if (hedef === null) return next();
+  res.redirect(301, hedef);
 });
 
 app.get('/robots.txt', (req, res) => {
