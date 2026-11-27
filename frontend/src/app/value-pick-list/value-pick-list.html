@@ -86,7 +86,7 @@
                   </div>
                   <div class="whitespace-nowrap text-xs tabular-nums text-[var(--noc-neutral-500)]">Paket {{ pick.currentPrice | number: '1.2-2' }} ₺</div>
                 </div>
-                <a [href]="pick.storeUrl" target="_blank" rel="nofollow sponsored noopener" (click)="trackStoreClick(pick)" class="pa-secondary-button h-[32px] px-[10px] text-xs">
+                <a [href]="pick.storeUrl" target="_blank" rel="nofollow sponsored noopener" (click)="trackStoreClick(pick)" (auxclick)="$event.button === 1 && trackStoreClick(pick)" class="pa-secondary-button h-[32px] px-[10px] text-xs">
                   Mağazaya git<i class="ph ph-arrow-square-out ml-1 text-[13px]" aria-hidden="true"></i>
                 </a>
               </div>

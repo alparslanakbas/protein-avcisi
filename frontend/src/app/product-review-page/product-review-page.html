@@ -42,7 +42,7 @@
             }
           </div>
           <a
-            [href]="storeUrl()" (click)="magazaTiklamasi()"
+            [href]="storeUrl()" (click)="magazaTiklamasi()" (auxclick)="$event.button === 1 && magazaTiklamasi()"
             target="_blank"
             rel="noopener nofollow sponsored"
             class="pa-primary-button mt-3 flex min-h-11 w-full items-center justify-center gap-2 px-3 py-2.5 text-sm sm:w-fit sm:px-4"
@@ -312,7 +312,7 @@
 
       <div class="mt-[45px]">
         <a
-          [href]="storeUrl()" (click)="magazaTiklamasi()"
+          [href]="storeUrl()" (click)="magazaTiklamasi()" (auxclick)="$event.button === 1 && magazaTiklamasi()"
           target="_blank"
           rel="noopener nofollow sponsored"
           class="block rounded-[8px] py-2.5 text-center text-sm font-medium text-[var(--noc-accent-100)]"

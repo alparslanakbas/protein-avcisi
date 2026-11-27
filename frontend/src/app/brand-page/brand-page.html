@@ -296,7 +296,7 @@
               </div>
 
               <a
-                [href]="goToStoreUrl(deal)" (click)="magazaTiklamasi(deal.productId)"
+                [href]="goToStoreUrl(deal)" (click)="magazaTiklamasi(deal.productId)" (auxclick)="$event.button === 1 && magazaTiklamasi(deal.productId)"
                 target="_blank"
                 rel="nofollow sponsored noopener"
                 (click)="$event.stopPropagation()"

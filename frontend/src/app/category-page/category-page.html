@@ -171,7 +171,7 @@
                   </td>
                   <td class="px-[16.8px] py-[11.2px] text-right">
                     <a
-                      [href]="goToStoreUrl(deal)" (click)="magazaTiklamasi(deal.productId)"
+                      [href]="goToStoreUrl(deal)" (click)="magazaTiklamasi(deal.productId)" (auxclick)="$event.button === 1 && magazaTiklamasi(deal.productId)"
                       target="_blank"
                       rel="nofollow sponsored noopener"
                       (click)="$event.stopPropagation()"

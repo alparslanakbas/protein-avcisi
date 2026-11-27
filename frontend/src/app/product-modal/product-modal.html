@@ -37,7 +37,7 @@
         </button>
       </div>
       <a
-        [href]="goToStoreUrl()" (click)="magazaTiklamasi()"
+        [href]="goToStoreUrl()" (click)="magazaTiklamasi()" (auxclick)="$event.button === 1 && magazaTiklamasi()"
         target="_blank"
         rel="noopener nofollow sponsored"
         class="pa-primary-button col-span-2 flex min-h-11 w-full items-center justify-center gap-2 px-4 py-2.5 text-sm"
@@ -177,7 +177,7 @@
       }
 
       <a
-        [href]="goToStoreUrl()" (click)="magazaTiklamasi()"
+        [href]="goToStoreUrl()" (click)="magazaTiklamasi()" (auxclick)="$event.button === 1 && magazaTiklamasi()"
         target="_blank"
         rel="noopener nofollow sponsored"
         class="pa-primary-button mt-5 flex w-full items-center justify-center gap-2 px-4 py-3 text-sm"
