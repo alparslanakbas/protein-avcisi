@@ -18,6 +18,7 @@ import {
 import { slugify } from './app/core/slugify';
 import { ssrOnbellekAnahtari } from './app/core/ssr-cache-key';
 import { pageKopyasiHedefi } from './app/core/page-kopyasi';
+import { goHedefi } from './app/core/go-yonlendirme';
 import { BODY_CALCULATORS } from './app/core/body-calculators';
 import { SUPPLEMENT_DOSAGES } from './app/core/supplement-dosages';
 import { FINDER_PATH, SUPPLEMENT_GOALS } from './app/core/supplement-goals';
@@ -357,45 +358,26 @@ for (const ad of SITEMAP_PARCALARI) {
   });
 }
 
-// "Mağazaya Git" linki artık göreceli (/go/:id) — ziyaretçi bilinmeyen bir
-// "api.protein-avcisi..." adresine değil, kendi gördüğü domain'e tıklıyor
-// (dikkatli kullanıcılara phishing linki gibi görünüyordu). Burada backend'in
-// gerçek /go/{id}'sine sunucu tarafında proxy yapıp aynı 302'yi iletiyoruz —
-// tıklama sayacı backend'de aynen çalışmaya devam ediyor.
-// Arama motoru botlarını user-agent'tan tanıyoruz. Kesin bir yöntem değil ama
-// amaç güvenlik değil, tıklama sayacını gerçek kullanıcıya yakın tutmak.
-const BOT_USER_AGENT = /bot|crawler|spider|crawling|bingpreview|slurp|duckduck|yandex|baidu|facebookexternalhit|embedly|quora|pinterest|whatsapp|telegram/i;
+// Eski "Mağazaya git" adresi (/go/:id). Bağlantılar Eylül başından beri doğrudan
+// mağazaya gidiyor (DealDto.StoreUrl, sayaç beacon'la). Bu uç önce backend'in
+// /go/{id}'sine vekillik edip 302 + noindex ile mağazaya atıyordu; artık ürünün
+// kanonik sayfasına KALICI (301) yönlendiriyor. Neden ve ölçüm: core/go-yonlendirme.ts.
+// Ziyaretçi için de aynı davranış (bota ayrı yanıt vermek yönlendirme gizleme
+// sayılır); 36 günde /go/'a gelen insan isteği zaten yoktu. Backend'in api.
+// alanındaki /go/{id}'si ayrıca duruyor, ön yüz onu artık çağırmıyor.
+app.get('/go/:id', async (req, res, next) => {
+  const id = req.params.id;
+  if (goHedefi(id, null) === null) return next();
 
-app.get('/go/:id', async (req, res) => {
-  // /go/{id} bir içerik sayfası değil, dışarıya 302 atan bir uç. Daha önce
-  // robots.txt'te Disallow ile kapatılmıştı — ama Disallow bir adresin
-  // DİZİNE GİRMESİNİ engellemiyor, yalnızca içeriğinin okunmasını engelliyor.
-  // Sonuç: arama motoru adresi başka yoldan öğrenip dizine ekledi ama içeriği
-  // okuyamadığı için açıklama yerine "site izin vermiyor" bastı; marka
-  // aramasında ana sayfamız yerine bu adres çıkar oldu (28 Ağustos'ta Bing ve
-  // DuckDuckGo'da birebir görüldü).
-  //
-  // Doğru sinyal bu başlık: bot sayfayı çekebiliyor, "dizine ekleme" talimatını
-  // görüyor ve adresi dizinden düşürüyor. Bu yüzden robots.txt'teki Disallow da
-  // kaldırıldı — yoksa bot bu başlığı hiç göremezdi.
-  res.set('X-Robots-Tag', 'noindex, nofollow');
-
-  const isBot = BOT_USER_AGENT.test(req.get('user-agent') ?? '');
-
+  let urunAdi: string | null = null;
   try {
-    const response = await apiFetch(`/go/${req.params.id}`, {
-      redirect: 'manual',
-      // Bot isteklerinde tıklama sayacı artmasın: bu sayaç markalarla
-      // paylaşılan tıklama raporunu besliyor, bot trafiğiyle şişmesi veriyi
-      // doğrudan yanıltıcı yapar.
-      headers: isBot ? { 'X-Bot-Request': '1' } : undefined,
-    });
-    const location = response.headers.get('location');
-    res.redirect(302, location ?? '/');
-  } catch (error) {
-    console.error('/go/:id yönlendirmesi başarısız:', error);
-    res.redirect(302, '/');
+    const yanit = await apiFetch(`/api/products/${id}`);
+    if (yanit.ok) urunAdi = ((await yanit.json()) as { productName?: string }).productName ?? null;
+  } catch (hata) {
+    // Ad okunamazsa slug'sız adrese gidiliyor; sayfa kanonik adrese kendisi götürüyor.
+    console.error('/go/:id ürün adı okunamadı:', hata);
   }
+  res.redirect(301, goHedefi(id, urunAdi) ?? '/');
 });
 
 // /marka/{slug} kökünde sayfa yok, marka sayfası /marka/{slug}/indirim-kodu; adresi kısaltan
@@ -426,9 +408,9 @@ app.get('/robots.txt', (req, res) => {
   // /go/{id} için BİLİNÇLİ olarak Disallow YOK. Disallow yalnızca içeriğin
   // okunmasını engelliyordu, adresin dizine girmesini değil — sonuçta marka
   // aramasında ana sayfamızın yerini "açıklama gösterilemiyor" diyen bir
-  // yönlendirme adresi aldı. Bunun yerine o uç, isteğe X-Robots-Tag: noindex
-  // başlığı basıyor; botun bu başlığı görebilmesi için sayfayı çekebilmesi
-  // gerekiyor, dolayısıyla taramayı engellememek DOĞRU davranış.
+  // yönlendirme adresi aldı. O uç önce noindex'li 302 veriyordu, 27 Kasım'dan
+  // beri ürün sayfasına 301 veriyor; botun bunu görebilmesi için adresi
+  // çekebilmesi gerekiyor, dolayısıyla taramayı engellememek DOĞRU davranış.
   // /cdn-cgi/ Cloudflare'in kendi enjekte ettiği yol. Sayfadaki mailto:
   // bağlantıları Cloudflare'in e-posta gizleme özelliğiyle
   // /cdn-cgi/l/email-protection adresine çevriliyor; bot JavaScript
